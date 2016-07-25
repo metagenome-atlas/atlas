@@ -1,0 +1,271 @@
+####################
+###ATLAS Pipeline###
+####################
+
+########
+###QC###
+########
+
+#included a flash merge (Step 1), Decon (Step 2); removing phiX using Bowtie2 and file conversion using picard (Step 2); Trimmomatic to trim low quality reads (Step 3); Fastqc to quality check reads (Step 4). 
+
+##################
+###FLASH Step 1###
+##################
+
+#Merges R1-R2
+flash input_R1.fastq input_R2.fastq -m 10 -M 150 -x 0.25 -p 33 -o flash_output-Ext.fastq flash_output-notcombined_R1.fastq flash_output-notcombined_R2.fastq
+flash_output.hist flash_output.log flash_out.histogram
+
+#input
+input_R1.fastq input_R2.fastq
+ 
+#output 
+flash_output-Ext.fastq flash_output-notcombined_R1.fastq flash_output-notcombined_R2.fastq flash_output.hist flash_output.log flash_out.histogram
+
+#head of log file
+[FLASH] Starting FLASH v1.2.11
+[FLASH] Fast Length Adjustment of SHort reads
+[FLASH]  
+[FLASH] Input files:
+[FLASH]     input_R1.fastq input_R2.fastq
+[FLASH]       
+[FLASH] Output files:
+[FLASH]     flash_output-Ext.fastq flash_output-notcombined_R1.fastq flash_output-notcombined_R2.fastq flash_output.hist flash_output.log flash_out.histogram
+[FLASH]     
+[FLASH] Parameters:
+[FLASH]     Min overlap:           10
+[FLASH]     Max overlap:           150
+[FLASH]     Max mismatch density:  0.250000
+[FLASH]     Allow "outie" pairs:   false
+[FLASH]     Cap mismatch quals:    false
+[FLASH]     Combiner threads:      24
+[FLASH]     Input format:          FASTQ, phred_offset=33
+[FLASH]     Output format:         FASTQ, phred_offset=33
+[FLASH]  
+[FLASH] Starting reader and writer threads
+[FLASH] Starting 24 combiner threads
+[FLASH] Processed 25000 read pairs
+
+###########
+###Decon###
+###########
+
+############################
+###Bowtie2/Picard Step 2###
+############################
+
+#build alignment databases (Bowtie2) example to remove phiX174
+bowtie2-build phiX174.fa phiX174
+
+#For metatranscriptomes remove rRNAs (ONLY)
+bowtie2-build silva_rfam_all_rRNAs.fa silva_rfam_all_rRNAs
+
+#inputs
+silva_rfam_all_rRNAs.fa
+phiX174.fa
+
+#outputs
+phiX174.1.bt2                        
+phiX174.2.bt2                        
+phiX174.3.bt2                        
+phiX174.4.bt2                        
+phiX174.rev.1.bt2                    
+phiX174.rev.2.bt2
+silva_rfam_all_rRNAs.1.bt2
+silva_rfam_all_rRNAs.2.bt2
+silva_rfam_all_rRNAs.3.bt2
+silva_rfam_all_rRNAs.4.bt2
+silva_rfam_all_rRNAs.rev.1.bt2
+silva_rfam_all_rRNAs.rev.2.bt2
+silva_rfam_all_rRNAs.3.bt2  
+
+#these databases will be used to map reads against then to remove rRNA and phiX
+
+#Map reads to phiX174 genome (Bowtie2) to remove phiX174
+bowtie2 -p 24 -x phiX174 -q flash_output-Ext.fastq -S bowtie2_output_ext.sam --very-sensitive-local 
+bowtie2 -p 24 -x phiX174 -q flash_output-notcombined_R1.fastq -S bowtie2_output_notcombined_R1.sam --very-sensitive-local 
+bowtie2 -p 24 -x phiX174 -q flash_output-notcombined_R2.fastq -S bowtie2_output_notcombined_R2.sam --very-sensitive-local 
+
+#Picard to remove phiX174
+
+#ext reads#
+java -Xmx32g -jar ViewSam.jar ALIGNMENT_STATUS=Unaligned I=bowtie2_output_PhiR_ext.sam >Picard_output_PhiR_ext.sam 
+#keeps unaligned reads/Removes phiX174
+java -Xmx32g -jar SamToFastq.jar I=Picard_output_PhiR_ext.sam F=Picard_output_PhiR_ext.fastq 
+#converts unaligned .sam file to .fastq (PhiR = PhiX174 removed)
+
+#R1 reads notcombined#
+java -Xmx32g -jar ViewSam.jar ALIGNMENT_STATUS=Unaligned I=bowtie2_output_notcombined_R1.sam >Picard_output_PhiR_notcombined_R1.sam 
+#keeps unaligned reads/Removes phiX174
+java -Xmx32g -jar SamToFastq.jar I=Picard_output_PhiR_notcombined_R1.sam F=Picard_output_PhiR_notcombined_R1.fastq 
+#converts unaligned .sam file to .fastq (PhiR = PhiX174 removed)
+
+#R2 reads notcombined#
+java -Xmx32g -jar ViewSam.jar ALIGNMENT_STATUS=Unaligned I=bowtie2_output_notcombined_R2.sam >Picard_output_PhiR_notcombined_R2.sam 
+#keeps unaligned reads/Removes phiX174
+java -Xmx32g -jar SamToFastq.jar I=Picard_output_PhiR_notcombined_R2.sam F=Picard_output_PhiR_notcombined_R2.fastq 
+#converts unaligned .sam file to .fastq (PhiR = PhiX174 removed)
+
+#Map reads to silva_rfam databases (Bowtie2) to remove rRNAs after phiX174 removal
+bowtie2 -p 24 -x phiX174 -q Picard_output_PhiR_ext.fastq  -S bowtie2_output2_ext.sam --very-sensitive-local 
+bowtie2 -p 24 -x phiX174 -q Picard_output_PhiR_notcombined_R1.fastq  -S bowtie2_output2_notcombined_R1.sam --very-sensitive-local 
+bowtie2 -p 24 -x phiX174 -q Picard_output_PhiR_notcombined_R2.fastq  -S bowtie2_output2_notcombined_R2.sam --very-sensitive-local
+
+#ext reads#
+java -Xmx32g -jar ViewSam.jar ALIGNMENT_STATUS=Unaligned I=bowtie2_output2_ext.sam >Picard_output2_ext.sam 
+#keeps unaligned reads/Removes rRNAs
+java -Xmx32g -jar SamToFastq.jar I=Picard_output2_ext.sam  F=Picard_output_PhiR-rRNA_ext.fastq 
+#converts unaligned .sam file to .fastq (PhiR = PhiX174 and rRNA removed)
+
+#R1 reads notcombined#
+java -Xmx32g -jar ViewSam.jar ALIGNMENT_STATUS=Unaligned I=bowtie2_output2_notcombined_R1.sam >Picard_output2_notcombined_R1.sam 
+#keeps unaligned reads/Removes phiX174
+java -Xmx32g -jar SamToFastq.jar I=Picard_output2_notcombined_R1.sam F=Picard_output_PhiR-rRNA_notcombined_R1.fastq 
+#converts unaligned .sam file to .fastq (PhiR = PhiX174 and rRNA removed)
+
+#R2 reads notcombined#
+java -Xmx32g -jar ViewSam.jar ALIGNMENT_STATUS=Unaligned I=bowtie2_output2_notcombined_R2.sam >Picard_output2_notcombined_R2.sam 
+#keeps unaligned reads/Removes phiX174
+java -Xmx32g -jar SamToFastq.jar I=Picard_output2_notcombined_R2.sam F=Picard_output_PhiR-rRNA_notcombined_R2.fastq 
+#converts unaligned .sam file to .fastq (PhiR = PhiX174 removed)
+
+#inputs
+flash_output-Ext.fastq flash_output-notcombined_R1.fastq flash_output-notcombined_R2.fastq
+
+#outputs
+Picard_output_PhiR-rRNA_ext.fastq  
+Picard_output_PhiR-rRNA_notcombined_R1.fastq 
+Picard_output_PhiR-rRNA_notcombined_R2.fastq 
+Decon.log
+
+########################
+###head of Decon.log####
+########################
+
+#################################
+###PhiX174 removal step (head)###
+#################################
+
+====================================================================================================
+Read pair = A_Cont_Rep-1
+====================================================================================================
+
+----------------------------------------------------------------------------------------------------
+Search :: Contaminant DB = phiX174_virus, Extended_Fragments
+----------------------------------------------------------------------------------------------------
+
+12593207 reads; of these:
+  12593207 (100.00%) were unpaired; of these:
+    12593207 (100.00%) aligned 0 times
+    0 (0.00%) aligned exactly 1 time
+    0 (0.00%) aligned >1 times
+0.00% overall alignment rate
+
+----------------------------------------------------------------------------------------------------
+Removal :: Contaminant DB = phiX174_virus, Extended_Fragments
+----------------------------------------------------------------------------------------------------
+
+[Tue May 17 22:10:35 PDT 2016] net.sf.picard.sam.ViewSam INPUT= ALIGNMENT_STATUS=Unaligned    PF_STATUS=All VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+[Tue May 17 22:10:35 PDT 2016] Executing as whit040@node019.local on Linux 2.6.32-504.1.3.el6.x86_64 amd64; Java HotSpot(TM) 64-Bit Server VM 1.7.0_10-b18; Picard version: 1.90(exported)
+[Tue May 17 22:13:17 PDT 2016] net.sf.picard.sam.ViewSam done. Elapsed time: 2.69 minutes.
+Runtime.totalMemory()=9184870400
+[Tue May 17 22:13:18 PDT 2016] net.sf.picard.sam.SamToFastq INPUT= FASTQ=   OUTPUT_PER_RG=false RE_REVERSE=true INCLUDE_NON_PF_READS=false READ1_TRIM=0 READ2_TRIM=0 INCLUDE_NON_PRIMARY_ALIGNMENTS=false VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+[Tue May 17 22:13:18 PDT 2016] Executing as whit040@node019.local on Linux 2.6.32-504.1.3.el6.x86_64 amd64; Java HotSpot(TM) 64-Bit Server VM 1.7.0_10-b18; Picard version: 1.90(exported)
+INFO	2016-05-17 22:16:31	SamToFastq	Processed     1,000,000 records.  Elapsed time: 00:03:13s.  Time for last 1,000,000:  193s.  Last read position: */*
+ 
+##############################
+###rRNA removal step (head)###
+##############################
+
+----------------------------------------------------------------------------------------------------
+Search :: Contaminant DB = silva_rfam_all_rRNAs, Extended_Fragments
+----------------------------------------------------------------------------------------------------
+
+12593207 reads; of these:
+  12593207 (100.00%) were unpaired; of these:
+    455691 (3.62%) aligned 0 times
+    12852 (0.10%) aligned exactly 1 time
+    12124664 (96.28%) aligned >1 times
+96.38% overall alignment rate
+
+----------------------------------------------------------------------------------------------------
+Removal :: Contaminant DB = silva_rfam_all_rRNAs, Extended_Fragments
+----------------------------------------------------------------------------------------------------
+
+[Wed May 18 04:32:45 PDT 2016] net.sf.picard.sam.ViewSam INPUT=/ ALIGNMENT_STATUS=Unaligned    PF_STATUS=All VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+[Wed May 18 04:32:45 PDT 2016] Executing as whit040@node019.local on Linux 2.6.32-504.1.3.el6.x86_64 amd64; Java HotSpot(TM) 64-Bit Server VM 1.7.0_10-b18; Picard version: 1.90(exported)
+
+########################
+###Trimmomatic Step 3###
+########################
+
+java -jar ~/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 Picard_output_PhiR-rRNA_ext.fastq  Picard_output_PhiR-rRNA_ext_trim.fastq  ILLUMINACLIP:Adapters.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:25 MINLEN:50
+java -jar ~/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 Picard_output_PhiR-rRNA_notcombined_R1.fastq Picard_output_PhiR-rRNA_notcombined_R1_trim.fastq ILLUMINACLIP:Adapters.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:25 MINLEN:50
+java -jar ~/Trimmomatic-0.33/trimmomatic-0.33.jar SE -phred33 Picard_output_PhiR-rRNA_notcombined_R2.fastq Picard_output_PhiR-rRNA_notcombined_R2_trim.fastq ILLUMINACLIP:Adapters.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:25 MINLEN:50
+
+#inputs
+Picard_output_PhiR-rRNA_ext.fastq  
+Picard_output_PhiR-rRNA_notcombined_R1.fastq 
+Picard_output_PhiR-rRNA_notcombined_R2.fastq
+
+#outputs
+Picard_output_PhiR-rRNA_ext_trim.fastq 
+Picard_output_PhiR-rRNA_notcombined_R1_trim.fastq
+Picard_output_PhiR-rRNA_notcombined_R2_trim.fastq
+
+#########################
+###Head of Trimmomatic###
+#########################
+
+====================================================================================================
+Read pair = A_Cont_Rep-1
+====================================================================================================
+
+====================================================================================================
+Contaminant DB =  silva_rfam_all_rRNAs, Extended Fragments
+====================================================================================================
+
+TrimmomaticSE: Started with arguments: -phred33 -trimlog  ILLUMINACLIP:/Trimmomatic-0.33/adapters/Adapters.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:25 MINLEN:50
+Automatically using 16 threads
+Using Long Clipping Sequence: 'CAAGCAGAAGACGGCATACGAGATTGCCGAGTGACTGGAGTTCCTTGGCACCCGAGAATTCCA'
+Using Medium Clipping Sequence: 'CTTACTCCTTGGAGGCCATG'
+Using Long Clipping Sequence: 'GATCGGAAGAGCACACGTCTGAACTCCAGTCACATTCCTTTCTCGTATGCCGTCTTCTGCTTG'
+Using Long Clipping Sequence: 'AATGATACGGCGACCACCGAGATCTACACGTTCAGAGTTCTACAGTCCGA'
+ILLUMINACLIP: Using 0 prefix pairs, 4 forward/reverse sequences, 0 forward only sequences, 0 reverse only sequences
+Input Reads: 455691 Surviving: 438710 (96.27%) Dropped: 16981 (3.73%)
+TrimmomaticSE: Completed successfully
+
+###################
+###FASTQC Step 4###
+###################
+
+fastqc Picard_output_PhiR-rRNA_ext_trim.fastq 
+fastqc Picard_output_PhiR-rRNA_notcombined_R1_trim.fastq
+fastqc Picard_output_PhiR-rRNA_notcombined_R2_trim.fastq
+
+#inputs
+Picard_output_PhiR-rRNA_ext_trim.fastq 
+Picard_output_PhiR-rRNA_notcombined_R1_trim.fastq
+Picard_output_PhiR-rRNA_notcombined_R2_trim.fastq
+
+#outputs
+Picard_output_PhiR-rRNA_ext_trim_fastqc.html 
+Picard_output_PhiR-rRNA_notcombined_R1_trim_fastqc.html 
+Picard_output_PhiR-rRNA_notcombined_R2_trim_fastqc.html 
+Picard_output_PhiR-rRNA_ext_trim_fastqc.zip
+Picard_output_PhiR-rRNA_notcombined_R1_trim_fastqc.zip 
+Picard_output_PhiR-rRNA_notcombined_R2_trim_fastqc.zip 
+
+
+#############
+###MEGAHIT###
+#############
+
+megahit -m 0.99 -l 250 -r combined.fastq --k-min 21 --k-max 123 --out-dir combined_MegaHit
+
+###################
+###Metapathways2###
+###################
+
+python MetaPathways.py -i Input/ -o Output/ -c template_config.txt -p template_param.txt 
+
