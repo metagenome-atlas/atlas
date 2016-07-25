@@ -1,3 +1,4 @@
 *.fastq
 *.fa
 *.bt2
+*.pyc
