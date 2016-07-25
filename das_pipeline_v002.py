@@ -87,7 +87,7 @@ def init_params():
 
         line_data = line.split(":")
         program_name = line_data[0]
-        if not program_name in m_param.keys():
+        if program_name not in m_param.keys():
             m_param[program_name] = {}
 
         line_data = line_data[1].split(" ")
@@ -155,7 +155,7 @@ def build_contaminant_db(db_name):
         raise Exception("FASTA file for the contaminant database does not exist.")
 
     bt2_index_base = os.path.join(m_config['CONTAMINANT_DB_DIR'], db_name)
-    
+
     the_args = [m_config['BW2_BUILD_EXECUTABLE'], fasta_file_path, bt2_index_base]
     # the_cmd = " ".join(the_args)
     subprocess.call(the_args, shell=False)
@@ -175,10 +175,9 @@ def find_contaminants(read_pair_id, db_name, step_id, final_step):
     flash_dir = get_flash_dir(read_pair_id)
     decon_dir = get_decon_dir(read_pair_id)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Create or open the  log file
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     log_file_name = read_pair_id + "_Decon.log"
     log_file_path = os.path.join(decon_dir, log_file_name)
 
@@ -194,10 +193,9 @@ def find_contaminants(read_pair_id, db_name, step_id, final_step):
     else:
         flog = open(log_file_path, 'a')
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Find contaminants in extended fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     separator = "-" * 100
 
     decon_info = []
@@ -248,19 +246,19 @@ def find_contaminants(read_pair_id, db_name, step_id, final_step):
 
         flog.flush()
 
-        picard_sam_file_name  =step_prefix + read_pair_id + "_" + db_name + "_Unaligned_" + base_names[2] + ".sam"
+        picard_sam_file_name = step_prefix + read_pair_id + "_" + db_name + "_Unaligned_" + base_names[2] + ".sam"
         picard_sam_file_path = os.path.join(decon_dir, picard_sam_file_name)
 
         the_args = [m_config['PICARD_VIEW_SAM_EXECUTABLE'], "ALIGNMENT_STATUS=Unaligned", "I=" + bw2_output_file_path, ">", picard_sam_file_path]
         the_cmd = " ".join(the_args)
-        subprocess.call(the_cmd, shell=True,  stderr=flog)
+        subprocess.call(the_cmd, shell=True, stderr=flog)
 
         picard_fastq_file_name = step_prefix + read_pair_id + "_" + db_name + "_Unaligned_" + base_names[2] + ".fastq"
         picard_fastq_file_path = os.path.join(decon_dir, picard_fastq_file_name)
 
         the_args = [m_config['PICARD_SAM_TO_FASTQ_EXECUTABLE'], "I=" + picard_sam_file_path, "F=" + picard_fastq_file_path]
         the_cmd = " ".join(the_args)
-        subprocess.call(the_cmd, shell=True,  stderr=flog)
+        subprocess.call(the_cmd, shell=True, stderr=flog)
 
         flog.write("\n")
 
@@ -426,10 +424,9 @@ def remove_contaminants(read_pair_id, db_name):
     start_time = time.time()
     decon_dir = get_decon_dir(read_pair_id)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Create or open the  log file
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     log_file_name = read_pair_id + "_Decon_Contaminant_Removal.log"
     log_file_path = os.path.join(decon_dir, log_file_name)
 
@@ -445,10 +442,9 @@ def remove_contaminants(read_pair_id, db_name):
     else:
         flog = open(log_file_path, 'a')
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Remove contaminants from extended fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     separator = "-" * 100
 
     bw2_sam_file_name = read_pair_id + "_" + db_name + "_Extended_Frags.sam"
@@ -465,20 +461,19 @@ def remove_contaminants(read_pair_id, db_name):
 
     the_args = [m_config['PICARD_VIEW_SAM_EXECUTABLE'], "ALIGNMENT_STATUS=Unaligned", "I=" + bw2_sam_file_path, ">", picard_sam_file_path]
     the_cmd = " ".join(the_args)
-    subprocess.call(the_cmd, shell=True,  stderr=flog)
+    subprocess.call(the_cmd, shell=True, stderr=flog)
 
     picard_fastq_file_name = read_pair_id + "_" + db_name + "_Unaligned_Extended_Frags.fastq"
     picard_fastq_file_path = os.path.join(decon_dir, picard_fastq_file_name)
 
     the_args = [m_config['PICARD_SAM_TO_FASTQ_EXECUTABLE'], "I=" + picard_sam_file_path, "F=" + picard_fastq_file_path]
     the_cmd = " ".join(the_args)
-    subprocess.call(the_cmd, shell=True,  stderr=flog)
+    subprocess.call(the_cmd, shell=True, stderr=flog)
     flog.write("\n")
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Remove contaminants from non-extended forward (R1) fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     bw2_sam_file_name = read_pair_id + "_" + db_name + "_Not_Combined_1.sam"
     bw2_sam_file_path = os.path.join(decon_dir, bw2_sam_file_name)
 
@@ -493,20 +488,19 @@ def remove_contaminants(read_pair_id, db_name):
 
     the_args = [m_config['PICARD_VIEW_SAM_EXECUTABLE'], "ALIGNMENT_STATUS=Unaligned", "I=" + bw2_sam_file_path, ">", picard_sam_file_path]
     the_cmd = " ".join(the_args)
-    subprocess.call(the_cmd, shell=True,  stderr=flog)
+    subprocess.call(the_cmd, shell=True, stderr=flog)
 
     picard_fastq_file_name = read_pair_id + "_" + db_name + "_Unaligned_Not_Combined_1.fastq"
     picard_fastq_file_path = os.path.join(decon_dir, picard_fastq_file_name)
 
     the_args = [m_config['PICARD_SAM_TO_FASTQ_EXECUTABLE'], "I=" + picard_sam_file_path, "F=" + picard_fastq_file_path]
     the_cmd = " ".join(the_args)
-    subprocess.call(the_cmd, shell=True,  stderr=flog)
+    subprocess.call(the_cmd, shell=True, stderr=flog)
     flog.write("\n")
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Remove contaminants from non-extended reverse (R2) fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     bw2_sam_file_name = read_pair_id + "_" + db_name + "_Not_Combined_2.sam"
     bw2_sam_file_path = os.path.join(decon_dir, bw2_sam_file_name)
 
@@ -521,14 +515,14 @@ def remove_contaminants(read_pair_id, db_name):
 
     the_args = [m_config['PICARD_VIEW_SAM_EXECUTABLE'], "ALIGNMENT_STATUS=Unaligned", "I=" + bw2_sam_file_path, ">", picard_sam_file_path]
     the_cmd = " ".join(the_args)
-    subprocess.call(the_cmd, shell=True,  stderr=flog)
+    subprocess.call(the_cmd, shell=True, stderr=flog)
 
     picard_fastq_file_name = read_pair_id + "_" + db_name + "_Unaligned_Not_Combined_2.fastq"
     picard_fastq_file_path = os.path.join(decon_dir, picard_fastq_file_name)
 
     the_args = [m_config['PICARD_SAM_TO_FASTQ_EXECUTABLE'], "I=" + picard_sam_file_path, "F=" + picard_fastq_file_path]
     the_cmd = " ".join(the_args)
-    subprocess.call(the_cmd, shell=True,  stderr=flog)
+    subprocess.call(the_cmd, shell=True, stderr=flog)
     flog.write("\n")
 
     flog.close()
@@ -558,10 +552,9 @@ def concat_decon_files(read_pair_id):
 
 
 def decon(read_pair_id):
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Create the decon output directory if it doesn't exist
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #   
     decon_dir = get_decon_dir(read_pair_id)
 
     if os.path.exists(decon_dir):
@@ -569,10 +562,9 @@ def decon(read_pair_id):
 
     os.makedirs(decon_dir)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Check if the contaminant databases exist and build them if they don't
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     contaminant_dbs = m_param['decon']['contaminant_dbs']
     contaminant_dbs = contaminant_dbs.split(",")
 
@@ -613,10 +605,9 @@ def trim_reads(read_pair_id):
     contaminant_dbs = m_param['decon']['contaminant_dbs']
     contaminant_dbs = contaminant_dbs.split(",")
 
-   #-------------------------------------------------------------------------------------------------------------------
+    #
     # Create or open the  log file
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     log_file_name = read_pair_id + "_Trimmomatic.log"
     log_file_path = os.path.join(trimmomatic_dir, log_file_name)
 
@@ -632,10 +623,9 @@ def trim_reads(read_pair_id):
     else:
         flog = open(log_file_path, 'a')
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # Trimming extended fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     for db_name in contaminant_dbs:
         the_file_pattern = "Final_*_Unaligned_Extended_Frags.fastq"
         the_file_pattern = os.path.join(decon_dir, the_file_pattern)
@@ -663,10 +653,9 @@ def trim_reads(read_pair_id):
 
         flog.write("\n")
 
-        #-------------------------------------------------------------------------------------------------------------------
+        #
         # Trimming non-extended forward (R1) fragments
-        #-------------------------------------------------------------------------------------------------------------------
-
+        #
         the_file_pattern = "Final_*_Unaligned_Not_Combined_1.fastq"
         the_file_pattern = os.path.join(decon_dir, the_file_pattern)
         picard_fastq_file_path = glob.glob(the_file_pattern)
@@ -694,9 +683,9 @@ def trim_reads(read_pair_id):
 
         flog.write("\n")
 
-        #-------------------------------------------------------------------------------------------------------------------
+        #
         # Trimming non-extended reverse (R2) fragments
-        #-------------------------------------------------------------------------------------------------------------------
+        #
 
         # picard_fastq_file_name = read_pair_id + "_Unaligned_Not_Combined_2_Concat.fastq"
         # picard_fastq_file_path = os.path.join(decon_dir, picard_fastq_file_name)
@@ -746,10 +735,9 @@ def qc_reads(read_pair_id):
 
     flog = open(os.devnull, 'w')
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # QC statistics for extended fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     trimmomatic_fastq_file_name = read_pair_id + "_Unaligned_Extended_Frags_Trimmed.fastq"
     trimmomatic_fastq_file_path = os.path.join(trimmomatic_dir, trimmomatic_fastq_file_name)
 
@@ -757,10 +745,9 @@ def qc_reads(read_pair_id):
     the_cmd = " ".join(the_args)
     subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # QC statistics for non-extended forward (R1) fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     trimmomatic_fastq_file_name = read_pair_id + "_Unaligned_Not_Combined_1_Trimmed.fastq"
     trimmomatic_fastq_file_path = os.path.join(trimmomatic_dir, trimmomatic_fastq_file_name)
 
@@ -768,10 +755,9 @@ def qc_reads(read_pair_id):
     the_cmd = " ".join(the_args)
     subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
-    #-------------------------------------------------------------------------------------------------------------------
+    #
     # QC statistics for non-extended reverse (R2) fragments
-    #-------------------------------------------------------------------------------------------------------------------
-
+    #
     trimmomatic_fastq_file_name = read_pair_id + "_Unaligned_Not_Combined_2_Trimmed.fastq"
     trimmomatic_fastq_file_path = os.path.join(trimmomatic_dir, trimmomatic_fastq_file_name)
 
@@ -811,7 +797,8 @@ def interleave_reads(read_pair_id):
 
     while True:
         r1_id = fr1.readline()
-        if not r1_id: break
+        if not r1_id:
+            break
         r1_seq = fr1.readline()
         r1_plus = fr1.readline()
         r1_quals = fr1.readline()
@@ -921,9 +908,9 @@ def worker(args):
 
 
 def run_parallel():
-    #---------------------------------------------------------------------------------------------------------------
+    #
     # Build the contaminant databases if they don't exist
-    #---------------------------------------------------------------------------------------------------------------
+    #
 
     contaminant_dbs = m_param['decon']['contaminant_dbs']
     contaminant_dbs = contaminant_dbs.split(",")
@@ -934,10 +921,9 @@ def run_parallel():
         if not db_exists:
             build_contaminant_db(db_name)
 
-    #---------------------------------------------------------------------------------------------------------------
+    #
     # Create the job queue and then run it
-    #---------------------------------------------------------------------------------------------------------------
-
+    #
     num_procs = 5
 
     if num_procs > multiprocessing.cpu_count() - 1:
@@ -970,10 +956,9 @@ def run_serial():
         print("Working on read pair '" + read_pair_id + "'")
         print(seperator + "\n")
 
-        #---------------------------------------------------------------------------------------------------------------
+        #
         # Merge reads
-        #---------------------------------------------------------------------------------------------------------------
-
+        #
         print("Merging reads...")
         start_time = time.time()
         merge_reads(read_pair_id)
@@ -981,10 +966,9 @@ def run_serial():
 
         performance_log[read_pair_id]['merging'] = end_time - start_time
 
-        #---------------------------------------------------------------------------------------------------------------
+        #
         # Decon reads
-        #---------------------------------------------------------------------------------------------------------------
-
+        #
         print("Decontaminating reads...")
         start_time = time.time()
         decon(read_pair_id)
@@ -992,10 +976,9 @@ def run_serial():
 
         performance_log[read_pair_id]['decon'] = end_time - start_time
 
-        #---------------------------------------------------------------------------------------------------------------
+        #
         # Trim reads
-        #---------------------------------------------------------------------------------------------------------------
-
+        #
         print("Trimming reads...")
         start_time = time.time()
         trim_reads(read_pair_id)
@@ -1003,10 +986,9 @@ def run_serial():
 
         performance_log[read_pair_id]['trimming'] = end_time - start_time
 
-        #---------------------------------------------------------------------------------------------------------------
+        #
         # QC reads
-        #---------------------------------------------------------------------------------------------------------------
-
+        #
         print("QC reads...")
         start_time = time.time()
         qc_reads(read_pair_id)
@@ -1014,10 +996,9 @@ def run_serial():
 
         performance_log[read_pair_id]['qc'] = end_time - start_time
 
-        #---------------------------------------------------------------------------------------------------------------
+        #
         # Interleave reads
-        #---------------------------------------------------------------------------------------------------------------
-
+        #
         print("Interleave reads...")
         start_time = time.time()
         interleave_reads(read_pair_id)
