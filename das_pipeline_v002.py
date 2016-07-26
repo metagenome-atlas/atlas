@@ -823,6 +823,45 @@ def interleave_reads(read_pair_id):
     fout.close()
 
 
+def megahit(read_pair_id):
+    # relevant input directories
+    trimmomatic_dir = get_trimmomatic_dir(read_pair_id)
+    interleave_dir = get_interleave_dir(read_pair_id)
+    assembly_dir = get_assembly_dir(read_pair_id)
+
+    # trimmomatic file
+    trimmomatic_file_name = read_pair_id + "_Unaligned_Extended_Frags_Trimmed.fastq"
+    trimmomatic_file_path = os.path.join(assembly_dir, trimmomatic_file_name)
+
+    # interleave file
+    interleaved_file_name = read_pair_id + "_Trimmed_Interleaved.fastq"
+    interleaved_file_path = os.path.join(assembly_dir, interleaved_file_name)
+
+    # assembly file (new file!)
+    assembly_file_name = read_pair_id + "_assembly.fastq"  # what do we want to call this?
+    assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
+
+    # create assembly folder
+    if os.path.exists(assembly_dir):
+        shutil.rmtree(assembly_dir)
+
+    os.makedirs(assembly_dir)
+
+    # copy trim and interleave files to assembly folder
+    shutil.copy2(os.path.join(trimmomatic_dir, trimmomatic_file_name), trimmomatic_file_path)
+    shutil.copy2(os.path.join(interleave_dir, interleave_file_name), interleave_file_path)
+
+    # cat trim and interleave into new file
+    with open(assembly_file_path, 'w') as outfile:
+        for fname in [trimmomatic_file_path, interleaved_file_path]:
+            with open(fname) as infile:
+                for line in infile:
+                    outfile.write(line)
+
+    # load assembly file into megahit
+    # TODO: Call megahit command
+
+
 def get_forward_read_path(read_pair_id):
     file_name = read_pair_id + "_R1.fastq"
     file_path = os.path.join(m_config['INPUT_DIR'], file_name)
@@ -868,6 +907,11 @@ def get_fastqc_dir(read_pair_id):
 def get_interleave_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
     the_dir = os.path.join(the_dir, "Interleave")
+
+
+def get_assembly_dir(read_pair_id):
+    the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
+    the_dir = os.path.join(the_dir, "Assembly")
 
     return the_dir
 
