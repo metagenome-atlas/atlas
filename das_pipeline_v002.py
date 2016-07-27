@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import time
+from psutil import virtual_memory
 
 # m_input_dir = "/home/whit040/Programs/Das_Pipeline/Projects/das_test/input"
 # m_output_dir = "/home/whit040/Programs/Das_Pipeline/Projects/das_test/output"
@@ -823,7 +824,7 @@ def interleave_reads(read_pair_id):
     fout.close()
 
 
-def megahit(read_pair_id):
+def merge_trim_outputs(read_pair_id):
     # relevant input directories
     trimmomatic_dir = get_trimmomatic_dir(read_pair_id)
     interleave_dir = get_interleave_dir(read_pair_id)
@@ -858,15 +859,39 @@ def megahit(read_pair_id):
                 for line in infile:
                     outfile.write(line)
 
-    # load assembly file into megahit
+
+def megahit(read_pair_id):
+    assembly_dir = get_assembly_dir(read_pair_id)
+
+    assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
+    assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
+
+    # make relevant directory
     assembly_out = os.path.join(assembly_dir, read_pair_id + '_MegaHit')
     if not os.path.exists(assembly_dir):
         os.mkdir(assembly_out)
 
-    # megahit -m 0.99 -l 250 -r combined.fastq --k-min 21 --k-max 123 --out-dir combined_MegaHit
+    # load merged trim file into megahit
     the_cmd = '%s -m %s -l %s -r %s --k-min %s --k-max %s --out-dir %s' % \
               (m_config['MEGAHIT_EXECUTABLE'], m_param['megahit']['max_mem'], m_param['megahit']['length_of_library_insert'],
                assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], assembly_out)
+
+    with open(os.devnull, 'w') as flog:
+        subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+
+def trinity(read_pair_id):
+    assembly_dir = get_assembly_dir(read_pair_id)
+
+    assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
+    assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
+
+    cpus = multiprocessing.cpu_count()  # maybe make these global?
+    mem = virtual_memory().total        # also probably need to format this
+
+    # Trinity --seqType fq --left reads_1.fq --right reads_2.fq --CPU 6 --max_memory 20G
+    the_cmd = '%s -seqType fq --single %s --CPU %s --max_memory %s' % \
+              (m_config['TRINITY_EXECUTABLE'], assembly_file_path, cpus, mem)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
