@@ -886,6 +886,11 @@ def trinity(read_pair_id):
     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
 
+    # make relevant directory
+    assembly_out = os.path.join(assembly_dir, read_pair_id + '_Trinity')
+    if not os.path.exists(assembly_dir):
+        os.mkdir(assembly_out)
+
     cpus = multiprocessing.cpu_count()  # maybe make these global?
     mem = virtual_memory().total        # also probably need to format this
 
@@ -895,6 +900,17 @@ def trinity(read_pair_id):
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+
+    # TODO: metaspades
+    # def metaspades(read_pair_id):
+    #     assembly_dir = get_assembly_dir(read_pair_id)
+
+    #     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
+    #     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
+
+    #     with open(os.devnull, 'w') as flog:
+    #         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
 
 def get_forward_read_path(read_pair_id):
