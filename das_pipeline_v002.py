@@ -885,7 +885,8 @@ def megahit(read_pair_id):
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
     # move output file to assembly root
-    shutil.copy2(os.path.join(out_dir, 'final_contig.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_all_reads.fa'))
+    # might be "contigs" below
+    shutil.copy2(os.path.join(out_dir, 'final_contigs.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta'))
 
 
 def trinity(read_pair_id):
@@ -895,12 +896,12 @@ def trinity(read_pair_id):
     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
 
     # trinity dir
-    megahit_dir = os.path.join(assembly_dir, 'MegaHit')
-    if not os.path.exists(megahit_dir):
-        os.mkdir(megahit_dir)
+    trinity_dir = os.path.join(assembly_dir, 'Trinity')
+    if not os.path.exists(trinity_dir):
+        os.mkdir(trinity_dir)
 
     # make relevant output directory
-    out_dir = os.path.join(megahit_dir, read_pair_id)
+    out_dir = os.path.join(trinity_dir, read_pair_id)
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
 
@@ -913,6 +914,10 @@ def trinity(read_pair_id):
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+# TODO: subsampling_length.py implementation to get >1K reads (user specified length)
+# TODO: countfasta.pl implementation to get stats
+
 
 # TODO: metaspades
 # def metaspades(read_pair_id):
