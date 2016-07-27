@@ -866,18 +866,26 @@ def megahit(read_pair_id):
     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
 
+    # megahit dir
+    megahit_dir = os.path.join(assembly_dir, 'MegaHit')
+    if not os.path.exists(megahit_dir):
+        os.mkdir(megahit_dir)
+
     # make relevant directory
-    assembly_out = os.path.join(assembly_dir, read_pair_id + '_MegaHit')
-    if not os.path.exists(assembly_dir):
-        os.mkdir(assembly_out)
+    out_dir = os.path.join(megahit_dir, read_pair_id)
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
 
     # load merged trim file into megahit
     the_cmd = '%s -m %s -l %s -r %s --k-min %s --k-max %s --out-dir %s' % \
               (m_config['MEGAHIT_EXECUTABLE'], m_param['megahit']['max_mem'], m_param['megahit']['length_of_library_insert'],
-               assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], assembly_out)
+               assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], out_dir)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+    # move output file to assembly root
+    shutil.copy2(os.path.join(out_dir, 'final_contig.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_all_reads.fa'))
 
 
 def trinity(read_pair_id):
@@ -886,10 +894,15 @@ def trinity(read_pair_id):
     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
 
-    # make relevant directory
-    assembly_out = os.path.join(assembly_dir, read_pair_id + '_Trinity')
-    if not os.path.exists(assembly_dir):
-        os.mkdir(assembly_out)
+    # trinity dir
+    megahit_dir = os.path.join(assembly_dir, 'MegaHit')
+    if not os.path.exists(megahit_dir):
+        os.mkdir(megahit_dir)
+
+    # make relevant output directory
+    out_dir = os.path.join(megahit_dir, read_pair_id)
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
 
     cpus = multiprocessing.cpu_count()  # maybe make these global?
     mem = virtual_memory().total        # also probably need to format this
@@ -901,17 +914,15 @@ def trinity(read_pair_id):
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
+# TODO: metaspades
+# def metaspades(read_pair_id):
+#     assembly_dir = get_assembly_dir(read_pair_id)
 
-    # TODO: metaspades
-    # def metaspades(read_pair_id):
-    #     assembly_dir = get_assembly_dir(read_pair_id)
+#     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
+#     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
 
-    #     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
-    #     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
-
-    #     with open(os.devnull, 'w') as flog:
-    #         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
-
+#     with open(os.devnull, 'w') as flog:
+#         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
 def get_forward_read_path(read_pair_id):
     file_name = read_pair_id + "_R1.fastq"
