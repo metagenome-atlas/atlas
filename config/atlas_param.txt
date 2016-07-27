@@ -15,5 +15,12 @@ flash:mismatch_ratio 0.25
 flash:phred_offset 33
 flash:max_overlap 150
 
+# Megahit parameters
+megahit:max_mem 0.99
+megahit:length_of_library_insert 250
+megahit:kmer_min 21
+megahit:kmer_max 121
+
+
 
 

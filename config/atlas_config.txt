@@ -18,3 +18,4 @@ PICARD_VIEW_SAM_EXECUTABLE:java -Xmx32g -jar /people/whit040/picard-1.90/dist/Vi
 PICARD_SAM_TO_FASTQ_EXECUTABLE:java -Xmx32g -jar /people/whit040/picard-1.90/dist/SamToFastq.jar
 TRIMMOMATIC_EXECUTABLE:java -Xmx32g -jar /people/whit040/Trimmomatic-0.33/trimmomatic-0.33.jar
 FASTQC_EXECUTABLE:/people/whit040/FastQC/fastqc
+MEGAHIT_EXECUTABLE:/people/whit040/... # need to fill in

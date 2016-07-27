@@ -554,7 +554,7 @@ def concat_decon_files(read_pair_id):
 def decon(read_pair_id):
     #
     # Create the decon output directory if it doesn't exist
-    #   
+    #
     decon_dir = get_decon_dir(read_pair_id)
 
     if os.path.exists(decon_dir):
@@ -838,7 +838,7 @@ def megahit(read_pair_id):
     interleaved_file_path = os.path.join(assembly_dir, interleaved_file_name)
 
     # assembly file (new file!)
-    assembly_file_name = read_pair_id + "_assembly.fastq"  # what do we want to call this?
+    assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
 
     # create assembly folder
@@ -851,7 +851,7 @@ def megahit(read_pair_id):
     shutil.copy2(os.path.join(trimmomatic_dir, trimmomatic_file_name), trimmomatic_file_path)
     shutil.copy2(os.path.join(interleave_dir, interleave_file_name), interleave_file_path)
 
-    # cat trim and interleave into new file
+    # cat trimmomatic and interleave into new file
     with open(assembly_file_path, 'w') as outfile:
         for fname in [trimmomatic_file_path, interleaved_file_path]:
             with open(fname) as infile:
@@ -859,7 +859,17 @@ def megahit(read_pair_id):
                     outfile.write(line)
 
     # load assembly file into megahit
-    # TODO: Call megahit command
+    assembly_out = os.path.join(assembly_dir, read_pair_id + '_MegaHit')
+    if not os.path.exists(assembly_dir):
+        os.mkdir(assembly_out)
+
+    # megahit -m 0.99 -l 250 -r combined.fastq --k-min 21 --k-max 123 --out-dir combined_MegaHit
+    the_cmd = '%s -m %s -l %s -r %s --k-min %s --k-max %s --out-dir %s' % \
+              (m_config['MEGAHIT_EXECUTABLE'], m_param['megahit']['max_mem'], m_param['megahit']['length_of_library_insert'],
+               assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], assembly_out)
+
+    with open(os.devnull, 'w') as flog:
+        subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
 
 def get_forward_read_path(read_pair_id):
