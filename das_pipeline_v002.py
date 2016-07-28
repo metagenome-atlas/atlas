@@ -832,11 +832,11 @@ def merge_trim_outputs(read_pair_id):
 
     # trimmomatic file
     trimmomatic_file_name = read_pair_id + "_Unaligned_Extended_Frags_Trimmed.fastq"
-    trimmomatic_file_path = os.path.join(assembly_dir, trimmomatic_file_name)
+    trimmomatic_file_path = os.path.join(trimmomatic_dir, trimmomatic_file_name)
 
     # interleave file
     interleaved_file_name = read_pair_id + "_Trimmed_Interleaved.fastq"
-    interleaved_file_path = os.path.join(assembly_dir, interleaved_file_name)
+    interleaved_file_path = os.path.join(interleave_dir, interleaved_file_name)
 
     # assembly file (new file!)
     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
@@ -847,11 +847,6 @@ def merge_trim_outputs(read_pair_id):
         shutil.rmtree(assembly_dir)
 
     os.makedirs(assembly_dir)
-
-    # copy trim and interleave files to assembly folder
-    # TODO: DO NOT MOVE THESE ANYMORE
-    shutil.copy2(os.path.join(trimmomatic_dir, trimmomatic_file_name), trimmomatic_file_path)
-    shutil.copy2(os.path.join(interleave_dir, interleave_file_name), interleave_file_path)
 
     # cat trimmomatic and interleave into new file
     with open(assembly_file_path, 'w') as outfile:
@@ -872,22 +867,17 @@ def megahit(read_pair_id):
     if not os.path.exists(megahit_dir):
         os.mkdir(megahit_dir)
 
-    # make relevant directory
-    out_dir = os.path.join(megahit_dir, read_pair_id)
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
-
     # load merged trim file into megahit
     the_cmd = '%s -m %s -l %s -r %s --k-min %s --k-max %s --out-dir %s' % \
               (m_config['MEGAHIT_EXECUTABLE'], m_param['megahit']['max_mem'], m_param['megahit']['length_of_library_insert'],
-               assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], out_dir)
+               assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], megahit_dir)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
     # move output file to assembly root
     # might be "contigs" below
-    shutil.copy2(os.path.join(out_dir, 'final.contigs.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta'))
+    shutil.copy2(os.path.join(megahit_dir, 'final.contigs.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta'))
 
 
 def trinity(read_pair_id):
@@ -905,16 +895,57 @@ def trinity(read_pair_id):
     mem = virtual_memory().total        # also probably need to format this
 
     # Trinity --seqType fq --left reads_1.fq --right reads_2.fq --CPU 6 --max_memory 20G
-    the_cmd = '%s -seqType fq --single %s --CPU %s --max_memory %s --output' % \
-              (m_config['TRINITY_EXECUTABLE'], assembly_file_path, cpus, mem)
+    the_cmd = '%s -seqType fq --single %s --CPU %s --max_memory %s --output %s' % \
+              (m_config['TRINITY_EXECUTABLE'], assembly_file_path, cpus, mem, trinity_dir)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
-    # Trinity.fasta
+    shutil.copy2(os.path.join(trinity_dir, 'Trinity.fasta'), os.path.join(assembly_dir, read_pair_id + '_Trinity_final_contigs.fasta'))
 
-# TODO: subsampling_length.py implementation to get >1K reads (user specified length)
-# TODO: countfasta.pl implementation to get stats
+
+def subsample(read_pair_id):
+    # subsampling_length.py implementation to get >1K reads (user specified length)
+    assembly_dir = get_assembly_dir(read_pair_id)
+
+    trinity_file = os.path.join(assembly_dir, read_pair_id + '_Trinity_final_contigs.fasta')
+    megahit_file = os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta')
+
+    if os.path.isfile(trinity_file):
+        final_contigs_file = trinity_file
+    elif os.path.isfile(megahit_file):
+        final_contigs_file = megahit_file
+    elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
+        # both are present.  what do we do here?
+        pass
+
+    outfile = final_contigs_file[:-6] + '_1k.fasta'
+    the_cmd = 'python ./util/sumsampler_length.py -f %s -m %s -n %s > %s' % \
+              (final_contigs_file, m_param['subsampler']['min'], m_param['subsampler']['max'], outfile)
+
+    with open(os.devnull, 'w') as flog:
+        subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+
+def get_stats(read_pair_id):
+    assembly_dir = get_assembly_dir(read_pair_id)
+
+    trinity_file = os.path.join(assembly_dir, read_pair_id + '_Trinity_final_contigs.fasta')
+    megahit_file = os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta')
+
+    if os.path.isfile(trinity_file):
+        final_contigs_file = trinity_file
+    elif os.path.isfile(megahit_file):
+        final_contigs_file = megahit_file
+    elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
+        # both are present.  what do we do here?
+        pass
+
+    subsampled_file = final_contigs_file[:-6] + '_1k.fasta'
+
+    # run it on ouput of subsample
+
+    # run it on megahit/trinity file
 
 
 # TODO: metaspades

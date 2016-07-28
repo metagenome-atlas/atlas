@@ -26,6 +26,10 @@ megahit:kmer_max 121
 # Trinity parameters
 # so far not needed (trying to autodetect)
 
+# subsampler_length.py
+subsampler: min 1000
+subsampler: max 10000000000
+
 
 
 
