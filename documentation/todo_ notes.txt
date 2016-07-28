@@ -49,3 +49,12 @@ EXISTS: sample assembly (<1K contigs) [subsampler_length.py]
 in parallel
     maxbin/BT2 >1k contigs
     DNA->[Orfcaller]->protein
+
+
+###
+Move output from Megahit or trinity to the root of Assembly
+Run subsampler_length.py with user specified read length
+Run stats (CountFasta.pl--REWRITE THIS IN PYTHON) on both subsampled file, AND on the output from Megahit/Trinity
+    Output from stats goes into new folder "stats" WITHIN Assembly folder
+
+Map reads 

@@ -269,3 +269,5 @@ megahit -m 0.99 -l 250 -r combined.fastq --k-min 21 --k-max 123 --out-dir combin
 
 python MetaPathways.py -i Input/ -o Output/ -c template_config.txt -p template_param.txt 
 
+MaxBin-2.1/run_MaxBin.pl
+

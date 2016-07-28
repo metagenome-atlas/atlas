@@ -849,6 +849,7 @@ def merge_trim_outputs(read_pair_id):
     os.makedirs(assembly_dir)
 
     # copy trim and interleave files to assembly folder
+    # TODO: DO NOT MOVE THESE ANYMORE
     shutil.copy2(os.path.join(trimmomatic_dir, trimmomatic_file_name), trimmomatic_file_path)
     shutil.copy2(os.path.join(interleave_dir, interleave_file_name), interleave_file_path)
 
@@ -886,7 +887,7 @@ def megahit(read_pair_id):
 
     # move output file to assembly root
     # might be "contigs" below
-    shutil.copy2(os.path.join(out_dir, 'final_contigs.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta'))
+    shutil.copy2(os.path.join(out_dir, 'final.contigs.fa'), os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta'))
 
 
 def trinity(read_pair_id):
@@ -900,20 +901,17 @@ def trinity(read_pair_id):
     if not os.path.exists(trinity_dir):
         os.mkdir(trinity_dir)
 
-    # make relevant output directory
-    out_dir = os.path.join(trinity_dir, read_pair_id)
-    if not os.path.exists(out_dir):
-        os.mkdir(out_dir)
-
     cpus = multiprocessing.cpu_count()  # maybe make these global?
     mem = virtual_memory().total        # also probably need to format this
 
     # Trinity --seqType fq --left reads_1.fq --right reads_2.fq --CPU 6 --max_memory 20G
-    the_cmd = '%s -seqType fq --single %s --CPU %s --max_memory %s' % \
+    the_cmd = '%s -seqType fq --single %s --CPU %s --max_memory %s --output' % \
               (m_config['TRINITY_EXECUTABLE'], assembly_file_path, cpus, mem)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+    # Trinity.fasta
 
 # TODO: subsampling_length.py implementation to get >1K reads (user specified length)
 # TODO: countfasta.pl implementation to get stats
