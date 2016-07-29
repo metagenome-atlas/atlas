@@ -1011,10 +1011,8 @@ def maxbin(read_pair_id):
     # check which (megahit, trinity) is present
     if os.path.isfile(trinity_file_path):
         final_contigs_file_name = trinity_file_name
-        final_contigs_file_path = trinity_file_path
     elif os.path.isfile(megahit_file_path):
         final_contigs_file_name = megahit_file_name
-        final_contigs_file_path = trinity_file_path
     elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
         # both are present.  what do we do here?
         pass
@@ -1022,11 +1020,8 @@ def maxbin(read_pair_id):
     subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
     subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
 
-    output_file_name = ''
-    output_file_path = os.path.join(binning_dir, output_file_name)
-
     the_cmd = 'perl %s -contig %s -reads %s -out %s -thread %s' % \
-              (m_config['MAXBIN_EXECUTABLE'], subsampled_file_path, catted_trims_path, output_file_path, multiprocessing.cpu_count())
+              (m_config['MAXBIN_EXECUTABLE'], subsampled_file_path, catted_trims_path, binning_dir, multiprocessing.cpu_count())
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
