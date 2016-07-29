@@ -1136,6 +1136,11 @@ def worker(args):
     trim_reads(read_pair_id)
     qc_reads(read_pair_id)
     interleave_reads(read_pair_id)
+    merge_trim_outputs(read_pair_id)
+    megahit(read_pair_id)
+    subsample(read_pair_id)
+    get_stats(read_pair_id)
+    maxbin(read_pair_id)
 
 
 def run_parallel():
@@ -1237,6 +1242,12 @@ def run_serial():
 
         performance_log[read_pair_id]['interleaving'] = end_time - start_time
         print("\n")
+
+        merge_trim_outputs(read_pair_id)
+        megahit(read_pair_id)
+        subsample(read_pair_id)
+        get_stats(read_pair_id)
+        maxbin(read_pair_id)
 
     print(seperator)
     print("Performance")
