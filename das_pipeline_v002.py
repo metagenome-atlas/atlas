@@ -929,23 +929,107 @@ def subsample(read_pair_id):
 
 def get_stats(read_pair_id):
     assembly_dir = get_assembly_dir(read_pair_id)
+    stats_dir = get_stats_dir(read_pair_id)
 
-    trinity_file = os.path.join(assembly_dir, read_pair_id + '_Trinity_final_contigs.fasta')
-    megahit_file = os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta')
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
+    trinity_file_path = os.path.join(assembly_dir, trinity_name)
+    megahit_file_path = os.path.join(assembly_dir, megahit_name)
 
-    if os.path.isfile(trinity_file):
-        final_contigs_file = trinity_file
-    elif os.path.isfile(megahit_file):
-        final_contigs_file = megahit_file
+    # create binning folder
+    if os.path.exists(stats_dir):
+        shutil.rmtree(stats_dir)
+
+    os.makedir(stats_dir)
+
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_name = trinity_file_name
+        final_contigs_file_path = trinity_file_path
+    elif os.path.isfile(megahit_file_path):
+        final_contigs_file_name = megahit_file_name
+        final_contigs_file_path = megahit_file_path
     elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
         # both are present.  what do we do here?
         pass
 
-    subsampled_file = final_contigs_file[:-6] + '_1k.fasta'
+    # find subsampled file
+    subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
+    subsampled_file_path = os.path.join(assmebly_dir, subsampled_file_name)
+
+    subsampled_stats_file_name = subsampled_file_name[:-6] + '_stats.txt'
+    subsampled_stats_file_path = os.path.join(stats_dir, subsampled_stats_file_name)
+
+    final_contigs_stats_file_name = final_conigs_file[:-6] + '_stats.txt'
+    final_contigs_stats_file_path = os.path.join(stats_dir, final_contigs_stats_file_name)
 
     # run it on ouput of subsample
+    subsampled_perl_cmd = 'perl ./Count_fasta.pl %s > %s' % (subsampled_file_path, subsampled_stats_file_path)
+    final_contigs_perl_cmd = 'perl ./Count_fasta.pl %s > %s' % (final_contigs_file_path, final_contigs_stats_file_path)
 
-    # run it on megahit/trinity file
+    with open(os.devnull, 'w') as flog:
+        subprocess.call(subsampled_perl_cmd, shell=True, stdout=flog, stderr=flog)
+        subprocess.call(final_contigs_perl_cmd, shell=True, stdout=flog, stderr=flog)
+
+
+def maxbin(read_pair_id):
+    # get relevant directories
+    assembly_dir = get_assembly_dir(read_pair_id)
+    trimmomatic_dir = get_trimmomatic_dir(read_pair_id)
+    binning_dir = get_binning_dir(read_pair_id)
+
+    # create binning folder
+    if os.path.exists(binning_dir):
+        shutil.rmtree(binning_dir)
+
+    os.makedir(binning_dir)
+
+    # trimmomatic files
+    trimmomatic_file_name = read_pair_id + "_Unaligned_Extended_Frags_Trimmed.fastq"
+    trimmomatic_file_path = os.path.join(trimmomatic_dir, trimmomatic_file_name)
+
+    trimmomatic2_file_name = read_pair_id + "_Unaligned_Not_Combined_1_Trimmed.fastq"
+    trimmomatic2_file_path = os.path.join(trimmomatic_dir, trimmomatic2_file_name)
+
+    # output of cat
+    catted_trims_name = read_pair_id + '_Extended_Frags_Trimmed_R1.fastq'
+    catted_trims_path = os.path.join(binning_dir, catted_trims_name)
+
+    # cat trimmomatic and interleave into new file
+    with open(catted_trims_path, 'w') as outfile:
+        for fname in [trimmomatic_file_path, trimmomatic2_file_path]:
+            with open(fname) as infile:
+                for line in infile:
+                    outfile.write(line)
+
+    # paths to megahit and trinity
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
+
+    # check which (megahit, trinity) is present
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_name = trinity_file_name
+        final_contigs_file_path = trinity_file_path
+    elif os.path.isfile(megahit_file_path):
+        final_contigs_file_name = megahit_file_name
+        final_contigs_file_path = trinity_file_path
+    elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
+        # both are present.  what do we do here?
+        pass
+
+    subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
+    subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
+
+    output_file_name = ''
+    output_file_path = os.path.join(binning_dir, output_file_name)
+
+    the_cmd = 'perl %s -contig %s -reads %s -out %s -thread %s' % \
+              (m_config['MAXBIN_EXECUTABLE'], subsampled_file_path, catted_trims_path, output_file_path, multiprocessing.cpu_count())
+
+    with open(os.devnull, 'w') as flog:
+        subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
 
 # TODO: metaspades
@@ -1008,6 +1092,18 @@ def get_interleave_dir(read_pair_id):
 def get_assembly_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
     the_dir = os.path.join(the_dir, "Assembly")
+
+    return the_dir
+
+def get_binning_dir(read_pair_id):
+    the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
+    the_dir = os.path.join(the_dir, "Binning")
+
+    return the_dir
+
+def get_stats_dir(read_pair_id):
+    the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
+    the_dir = os.path.join(the_dir, "Stats")
 
     return the_dir
 

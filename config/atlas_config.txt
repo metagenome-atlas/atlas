@@ -20,3 +20,4 @@ TRIMMOMATIC_EXECUTABLE:java -Xmx32g -jar /people/whit040/Trimmomatic-0.33/trimmo
 FASTQC_EXECUTABLE:/people/whit040/FastQC/fastqc
 MEGAHIT_EXECUTABLE:/people/whit040/... # need to fill in
 TRINITY_EXECUTABLE:/people/whit040/... # need to fill in
+MAXBIN_EXECUTABLE:/people/whit040/... # need to fill in
