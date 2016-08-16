@@ -253,6 +253,7 @@ def find_contaminants(read_pair_id, db_name, step_id, final_step):
 
         flog.write("\n")
 
+
 def remove_contaminants(read_pair_id, db_name):
     start_time = time.time()
     decon_dir = get_decon_dir(read_pair_id)
@@ -749,9 +750,11 @@ def subsample(read_pair_id):
     if os.path.isfile(trinity_file_path):
         final_contigs_file_path = trinity_file_path
         final_contigs_file_name = trinity_file_name
+
     elif os.path.isfile(megahit_file):
         final_contigs_file_path = megahit_file_path
         final_contigs_file_name = megahit_file_name
+
     elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
         # both are present.  what do we do here?
         pass
@@ -784,9 +787,11 @@ def get_stats(read_pair_id):
     if os.path.isfile(trinity_file_path):
         final_contigs_file_name = trinity_file_name
         final_contigs_file_path = trinity_file_path
+
     elif os.path.isfile(megahit_file_path):
         final_contigs_file_name = megahit_file_name
         final_contigs_file_path = megahit_file_path
+
     elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
         # both are present.  what do we do here?
         pass
@@ -921,6 +926,8 @@ def get_fastqc_dir(read_pair_id):
 def get_interleave_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
     the_dir = os.path.join(the_dir, "Interleave")
+
+    return the_dir
 
 
 def get_assembly_dir(read_pair_id):
@@ -1084,10 +1091,19 @@ def run_serial():
         performance_log[read_pair_id]['interleaving'] = end_time - start_time
         print("\n")
 
+        print("Merging trim outputs...")
         merge_trim_outputs(read_pair_id)
+
+        print("Running MegaHit...")
         megahit(read_pair_id)
+
+        print("Subsampling...")
         subsample(read_pair_id)
+
+        print("Generating statistics...")
         get_stats(read_pair_id)
+
+        print("Running MaxBin...")
         maxbin(read_pair_id)
 
     print(seperator)
@@ -1120,8 +1136,8 @@ def main():
 
     init_run_info()
 
-    # run_serial()
-    run_parallel()
+    run_serial()
+    # run_parallel()
 
 
 if __name__ == "__main__":
