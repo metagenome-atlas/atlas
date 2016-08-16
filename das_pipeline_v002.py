@@ -801,7 +801,7 @@ def get_stats(read_pair_id):
     subsampled_stats_file_name = subsampled_file_name[:-6] + '_stats.txt'
     subsampled_stats_file_path = os.path.join(stats_dir, subsampled_stats_file_name)
 
-    final_contigs_stats_file_name = final_conigs_file_name[:-6] + '_stats.txt'
+    final_contigs_stats_file_name = final_contigs_file_name[:-6] + '_stats.txt'
     final_contigs_stats_file_path = os.path.join(stats_dir, final_contigs_stats_file_name)
 
     # run it on ouput of subsample
