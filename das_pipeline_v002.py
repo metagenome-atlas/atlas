@@ -908,20 +908,27 @@ def subsample(read_pair_id):
     # subsampling_length.py implementation to get >1K reads (user specified length)
     assembly_dir = get_assembly_dir(read_pair_id)
 
-    trinity_file = os.path.join(assembly_dir, read_pair_id + '_Trinity_final_contigs.fasta')
-    megahit_file = os.path.join(assembly_dir, read_pair_id + '_MegaHit_final_contigs.fasta')
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
 
-    if os.path.isfile(trinity_file):
-        final_contigs_file = trinity_file
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
+
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_path = trinity_file_path
+        final_contigs_file_name = trinity_file_name
     elif os.path.isfile(megahit_file):
-        final_contigs_file = megahit_file
+        final_contigs_file_path = megahit_file_path
+        final_contigs_file_name = megahit_file_name
     elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
         # both are present.  what do we do here?
         pass
 
-    outfile = final_contigs_file[:-6] + '_1k.fasta'
+    outfile_name = final_contigs_file_name[:-6] + '_1k.fasta'
+    outfile_path = os.path.join(assembly_dir, outfile_name)
+
     the_cmd = 'python ./util/sumsampler_length.py -f %s -m %s -n %s > %s' % \
-              (final_contigs_file, m_param['subsampler']['min'], m_param['subsampler']['max'], outfile)
+              (final_contigs_file_path, m_param['subsampler']['min'], m_param['subsampler']['max'], outfile_path)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
@@ -959,7 +966,7 @@ def get_stats(read_pair_id):
     subsampled_stats_file_name = subsampled_file_name[:-6] + '_stats.txt'
     subsampled_stats_file_path = os.path.join(stats_dir, subsampled_stats_file_name)
 
-    final_contigs_stats_file_name = final_conigs_file[:-6] + '_stats.txt'
+    final_contigs_stats_file_name = final_conigs_file_name[:-6] + '_stats.txt'
     final_contigs_stats_file_path = os.path.join(stats_dir, final_contigs_stats_file_name)
 
     # run it on ouput of subsample
