@@ -697,8 +697,6 @@ def megahit(read_pair_id):
 
     # megahit dir
     megahit_dir = os.path.join(assembly_dir, 'MegaHit')
-    if not os.path.exists(megahit_dir):
-        os.mkdir(megahit_dir)
 
     # load merged trim file into megahit
     the_cmd = '%s -m %s -l %s -r %s --k-min %s --k-max %s --out-dir %s' % \
