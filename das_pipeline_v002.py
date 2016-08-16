@@ -805,8 +805,8 @@ def get_stats(read_pair_id):
     final_contigs_stats_file_path = os.path.join(stats_dir, final_contigs_stats_file_name)
 
     # run it on ouput of subsample
-    subsampled_perl_cmd = 'perl ./Count_fasta.pl %s > %s' % (subsampled_file_path, subsampled_stats_file_path)
-    final_contigs_perl_cmd = 'perl ./Count_fasta.pl %s > %s' % (final_contigs_file_path, final_contigs_stats_file_path)
+    subsampled_perl_cmd = 'perl ./util/Count_fasta.pl %s > %s' % (subsampled_file_path, subsampled_stats_file_path)
+    final_contigs_perl_cmd = 'perl ./util/Count_fasta.pl %s > %s' % (final_contigs_file_path, final_contigs_stats_file_path)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(subsampled_perl_cmd, shell=True, stdout=flog, stderr=flog)
@@ -865,7 +865,7 @@ def maxbin(read_pair_id):
     the_cmd = 'perl %s -contig %s -reads %s -out %s -thread %s' % \
               (m_config['MAXBIN_EXECUTABLE'], subsampled_file_path, catted_trims_path, binning_dir, multiprocessing.cpu_count())
 
-    with open(os.devnull, 'w') as flog:
+    with open(os.path.join(binning_dir, 'maxbin_log.txt'), 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
 
