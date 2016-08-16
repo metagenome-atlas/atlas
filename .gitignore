@@ -2,3 +2,5 @@
 *.fa
 *.bt2
 *.pyc
+output/
+*~
