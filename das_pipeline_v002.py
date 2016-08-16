@@ -780,7 +780,7 @@ def get_stats(read_pair_id):
     if os.path.exists(stats_dir):
         shutil.rmtree(stats_dir)
 
-    os.makedir(stats_dir)
+    os.mkdir(stats_dir)
 
     if os.path.isfile(trinity_file_path):
         final_contigs_file_name = trinity_file_name
