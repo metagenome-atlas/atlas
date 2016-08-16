@@ -796,7 +796,7 @@ def get_stats(read_pair_id):
 
     # find subsampled file
     subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
-    subsampled_file_path = os.path.join(assmebly_dir, subsampled_file_name)
+    subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
 
     subsampled_stats_file_name = subsampled_file_name[:-6] + '_stats.txt'
     subsampled_stats_file_path = os.path.join(stats_dir, subsampled_stats_file_name)
