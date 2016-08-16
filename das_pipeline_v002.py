@@ -823,7 +823,7 @@ def maxbin(read_pair_id):
     if os.path.exists(binning_dir):
         shutil.rmtree(binning_dir)
 
-    os.makedir(binning_dir)
+    os.mkdir(binning_dir)
 
     # trimmomatic files
     trimmomatic_file_name = read_pair_id + "_Unaligned_Extended_Frags_Trimmed.fastq"
