@@ -18,6 +18,6 @@ PICARD_VIEW_SAM_EXECUTABLE:java -Xmx32g -jar /people/whit040/picard-1.90/dist/Vi
 PICARD_SAM_TO_FASTQ_EXECUTABLE:java -Xmx32g -jar /people/whit040/picard-1.90/dist/SamToFastq.jar
 TRIMMOMATIC_EXECUTABLE:java -Xmx32g -jar /people/whit040/Trimmomatic-0.33/trimmomatic-0.33.jar
 FASTQC_EXECUTABLE:/people/whit040/FastQC/fastqc
-MEGAHIT_EXECUTABLE:/people/whit040/megahit
+MEGAHIT_EXECUTABLE:megahit
 TRINITY_EXECUTABLE:/people/whit040/trinityrnaseq-2.1.1
 MAXBIN_EXECUTABLE:/people/whit040/MaxBin-2.1/run_MaxBin.pl 
