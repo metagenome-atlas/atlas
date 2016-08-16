@@ -773,8 +773,8 @@ def get_stats(read_pair_id):
 
     trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
     megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
-    trinity_file_path = os.path.join(assembly_dir, trinity_name)
-    megahit_file_path = os.path.join(assembly_dir, megahit_name)
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
 
     # create binning folder
     if os.path.exists(stats_dir):
