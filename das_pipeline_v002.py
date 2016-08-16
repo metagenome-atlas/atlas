@@ -703,8 +703,8 @@ def megahit(read_pair_id):
               (m_config['MEGAHIT_EXECUTABLE'], m_param['megahit']['max_mem'], m_param['megahit']['length_of_library_insert'],
                assembly_file_path, m_param['megahit']['kmer_min'], m_param['megahit']['kmer_max'], megahit_dir)
 
-    with open(os.devnull, 'w') as flog:
-        subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+    # with open(os.devnull, 'w') as flog:
+    subprocess.call(the_cmd, shell=True) # , stdout=flog, stderr=flog)
 
     # move output file to assembly root
     # might be "contigs" below
