@@ -32,8 +32,3 @@ subsampler:max 10000000000
 
 # FGS+ parameters
 fgs+:sequencing_error_model illumina_10
-
-
-
-
-

@@ -905,13 +905,13 @@ def fragGeneScanPlus(read_pair_id):
     the_cmd1 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], subsampled_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
     the_cmd2 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], final_contigs_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
 
-    with open(os.path.join(fgs_dir, 'FGS+_all_log.txt'), 'w') as flog:
-        subprocess.popen(the_cmd1, shell=True, stdout=flog, stderr=flog)
+    with open(os.path.join(fgs_dir, 'FGS+_all_log.txt'), 'w') as flog1:
+        p1 = subprocess.Popen(the_cmd1, shell=True, stdout=flog, stderr=flog1)
 
-    with open(os.path.join(fgs_dir, 'FGS+_subsampled_log.txt'), 'w') as flog:
-        subprocess.popen(the_cmd2, shell=True, stdout=flog, stderr=flog)
+    with open(os.path.join(fgs_dir, 'FGS+_subsampled_log.txt'), 'w') as flog2:
+        p2 = subprocess.Popen(the_cmd2, shell=True, stdout=flog, stderr=flog2)
 
-    subprocess.join()
+    p1.wait()
 
 
 def lastPlus(read_pair_id):
