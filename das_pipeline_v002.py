@@ -862,7 +862,7 @@ def maxbin(read_pair_id):
     subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
     subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
 
-    the_cmd = 'perl %s -contig %s -reads %s -out %s -thread %s' % \
+    the_cmd = '%s -contig %s -reads %s -out %s -thread %s' % \
               (m_config['MAXBIN_EXECUTABLE'], subsampled_file_path, catted_trims_path, binning_dir, multiprocessing.cpu_count())
 
     with open(os.path.join(binning_dir, 'maxbin_log.txt'), 'w') as flog:
@@ -895,56 +895,56 @@ def get_reverse_read_path(read_pair_id):
 
 def get_decon_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Decon")
+    the_dir = os.path.join(the_dir, "Decon/")
 
     return the_dir
 
 
 def get_flash_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Flash")
+    the_dir = os.path.join(the_dir, "Flash/")
 
     return the_dir
 
 
 def get_trimmomatic_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Trimmomatic")
+    the_dir = os.path.join(the_dir, "Trimmomatic/")
 
     return the_dir
 
 
 def get_fastqc_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "FastQC")
+    the_dir = os.path.join(the_dir, "FastQC/")
 
     return the_dir
 
 
 def get_interleave_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Interleave")
+    the_dir = os.path.join(the_dir, "Interleave/")
 
     return the_dir
 
 
 def get_assembly_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Assembly")
+    the_dir = os.path.join(the_dir, "Assembly/")
 
     return the_dir
 
 
 def get_binning_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Binning")
+    the_dir = os.path.join(the_dir, "Binning/")
 
     return the_dir
 
 
 def get_stats_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
-    the_dir = os.path.join(the_dir, "Stats")
+    the_dir = os.path.join(the_dir, "Stats/")
 
     return the_dir
 
