@@ -900,7 +900,7 @@ def fragGeneScanPlus(read_pair_id):
     subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
     subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
 
-    cpus = multiprocessing.cpu_count()
+    cpus = multiprocessing.cpu_count() / 2
 
     the_cmd1 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], subsampled_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
     the_cmd2 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], final_contigs_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
