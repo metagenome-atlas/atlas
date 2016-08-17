@@ -869,6 +869,58 @@ def maxbin(read_pair_id):
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
 
 
+def fragGeneScanPlus(read_pair_id):
+    annotation_dir = get_annotation_dir(read_pair_id)
+    assembly_dir = get_assembly_dir(read_pair_id)
+
+    # create annotation folder
+    if os.path.exists(annotation_dir):
+        shutil.rmtree(annotation_dir)
+
+    os.mkdir(annotation_dir)
+    fgs_dir = os.path.join(annotation_dir, 'FGS')
+    os.mkdir(fgs_dir)
+
+    # paths to megahit and trinity
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
+
+    # check which (megahit, trinity) is present
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_name = trinity_file_name
+    elif os.path.isfile(megahit_file_path):
+        final_contigs_file_name = megahit_file_name
+    elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
+        # both are present.  what do we do here?
+        pass
+
+    subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
+    subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
+
+    cpus = multiprocessing.cpu_count()
+
+    the_cmd1 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], subsampled_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
+    the_cmd2 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], final_contigs_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
+
+    with open(os.path.join(fgs_dir, 'FGS+_all_log.txt'), 'w') as flog:
+        subprocess.popen(the_cmd1, shell=True, stdout=flog, stderr=flog)
+
+    with open(os.path.join(fgs_dir, 'FGS+_subsampled_log.txt'), 'w') as flog:
+        subprocess.popen(the_cmd2, shell=True, stdout=flog, stderr=flog)
+
+    subprocess.join()
+
+
+def lastPlus(read_pair_id):
+    pass
+
+
+
+
+
 # TODO: metaspades
 # def metaspades(read_pair_id):
 #     assembly_dir = get_assembly_dir(read_pair_id)
@@ -945,6 +997,13 @@ def get_binning_dir(read_pair_id):
 def get_stats_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
     the_dir = os.path.join(the_dir, "Stats/")
+
+    return the_dir
+
+
+def get_annotation_dir(read_pair_id):
+    the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
+    the_dir = os.path.join(the_dir, "Annotation/")
 
     return the_dir
 
