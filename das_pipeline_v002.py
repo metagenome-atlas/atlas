@@ -914,8 +914,21 @@ def fragGeneScanPlus(read_pair_id):
     p1.wait()
 
 
-def lastPlus(read_pair_id):
-    pass
+def build_db():
+    # check for databases
+    database_dir = get_database_dir()
+    if os.path.exists(database_dir):
+        dbs = glob.glob(os.path.join(database_dir, '*'))
+
+    else:
+        raise("Error: no database folder.")
+
+    for db in dbs:
+        # lastdb+ call
+        cmd = 'lastdb+ %s %s -p' % (db, db)
+        with open(os.devnull, 'w') as f:
+            subprocess.call(cmd, shell=True, stdout=f, stderr=f)
+        # lastdb+ db db -p
 
 
 
@@ -1007,6 +1020,9 @@ def get_annotation_dir(read_pair_id):
 
     return the_dir
 
+
+def get_database_dir():
+    return os.path.abspath('./databases/')
 
 # def create_adapter_file():
 #     input_file_path = "/home/whit040/Desktop/contaminant_list.txt"
