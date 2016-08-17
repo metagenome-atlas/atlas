@@ -20,4 +20,5 @@ TRIMMOMATIC_EXECUTABLE:java -Xmx32g -jar /people/whit040/Trimmomatic-0.33/trimmo
 FASTQC_EXECUTABLE:/people/whit040/FastQC/fastqc
 MEGAHIT_EXECUTABLE:megahit
 TRINITY_EXECUTABLE:/people/whit040/trinityrnaseq-2.1.1
-MAXBIN_EXECUTABLE:/people/whit040/MaxBin-2.1/run_MaxBin.pl 
+MAXBIN_EXECUTABLE:/people/whit040/MaxBin-2.1/run_MaxBin.pl
+FGS+_EXECUTABLE:/people/whit040/... # need to complete
