@@ -925,7 +925,7 @@ def build_db():
 
     for db in dbs:
         # lastdb+ call
-        cmd = 'lastdb+ %s %s -p' % (db, db)
+        cmd = '%s %s %s -p' % (m_config['LASTDB+_EXECUTABLE'], db, db)
         with open(os.devnull, 'w') as f:
             subprocess.call(cmd, shell=True, stdout=f, stderr=f)
         # lastdb+ db db -p
