@@ -7,6 +7,7 @@ PYTHON_EXECUTABLE:/usr/bin/python
 
 # Database folders
 CONTAMINANT_DB_DIR:/people/whit040/ATLAS_pipeline/atlas/Contaminant_DBs
+ANNOTATION_DB_DIR:/people/whit040/ATLAS_pipeline/atlas/Annotation_DBs
 
 TRIMMOMATIC_ADAPTER_FILE:/people/whit040/Trimmomatic-0.33/adapters/Adapters.fa
 

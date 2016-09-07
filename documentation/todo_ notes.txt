@@ -37,6 +37,7 @@ main()
 -> Looks like each handoff (e.g., merge_reads() to decon()) requires the downstream call references the output directory of the upstream call
 -> Highly repeated step: look for presence of directory, clear it, make it
 -> Command execution can be wrapped such that only the command needs to be passed (subprocess and writing to /dev/null can be abstracted)
+-> 
 
 **TODO**
 make new output folder assembly

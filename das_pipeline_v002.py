@@ -914,21 +914,32 @@ def fragGeneScanPlus(read_pair_id):
     p1.wait()
 
 
-def build_db():
-    # check for databases
-    database_dir = get_database_dir()
+def build_dbs(database_dir):
+    keys = ['.bck', '.des', '-names.txt', '.prj', '.sds', '.ssp', '.suf', '.tis']
+
     if os.path.exists(database_dir):
         dbs = glob.glob(os.path.join(database_dir, '*'))
 
     else:
-        raise("Error: no database folder.")
+        raise("Error: no %s database folder." % os.path.basename(database_dir))
 
     for db in dbs:
         # lastdb+ call
-        cmd = '%s %s %s -p' % (m_config['LASTDB+_EXECUTABLE'], db, db)
+        if os.path.basename(database_dir) == 'Functional_DBs':
+            cmd = '%s %s %s -p' % (m_config['LASTDB+_EXECUTABLE'], db, db)
+        else:
+            cmd = '%s %s %s' % (m_config['LASTDB+_EXECUTABLE'], db, db)
         with open(os.devnull, 'w') as f:
             subprocess.call(cmd, shell=True, stdout=f, stderr=f)
         # lastdb+ db db -p
+
+
+def build_annotation_dbs():
+    functional = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Functional_DBs')
+    taxonomic = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Taxonomic_DBs')
+
+    build_dbs(functional)
+    build_dbs(taxonomic)
 
 
 
@@ -1022,6 +1033,7 @@ def get_annotation_dir(read_pair_id):
 
 
 def get_database_dir():
+
     return os.path.abspath('./databases/')
 
 # def create_adapter_file():
