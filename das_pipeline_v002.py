@@ -90,6 +90,33 @@ def init_params():
 
     fIn.close()
 
+def build_dbs(database_dir):
+    keys = ['*.bck', '*.des', '*-names.txt', '*.prj', '*.sds', '*.ssp', '*.suf', '*.tis']
+	
+    dbs = []
+    if os.path.exists(database_dir):
+	for k in keys:
+            dbs.extend(glob.glob(os.path.join(database_dir, k)))
+    else:
+        raise("Error: no %s database folder." % os.path.basename(database_dir))
+
+    for db in dbs:
+        # lastdb+ call
+        if os.path.basename(database_dir) == 'Functional_DBs':
+            cmd = '%s %s %s -p' % (m_config['LASTDB+_EXECUTABLE'], db, db)
+        else:
+            cmd = '%s %s %s' % (m_config['LASTDB+_EXECUTABLE'], db, db)
+        with open(os.devnull, 'w') as f:
+            subprocess.call(cmd, shell=True, stdout=f, stderr=f)
+        # lastdb+ db db -p
+
+
+def build_annotation_dbs():
+    functional = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Functional_DBs')
+    taxonomic = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Taxonomic_DBs')
+
+    build_dbs(functional)
+    build_dbs(taxonomic)
 
 def merge_reads(read_pair_id):
     flash_dir = get_flash_dir(read_pair_id)
@@ -914,37 +941,6 @@ def fragGeneScanPlus(read_pair_id):
     p1.wait()
 
 
-def build_dbs(database_dir):
-    keys = ['.bck', '.des', '-names.txt', '.prj', '.sds', '.ssp', '.suf', '.tis']
-
-    if os.path.exists(database_dir):
-        dbs = glob.glob(os.path.join(database_dir, '*'))
-
-    else:
-        raise("Error: no %s database folder." % os.path.basename(database_dir))
-
-    for db in dbs:
-        # lastdb+ call
-        if os.path.basename(database_dir) == 'Functional_DBs':
-            cmd = '%s %s %s -p' % (m_config['LASTDB+_EXECUTABLE'], db, db)
-        else:
-            cmd = '%s %s %s' % (m_config['LASTDB+_EXECUTABLE'], db, db)
-        with open(os.devnull, 'w') as f:
-            subprocess.call(cmd, shell=True, stdout=f, stderr=f)
-        # lastdb+ db db -p
-
-
-def build_annotation_dbs():
-    functional = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Functional_DBs')
-    taxonomic = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Taxonomic_DBs')
-
-    build_dbs(functional)
-    build_dbs(taxonomic)
-
-
-
-
-
 # TODO: metaspades
 # def metaspades(read_pair_id):
 #     assembly_dir = get_assembly_dir(read_pair_id)
@@ -1117,6 +1113,18 @@ def run_serial():
     performance_log = {}
 
     seperator = "-" * 100
+
+    contaminant_dbs = m_param['decon']['contaminant_dbs']
+    contaminant_dbs = contaminant_dbs.split(",")
+
+    for db_name in contaminant_dbs:
+        db_name = db_name.strip()
+        db_exists = contaminant_db_exists(db_name)
+        if not db_exists:
+            build_contaminant_db(db_name)
+    print("my name is killer T")
+    build_annotation_dbs()
+    quit()
 
     for read_pair_id in m_read_pairs.keys():
         performance_log[read_pair_id] = {}
