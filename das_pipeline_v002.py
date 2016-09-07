@@ -91,12 +91,11 @@ def init_params():
     fIn.close()
 
 def build_dbs(database_dir):
-    keys = ['*.bck', '*.des', '*-names.txt', '*.prj', '*.sds', '*.ssp', '*.suf', '*.tis']
+    # keys = ['*.bck', '*.des', '*-names.txt', '*.prj', '*.sds', '*.ssp', '*.suf', '*.tis']
 	
     dbs = []
     if os.path.exists(database_dir):
-	for k in keys:
-            dbs.extend(glob.glob(os.path.join(database_dir, k)))
+        dbs.extend(glob.glob(os.path.join(database_dir, '*')))
     else:
         raise("Error: no %s database folder." % os.path.basename(database_dir))
 
