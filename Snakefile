@@ -30,11 +30,25 @@ def get_samples(eid, dir="demultiplexed", coverage_cutoff=1000):
 
 EID = config['eid']
 SAMPLES = get_samples(EID)
+CONTAMINANT_REFS = config['contamination_filtering']['references'].split(",")
 
 
 rule all:
     input:
         # desired output files to keep
+
+
+rule build_contaminant_references:
+    # check for file compression
+    input: "ref/contamination_references/{fasta}"
+    output:
+        f1 = "{fasta}.1.bt2",
+        f2 = "{fasta}.2.bt2",
+        f3 = "{fasta}.3.bt2",
+        f4 = "{fasta}.4.bt2",
+        r1 = "{fasta}.rev.1.bt2",
+        r2 = "{fasta}.rev.2.bt2"
+    shell: "bowtie2-build {input} {input}"
 
 
 rule quality_filter_reads:

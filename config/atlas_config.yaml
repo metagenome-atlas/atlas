@@ -18,6 +18,11 @@ merging:
     minimum_overlap: 10
     maximum_overlap: 150
     maximum_mismatch_density: 0.25
+contamination_filtering:
+    threads: 12
+    # fastas placed into ref/contamination_references, list their file names
+    # omitting the path
+    references: adapter.fa
 
 # Megahit parameters
 # megahit:max_mem 0.99
