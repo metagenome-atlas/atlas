@@ -1,0 +1,16 @@
+filtering:
+    # fastas to parse into kmers which are then trimmed from the sequences
+    adapters: ref/phix174_ill.ref.fa.gz,ref/adapters.fa
+    # lower than 20 to allow overlap the chance to increase the quality
+    minimum_base_quality: 10
+    # kmer mismatches allowed during adapter trim process
+    allowable_kmer_mismatches: 1
+    # length of kmer to search against sequences
+    reference_kmer_match_length: 31
+    # passing single-end read length, prior to merging
+    minimum_passing_read_length: 51
+    # after merging; the allowable limit of erroneous bases; accepts fractions as well
+    maximum_expected_error: 1
+merging:
+    # minimum passing read length after merging
+    minimum_merge_length: 175
