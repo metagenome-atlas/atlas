@@ -1,4 +1,6 @@
+phred_offset: 33
 filtering:
+    threads: 4
     # fastas to parse into kmers which are then trimmed from the sequences
     adapters: ref/phix174_ill.ref.fa.gz,ref/adapters.fa.gz
     # lower than 20 to allow overlap the chance to increase the quality
@@ -12,5 +14,13 @@ filtering:
     # after merging; the allowable limit of erroneous bases; accepts fractions as well
     maximum_expected_error: 1
 merging:
-    # minimum passing read length after merging
-    minimum_merge_length: 175
+    threads: 4
+    minimum_overlap: 10
+    maximum_overlap: 150
+    maximum_mismatch_density: 0.25
+
+# Megahit parameters
+# megahit:max_mem 0.99
+# megahit:length_of_library_insert 250
+# megahit:kmer_min 21
+# megahit:kmer_max 121
