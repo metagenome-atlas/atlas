@@ -30,3 +30,21 @@ maxbin
 - [ ] Gene calling across final contigs
 - [ ] Full report on assembly, bins, and genes
 - [ ] Incorporate Prokka-like functionality to perform above step and annotate
+
+
+# Proposed Usage
+
+```
+snakemake --jobs 24 \
+	--configfile config/atlas.yaml \
+	--config eid=test-data
+```
+
+Preparing to run, place FASTQ files into `results/<eid>/demultiplexed`. At this point, lets say they're all not compressed and are formatted:
+
+```
+<sample-name-1>_R1.fastq
+<sample-name-1>_R2.fastq
+<sample-name-2>_R1.fastq
+<sample-name-2>_R2.fastq
+```
