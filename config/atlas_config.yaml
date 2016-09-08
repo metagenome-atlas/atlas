@@ -1,6 +1,6 @@
 filtering:
     # fastas to parse into kmers which are then trimmed from the sequences
-    adapters: ref/phix174_ill.ref.fa.gz,ref/adapters.fa
+    adapters: ref/phix174_ill.ref.fa.gz,ref/adapters.fa.gz
     # lower than 20 to allow overlap the chance to increase the quality
     minimum_base_quality: 10
     # kmer mismatches allowed during adapter trim process
