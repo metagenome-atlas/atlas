@@ -125,3 +125,35 @@ rule filter_contaminants:
                   | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
                   | bedtools bamtofastq -i stdin -fq {output}
            """
+
+
+rule assemble:
+    # will want to change this add we add assemblers
+    input: rules.filter_contaminants.output
+    output: "results/{eid}/assembly/megahit/{sample}.contigs.fa"
+    params:
+        memory = config['assembly']['memory'],
+        min_count = config['assembly']['minimum_count'],
+        k_min = config['assembly']['kmer_min'],
+        k_max = config['assembly']['kmer_max'],
+        k_step = config['assembly']['kmer_step'],
+        merge_level = config['assembly']['merge_level'],
+        prune_level = config['assembly']['prune_level'],
+        low_local_ratio = config['assembly']['low_local_ratio'],
+        min_contig_len = config['assembly']['minimum_contig_length']
+    threads: config['assembly']['threads']
+    shell: """megahit --num-cpu-threads {threads} --memory {params.memory} --read {input} \
+                  --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
+                  --out-dir results/{wildcards.eid}/assembly --out-prefix {wildcards.sample} \
+                  --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
+                  --merge-level {params.merge_level} --prune-level {params.prune_level} \
+                  --low-local-ratio {params.low_local_ratio}
+           """
+
+
+rule length_filter:
+    input: rules.assemble.output
+    output: "results/{eid}/assembly/megahit/{sample}_length_filtered.fa"
+    params:
+        min_contig_length = config['assembly']['filtered_contig_length']
+    run:

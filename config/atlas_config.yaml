@@ -23,9 +23,24 @@ contamination_filtering:
     # fastas placed into ref/contamination_references, list their file names
     # omitting the path
     references: adapter.fa
-
-# Megahit parameters
-# megahit:max_mem 0.99
-# megahit:length_of_library_insert 250
-# megahit:kmer_min 21
-# megahit:kmer_max 121
+assembly:
+    threads: 24
+    # fraction of the machine's total memory or bytes
+    memory: 0.99
+    # minimum multiplicity for filtering (k_min+1)-mers
+    minimum_count: 2
+    # minimum kmer size (<= 255), must be odd number
+    kmer_min: 21
+    # maximum kmer size (<= 255), must be odd number
+    kmer_max: 121
+    # increment of kmer size of each iteration (<= 28), must be even number
+    kmer_step: 20
+    # merge complex bubbles of length <= l*kmer_size and similarity >= s
+    merge_level: 20,0.98
+    # strength of low depth pruning (0-3)
+    prune_level: 2
+    # ratio threshold to define low local coverage contigs
+    low_local_ratio: 0.2
+    # minimum length of contigs to output
+    minimum_contig_length: 200
+    filtered_contig_length: 1000
