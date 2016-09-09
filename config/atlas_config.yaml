@@ -44,3 +44,16 @@ assembly:
     # minimum length of contigs to output
     minimum_contig_length: 200
     filtered_contig_length: 1000
+binning:
+    threads: 12
+    minimum_contig_length: 1000
+    # iterations of Expectation-Maximization algorithm
+    maximum_iterations: 50
+    # probability threshold for EM final classification
+    probability_threshold: 0.9
+    # By default MaxBin will look for 107 marker genes present in >95% of bacteria.
+    # Alternatively you can also choose 40 marker gene sets that are universal
+    # among bacteria and archaea (Wu et al., PLoS ONE 2013). This option may
+    # be better suited for environment dominated by archaea; however it tends
+    # to split genomes into more bins.
+    marker_set: 107
