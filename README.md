@@ -9,7 +9,7 @@
 - [ ] fraggenescan (1.30 - which actually doesn't exist) https://github.com/wltrimbl/FGS/releases
 - [x] hmmer3
 - [x] idba-ud
-- [ ] maxbin
+- [ ] maxbin - http://downloads.jbei.org/data/microbial_communities/MaxBin/getfile.php?MaxBin-2.2.1.tar.gz
 - [x] megahit
 - [ ] perl-lwp-simple - http://search.cpan.org/dist/libwww-perl/lib/LWP/Simple.pm
 - [x] pysam
