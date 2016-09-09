@@ -161,3 +161,21 @@ rule length_filter:
     shell: """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
                   {input} {output.pass} {output.fail}
            """
+
+
+rule maxbin_bins:
+    input:
+        reads = rules.filter_contaminants.output
+        contigs = rules.assemble.output
+    output:
+        # TODO
+    params:
+        min_contig_len = config['binning']['minimum_contig_length'],
+        max_iteration = config['binning']['maximum_iterations'],
+        prob_threshold = config['binning']['probability_threshold'],
+        markerset = config['binning']['marker_set']
+    threads: config['binning']['threads']
+    shell: """run_MaxBin.pl -contig {input.contigs} -out {output} -reads {input.reads} \
+                  -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
+                  -thread {threads} -markerset {params.markerset}
+           """
