@@ -39,7 +39,7 @@ rule all:
 
 
 rule build_contaminant_references:
-    # check for file compression
+    # this should read all references, concatenate, then build the database
     input: "ref/contamination_references/{fasta}"
     output:
         f1 = "{fasta}.1.bt2",
@@ -85,8 +85,8 @@ rule count_filtered_reads:
 
 rule join_reads:
     input:
-        r1 = rules.quality_filter_reads.r1,
-        r2 = rules.quality_filter_reads.r2
+        r1 = rules.quality_filter_reads.output.r1,
+        r2 = rules.quality_filter_reads.output.r2
     output:
         joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
         hist = "results/{eid}/joined/{sample}.hist",
@@ -103,6 +103,25 @@ rule join_reads:
     threads: config['merging']['flash_threads']
     shell: """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
                   --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
-                  --phred-offset {params.phred_offset} --output-prefix {} \
-                  --output-directory {} --threads {threads}
+                  --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
+                  --output-directory results/{wildcards.eid}/joined/ --threads {threads}
+           """
+
+
+rule filter_contaminants:
+    # for multiple contamination references, we should have rule to concatenate them, then build database.
+    input:
+        joined = rules.join_reads.output.joined,
+        r1 = rules.join_reads.output.failed_r1,
+        r2 = rules.join_reads.output.failed_r2
+        ## TODO
+        prefix =
+    output: "results/{eid}/joined/{sample}_joined_filtered.fastq"
+    message: "Aligning all joined and reads that failed to join as single-end against the contamination reference."
+    shadow: "shallow"
+    threads: config['contamination_filtering']['threads']
+    shell: """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
+                  | samtools view -@ {threads} -hf4 \
+                  | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
+                  | bedtools bamtofastq -i stdin -fq {output}
            """
