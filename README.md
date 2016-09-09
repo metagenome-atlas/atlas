@@ -1,5 +1,7 @@
 # ATLAS
 
+![img](resources/ss.png)
+
 # Install
 
 ```
