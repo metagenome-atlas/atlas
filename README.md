@@ -1,20 +1,20 @@
 # ATLAS
 
-# Install
+# Requirements (and bioconda status)
 
-```
-bedtools
-pysam
-flash
-trimmomatic
-megahit
-bowtie2
-fastqc
-maxbin
-	hmmer3
-	idba-ud
-	fraggenescan (1.30 - which actually doesn't exist)
-```
+- [x] bedtools
+- [x] bowtie2
+- [x] fastqc
+- [x] flash
+- [ ] fraggenescan (1.30 - which actually doesn't exist) https://github.com/wltrimbl/FGS/releases
+- [x] hmmer3
+- [x] idba-ud
+- [ ] maxbin
+- [x] megahit
+- [ ] perl-lwp-simple - http://search.cpan.org/dist/libwww-perl/lib/LWP/Simple.pm
+- [x] pysam
+- [x] trimmomatic
+
 
 # Current Protocol
 
