@@ -1,10 +1,9 @@
 # ATLAS
 
-![img](resources/ss.png)
-
 # Install
 
 ```
+pysam
 flash
 trimmomatic
 megahit
