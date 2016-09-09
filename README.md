@@ -3,6 +3,7 @@
 # Install
 
 ```
+bedtools
 pysam
 flash
 trimmomatic
