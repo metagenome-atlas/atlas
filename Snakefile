@@ -154,13 +154,24 @@ rule assemble:
 rule length_filter:
     input: rules.assemble.output
     output:
-        pass = "results/{eid}/assembly/megahit/{sample}_length_pass.fa",
+        passing = "results/{eid}/assembly/megahit/{sample}_length_pass.fa",
         fail = "results/{eid}/assembly/megahit/{sample}_length_fail.fa"
     params:
         min_contig_length = config['assembly']['filtered_contig_length']
     shell: """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-                  {input} {output.pass} {output.fail}
+                  {input} {output.passing} {output.fail}
            """
+
+
+rule prodigal_orfs:
+    input: rules.length_filter.output.passing
+    output:
+        prot = "results/{eid}/orfs/prodigal/{sample}.faa",
+        nuc = "results/{eid}/orfs/prodigal/{sample}.fasta",
+        gbk = "results/{eid}/orfs/prodigal/{sample}.gbk"
+    params:
+        g = config['orfs']['translation_table']
+    shell: "prodigal -i {input} -o {output.gbk} -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
 
 
 rule maxbin_bins:

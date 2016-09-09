@@ -57,3 +57,6 @@ binning:
     # be better suited for environment dominated by archaea; however it tends
     # to split genomes into more bins.
     marker_set: 107
+orfs:
+    # https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
+    translation_table: 11
