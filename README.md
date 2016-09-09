@@ -10,6 +10,9 @@ megahit
 bowtie2
 fastqc
 maxbin
+	hmmer3
+	idba-ud
+	fraggenescan (1.30 - which actually doesn't exist)
 ```
 
 # Current Protocol
