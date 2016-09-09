@@ -92,7 +92,7 @@ def init_params():
 
 def build_dbs(database_dir):
     # keys = ['*.bck', '*.des', '*-names.txt', '*.prj', '*.sds', '*.ssp', '*.suf', '*.tis']
-	
+
     dbs = []
     if os.path.exists(database_dir):
         dbs.extend(glob.glob(os.path.join(database_dir, '*')))
