@@ -153,7 +153,11 @@ rule assemble:
 
 rule length_filter:
     input: rules.assemble.output
-    output: "results/{eid}/assembly/megahit/{sample}_length_filtered.fa"
+    output:
+        pass = "results/{eid}/assembly/megahit/{sample}_length_pass.fa",
+        fail = "results/{eid}/assembly/megahit/{sample}_length_fail.fa"
     params:
         min_contig_length = config['assembly']['filtered_contig_length']
-    run:
+    shell: """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
+                  {input} {output.pass} {output.fail}
+           """
