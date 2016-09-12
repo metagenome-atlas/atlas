@@ -22,7 +22,7 @@ contamination_filtering:
     threads: 12
     # fastas placed into ref/contamination_references, list their file names
     # omitting the path
-    references: adapter.fa
+    references: adapter.fa,adapter.fa
 assembly:
     threads: 24
     # fraction of the machine's total memory or bytes
