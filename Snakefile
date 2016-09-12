@@ -30,7 +30,6 @@ def get_samples(eid, dir="demultiplexed", coverage_cutoff=1000):
 
 EID = config['eid']
 SAMPLES = get_samples(EID)
-CONTAMINANT_REFS = config['contamination_filtering']['references'].split(",")
 
 
 rule all:
@@ -38,9 +37,14 @@ rule all:
         # desired output files to keep
 
 
+rule combine_contaminant_references:
+    input: expand("ref/contamination_references/{fasta}", fasta=config['contamination_filtering']['references'].replace(" ","").split(","))
+    output: "ref/contamination_references/combined/ref.fasta"
+    shell: "cat {input} > {output}"
+
+
 rule build_contaminant_references:
-    # this should read all references, concatenate, then build the database
-    input: "ref/contamination_references/{fasta}"
+    input: rules.combine_contaminant_references.output
     output:
         f1 = "{fasta}.1.bt2",
         f2 = "{fasta}.2.bt2",
@@ -109,13 +113,11 @@ rule join_reads:
 
 
 rule filter_contaminants:
-    # for multiple contamination references, we should have rule to concatenate them, then build database.
     input:
         joined = rules.join_reads.output.joined,
         r1 = rules.join_reads.output.failed_r1,
-        r2 = rules.join_reads.output.failed_r2
-        ## TODO
-        prefix =
+        r2 = rules.join_reads.output.failed_r2,
+        prefix = rules.combine_contaminant_references.output
     output: "results/{eid}/joined/{sample}_joined_filtered.fastq"
     message: "Aligning all joined and reads that failed to join as single-end against the contamination reference."
     shadow: "shallow"
@@ -128,7 +130,7 @@ rule filter_contaminants:
 
 
 rule assemble:
-    # will want to change this add we add assemblers
+    # will want to change this as we add assemblers
     input: rules.filter_contaminants.output
     output: "results/{eid}/assembly/megahit/{sample}.contigs.fa"
     params:
