@@ -1,4 +1,4 @@
-# ATLAS
+<img src="images/logo.jpg" width="600"/>
 
 # Requirements (and bioconda status)
 
