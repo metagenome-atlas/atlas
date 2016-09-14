@@ -20,7 +20,7 @@ def get_samples(eid, dir="demultiplexed", coverage_cutoff=1000):
     naming convention like <sample>_R1.fastq and <sample>_R2.fastq.
     """
     samples = set()
-    input_dir = os.path.join("results", eid, "demux")
+    input_dir = os.path.join("results", eid, dir)
     for f in os.listdir(input_dir):
         if f.endswith("fastq") and ("_r1" in f or "_R1" in f):
             if read_count(os.path.join(input_dir, f)) > coverage_cutoff:
@@ -170,10 +170,10 @@ rule prodigal_orfs:
     output:
         prot = "results/{eid}/orfs/prodigal/{sample}.faa",
         nuc = "results/{eid}/orfs/prodigal/{sample}.fasta",
-        gbk = "results/{eid}/orfs/prodigal/{sample}.gbk"
+        gff = "results/{eid}/orfs/prodigal/{sample}.gff"
     params:
         g = config['orfs']['translation_table']
-    shell: "prodigal -i {input} -o {output.gbk} -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
+    shell: "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
 
 
 rule maxbin_bins:
