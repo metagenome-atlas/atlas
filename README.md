@@ -13,6 +13,8 @@
 - [x] megahit
 - [ ] perl-lwp-simple - http://search.cpan.org/dist/libwww-perl/lib/LWP/Simple.pm
 - [x] pysam
+- [x] python 3
+- [x] snakemake -- TODO: check on other python deps
 - [x] trimmomatic
 
 
@@ -27,8 +29,18 @@
 7. Concatenate #4 output with #6 output
 8. Assemble
 9. Length filter assembled contigs
-10. Statistics (# contigs, total length, GC, etc.)
-11. Binning with contigs, interleaved, and non-joined reads
+10. Coverage with reads to map to contigs >1k
+11. ORF indentification
+12. Generate GFF from FGS+ output
+13. Local alignments against references
+14. LCAStar on the hits
+15. Annotate the GFF with LCA results
+16. Counts across reads (VERSE) with GFF and BAM
+17. Binning
+
+## rRNA sub-workflow
++ Metatranscriptome - extraction of rRNA from reads
++ Metagenome - extraction of rRNA from reads (rRNA also remains in protocol)
 
 # TODO
 
@@ -52,4 +64,14 @@ Preparing to run, place FASTQ files into `results/<eid>/demultiplexed`. At this 
 <sample-name-1>_R2.fastq
 <sample-name-2>_R1.fastq
 <sample-name-2>_R2.fastq
+```
+
+# Protocol
+
+## Read Joining
+
+flash 
+
+```
+
 ```
