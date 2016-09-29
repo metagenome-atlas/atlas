@@ -165,6 +165,24 @@ rule length_filter:
            """
 
 
+# have Joe review
+rule fgsplus:
+    input: 
+        assembly_pass = rules.length_filter.output.passing
+        assembly_fail = rules.length_filter.output.fail
+    output:
+        prot_pass = "results/{eid}/annotation/orfs/{sample}_length_pass.faa"
+        prot_fail = "results/{eid}/annotation/orfs/{sample}_length_fail.faa"
+    params: 
+        sem = config['annotation']['sequencing_error_model']
+        memory = config['annotation']['memory']
+    threads: config['annotation']['threads']
+    # if there are multiple inputs, will shell be called multiple times?
+    shell: 
+        s1 = """FGS+ -s {input.assembly_pass} -o {output.prot_pass} -w 1 -t {params.sem} -p {threads} -m {params.memory}"""
+        s2 = """FGS+ -s {input.assembly_fail} -o {output.prot_fail} -w 1 -t {params.sem} -p {threads} -m {params.memory}"""
+
+
 rule prodigal_orfs:
     input: rules.length_filter.output.passing
     output:
@@ -172,7 +190,7 @@ rule prodigal_orfs:
         nuc = "results/{eid}/orfs/prodigal/{sample}.fasta",
         gff = "results/{eid}/orfs/prodigal/{sample}.gff"
     params:
-        g = config['orfs']['translation_table']
+        g = config['annotation']['translation_table']
     shell: "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
 
 
@@ -192,3 +210,5 @@ rule maxbin_bins:
                   -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
                   -thread {threads} -markerset {params.markerset}
            """
+
+
