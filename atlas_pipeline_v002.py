@@ -90,6 +90,7 @@ def init_params():
 
     fIn.close()
 
+
 def build_dbs(database_dir):
     # keys = ['*.bck', '*.des', '*-names.txt', '*.prj', '*.sds', '*.ssp', '*.suf', '*.tis']
 
@@ -116,6 +117,7 @@ def build_annotation_dbs():
 
     build_dbs(functional)
     build_dbs(taxonomic)
+
 
 def merge_reads(read_pair_id):
     flash_dir = get_flash_dir(read_pair_id)
@@ -160,7 +162,6 @@ def contaminant_db_exists(db_name):
             continue
 
     return db_exists
-
 
 def build_contaminant_db(db_name):
     start_time = time.time()
@@ -749,7 +750,7 @@ def trinity(read_pair_id):
         os.mkdir(trinity_dir)
 
     cpus = multiprocessing.cpu_count()  # maybe make these global?
-    mem = virtual_memory().total        # also probably need to format this
+    mem = virtual_memory().total >> 20    # also probably need to format this
 
     # Trinity --seqType fq --left reads_1.fq --right reads_2.fq --CPU 6 --max_memory 20G
     the_cmd = '%s -seqType fq --single %s --CPU %s --max_memory %s --output %s' % \
@@ -786,11 +787,145 @@ def subsample(read_pair_id):
     outfile_name = final_contigs_file_name[:-6] + '_1k.fasta'
     outfile_path = os.path.join(assembly_dir, outfile_name)
 
-    the_cmd = 'python ./util/sumsampler_length.py -f %s -m %s -n %s > %s' % \
+    the_cmd = 'python ./util/subsampler_length.py -f %s -m %s -n %s > %s' % \
               (final_contigs_file_path, m_param['subsampler']['min'], m_param['subsampler']['max'], outfile_path)
 
     with open(os.devnull, 'w') as flog:
         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+
+
+def build_assembly_db(read_pair_id):
+    assembly_dir = get_assembly_dir(read_pair_id)
+    coverage_dir = get_coverage_dir(read_pair_id)
+
+    if os.path.exists(coverage_dir):
+        shutil.rmtree(coverage_dir)
+
+    os.makedirs(coverage_dir)
+
+    coverage_dir = get_coverage_dir(read_pair_id)
+
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
+
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
+
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_path = trinity_file_path
+        final_contigs_file_name = trinity_file_name
+
+    elif os.path.isfile(megahit_file_path):
+        final_contigs_file_path = megahit_file_path
+        final_contigs_file_name = megahit_file_name
+
+    elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
+        # both are present.  what do we do here?
+        pass
+
+    subsampled_name = final_contigs_file_name[:-6] + '_1k.fasta'
+    subsampled_path = os.path.join(assembly_dir, subsampled_name)
+
+    db_name = os.path.splitext(subsampled_name)[0]
+    db_path = os.path.join(coverage_dir, db_name)
+
+    the_args = [m_config['BW2_BUILD_EXECUTABLE'], subsampled_path, db_path]
+    # the_cmd = " ".join(the_args)
+
+    flog = os.path.join(coverage_dir, 'assembly_db_format.log')
+    with open(flog, 'w') as f:
+        subprocess.call(the_args, shell=False, stderr=f, stdout=f)
+
+
+def map_to_assembly(read_pair_id):
+    trimmomatic_dir = get_trimmomatic_dir(read_pair_id)
+    assembly_dir = get_assembly_dir(read_pair_id)
+    coverage_dir = get_coverage_dir(read_pair_id)
+
+    # get db base name
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
+
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
+
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_name = trinity_file_name
+
+    elif os.path.isfile(megahit_file_path):
+        final_contigs_file_name = megahit_file_name
+
+    db_name = final_contigs_file_name[:-6] + '_1k'
+    db_path = os.path.join(coverage_dir, db_name)
+
+    # get 5 read files
+    r1_file_name = read_pair_id + "_Unaligned_Not_Combined_1_Trimmed.fastq"
+    r1_file_path = os.path.join(trimmomatic_dir, r1_file_name)
+
+    r2_file_name = read_pair_id + "_Unaligned_Not_Combined_2_Trimmed.fastq"
+    r2_file_path = os.path.join(trimmomatic_dir, r2_file_name)
+
+    extended_file_name = read_pair_id + "_Unaligned_Extended_Frags_Trimmed.fastq"
+    extended_file_path = os.path.join(trimmomatic_dir, extended_file_name)
+
+    ext_il_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
+    ext_il_path = os.path.join(assembly_dir, ext_il_name)
+
+    # cat R1 and extended
+    extended_cat_r1_name = read_pair_id + "_Unaligned_Ext_R1_Trimmed.fastq"
+    extended_cat_r1_path = os.path.join(coverage_dir, extended_cat_r1_name)
+
+    with open(extended_cat_r1_path, 'w') as outfile:
+        for fname in [extended_file_path, r1_file_path]:
+            with open(fname) as infile:
+                for line in infile:
+                    outfile.write(line)
+
+    # call bw2 for all 5 files
+    jobs = []
+    jobs_picard = []
+    num_threads = multiprocessing.cpu_count()
+    with open(os.path.join(coverage_dir, 'bw2.log'), 'w') as flog:
+        for inF in [r1_file_path, r2_file_path, extended_file_path, extended_cat_r1_path, ext_il_path]:
+
+            bn = os.path.splitext(os.path.basename(inF))[0]
+            outF = os.path.join(coverage_dir, bn + '.sam')
+
+            the_args = [m_config['BW2_EXECUTABLE'], "-p", str(num_threads), "-x", db_path, "-q", inF, "-S", outF, "--very-sensitive-local"]
+            the_args = " ".join(the_args)
+            p = subprocess.Popen(the_args, shell=True, stderr=flog)
+            jobs.append(p)
+            jobs_picard.append(outF)
+
+    # wait for all bw2 calls to finish
+    for p in jobs:
+        p.wait()
+
+    with open(os.path.join(coverage_dir, 'picard.log'), 'w') as flog:
+        for inF in jobs_picard:
+
+            outF_ua = os.path.splitext(inF)[0] + '_Unaligned'
+            outF_a = os.path.splitext(inF)[0] + '_Aligned'
+
+            # run picard with unaligned
+            the_args = [m_config['PICARD_VIEW_SAM_EXECUTABLE'], "ALIGNMENT_STATUS=Unaligned", "I=" + inF, ">", outF_ua + '.sam']
+            the_cmd = " ".join(the_args)
+            subprocess.call(the_cmd, shell=True, stderr=flog, stdout=flog)
+
+            # run picard with aligned
+            the_args = [m_config['PICARD_VIEW_SAM_EXECUTABLE'], "ALIGNMENT_STATUS=Aligned", "I=" + inF, ">", outF_a + '.sam']
+            the_cmd = " ".join(the_args)
+            subprocess.call(the_cmd, shell=True, stderr=flog, stdout=flog)
+
+            # convert unaligned .sam files to .bam files
+            the_args = [m_config['PICARD_SAM_TO_FASTQ_EXECUTABLE'], "I=" + outF_ua + '.sam', "F=" + outF_ua + '.fastq']
+            the_cmd = " ".join(the_args)
+            subprocess.call(the_cmd, shell=True, stderr=flog, stdout=flog)
+
+            # convert aligned .sam files to .bam files
+            the_args = [m_config['SAMTOOLS_EXECUTABLE'], 'view', '-bS', outF_a + '.sam', ">", outF_a + '.bam']
+            the_cmd = " ".join(the_args)
+            subprocess.call(the_cmd, shell=True, stderr=flog, stdout=flog)
 
 
 def get_stats(read_pair_id):
@@ -904,8 +1039,8 @@ def fragGeneScanPlus(read_pair_id):
         shutil.rmtree(annotation_dir)
 
     os.mkdir(annotation_dir)
-    fgs_dir = os.path.join(annotation_dir, 'FGS')
-    os.mkdir(fgs_dir)
+    orf_dir = os.path.join(annotation_dir, 'ORFprediction')
+    os.mkdir(orf_dir)
 
     # paths to megahit and trinity
     trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
@@ -926,29 +1061,118 @@ def fragGeneScanPlus(read_pair_id):
     subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
     subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
 
+    final_contigs_file_path = os.path.join(assembly_dir, final_contigs_file_name)
+
+    s_orf_file_path = os.path.join(orf_dir, subsampled_file_name[:-6])
+    f_orf_file_path = os.path.join(orf_dir, final_contigs_file_name[:-6])
+
     cpus = multiprocessing.cpu_count() / 2
+    mem = virtual_memory().total >> 20
 
-    the_cmd1 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], subsampled_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
-    the_cmd2 = '%s -s %s -o %s -w 1 -t %s -p %s' % (m_config['FGS+_EXECUTABLE'], final_contigs_file_path, fgs_dir, m_param['fgs+']['sequencing_error_model'], cpus)
+    the_cmd1 = '%s -s %s -o %s -w 1 -t %s -p %s -m %s' % (m_config['FGS+_EXECUTABLE'], subsampled_file_path, s_orf_file_path, m_param['fgs+']['sequencing_error_model'], cpus, mem)
+    the_cmd2 = '%s -s %s -o %s -w 1 -t %s -p %s -m %s' % (m_config['FGS+_EXECUTABLE'], final_contigs_file_path, f_orf_file_path, m_param['fgs+']['sequencing_error_model'], cpus, mem)
 
-    with open(os.path.join(fgs_dir, 'FGS+_all_log.txt'), 'w') as flog1:
-        p1 = subprocess.Popen(the_cmd1, shell=True, stdout=flog, stderr=flog1)
+    current = os.getcwd()
+    os.chdir(os.path.dirname(m_config['FGS+_EXECUTABLE']))
+    with open(os.path.join(annotation_dir, 'FGS+_all_log.txt'), 'w') as flog1:
+        p1 = subprocess.Popen(the_cmd1, shell=True)  # , stdout=flog1, stderr=flog1)
 
-    with open(os.path.join(fgs_dir, 'FGS+_subsampled_log.txt'), 'w') as flog2:
-        p2 = subprocess.Popen(the_cmd2, shell=True, stdout=flog, stderr=flog2)
+    with open(os.path.join(annotation_dir, 'FGS+_subsampled_log.txt'), 'w') as flog2:
+        p2 = subprocess.Popen(the_cmd2, shell=True)  # , stdout=flog1, stderr=flog2)
+
+    os.chdir(current)
 
     p1.wait()
+    p2.wait()
 
 
-# TODO: metaspades
-# def metaspades(read_pair_id):
-#     assembly_dir = get_assembly_dir(read_pair_id)
+def prodigal(read_pair_id):
+    annotation_dir = get_annotation_dir(read_pair_id)
+    assembly_dir = get_assembly_dir(read_pair_id)
 
-#     assembly_file_name = read_pair_id + "_Ext-IL_Trimmed.fastq"
-#     assembly_file_path = os.path.join(assembly_dir, assembly_file_name)
+    # create annotation folder
+    if os.path.exists(annotation_dir):
+        shutil.rmtree(annotation_dir)
 
-#     with open(os.devnull, 'w') as flog:
-#         subprocess.call(the_cmd, shell=True, stdout=flog, stderr=flog)
+    os.mkdir(annotation_dir)
+    orf_dir = os.path.join(annotation_dir, 'ORFprediction')
+    os.mkdir(orf_dir)
+
+    # paths to megahit and trinity
+    trinity_file_name = read_pair_id + '_Trinity_final_contigs.fasta'
+    trinity_file_path = os.path.join(assembly_dir, trinity_file_name)
+
+    megahit_file_name = read_pair_id + '_MegaHit_final_contigs.fasta'
+    megahit_file_path = os.path.join(assembly_dir, megahit_file_name)
+
+    # check which (megahit, trinity) is present
+    if os.path.isfile(trinity_file_path):
+        final_contigs_file_name = trinity_file_name
+    elif os.path.isfile(megahit_file_path):
+        final_contigs_file_name = megahit_file_name
+    elif os.path.isfile(trinity_file) and os.path.isfile(megahit_file):
+        # both are present.  what do we do here?
+        pass
+
+    subsampled_file_name = final_contigs_file_name[:-6] + '_1k.fasta'
+    subsampled_file_path = os.path.join(assembly_dir, subsampled_file_name)
+
+    geneCoords_file_name = subsampled_file_name[:-6] + '_gene.coords.gtk'
+    geneCoords_file_path = os.path.join(orf_dir, geneCoords_file_name)
+
+    proteins_file_name = subsampled_file_name[:-6] + '.faa'
+    proteins_file_path = os.path.join(orf_dir, proteins_file_name)
+
+    with open(os.devnull) as flog:
+        cmd = 'prodigal < %s > %s' % (subsampled_file_path, geneCoords_file_path)
+        subprocess.call(cmd, shell=True, stderr=flog, stdout=flog)
+
+        cmd2 = 'prodigal -i %s -o %s -a %s -p meta' % (subsampled_file_path, geneCoords_file_path, proteins_file_path)
+        subprocess.call(cmd2, shell=True, stderr=flog, stdout=flog)
+
+
+def lastalPlus(read_pair_id):
+    cpus = multiprocessing.cpu_count()
+
+    functional = os.path.join(m_config['ANNOTATION_DB_DIR'], 'Functional_DBs')
+    dbs = glob.glob(os.path.join(functional, "*"))
+
+    dbs_final = []
+    for db in dbs:
+        db_name = os.path.splitext(db)[0]
+        if db_name not in dbs_final:
+            dbs_final.append(db_name)
+
+    dbs = dbs_final
+
+    annotation_dir = get_annotation_dir(read_pair_id)
+
+    orf_dir = os.path.join(annotation_dir, "ORFprediction")
+    orf_file = glob.glob(os.path.join(orf_dir, '*_1k.faa'))[0]
+
+    lastPlusDir = os.path.join(annotation_dir, 'lastPlus')
+    if not os.path.exists(lastPlusDir):
+        os.mkdir(lastPlusDir)
+
+    subprocesses = []
+    with open(os.path.join(lastPlusDir, 'lastalPlus.log'), 'w') as flog:
+        for db in dbs:
+            output = os.path.join(lastPlusDir, 'contigs_1k_last+_' + os.path.basename(db))
+
+            cmd = "lastal+ -P %s -K %s -E %s -S %s -o %s %s %s" % (cpus,
+                                                                   m_param['lastal+']['n_best'],
+                                                                   m_param['lastal+']['e_value_cutoff'],
+                                                                   m_param['lastal+']['bit_score_cutoff'],
+                                                                   output,
+                                                                   db,
+                                                                   orf_file)
+
+            p = subprocess.Popen(cmd, shell=True, stdout=flog, stderr=flog)
+            subprocesses.append(p)
+
+        for p in subprocesses:
+            p.wait()
+
 
 def get_forward_read_path(read_pair_id):
     file_name = read_pair_id + "_R1.fastq"
@@ -1002,6 +1226,13 @@ def get_interleave_dir(read_pair_id):
 def get_assembly_dir(read_pair_id):
     the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
     the_dir = os.path.join(the_dir, "Assembly/")
+
+    return the_dir
+
+
+def get_coverage_dir(read_pair_id):
+    the_dir = os.path.join(m_config['OUTPUT_DIR'], read_pair_id)
+    the_dir = os.path.join(the_dir, 'Coverage/')
 
     return the_dir
 
@@ -1116,14 +1347,15 @@ def run_serial():
     contaminant_dbs = m_param['decon']['contaminant_dbs']
     contaminant_dbs = contaminant_dbs.split(",")
 
+    print("Building contaminant DBs...")
     for db_name in contaminant_dbs:
         db_name = db_name.strip()
         db_exists = contaminant_db_exists(db_name)
         if not db_exists:
             build_contaminant_db(db_name)
-    print("my name is killer T")
+
+    print("Building annotation DBs...")
     build_annotation_dbs()
-    quit()
 
     for read_pair_id in m_read_pairs.keys():
         performance_log[read_pair_id] = {}
@@ -1132,9 +1364,7 @@ def run_serial():
         print("Working on read pair '" + read_pair_id + "'")
         print(seperator + "\n")
 
-        #
         # Merge reads
-        #
         print("Merging reads...")
         start_time = time.time()
         merge_reads(read_pair_id)
@@ -1142,9 +1372,7 @@ def run_serial():
 
         performance_log[read_pair_id]['merging'] = end_time - start_time
 
-        #
         # Decon reads
-        #
         print("Decontaminating reads...")
         start_time = time.time()
         decon(read_pair_id)
@@ -1152,9 +1380,7 @@ def run_serial():
 
         performance_log[read_pair_id]['decon'] = end_time - start_time
 
-        #
         # Trim reads
-        #
         print("Trimming reads...")
         start_time = time.time()
         trim_reads(read_pair_id)
@@ -1162,9 +1388,7 @@ def run_serial():
 
         performance_log[read_pair_id]['trimming'] = end_time - start_time
 
-        #
         # QC reads
-        #
         print("QC reads...")
         start_time = time.time()
         qc_reads(read_pair_id)
@@ -1172,31 +1396,79 @@ def run_serial():
 
         performance_log[read_pair_id]['qc'] = end_time - start_time
 
-        #
         # Interleave reads
-        #
         print("Interleave reads...")
         start_time = time.time()
         interleave_reads(read_pair_id)
         end_time = time.time()
 
         performance_log[read_pair_id]['interleaving'] = end_time - start_time
-        print("\n")
 
         print("Merging trim outputs...")
+        start_time = time.time()
         merge_trim_outputs(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['mergeTrim'] = end_time - start_time
 
         print("Running MegaHit...")
+        start_time = time.time()
         megahit(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['MegaHit'] = end_time - start_time
 
         print("Subsampling...")
+        start_time = time.time()
         subsample(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['subsampling'] = end_time - start_time
 
         print("Generating statistics...")
+        start_time = time.time()
         get_stats(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['stats'] = end_time - start_time
+
+        print("Building assembly dbs...")
+        start_time = time.time()
+        build_assembly_db(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['buildAssemblyDB'] = end_time - start_time
+
+        print("Mapping assembly reads...")
+        start_time = time.time()
+        map_to_assembly(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['mapAssemply'] = end_time - start_time
 
         print("Running MaxBin...")
+        start_time = time.time()
         maxbin(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['MaxBin'] = end_time - start_time
+
+        # print("Running Prodigal..")
+        # prodigal(read_pair_id)
+
+        print("Running FragGeneScan+..")
+        start_time = time.time()
+        fragGeneScanPlus(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['FragGeneScan+'] = end_time - start_time
+
+        print("Running LastAlPlus..")
+        start_time = time.time()
+        lastalPlus(read_pair_id)
+        end_time = time.time()
+
+        performance_log[read_pair_id]['lastal+'] = end_time - start_time
 
     print(seperator)
     print("Performance")
