@@ -22,6 +22,7 @@ FASTQC_EXECUTABLE:/people/whit040/FastQC/fastqc
 MEGAHIT_EXECUTABLE:megahit
 TRINITY_EXECUTABLE:/people/whit040/trinityrnaseq-2.1.1
 MAXBIN_EXECUTABLE:/people/whit040/MaxBin-2.1/run_MaxBin.pl
-FGS+_EXECUTABLE:FGS+
+FGS+_EXECUTABLE:/people/whit040/ATLAS_pipeline/FragGeneScanPlus/FGS+
 LASTDB+_EXECUTABLE:lastdb+
 LASTAL+_EXECUTABLE:lastal+
+SAMTOOLS_EXECUTABLE:~/samtools-1.1/samtools

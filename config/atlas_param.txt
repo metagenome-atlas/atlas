@@ -32,3 +32,8 @@ subsampler:max 10000000000
 
 # FGS+ parameters
 fgs+:sequencing_error_model illumina_10
+
+# lastal+ parameters
+lastal+:bit_score_cutoff 20
+lastal+:e_value_cutoff 1E-06
+lastal+:n_best 10
