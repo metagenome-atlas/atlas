@@ -167,18 +167,18 @@ rule length_filter:
 
 # have Joe review
 rule fgsplus:
-    input: 
+    input:
         assembly_pass = rules.length_filter.output.passing
         assembly_fail = rules.length_filter.output.fail
     output:
         prot_pass = "results/{eid}/annotation/orfs/{sample}_length_pass.faa"
         prot_fail = "results/{eid}/annotation/orfs/{sample}_length_fail.faa"
-    params: 
+    params:
         sem = config['annotation']['sequencing_error_model']
         memory = config['annotation']['memory']
     threads: config['annotation']['threads']
     # if there are multiple inputs, will shell be called multiple times?
-    shell: 
+    shell:
         s1 = """FGS+ -s {input.assembly_pass} -o {output.prot_pass} -w 1 -t {params.sem} -p {threads} -m {params.memory}"""
         s2 = """FGS+ -s {input.assembly_fail} -o {output.prot_fail} -w 1 -t {params.sem} -p {threads} -m {params.memory}"""
 
@@ -200,6 +200,7 @@ rule maxbin_bins:
         contigs = rules.assemble.output
     output:
         # TODO
+        pass
     params:
         min_contig_len = config['binning']['minimum_contig_length'],
         max_iteration = config['binning']['maximum_iterations'],
