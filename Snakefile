@@ -36,19 +36,9 @@ rule all:
     input:
         # desired output files to keep
 
-
-rule combine_contaminant_references:
-    input:
-        expand("ref/contamination_references/{fasta}", fasta=config['contamination_filtering']['references'].replace(" ", "").split(","))
-    output:
-        "ref/contamination_references/combined/ref.fasta"
-    shell:
-        "cat {input} > {output}"
-
-
 rule build_contaminant_references:
     input:
-        rules.combine_contaminant_references.output
+        contaminant_databases = "decon/{contaminant_database}.fasta"
     output:
         f1 = "{fasta}.1.bt2",
         f2 = "{fasta}.2.bt2",
@@ -59,45 +49,24 @@ rule build_contaminant_references:
     shell:
         "bowtie2-build {input} {input}"
 
-
-rule quality_filter_reads:
+rule build_annotation_databases:
     input:
-        r1 = "results/{eid}/demultiplexed/{sample}_R1.fastq",
-        r2 = "results/{eid}/demultiplexed/{sample}_R2.fastq"
+        functional_gene_lastal_database = "annotation/functional_dbs/{lastal_database}.fasta"
+        taxonomic_gene_lastal_database = "annotation/taxonomic_dbs/{lastal_database}.fasta"
     output:
-        r1 = "results/{eid}/demultiplexed/filtered/{sample}_filtered_R1.fastq",
-        r2 = "results/{eid}/demultiplexed/filtered/{sample}_filtered_R2.fastq",
-        stats = temp("results/{eid}/demultiplexed/filtered/{sample}_quality_filtering_stats.txt")
-    message:
-        "Filtering reads using BBDuk2 to remove adapters and phiX with matching kmer length of {params.k} at a hamming distance of {params.hdist} and quality trim both ends to Q{params.quality}. Reads shorter than {params.minlength} were discarded."
+        f1 = "{lastal_database}.bck",
+        f2 = "{lastal_database}.des",
+        f3 = "{lastal_database}.prj",
+        f4 = "{lastal_database}.sds",
+        f5 = "{lastal_database}.ssp",
+        f6 = "{lastal_database}.suf",
+        f7 = "{lastal_database}.tis",
+        f8 = "{lastal_database}-names.txt"
     params:
-        adapters = config['filtering']['adapters'],
-        quality = config['filtering']['minimum_base_quality'],
-        hdist = config['filtering']['allowable_kmer_mismatches'],
-        k = config['filtering']['reference_kmer_match_length'],
-        qtrim = "rl",
-        ktrim = "l",
-        minlength = config['filtering']['minimum_passing_read_length']
-    threads:
-        config['filtering']['threads']
+        protein_database = "p" #for functional dbs only
     shell:
-        """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
-               fref={params.adapters} stats={output.stats} hdist={params.hdist} k={params.k} \
-               trimq={params.quality} qtrim={params.qtrim} threads={threads} ktrim={params.ktrim} \
-               minlength={params.minlength} overwrite=true
-           """
-
-
-rule count_filtered_reads:
-    input:
-        rules.quality_filter_reads.output.r1
-    output:
-        "results/{eid}/logs/{sample}_filtered_R1.fastq.count"
-    threads:
-        1
-    shell:
-        "awk '{{n++}}END{{print n/4}}' {input} > {output}"
-
+        "lastdb+ {input} {input}" #for taxonomic_dbs
+        "lastdb+ {input} {input} -p" #for taxonomic_dbs
 
 rule join_reads:
     input:
@@ -128,7 +97,6 @@ rule join_reads:
                   --output-directory results/{wildcards.eid}/joined/ --threads {threads}
            """
 
-
 rule filter_contaminants:
     input:
         joined = rules.join_reads.output.joined,
@@ -150,9 +118,13 @@ rule filter_contaminants:
                   | bedtools bamtofastq -i stdin -fq {output}
            """
 
+rule trim_reads:
+    input:
 
-rule assemble:
-    # will want to change this as we add assemblers
+
+rule assemble:    # will want to change this as we add assemblers
+
+rule megahit: #for metagenomes only
     input:
         rules.filter_contaminants.output
     output:
@@ -177,6 +149,12 @@ rule assemble:
                   --merge-level {params.merge_level} --prune-level {params.prune_level} \
                   --low-local-ratio {params.low_local_ratio}
            """
+
+rule trinity: #for metatranscriptomes only
+    input:
+        rules.filter_contaminants.output
+    output:
+        "results/{eid}/assembly/trinity/{sample}.contigs.fa"
 
 
 rule length_filter:
@@ -264,4 +242,5 @@ rule lastplus_orfs
     threads:
         config['lastplus']['threads']
     shell:
-        """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \           {input.database} {input.fgsplus_orfs}"""
+        """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
+        {input.database} {input.fgsplus_orfs}"""
