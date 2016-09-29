@@ -199,7 +199,13 @@ rule maxbin_bins:
         reads = rules.filter_contaminants.output
         contigs = rules.assemble.output
     output:
-        # TODO
+        bins = "results/{eid}/binning/maxbin/{sample}.fasta", 
+	abundance = "results/{eid}/binning/maxbin/{sample}.abund1",
+	log = "results/{eid}/binning/maxbin/{sample}.log",
+	marker = "results/{eid}/binning/maxbin/{sample}.marker",
+	summary = "results/{eid}/binning/maxbin/{sample}.summary",
+	tooshort = "results/{eid}/binning/maxbin/{sample}.tooshort",
+	noclass = "results/{eid}/binning/maxbin/{sample}.noclass",
     params:
         min_contig_len = config['binning']['minimum_contig_length'],
         max_iteration = config['binning']['maximum_iterations'],
@@ -210,5 +216,19 @@ rule maxbin_bins:
                   -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
                   -thread {threads} -markerset {params.markerset}
            """
+
+rule lastplus_orfs
+    input: #how to do wrap rule or ifelse?
+	fgsplus_orfs = rules.fgsplus.output
+	prodigal_orfs = rules.prodigal.output
+	database = rules.format_database.output
+    output: 
+	annotation = "results/{eid}/annotation/orfs/{sample}_{database}"
+    params:
+	top_hit = config['lastplus']['top_best_hit'],
+	e_value_cutoff = config['lastplus']['e_value_cutoff'],
+	bit_score_cutoff = config['lastplus']['bit_score_cutoff']
+    threads: config['lastplus']['threads']
+    shell: """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \ 			{input.database} {input.fgsplus_orfs}""" 
 
 
