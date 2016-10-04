@@ -64,7 +64,6 @@ rule build_annotation_databases:
     input:
         functional_db = "annotation_dbs/functional_dbs/{lastal_database}"
         taxonomic_db = "annotation_dbs/taxonomic_dbs/{lastal_database}"
-
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -135,21 +134,27 @@ rule filter_contaminants:
                   | bedtools bamtofastq -i stdin -fq {output}
            """
 
-
 rule trim_reads:
     input:
         filtered = rule.filter_contaminants.output
         picard = ?
-
     output:
-        "results/{eid}/trimmed/{sample}.fastq"
+        joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq"
+        R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq"
+        R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
+    params:
+        single_end = config['SE']
+        phred_value = config['phred33']
+        min_length = config['length?']
+    message:
+        "Trimming filtered reads using trimmomatic"
     log:
         "results/{eid}/trimmed/{sample}.log"
     shell:
-        """java -Xmx32g -jar trimmomatic-0.33.jar SE -phred33 -trimlog {log} \
-        {input.filtered} {output}
+        """java -Xmx32g -jar trimmomatic-0.33.jar SE -phred33 {input.filtered} -trimlog {log} \
+            ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
+            SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
-
 
 rule fastqc:
     input:
@@ -160,7 +165,6 @@ rule fastqc:
         """fastqc {input.trimmed_reads} -o {output.qc_reads}
         """
 
-
 rule interleave_reads:
     input:
         qc_reads = rule.fastqc.output
@@ -169,19 +173,11 @@ rule interleave_reads:
         r2 = rules.join_reads.output.failed_r2,
         prefix = rules.combine_contaminant_references.output
     output:
-        "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq"
-        "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq"
-        "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
-    params:
-        single_end = config['SE']
-        phred_value = config['phred33']
-        min_length = config['length?']
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
     message:
-        "Trimming filtered reads using trimmomatic"
+        "Interleaving non combined R1 and R2 reads"
     shell:
-        """java -jar trimmomatic-0.33.jar SE -phred33 {input} \
-            ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 \
-            TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50"""
+        #call interleave function or does it have to have a separate python script?
 
 # will want to change this as we add assemblers
 rule assemble:
@@ -207,6 +203,8 @@ rule megahit:
         prune_level = config['assembly']['prune_level'],
         low_local_ratio = config['assembly']['low_local_ratio'],
         min_contig_len = config['assembly']['minimum_contig_length']
+    message:
+        "Assembling using megahit"
     threads:
         config['assembly']['threads']
     shell:
@@ -231,12 +229,13 @@ rule trinity:
         read_pairing = config['assembly']['single'] #default single for extendedFrags
         memory = config['assembly']['max_memory']
         run_as_paired = config['assembly']['run_as_paired']
+    message:
+        "Assembling using trinity"
     threads:
         config['assembly']['threads']
     shell:
         """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved}\
                     --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
-
 
 rule length_filter:
     input:
@@ -250,7 +249,18 @@ rule length_filter:
         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
                   {input} {output.passing} {output.fail}
            """
-
+           
+rule assembly_stats
+    input:
+        output_assembly = rules.assembly.output
+        output_length_filte = rules.length_filter.output
+    output:
+        output_assembly = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
+        output_length_filter = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
+    message:
+        "Obtaining assembly statistics"
+    shell:
+        """perl scripts/CountFasta.pl {params.output_assembly} {params.output_length_filter} >{output}"""
 
 # have Joe review
 rule fgsplus:
