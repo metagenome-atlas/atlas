@@ -249,7 +249,7 @@ rule length_filter:
         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
                   {input} {output.passing} {output.fail}
            """
-           
+
 rule assembly_stats
     input:
         output_assembly = rules.assembly.output
