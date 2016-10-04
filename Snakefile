@@ -222,13 +222,13 @@ rule megahit:
 # for metatranscriptomes only
 rule trinity:
     input:
-        extendedFrags = 'results/{eid}/trimmomatic/{sample}.trimmed_extendedFrags.fastq' #after we fix trimming!
+        extendedFrags = 'results/{eid}/trimmed/{sample}.trimmed_extendedFrags.fastq' #after we fix trimming!
         interleaved = 'results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq'
     output:
         "results/{eid}/assembly/{sample}.contigs.fa"
     params:
-        seqtype = config['assembly']['seqtype'] #default fastq
-        read_pairing = config['assembly']['single'] #default single for extendedFrags
+        seqtype = config['assembly']['seqtype']  # default fastq
+        read_pairing = config['assembly']['single']  # default single for extendedFrags
         memory = config['assembly']['max_memory']
         run_as_paired = config['assembly']['run_as_paired']
     threads:
