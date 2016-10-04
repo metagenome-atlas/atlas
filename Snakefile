@@ -36,6 +36,7 @@ rule all:
     input:
         # desired output files to keep
 
+
 rule build_contaminant_references:
     input:
         contaminant_databases = "contaminant_db/{contaminant_database}.fasta"
@@ -50,6 +51,7 @@ rule build_contaminant_references:
         "bowtie2-build {input} {input}"
     message:
         "Formatting contaminant databases for bowtie2"
+
 
 rule build_annotation_databases:
     input:
@@ -68,10 +70,11 @@ rule build_annotation_databases:
         "Formatting functional databases for last+"
         "Formatting taxonomic databases for last+"
     params:
-        protein_database = "p" #for functional dbs only
+        protein_database = "p"  # for functional dbs only
     shell:
-        "lastdb+ {input} {input}" #for taxonomic_dbs
-        "lastdb+ {input} {input} -p" #for taxonomic_dbs
+        "lastdb+ {input} {input}"  # for taxonomic_dbs
+        "lastdb+ {input} {input} -p"  # for taxonomic_dbs
+
 
 rule join_reads:
     input:
@@ -102,6 +105,7 @@ rule join_reads:
                   --output-directory results/{wildcards.eid}/joined/ --threads {threads}
            """
 
+
 rule filter_contaminants:
     input:
         joined = rules.join_reads.output.joined,
@@ -122,6 +126,7 @@ rule filter_contaminants:
                   | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
                   | bedtools bamtofastq -i stdin -fq {output}
            """
+
 
 rule trim_reads:
     input:
@@ -144,10 +149,16 @@ rule trim_reads:
             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 \
             TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50"""
 
+# will want to change this as we add assemblers
+rule assemble:
+    input:
+        # TODO
+    output:
+        # TODO
 
-rule assemble:    # will want to change this as we add assemblers
 
-rule megahit: #for metagenomes only
+# for metagenomes only
+rule megahit:
     input:
         rules.filter_contaminants.output
     output:
@@ -173,9 +184,10 @@ rule megahit: #for metagenomes only
                   --low-local-ratio {params.low_local_ratio}
            """
 
-rule trinity: #for metatranscriptomes only
+
+# for metatranscriptomes only
+rule trinity:
     input:
-        rules.filter_contaminants.output
         results/{eid}/trimmomatic/{sample}.trimmed_extendedFrags.fastq #after we fix trimming!
         results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq
     output:
@@ -263,6 +275,7 @@ rule maxbin_bins:
                   -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
                   -thread {threads} -markerset {params.markerset}
            """
+
 
 rule lastplus_orfs
     input:  # how to do wrap rule or ifelse?
