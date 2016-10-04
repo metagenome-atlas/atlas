@@ -38,7 +38,7 @@ rule all:
 
 rule build_contaminant_references:
     input:
-        contaminant_databases = "decon/{contaminant_database}.fasta"
+        contaminant_databases = "contaminant_db/{contaminant_database}.fasta"
     output:
         f1 = "{fasta}.1.bt2",
         f2 = "{fasta}.2.bt2",
@@ -48,11 +48,13 @@ rule build_contaminant_references:
         r2 = "{fasta}.rev.2.bt2"
     shell:
         "bowtie2-build {input} {input}"
+    message:
+        "Formatting contaminant databases for bowtie2"
 
 rule build_annotation_databases:
     input:
-        functional_gene_lastal_database = "annotation/functional_dbs/{lastal_database}.fasta"
-        taxonomic_gene_lastal_database = "annotation/taxonomic_dbs/{lastal_database}.fasta"
+        functional_gene_lastal_database = "annotation_dbs/functional_dbs/{lastal_database}.fasta"
+        taxonomic_gene_lastal_database = "annotation_dbs/taxonomic_dbs/{lastal_database}.fasta"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -62,6 +64,9 @@ rule build_annotation_databases:
         f6 = "{lastal_database}.suf",
         f7 = "{lastal_database}.tis",
         f8 = "{lastal_database}-names.txt"
+    message:
+        "Formatting functional databases for last+"
+        "Formatting taxonomic databases for last+"
     params:
         protein_database = "p" #for functional dbs only
     shell:
@@ -120,6 +125,24 @@ rule filter_contaminants:
 
 rule trim_reads:
     input:
+        joined = rules.join_reads.output.joined,
+        r1 = rules.join_reads.output.failed_r1,
+        r2 = rules.join_reads.output.failed_r2,
+        prefix = rules.combine_contaminant_references.output
+    output:
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq"
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq"
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
+    params:
+        single_end = config['SE']
+        phred_value = config['phred33']
+        min_length = config['length?']
+    message:
+        "Trimming filtered reads using trimmomatic"
+    shell:
+        """java -jar trimmomatic-0.33.jar SE -phred33 {input} \
+            ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 \
+            TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50"""
 
 
 rule assemble:    # will want to change this as we add assemblers
@@ -153,8 +176,21 @@ rule megahit: #for metagenomes only
 rule trinity: #for metatranscriptomes only
     input:
         rules.filter_contaminants.output
+        results/{eid}/trimmomatic/{sample}.trimmed_extendedFrags.fastq #after we fix trimming!
+        results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq
     output:
         "results/{eid}/assembly/trinity/{sample}.contigs.fa"
+    params:
+        seqtype = config['assembly']['seqtype'] #default fastq
+        read_pairing = config['assembly']['single'] #default single for extendedFrags
+        memory = config['assembly']['max_memory']
+        run_as_paired = config['assembly']['run_as_paired']
+    threads:
+        config['assembly']['threads']
+    shell:
+        """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved}\
+                    --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
+
 
 
 rule length_filter:
@@ -194,9 +230,9 @@ rule prodigal_orfs:
     input:
         rules.length_filter.output.passing
     output:
-        prot = "results/{eid}/orfs/prodigal/{sample}.faa",
-        nuc = "results/{eid}/orfs/prodigal/{sample}.fasta",
-        gff = "results/{eid}/orfs/prodigal/{sample}.gff"
+        prot = "results/{eid}/annotation/orfs/{sample}.faa",
+        nuc = "results/{eid}/annotation/orfs/{sample}.fasta",
+        gff = "results/{eid}/annotation/orfs/{sample}.gff"
     params:
         g = config['annotation']['translation_table']
     shell:
@@ -208,13 +244,13 @@ rule maxbin_bins:
         reads = rules.filter_contaminants.output
         contigs = rules.assemble.output
     output:
-        bins = "results/{eid}/binning/maxbin/{sample}.fasta",
-        abundance = "results/{eid}/binning/maxbin/{sample}.abund1",
-        log = "results/{eid}/binning/maxbin/{sample}.log",
-        marker = "results/{eid}/binning/maxbin/{sample}.marker",
-        summary = "results/{eid}/binning/maxbin/{sample}.summary",
-        tooshort = "results/{eid}/binning/maxbin/{sample}.tooshort",
-        noclass = "results/{eid}/binning/maxbin/{sample}.noclass"
+        bins = "results/{eid}/binning/{sample}.fasta",
+        abundance = "results/{eid}/binning/{sample}.abund1",
+        log = "results/{eid}/binning/{sample}.log",
+        marker = "results/{eid}/binning/{sample}.marker",
+        summary = "results/{eid}/binning/{sample}.summary",
+        tooshort = "results/{eid}/binning/{sample}.tooshort",
+        noclass = "results/{eid}/binning/{sample}.noclass"
     params:
         min_contig_len = config['binning']['minimum_contig_length'],
         max_iteration = config['binning']['maximum_iterations'],
