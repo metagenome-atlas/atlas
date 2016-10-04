@@ -177,7 +177,8 @@ rule interleave_reads:
     message:
         "Interleaving non combined R1 and R2 reads"
     shell:
-        #call interleave function or does it have to have a separate python script?
+        # call interleave function or does it have to have a separate python script?
+
 
 # will want to change this as we add assemblers
 rule assemble:
@@ -220,7 +221,7 @@ rule megahit:
 # for metatranscriptomes only
 rule trinity:
     input:
-        extendedFrags = 'results/{eid}/trimmed/{sample}.trimmed_extendedFrags.fastq' #after we fix trimming!
+        extendedFrags = 'results/{eid}/trimmed/{sample}.trimmed_extendedFrags.fastq'  # after we fix trimming!
         interleaved = 'results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq'
     output:
         "results/{eid}/assembly/{sample}.contigs.fa"
@@ -237,6 +238,7 @@ rule trinity:
         """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved}\
                     --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
 
+
 rule length_filter:
     input:
         rules.assemble.output
@@ -250,6 +252,7 @@ rule length_filter:
                   {input} {output.passing} {output.fail}
            """
 
+
 rule assembly_stats
     input:
         output_assembly = rules.assembly.output
@@ -261,6 +264,7 @@ rule assembly_stats
         "Obtaining assembly statistics"
     shell:
         """perl scripts/CountFasta.pl {params.output_assembly} {params.output_length_filter} >{output}"""
+
 
 # have Joe review
 rule fgsplus:
