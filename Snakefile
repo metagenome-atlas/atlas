@@ -1,5 +1,7 @@
 import os
 from subprocess import check_output
+from util.IO import cat_reads
+from util.IO import interleave_reads
 
 
 def read_count(fastq):
@@ -36,10 +38,15 @@ rule all:
     input:
         # desired output files to keep
 
+rule gunzip:
+    input:
+        zipfile = "input/{eid}/{sample}."
+
 
 rule build_contaminant_references:
     input:
-        contaminant_databases = "decon/{contaminant_database}.fasta"
+        contaminant_db = "contaminant_dbs/{contaminant_database}.fasta"
+        contaminant_db_name = os.path.splitext(contaminant_db)
     output:
         f1 = "{fasta}.1.bt2",
         f2 = "{fasta}.2.bt2",
@@ -48,13 +55,13 @@ rule build_contaminant_references:
         r1 = "{fasta}.rev.1.bt2",
         r2 = "{fasta}.rev.2.bt2"
     shell:
-        "bowtie2-build {input} {input}"
+        "bowtie2-build {input.contaminant_db} {input.contaminant_db_name}"
 
 
 rule build_annotation_databases:
     input:
-        functional_gene_lastal_database = "annotation/functional_dbs/{lastal_database}.fasta"
-        taxonomic_gene_lastal_database = "annotation/taxonomic_dbs/{lastal_database}.fasta"
+        functional_db = "annotation_dbs/functional_dbs/{lastal_database}"
+        taxonomic_db = "annotation_dbs/taxonomic_dbs/{lastal_database}"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -67,8 +74,8 @@ rule build_annotation_databases:
     params:
         protein_database = "p"  # for functional dbs only
     shell:
-        "lastdb+ {input} {input}"  # for taxonomic_dbs
-        "lastdb+ {input} {input} -p"  # for taxonomic_dbs
+        "lastdb+ {input.functional_db} {input.functional_db}"  # for functional dbs
+        "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"  # for taxonomic dbs
 
 
 rule join_reads:
@@ -125,7 +132,32 @@ rule filter_contaminants:
 
 rule trim_reads:
     input:
-        # TODO
+        filtered = rule.filter_contaminants.output
+        picard = ?
+
+    output:
+        "results/{eid}/trimmed/{sample}.fastq"
+    log:
+        "results/{eid}/trimmed/{sample}.log"
+    shell:
+        """java -Xmx32g -jar trimmomatic-0.33.jar SE -phred33 -trimlog {log} \
+        {input.filtered} {output}
+        """
+
+
+rule fastqc:
+    input:
+        trimmed_reads = rule.trim_reads.output
+    output:
+        qc_reads = "results/{eid}/qc/{sample}.fastq"
+    shell:
+        """fastqc {input.trimmed_reads} -o {output.qc_reads}
+        """
+
+
+rule interleave_reads:
+    input:
+        qc_reads = rule.fastqc.output
     output:
         # TODO
 
@@ -143,7 +175,7 @@ rule megahit:
     input:
         rules.filter_contaminants.output
     output:
-        "results/{eid}/assembly/megahit/{sample}.contigs.fa"
+        "results/{eid}/assembly/{sample}.contigs.fa"
     params:
         memory = config['assembly']['memory'],
         min_count = config['assembly']['minimum_count'],
@@ -171,15 +203,15 @@ rule trinity:
     input:
         input = rules.filter_contaminants.output
     output:
-        "results/{eid}/assembly/trinity/{sample}.contigs.fa"
+        "results/{eid}/assembly/{sample}.contigs.fa"
 
 
 rule length_filter:
     input:
         rules.assemble.output
     output:
-        passing = "results/{eid}/assembly/megahit/{sample}_length_pass.fa",
-        fail = "results/{eid}/assembly/megahit/{sample}_length_fail.fa"
+        passing = "results/{eid}/assembly/{sample}_length_pass.fa",
+        fail = "results/{eid}/assembly/{sample}_length_fail.fa"
     params:
         min_contig_length = config['assembly']['filtered_contig_length']
     shell:
@@ -211,9 +243,9 @@ rule prodigal_orfs:
     input:
         rules.length_filter.output.passing
     output:
-        prot = "results/{eid}/orfs/prodigal/{sample}.faa",
-        nuc = "results/{eid}/orfs/prodigal/{sample}.fasta",
-        gff = "results/{eid}/orfs/prodigal/{sample}.gff"
+        prot = "results/{eid}/annotation/orfs/{sample}.faa",
+        nuc = "results/{eid}/annotation/orfs/{sample}.fasta",
+        gff = "results/{eid}/annotation/orfs/{sample}.gff"
     params:
         g = config['annotation']['translation_table']
     shell:
@@ -225,13 +257,13 @@ rule maxbin_bins:
         reads = rules.filter_contaminants.output
         contigs = rules.assemble.output
     output:
-        bins = "results/{eid}/binning/maxbin/{sample}.fasta",
-        abundance = "results/{eid}/binning/maxbin/{sample}.abund1",
-        log = "results/{eid}/binning/maxbin/{sample}.log",
-        marker = "results/{eid}/binning/maxbin/{sample}.marker",
-        summary = "results/{eid}/binning/maxbin/{sample}.summary",
-        tooshort = "results/{eid}/binning/maxbin/{sample}.tooshort",
-        noclass = "results/{eid}/binning/maxbin/{sample}.noclass"
+        bins = "results/{eid}/binning/{sample}.fasta",
+        abundance = "results/{eid}/binning/{sample}.abund1",
+        log = "results/{eid}/binning/{sample}.log",
+        marker = "results/{eid}/binning/{sample}.marker",
+        summary = "results/{eid}/binning/{sample}.summary",
+        tooshort = "results/{eid}/binning/{sample}.tooshort",
+        noclass = "results/{eid}/binning/{sample}.noclass"
     params:
         min_contig_len = config['binning']['minimum_contig_length'],
         max_iteration = config['binning']['maximum_iterations'],
