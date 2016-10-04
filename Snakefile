@@ -56,12 +56,15 @@ rule build_contaminant_references:
         r2 = "{fasta}.rev.2.bt2"
     shell:
         "bowtie2-build {input.contaminant_db} {input.contaminant_db_name}"
+    message:
+        "Formatting contaminant databases for bowtie2"
 
 
 rule build_annotation_databases:
     input:
         functional_db = "annotation_dbs/functional_dbs/{lastal_database}"
         taxonomic_db = "annotation_dbs/taxonomic_dbs/{lastal_database}"
+
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -71,6 +74,9 @@ rule build_annotation_databases:
         f6 = "{lastal_database}.suf",
         f7 = "{lastal_database}.tis",
         f8 = "{lastal_database}-names.txt"
+    message:
+        "Formatting functional databases for last+"
+        "Formatting taxonomic databases for last+"
     params:
         protein_database = "p"  # for functional dbs only
     shell:
@@ -158,9 +164,24 @@ rule fastqc:
 rule interleave_reads:
     input:
         qc_reads = rule.fastqc.output
+        joined = rules.join_reads.output.joined,
+        r1 = rules.join_reads.output.failed_r1,
+        r2 = rules.join_reads.output.failed_r2,
+        prefix = rules.combine_contaminant_references.output
     output:
-        # TODO
-
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq"
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq"
+        "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
+    params:
+        single_end = config['SE']
+        phred_value = config['phred33']
+        min_length = config['length?']
+    message:
+        "Trimming filtered reads using trimmomatic"
+    shell:
+        """java -jar trimmomatic-0.33.jar SE -phred33 {input} \
+            ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 \
+            TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:50"""
 
 # will want to change this as we add assemblers
 rule assemble:
@@ -201,9 +222,20 @@ rule megahit:
 # for metatranscriptomes only
 rule trinity:
     input:
-        input = rules.filter_contaminants.output
+        extendedFrags = 'results/{eid}/trimmomatic/{sample}.trimmed_extendedFrags.fastq' #after we fix trimming!
+        interleaved = 'results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq'
     output:
         "results/{eid}/assembly/{sample}.contigs.fa"
+    params:
+        seqtype = config['assembly']['seqtype'] #default fastq
+        read_pairing = config['assembly']['single'] #default single for extendedFrags
+        memory = config['assembly']['max_memory']
+        run_as_paired = config['assembly']['run_as_paired']
+    threads:
+        config['assembly']['threads']
+    shell:
+        """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved}\
+                    --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
 
 
 rule length_filter:
