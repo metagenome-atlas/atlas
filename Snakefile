@@ -43,6 +43,7 @@ rule gunzip:
         zipfile = "input/{eid}/{sample}."
 
 
+# this rule needs work
 rule build_contaminant_references:
     input:
         contaminant_db = "contaminant_dbs/{contaminant_database}.fasta"
@@ -168,6 +169,7 @@ rule fastqc:
         R2_qc = "results/{eid}/qc/{sample}.fastq"
         joined_qc = "results/{eid}/qc/{sample}.fastq"
     shell:
+
         """fastqc {input.R1} -o {output.R1_qc}"""
         """fastqc {input.R2} -o {output.R2_qc}"""
         """fastqc {input.joined} -o {output.joined_qc}"""
