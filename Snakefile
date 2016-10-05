@@ -60,6 +60,7 @@ rule build_contaminant_references:
         "Formatting contaminant databases for bowtie2"
 
 
+# might want to split this up into separate functional and taxonomic
 rule build_annotation_databases:
     input:
         functional_db = "annotation_dbs/functional_dbs/{lastal_database}"
@@ -156,14 +157,21 @@ rule trim_reads:
             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
 
+
 rule fastqc:
     input:
-        trimmed_reads = rule.trim_reads.output
+        R1 = rule.trim_reads.output.R1
+        R2 = rule.trim_reads.output.R2
+        joined = rule.trim_reads.output.joined
     output:
-        qc_reads = "results/{eid}/qc/{sample}.fastq"
+        R1_qc = "results/{eid}/qc/{sample}.fastq"
+        R2_qc = "results/{eid}/qc/{sample}.fastq"
+        joined_qc = "results/{eid}/qc/{sample}.fastq"
     shell:
-        """fastqc {input.trimmed_reads} -o {output.qc_reads}
-        """
+        """fastqc {input.R1} -o {output.R1_qc}"""
+        """fastqc {input.R2} -o {output.R2_qc}"""
+        """fastqc {input.joined} -o {output.joined_qc}"""
+
 
 rule interleave_reads:
     input:
@@ -221,6 +229,7 @@ rule megahit:
 # for metatranscriptomes only
 rule trinity:
     input:
+        # need to replace with reference to rule
         extendedFrags = 'results/{eid}/trimmed/{sample}.trimmed_extendedFrags.fastq'  # after we fix trimming!
         interleaved = 'results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq'
     output:
