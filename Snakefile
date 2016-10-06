@@ -55,17 +55,16 @@ rule build_contaminant_references:
         f4 = "{fasta}.4.bt2",
         r1 = "{fasta}.rev.1.bt2",
         r2 = "{fasta}.rev.2.bt2"
-    shell:
-        "bowtie2-build {input.contaminant_db} {input.contaminant_db_name}"
     message:
         "Formatting contaminant databases for bowtie2"
+    shell:
+        "bowtie2-build {input.contaminant_db} {input.contaminant_db_name}"
 
 
-# might want to split this up into separate functional and taxonomic
-rule build_annotation_databases:
+# where does {lastal_database} come from?
+rule build_functional_databases:
     input:
         functional_db = "annotation_dbs/functional_dbs/{lastal_database}"
-        taxonomic_db = "annotation_dbs/taxonomic_dbs/{lastal_database}"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -77,12 +76,30 @@ rule build_annotation_databases:
         f8 = "{lastal_database}-names.txt"
     message:
         "Formatting functional databases for last+"
+    params:
+        protein_database = "p"  # for functional dbs only
+    shell:
+        "lastdb+ {input.functional_db} {input.functional_db}"
+
+
+rule build_taxonomic_databases:
+    input:
+        taxonomic_db = "annotation_dbs/taxonomic_dbs/{lastal_database}"
+    output:
+        f1 = "{lastal_database}.bck",
+        f2 = "{lastal_database}.des",
+        f3 = "{lastal_database}.prj",
+        f4 = "{lastal_database}.sds",
+        f5 = "{lastal_database}.ssp",
+        f6 = "{lastal_database}.suf",
+        f7 = "{lastal_database}.tis",
+        f8 = "{lastal_database}-names.txt"
+    message:
         "Formatting taxonomic databases for last+"
     params:
         protein_database = "p"  # for functional dbs only
     shell:
-        "lastdb+ {input.functional_db} {input.functional_db}"  # for functional dbs
-        "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"  # for taxonomic dbs
+        "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"
 
 
 rule join_reads:
@@ -136,6 +153,7 @@ rule filter_contaminants:
                   | bedtools bamtofastq -i stdin -fq {output}
            """
 
+
 rule trim_reads:
     input:
         filtered = rule.filter_contaminants.output
@@ -159,35 +177,46 @@ rule trim_reads:
         """
 
 
-rule fastqc:
+rule fastqc_R1:
     input:
-        R1 = rule.trim_reads.output.R1
-        R2 = rule.trim_reads.output.R2
-        joined = rule.trim_reads.output.joined
+        rule.trim_reads.output.R1
     output:
-        R1_qc = "results/{eid}/qc/{sample}.fastq"
-        R2_qc = "results/{eid}/qc/{sample}.fastq"
-        joined_qc = "results/{eid}/qc/{sample}.fastq"
+        "results/{eid}/qc/{sample}_R1.fastq"
     shell:
+        """fastqc {input} -o {output}"""
 
-        """fastqc {input.R1} -o {output.R1_qc}"""
-        """fastqc {input.R2} -o {output.R2_qc}"""
-        """fastqc {input.joined} -o {output.joined_qc}"""
+
+rule fastqc_R2:
+    input:
+        rule.trim_reads.output.R2
+    output:
+        "results/{eid}/qc/{sample}_R2.fastq"
+    shell:
+        """fastqc {input} -o {output}"""
+
+
+rule fastqc_joined:
+    input:
+        rule.trim_reads.output.joined
+    output:
+        "results/{eid}/qc/{sample}_joined.fastq"
+    shell:
+        """fastqc {input} -o {output}"""
 
 
 rule interleave_reads:
     input:
-        qc_reads = rule.fastqc.output
-        joined = rules.join_reads.output.joined,
+        # qc_reads = rule.fastqc.output
+        # joined = rules.join_reads.output.joined,
         r1 = rules.join_reads.output.failed_r1,
         r2 = rules.join_reads.output.failed_r2,
-        prefix = rules.combine_contaminant_references.output
+        # prefix = rules.combine_contaminant_references.output
     output:
         "results/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
     message:
         "Interleaving non combined R1 and R2 reads"
-    shell:
-        # call interleave function or does it have to have a separate python script?
+    run:
+        IO.interleave_reads(input.r1, input.r2, output)
 
 
 # will want to change this as we add assemblers
@@ -220,12 +249,11 @@ rule megahit:
         config['assembly']['threads']
     shell:
         """megahit --num-cpu-threads {threads} --memory {params.memory} --read {input} \
-                  --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
-                  --out-dir results/{wildcards.eid}/assembly --out-prefix {wildcards.sample} \
-                  --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
-                  --merge-level {params.merge_level} --prune-level {params.prune_level} \
-                  --low-local-ratio {params.low_local_ratio}
-           """
+        --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
+        --out-dir results/{wildcards.eid}/assembly --out-prefix {wildcards.sample} \
+        --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
+        --merge-level {params.merge_level} --prune-level {params.prune_level} \
+        --low-local-ratio {params.low_local_ratio}"""
 
 
 # for metatranscriptomes only
@@ -246,8 +274,8 @@ rule trinity:
     threads:
         config['assembly']['threads']
     shell:
-        """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved}\
-                    --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
+        """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved} \
+        --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
 
 
 rule length_filter:
@@ -260,8 +288,7 @@ rule length_filter:
         min_contig_length = config['assembly']['filtered_contig_length']
     shell:
         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-                  {input} {output.passing} {output.fail}
-           """
+        {input} {output.passing} {output.fail}"""
 
 
 rule assembly_stats
@@ -274,26 +301,36 @@ rule assembly_stats
     message:
         "Obtaining assembly statistics"
     shell:
-        """perl scripts/CountFasta.pl {params.output_assembly} {params.output_length_filter} >{output}"""
+        "perl scripts/CountFasta.pl {params.output_assembly} {params.output_length_filter} > {output}"
 
 
 # have Joe review
-rule fgsplus:
+rule fgsplus_passed:
     input:
-        assembly_pass = rules.length_filter.output.passing,
-        assembly_fail = rules.length_filter.output.fail
+        rules.length_filter.output.passing,
     output:
-        prot_pass = "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
-        prot_fail = "results/{eid}/annotation/orfs/{sample}_length_fail.faa"
+        "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
     params:
         sem = config['annotation']['sequencing_error_model'],
         memory = config['annotation']['memory']
     threads:
         config['annotation']['threads']
-    # if there are multiple inputs, will shell be called multiple times?
     shell:
-        s1 = """FGS+ -s {input.assembly_pass} -o {output.prot_pass} -w 1 -t {params.sem} -p {threads} -m {params.memory}""",
-        s2 = """FGS+ -s {input.assembly_fail} -o {output.prot_fail} -w 1 -t {params.sem} -p {threads} -m {params.memory}"""
+        "FGS+ -s {input} -o {output} -w 1 -t {params.sem} -p {threads} -m {params.memory}"
+
+
+rule fgsplus_failed:
+    input:
+        rules.length_filter.output.fail
+    output:
+        "results/{eid}/annotation/orfs/{sample}_length_fail.faa"
+    params:
+        sem = config['annotation']['sequencing_error_model'],
+        memory = config['annotation']['memory']
+    threads:
+        config['annotation']['threads']
+    shell:
+        "FGS+ -s {input} -o {output} -w 1 -t {params.sem} -p {threads} -m {params.memory}"
 
 
 rule prodigal_orfs:
@@ -330,9 +367,8 @@ rule maxbin_bins:
         config['binning']['threads']
     shell:
         """run_MaxBin.pl -contig {input.contigs} -out {output} -reads {input.reads} \
-                  -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
-                  -thread {threads} -markerset {params.markerset}
-           """
+        -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
+        -thread {threads} -markerset {params.markerset}"""
 
 
 rule lastplus_orfs
