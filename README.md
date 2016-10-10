@@ -1,5 +1,7 @@
 <img src="images/logo.jpg" width="600"/>
 
+ATLAS (Automatic Tool for Local Assembly Structures)
+
 # Requirements (and bioconda status)
 
 - [x] bedtools
