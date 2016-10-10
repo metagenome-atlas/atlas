@@ -1,4 +1,5 @@
 import os
+import glob
 from subprocess import check_output
 from util.IO import cat_reads
 from util.IO import interleave_reads
@@ -24,29 +25,51 @@ def get_samples(eid, dir="demultiplexed", coverage_cutoff=1000):
     samples = set()
     input_dir = os.path.join("results", eid, dir)
     for f in os.listdir(input_dir):
-        if f.endswith("fastq") and ("_r1" in f or "_R1" in f):
+        if f.endswith("fastq") and ("_r1" in f or "_R1" in f):  # could probably replex with a regex
             if read_count(os.path.join(input_dir, f)) > coverage_cutoff:
                 samples.add(f.partition(".")[0].partition("_")[0])
     return samples
 
 
+def get_databases():
+    """Grab databases from files residing in /databases/taxonomic/ and /databases/functional.
+    Expecting a directory where the only files are database files."""
+
+    # gather files
+    tax = glob.glob('./databases/taxonomic/*')
+    func = glob.glob('./databases/functional/*')
+    contam = glob.glob('./databases/contaminants/*')
+
+    # filter non files
+    tax = [os.path.basename(x) for x in tax if os.path.isfile(x)]
+    func = [os.path.basename(x) for x in func if os.path.isfile(x)]
+    contam = [os.path.basename(x) for x in contam if os.path.isfile(x)]
+
+    # compose dictionary
+    dbs = {'taxonomic': tax, 'functional': func, 'contaminants': contam}
+
+    return dbs
+
+
+
 EID = config['eid']
 SAMPLES = get_samples(EID)
+DBS = get_databases():
 
 
 rule all:
     input:
         # desired output files to keep
 
+
 rule gunzip:
     input:
         zipfile = "input/{eid}/{sample}."
 
 
-# this rule needs work
 rule build_contaminant_references:
     input:
-        contaminant_db = "contaminant_dbs/{contaminant_database}.fasta"
+        contaminant_db = "databases/contaminant/{db}"
         contaminant_db_name = os.path.splitext(contaminant_db)
     output:
         f1 = "{fasta}.1.bt2",
@@ -56,15 +79,14 @@ rule build_contaminant_references:
         r1 = "{fasta}.rev.1.bt2",
         r2 = "{fasta}.rev.2.bt2"
     message:
-        "Formatting contaminant databases for bowtie2"
+        "Formatting contaminant databases"
     shell:
         "bowtie2-build {input.contaminant_db} {input.contaminant_db_name}"
 
 
-# where does {lastal_database} come from?
 rule build_functional_databases:
     input:
-        functional_db = "annotation_dbs/functional_dbs/{lastal_database}"
+        functional_db = "databases/functional/{db}"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -75,16 +97,14 @@ rule build_functional_databases:
         f7 = "{lastal_database}.tis",
         f8 = "{lastal_database}-names.txt"
     message:
-        "Formatting functional databases for last+"
-    params:
-        protein_database = "p"  # for functional dbs only
+        "Formatting functional databases"
     shell:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"
 
 
 rule build_taxonomic_databases:
     input:
-        taxonomic_db = "annotation_dbs/taxonomic_dbs/{lastal_database}"
+        taxonomic_db = "annotation_dbs/taxonomic/{db}"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -95,7 +115,7 @@ rule build_taxonomic_databases:
         f7 = "{lastal_database}.tis",
         f8 = "{lastal_database}-names.txt"
     message:
-        "Formatting taxonomic databases for last+"
+        "Formatting taxonomic databases"
     shell:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
@@ -310,8 +330,8 @@ rule megahit:
 rule trinity:
     input:
         # need to replace with reference to rule
-        extendedFrags = 'results/{eid}/trimmed/{sample}.trimmed_extendedFrags.fastq'  # after we fix trimming!
-        interleaved = 'results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq'
+        extendedFrags = 'results/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq'  # after we fix trimming!
+        interleaved = 'results/{eid}/interleaved/{sample}_trimmed_interleaved.fastq'
     output:
         "results/{eid}/assembly/{sample}.contigs.fa"
     params:
@@ -341,17 +361,19 @@ rule length_filter:
         {input} {output.passing} {output.fail}"""
 
 
-rule assembly_stats
+rule assembly_stats:
     input:
-        output_assembly = rules.assembly.output
-        output_length_filte = rules.length_filter.output
+        assembled = rules.assembly.output
+        filtered = rules.length_filter.output
     output:
-        output_assembly = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
-        output_length_filter = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
+        assembled = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
+        filtered = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
     message:
         "Obtaining assembly statistics"
     shell:
-        "perl scripts/CountFasta.pl {params.output_assembly} {params.output_length_filter} > {output}"
+        """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
+           perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
+        """
 
 
 # have Joe review
