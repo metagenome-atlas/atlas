@@ -295,6 +295,7 @@ rule taxonomic_placement_rRNAs_LCA:
     message:
         "Parse rRNA reads and place taxonomy using LCA++"
     params:
+        # TODO
     threads:
         config['lastplus']['threads']
     shell:
