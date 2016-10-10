@@ -221,6 +221,7 @@ rule fastqc_joined:
     shell:
         """fastqc {input} -o {output}"""
 
+
 rule remove_rRNAs: #For metatranscriptomes only!
     input:
         rule.interleave_reads.output
@@ -232,22 +233,23 @@ rule remove_rRNAs: #For metatranscriptomes only!
     message:
     "Aligning all joined and reads to remove rRNAs for mRNA de novo transcriptome assembly."
     shadow:
-    "shallow"
+        "shallow"
     threads:
-    config['contamination_filtering']['threads']
+        config['contamination_filtering']['threads']
     shell:
-    """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
+        """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
               | samtools view -@ {threads} -hf4 \
               | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
               | bedtools bamtofastq -i stdin -fq {output}
-       """
+        """
+
 
 rule interleave_reads:
     input:
         # qc_reads = rule.fastqc.output
         # joined = rules.join_reads.output.joined,
         r1 = rules.join_reads.output.failed_r1,
-        r2 = rules.join_reads.output.failed_r2,
+        r2 = rules.join_reads.output.failed_r2
         # prefix = rules.combine_contaminant_references.output
     output:
         "results/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
@@ -256,10 +258,24 @@ rule interleave_reads:
     run:
         IO.interleave_reads(input.r1, input.r2, output)
 
+
+rule merge_joined_interleaved:
+    input:
+        il = rules.interleave_reads.output
+        joined = rules.join_reads.output.joined
+
+    output:
+        "results/{eid}/assembly/{sample}_merged.fastq"
+    message:
+        "Merging joined and interleaved reads"
+    run:
+        IO.cat_reads(input.il, input.joined, output)
+
+
 rule annotate_reads_rRNA:
     input:
         rule.interleave_reads.output
-        rule.trim_reads.joined.output
+        trim_reads = rule.trim_reads.joined.output
     output:
         "results/{eid}/annotation/reads/{sample}_{database}"
     message:
@@ -274,6 +290,7 @@ rule annotate_reads_rRNA:
         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
             {input.database} {input.trim_reads}"""
 
+
 rule taxonomic_placement_rRNAs_LCA:
     input:
         rule.annotate_reads_rRNA.output
@@ -285,8 +302,6 @@ rule taxonomic_placement_rRNAs_LCA:
     threads:
         config['lastplus']['threads']
     shell:
-
-
 
 
 # will want to change this as we add assemblers
