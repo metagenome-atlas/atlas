@@ -32,13 +32,13 @@ def get_samples(eid, dir="demultiplexed", coverage_cutoff=1000):
 
 
 def get_databases():
-    """Grab databases from files residing in /databases/taxonomic/ and /databases/functional.
-    Expecting a directory where the only files are database files."""
+    """Grab databases from files residing in /databases/taxonomic/, /databases/functional/,
+    and /databases/contaminant/. Expecting a directory where the only files are database files."""
 
     # gather files
     tax = glob.glob('./databases/taxonomic/*')
     func = glob.glob('./databases/functional/*')
-    contam = glob.glob('./databases/contaminants/*')
+    contam = glob.glob('./databases/contaminant/*')
 
     # filter non files
     tax = [os.path.basename(x) for x in tax if os.path.isfile(x)]
@@ -69,7 +69,9 @@ rule gunzip:
 
 rule build_contaminant_references:
     input:
-        contaminant_db = "databases/contaminant/{db}"
+        contaminant_db = "databases/contaminant/{db}",
+
+        # can I call Python code here?
         contaminant_db_name = os.path.splitext(contaminant_db)
     output:
         f1 = "{fasta}.1.bt2",
@@ -147,7 +149,7 @@ rule join_reads:
                   --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
                   --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
                   --output-directory results/{wildcards.eid}/joined/ --threads {threads}
-           """
+        """
 
 
 rule filter_contaminants:
@@ -174,15 +176,15 @@ rule filter_contaminants:
 
 rule trim_reads:
     input:
-        filtered = rule.filter_contaminants.output
+        filtered = rule.filter_contaminants.output,
         picard = ?
     output:
-        joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq"
-        R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq"
+        joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq",
+        R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq",
         R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
     params:
-        single_end = config['SE']
-        phred_value = config['phred33']
+        single_end = config['SE'],
+        phred_value = config['phred33'],
         min_length = config['length?']
     message:
         "Trimming filtered reads using trimmomatic"
@@ -200,7 +202,7 @@ rule fastqc_R1:
     output:
         "results/{eid}/qc/{sample}_R1.fastq"
     shell:
-        """fastqc {input} -o {output}"""
+        "fastqc {input} -o {output}"
 
 rule fastqc_R2:
     input:
@@ -208,7 +210,7 @@ rule fastqc_R2:
     output:
         "results/{eid}/qc/{sample}_R2.fastq"
     shell:
-        """fastqc {input} -o {output}"""
+        "fastqc {input} -o {output}"
 
 rule fastqc_joined:
     input:
@@ -216,36 +218,36 @@ rule fastqc_joined:
     output:
         "results/{eid}/qc/{sample}_joined.fastq"
     shell:
-        """fastqc {input} -o {output}"""
+        "fastqc {input} -o {output}"
 
-rule remove_rRNAs: #For metatranscriptomes only!
+
+# For metatranscriptomes only!
+rule remove_rRNAs:
     input:
-        rule.interleave_reads.output
+        rule.interleave_reads.output,
         rule.trim_reads.joined.output
     output:
-        joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_joined.fastq"
-        R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R1.fastq"
+        joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_joined.fastq",
+        R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R1.fastq",
         R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R2.fastq"
     message:
-    "Aligning all joined and reads to remove rRNAs for mRNA de novo transcriptome assembly."
+        "Aligning all joined and reads to remove rRNAs for mRNA de novo transcriptome assembly."
     shadow:
-    "shallow"
+        "shallow"
     threads:
-    config['contamination_filtering']['threads']
+        config['contamination_filtering']['threads']
     shell:
-    """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
+        """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
               | samtools view -@ {threads} -hf4 \
               | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
               | bedtools bamtofastq -i stdin -fq {output}
-       """
+        """
+
 
 rule interleave_reads:
     input:
-        # qc_reads = rule.fastqc.output
-        # joined = rules.join_reads.output.joined,
         r1 = rules.join_reads.output.failed_r1,
-        r2 = rules.join_reads.output.failed_r2,
-        # prefix = rules.combine_contaminant_references.output
+        r2 = rules.join_reads.output.failed_r2
     output:
         "results/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
     message:
@@ -253,10 +255,23 @@ rule interleave_reads:
     run:
         IO.interleave_reads(input.r1, input.r2, output)
 
+
+rule merge_joined_interleaved:
+    input:
+        il = rules.interleave_reads.output,
+        joined = rules.join_reads.output.joined
+    output:
+        "results/{eid}/assembly/{sample}_merged.fastq"
+    message:
+        "Merging joined and interleaved reads"
+    run:
+        IO.cat_reads(input.il, input.joined, output)
+
+
 rule annotate_reads_rRNA:
     input:
-        rule.interleave_reads.output
-        rule.trim_reads.joined.output
+        rule.interleave_reads.output,
+        trim_reads = rule.trim_reads.joined.output
     output:
         "results/{eid}/annotation/reads/{sample}_{database}"
     message:
@@ -271,6 +286,7 @@ rule annotate_reads_rRNA:
         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
             {input.database} {input.trim_reads}"""
 
+
 rule taxonomic_placement_rRNAs_LCA:
     input:
         rule.annotate_reads_rRNA.output
@@ -282,8 +298,6 @@ rule taxonomic_placement_rRNAs_LCA:
     threads:
         config['lastplus']['threads']
     shell:
-
-
 
 
 # will want to change this as we add assemblers
@@ -327,14 +341,14 @@ rule megahit:
 rule trinity:
     input:
         # need to replace with reference to rule
-        extendedFrags = 'results/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq'  # after we fix trimming!
+        extendedFrags = 'results/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq',  # after we fix trimming!
         interleaved = 'results/{eid}/interleaved/{sample}_trimmed_interleaved.fastq'
     output:
         "results/{eid}/assembly/{sample}.contigs.fa"
     params:
-        seqtype = config['assembly']['seqtype']  # default fastq
-        read_pairing = config['assembly']['single']  # default single for extendedFrags
-        memory = config['assembly']['max_memory']
+        seqtype = config['assembly']['seqtype'],  # default fastq
+        read_pairing = config['assembly']['single'],  # default single for extendedFrags
+        memory = config['assembly']['max_memory'],
         run_as_paired = config['assembly']['run_as_paired']
     message:
         "Assembling using trinity"
@@ -360,7 +374,7 @@ rule length_filter:
 
 rule assembly_stats:
     input:
-        assembled = rules.assembly.output
+        assembled = rules.assembly.output,
         filtered = rules.length_filter.output
     output:
         assembled = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
@@ -454,8 +468,8 @@ rule maxbin_bins:
 
 rule lastplus_orfs
     input:  # how to do wrap rule or ifelse?
-        fgsplus_orfs = rules.fgsplus.output
-        prodigal_orfs = rules.prodigal.output
+        fgsplus_orfs = rules.fgsplus.output,
+        prodigal_orfs = rules.prodigal.output,
         database = rules.format_database.output
     output:
         annotation = "results/{eid}/annotation/orfs/{sample}_{database}"
