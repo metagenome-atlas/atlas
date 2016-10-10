@@ -79,7 +79,7 @@ rule build_contaminant_references:
         r1 = "{fasta}.rev.1.bt2",
         r2 = "{fasta}.rev.2.bt2"
     message:
-        "Formatting contaminant databases for bowtie2"
+        "Formatting contaminant databases"
     shell:
         "bowtie2-build {input.contaminant_db} {input.contaminant_db_name}"
 
@@ -97,9 +97,7 @@ rule build_functional_databases:
         f7 = "{lastal_database}.tis",
         f8 = "{lastal_database}-names.txt"
     message:
-        "Formatting functional databases for last+"
-    params:
-        protein_database = "p"  # for functional dbs only
+        "Formatting functional databases"
     shell:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"
 
@@ -117,7 +115,7 @@ rule build_taxonomic_databases:
         f7 = "{lastal_database}.tis",
         f8 = "{lastal_database}-names.txt"
     message:
-        "Formatting taxonomic databases for last+"
+        "Formatting taxonomic databases"
     shell:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
