@@ -1,141 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""
-Assumes BLAST output (-outfmt 6) is sorted by query then best hit (the default behavior). If
-you're not sure, you can run something like:
 
-sort -k1,1 -k12,12nr blast_output.tsv > blast_output.sorted.tsv
-
-Metat_1000000_contigs_6828_1
-
-Metat_1000000_contigs_6828_1	gi|495355777|ref|WP_008080498.1|	96	340	12	0	0	340	442	782	3.22e-209	1718
-Metat_1000000_contigs_6828_1	gi|499651245|ref|WP_011331979.1|	99	340	2	0	0	340	442	782	5.71e-215	1763
-Metat_1000000_contigs_6828_1	gi|495227881|ref|WP_007952652.1|	100	340	0	0	0	340	442	782	7.28e-216	1770
-
-brow015@we30325:~/devel/blastlca
-$ grep "gi|495227881|ref|WP_007952652.1|" refseq-nr-2014-01-18-names.txt
->gi|495227881|ref|WP_007952652.1| molybdopterin-dependent oxidoreductase alpha subunit [Pseudomonas sp. GM25]
-
-brow015@we30325:~/devel/blastlca
-$ grep "gi|499651245|ref|WP_011331979.1|" refseq-nr-2014-01-18-names.txt
->gi|499651245|ref|WP_011331979.1| oxidoreductase alpha (molybdopterin) subunit [Pseudomonas fluorescens]
-
-
-
-
-
-oldquery = [["Pseudomonas sp. G5(2012)"],["Pseudomonas sp. HPB0071"],["Azotobacter vinelandii"],["Methylohalobius crimeensis"],["Pelobacter propionicus"],["Candidatus Methylomirabilis"],["Nevskia ramosa"],["Methylopila sp. M107"],["delta proteobacterium NaphS2"],["Hydrocarboniphaga effusa"]]
-oldtree.getTaxonomy(oldquery)
-'not Bacteria Haeckel 1894'
-
-newtree = Tree("/Users/brow015/devel/blastlca/ncbi_taxonomy_tree.txt")
-dd = defaultdict(lambda: defaultdict(BlastHit))
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Pseudomonas sp. G5(2012)", "1225")
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Pseudomonas sp. HPB0071", "889")
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Azotobacter vinelandii", 887)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Methylohalobius crimeensis", 671)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Pelobacter propionicus", 668)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Candidatus Methylomirabilis", 638)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Nevskia ramosa", 631)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Methylopila sp. M107", 600)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("delta proteobacterium NaphS2", 598)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("Hydrocarboniphaga effusa", 593)
-dd["Metat_1000000_contigs_60988_0"]["0"].add("TEST", 500)
-dd['Metat_1000000_contigs_60988_0']['0'].taxonomies.reverse()
-newtree.lca(dd['Metat_1000000_contigs_60988_0']['0'].taxonomies)
-
-dd['Metat_1000000_contigs_60988_0']['0'].lca(newtree)
-
-
-newtree = Tree("/Users/brow015/devel/blastlca/ncbi_taxonomy_tree.txt")
-newtree.lca_star(['purple photosynthetic bacteria and relatives', 'gamma subgroup', 'not Bacteria Haeckel 1894', 'RNA similarity group I'])
-
-
-
-contigs['Metat_1000000_contigs_60988']['4'].add('Pseudomonas sp. HPB0071', 1431, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Pseudomonas sp. HPB0071', 1377, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Pseudomonas mandelii', 1333, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Pseudomonas mandelii', 1180, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Pseudomonas sp. HPB0071', 1167, 10, 1)
-contigs['Metat_1000000_contigs_60988']['0'].add('Pseudomonas sp. HPB0071', 889, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas sp. Chol1', 844, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas sp. HPB0071', 809, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Pseudomonas agarici', 1326, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Pseudomonas veronii', 1290, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia marcescens', 1283, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Pantoea sp. A4', 1253, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1237, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Shigella dysenteriae', 1234, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Pseudomonas agarici', 1175, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Pseudomonas veronii', 1111, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas sp. 313', 799, 10, 1)
-contigs['Metat_1000000_contigs_60988']['4'].add('Pseudomonas luteola', 1420, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia marcescens', 1277, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1238, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1238, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Pseudomonas luteola', 1114, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 856, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas luteola', 809, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Salmonella enterica', 272, 10, 1)
-contigs['Metat_1000000_contigs_60988']['4'].add('Pseudomonas sp. G5(2012)', 1939, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Pseudomonas sp. G5(2012)', 1900, 10, 1)
-contigs['Metat_1000000_contigs_60988']['5'].add('Pseudomonas sp. G5(2012)', 1716, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Pseudomonas sp. G5(2012)', 1661, 10, 1)
-contigs['Metat_1000000_contigs_60988']['2'].add('Pseudomonas sp. G5(2012)', 1421, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia liquefaciens', 1279, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas sp. G5(2012)', 1228, 10, 1)
-contigs['Metat_1000000_contigs_60988']['0'].add('Pseudomonas sp. G5(2012)', 1225, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia albertii', 1217, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia albertii', 1217, 10, 1)
-contigs['Metat_1000000_contigs_60988']['7'].add('Pseudomonas sp. G5(2012)', 1150, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 878, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia marcescens', 1283, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia marcescens', 1273, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 816, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1237, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia sp. TW11588', 1234, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1234, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri subgroup', 894, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 618, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Enterobacteriaceae', 246, 10, 1)
-contigs['Metat_1000000_contigs_60988']['4'].add('Azotobacter vinelandii', 1462, 10, 1)
-contigs['Metat_1000000_contigs_60988']['2'].add('Azotobacter vinelandii', 992, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 892, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 879, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 878, 10, 1)
-contigs['Metat_1000000_contigs_60988']['7'].add('Azotobacter vinelandii', 780, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Azotobacter vinelandii', 1355, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia marcescens', 1284, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1240, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1237, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1237, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1233, 10, 1)
-contigs['Metat_1000000_contigs_60988']['6'].add('Azotobacter vinelandii', 1132, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 894, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Shigella flexneri', 403, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Erwinia billingiae', 1248, 10, 1)
-contigs['Metat_1000000_contigs_60988']['0'].add('Azotobacter vinelandii', 887, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Azotobacter vinelandii', 849, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Enterobacteriaceae bacterium 9_2_54FAA', 1252, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Hafnia alvei', 1250, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 881, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 877, 10, 1)
-contigs['Metat_1000000_contigs_60988']['1'].add('Pseudomonas stutzeri', 850, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 658, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Shimwellia blattae', 1240, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Serratia sp. M24T3', 1239, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1234, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1233, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1233, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1232, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1231, 10, 1)
-contigs['Metat_1000000_contigs_60988']['8'].add('Escherichia coli', 1140, 10, 1)
-contigs['Metat_1000000_contigs_60988']['5'].add('Shigella boydii', 373, 10, 1)
-
-
-"""
-import argparse
 import bisect
+import click
 import logging
 import math
 import os
@@ -144,12 +11,43 @@ from collections import Counter, defaultdict, deque, OrderedDict
 from math import log, sqrt, erfc
 
 
+class Node(object):
+
+    def __init__(self, taxonomy, node_id, parent_id):
+        """Represents a node within a tree.
+
+        Args:
+            taxonomy (str): taxonomy name or ID
+            node_id (str): taxonomy ID
+            parent_id (str): taxonomy ID of parent
+
+        """
+        # the current node's string ID
+        self.taxonomy = taxonomy
+        # the current node's digit ID
+        self.node_id = node_id
+        self.parent_id = parent_id
+
+
 class Tree(object):
 
     def __init__(self, tax_tree):
-        """
+        """Builds reference dictionary from tab delimited text of Taxonomy Name, Taxonomy ID,
+        Parent Taxonomy ID.
+
+        Args:
+            tax_tree (str): file path to taxonomy tree txt
+
         Raises:
             AssertionError when child and parent IDs are equal when not root
+
+        Notes:
+            An example of the file:
+
+                root	    1	        1
+                all	        1	        1
+                prokaryotes	99999999    131567
+
         """
         self.tree = defaultdict(dict)
 
@@ -164,6 +62,14 @@ class Tree(object):
                 self.add_node(toks[0], toks[1], toks[2])
 
     def add_node(self, taxonomy, node_id, parent_id):
+        """Adds node to tree dictionary.
+
+        Args:
+            taxonomy (str): the taxonomy name
+            node_id (str): the taxonomy id
+            parent_id (str): the parent's taxonomy id
+
+        """
         # taxonomy string to node mapping
         self.tree[taxonomy] = Node(taxonomy, node_id, parent_id)
         # taxonomy id to node mapping
@@ -190,8 +96,8 @@ class Tree(object):
         """Returns the taxonomy of the LCA and optionally only use the top fraction of hits.
 
         Args:
-            taxonomies: list of taxonomies (ID or name); when using threshold < 1 they should be
-                ordered by decreasing bitscore
+            taxonomies (list): list of taxonomies (ID or name); when using threshold < 1 they
+                should be ordered by decreasing bitscore
             threshold (Optional[float]): 0-1; threshold fraction of hits to be factored into lca
 
         Returns:
@@ -222,9 +128,24 @@ class Tree(object):
         return "root"
 
     def filter_taxonomy_list(self, taxonomy_list, min_tree_depth=3):
-        """
+        """Filters a taxonomy list by tree depth in an effort to classify at a higher resolution.
+
         Args:
+            taxonomy_list (list): list of taxonomy names or IDs to filter
             min_tree_depth (Optional[int]): minimum allowable depth for this taxonomy to be considered
+
+        Returns:
+            list
+
+        Example:
+            >>> tree = Tree("ref/ncbi_taxonomy_tree.txt")
+            >>> tree.filter_taxonomy_list(["bacteria", "Pseudomonadaceae", "Prokaryotae"], min_tree_depth=1)
+            ['bacteria', 'Pseudomonadaceae', 'Prokaryotae']
+            >>> tree.filter_taxonomy_list(["bacteria", "Pseudomonadaceae", "Prokaryotae"], min_tree_depth=3)
+            ['bacteria', 'Pseudomonadaceae']
+            >>> tree.filter_taxonomy_list(["bacteria", "Pseudomonadaceae", "Prokaryotae"], min_tree_depth=4)
+            ['Pseudomonadaceae']
+
         """
         filtered_list = []
         for taxonomy in taxonomy_list:
@@ -243,13 +164,19 @@ class Tree(object):
         return filtered_list
 
     def taxonomic_lineage(self, taxonomy):
-        """
+        """For a given taxonomy name or ID, return its lineage as a list of IDs.
 
         Args:
             taxonomy (str): taxonomy name or taxonomy ID
 
         Returns:
             list of lineage
+
+        Example:
+            >>> tree = Tree("ref/ncbi_taxonomy_tree.txt")
+            >>> tree.taxonomic_lineage("Pseudomonadaceae")
+            ['1', '131567', '99999999', '2', '1224', '1236', '72274', '135621']
+
         """
         taxonomy_id = self.tree[taxonomy].node_id
         lineage = [taxonomy_id]
@@ -262,7 +189,7 @@ class Tree(object):
         """Finds a consensus majority up a tree structure.
 
         Args:
-            taxonomy_list (list): list of taxonomy names
+            taxonomy_list (list): list of taxonomy names or IDs
             majority_cutoff (float): this is the total length of the taxonomy list * majority fraction
 
         Returns:
@@ -298,6 +225,29 @@ class Tree(object):
         return "1", lineages
 
     def counts_to_majority_list(self, taxonomy_counts, lineages, majority_id):
+        """Aggregate the counts across lineage observations for the majority ID.
+
+        Args:
+            taxonomy_counts (collections.Counter): count per taxon
+            lineages (list): list of lineages per taxon
+            majority_id (str): the taxonomy name or ID upon which to aggregate counts
+
+        Returns:
+            list of representative taxonomies
+
+        Example:
+            >>> tree = Tree("ref/ncbi_taxonomy_tree.txt")
+            >>> taxonomy_list = ['gamma subgroup', 'RNA similarity group I',
+                                 'purple photosynthetic bacteria and relatives',
+                                 'not Bacteria Haeckel 1894',
+                                 'purple photosynthetic bacteria and relatives', 'gamma subgroup',
+                                 'gamma subgroup', 'purple photosynthetic bacteria and relatives',
+                                 'purple photosynthetic bacteria and relatives']
+            >>> majority_id, lineages = tree.lca_majority(taxonomy_list, 0.5 * len(taxonomy_list))
+            >>> tree.counts_to_majority_list(Counter(taxonomy_list), lineages, majority_id)
+            ['1224', '2', '1224', '1224', '1224', '1224', '1224', '1224', '1224']
+
+        """
         aggregate_counts = []
         for taxonomy, taxonomy_count in taxonomy_counts.items():
             taxonomy_id = self.tree[taxonomy].node_id
@@ -307,15 +257,32 @@ class Tree(object):
         return aggregate_counts
 
     def lca_star(self, taxonomy_list, min_tree_depth=3, majority_threshold=0.50):
-        """
+        """Find the LCA within a list of taxonomies after filtering those taxonomies by tree depth.
+        One can also vary what constitutes a majority consensus for the counts, with the default
+        being 50%.
 
         Args:
-            taxonomy_list (list):
-            min_tree_depth (int):
-            majority_threshold (float): 0-1;
+            taxonomy_list (list): list of taxonomy names or IDs
+            min_tree_depth (int): the mininum allowable tree depth of taxon to be considered within
+                the taxonomy list; those found sooner in the tree will be filtered out of consideration
+            majority_threshold (float): 0-1; the fraction of taxonomy counts which constitutes a
+                majority; a lower fraction will classify with less confidence deeper in the tree
+                while a higher threshold will classify with more confidence higher in the tree
 
         Returns:
             dict of 'taxonomy' and 'pvalue'
+
+        Example:
+            >>> tree = Tree("ref/ncbi_taxonomy_tree.txt")
+            >>> taxonomy_list = ['gamma subgroup', 'RNA similarity group I',
+                                 'purple photosynthetic bacteria and relatives',
+                                 'not Bacteria Haeckel 1894',
+                                 'purple photosynthetic bacteria and relatives', 'gamma subgroup',
+                                 'gamma subgroup', 'purple photosynthetic bacteria and relatives',
+                                 'purple photosynthetic bacteria and relatives']
+            >>> tree.lca_star(taxonomy_list)
+            {'pvalue': 0.012791848981090311, 'taxonomy': '1224'}
+
         """
         # tree depth based filter
         taxonomy_list = self.filter_taxonomy_list(taxonomy_list, min_tree_depth)
@@ -325,8 +292,7 @@ class Tree(object):
             p = 1.
         else:
             taxonomy_counts = Counter(taxonomy_list)
-            total_count = len(taxonomy_list)
-            majority_cutoff = total_count * majority_threshold
+            majority_cutoff = len(taxonomy_list) * majority_threshold
             # majority based on existing taxonomy counts alone
             if taxonomy_counts.most_common()[0][1] > majority_cutoff:
                 majority = taxonomy_counts.most_common()[0][0]
@@ -339,41 +305,33 @@ class Tree(object):
         return {"taxonomy":majority, "pvalue":p}
 
 
-class Node(object):
+class BlastHits(object):
 
-    def __init__(self, taxonomy, node_id, parent_id):
-        # the current node's string ID
-        self.taxonomy = taxonomy
-        # the current node's digit ID
-        self.node_id = node_id
-        self.parent_id = parent_id
+    def __init__(self, names=None):
+        """Class that represents BLAST hits for a single target sequence. Hits are added to queues
+        for bitscore and ID and ordered by increasing bitscore.
 
-
-class BlastHit(object):
-
-    def __init__(self, taxonomies=None):
-        """
         Args:
-            taxonomies (Optional[list]): when initiated with a tax list; :func:`best_hit` and
+            names (Optional[list]): when initiated with a name list; :func:`best_hit` and
                 :func:`add` will no longer operate as intended
         """
-        if taxonomies is None:
+        if names is None:
             # increasing bitscore sorted
-            self.taxonomies = deque()
+            self.names = deque()
             self.bitscores = deque()
         else:
-            self.taxonomies = taxonomies
+            self.names = names
 
     def __repr__(self):
-        return "{cls}[{tax}]".format(cls=self.__class__.name, tax=self.taxonomies)
+        return "{cls}[{tax}]".format(cls=self.__class__.name, tax=self.names)
 
     def add(self, taxonomy, bitscore, max_hits=10, top_fraction=None):
-        """Add entry to this :class:`BlastHit` group.
+        """Add entry to this :class:`BlastHits` group.
 
         Args:
             taxonomy (str): taxonomy name
             bitscore (str): bitscore for hit
-            max_hits (int): maximum number of hits to consider for this :class:`BlastHit` group
+            max_hits (int): maximum number of hits to consider for this :class:`BlastHits` group
             top_fraction (float): fraction cutoff from best bitscore, e.g. 0.3 will filter out 699 when best bitscore is 1000
 
         Notes:
@@ -389,27 +347,27 @@ class BlastHit(object):
             # insert into sorted list
             idx = bisect.bisect_left(self.bitscores, bitscore)
             self.bitscores.insert(idx, bitscore)
-            self.taxonomies.insert(idx, taxonomy)
-            if len(self.taxonomies) > max_hits:
+            self.names.insert(idx, taxonomy)
+            if len(self.names) > max_hits:
                 # remove lowest bitscore
-                self.taxonomies.popleft()
+                self.names.popleft()
                 self.bitscores.popleft()
 
     def best_hit(self):
-        return self.taxonomies[-1]
+        return self.names[-1]
 
     def majority(self):
-        # no repeated taxonomies
-        if len(self.taxonomies) == len(set(self.taxonomies)):
+        # no repeated names
+        if len(self.names) == len(set(self.names)):
             return self.best_hit()
         else:
             # count each taxonomy, grab top taxonomy
-            most_common = Counter(self.taxonomies).most_common(1)[0][0]
+            most_common = Counter(self.names).most_common(1)[0][0]
             # need to flip to grab best bitscore
-            self.taxonomies.reverse()
+            self.names.reverse()
             # left most index match
-            idx = self.taxonomies.index(most_common)
-            return self.taxonomies[idx]
+            idx = self.names.index(most_common)
+            return self.names[idx]
 
 
 def index_of_list_items(lists):
@@ -540,7 +498,7 @@ def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
     blast_6 = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend',
                'sstart', 'send', 'evalue', 'bitscore']
 
-    contigs = defaultdict(lambda: defaultdict(BlastHit))
+    contigs = defaultdict(lambda: defaultdict(BlastHits))
 
     with open(blast_tab) as blast_tab_fh:
         current_hit = ""
@@ -564,14 +522,12 @@ def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
             # except IndexError:
             #     ec = ""
             try:
+                # this makes this a non-generic blast parser
                 taxonomy = tax_re.findall(raw_product)[0]
+                contig_name, _, orf_idx = toks['qseqid'].rpartition("_")
+                contigs[contig_name][orf_idx].add(taxonomy, toks['bitscore'], max_hits_per_orf, top_fraction_of_hits)
             except IndexError:
-                taxonomy = ""
-
-            contig_name, _, orf_idx = toks['qseqid'].rpartition("_")
-
-            bbb = toks['bitscore']
-            contigs[contig_name][orf_idx].add(taxonomy, toks['bitscore'], max_hits_per_orf, top_fraction_of_hits)
+                continue
 
     # can't guarantee ordering, so iterate again and aggregate ORF assignments
     orf_assignments = defaultdict(dict)
@@ -583,8 +539,8 @@ def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
                 orf_assignments[contig][orf] = hits.majority()
             # orf_summary == "lca":
             else:
-                hits.taxonomies.reverse()
-                orf_assignments[contig][orf] = tree.lca(hits.taxonomies, threshold=lca_threshold)
+                hits.names.reverse()
+                orf_assignments[contig][orf] = tree.lca(hits.names, threshold=lca_threshold)
     return orf_assignments
 
 
@@ -641,7 +597,7 @@ def process_orfs(orf_assignments, tree, taxonomy_name_map=None):
         taxonomies = list(orfs.values())
         lca_star_result = tree.lca_star(taxonomies)
         second_lca = tree.lca(taxonomies, threshold=1)
-        majority = BlastHit(taxonomies).majority()
+        majority = BlastHits(taxonomies).majority()
         majority_p = nettleton_pvalue(taxonomies, majority)
 
         if taxonomy_name_map:
