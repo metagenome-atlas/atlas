@@ -387,23 +387,78 @@ rule assembly_stats:
            perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
         """
 
-rule merge_assembly_contigs_cap3:
+rule merge_assembly_contigs_step1:
     input:
-        rules.length_filter
+        rules.length_filter.output #>1k contigs
     output:
         "results/{eid}/assembly/{sample}_cap3-out.fa"
     message:
         "Merging contigs with CAP3"
     shell:
-        """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
-           perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
-        """
+        """./cap3 {input} -p 95 > {output}.out &"""
 
+rule length_filter_long_step1:
+    input:
+        rules.assemble.output
+    output:
+        passing = "results/{eid}/assembly/{sample}_length_pass.fa",
+        fail = "results/{eid}/assembly/{sample}_length_fail.fa"
+    params:
+        min_contig_length = config['assembly']['filtered_contig_length']
+    shell:
+        """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
+        {input} {output.passing} {output.fail}"""
 
-# have Joe review
+rule length_filter_long_step2:
+    input:
+        rules.merge_assembly_contigs_step1.output
+    output:
+        passing = "results/{eid}/assembly/{sample}_length_pass.fa",
+        fail = "results/{eid}/assembly/{sample}_length_fail.fa"
+    params:
+        min_contig_length = config['assembly']['filtered_contig_length']
+    shell:
+        """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
+        {input} {output.passing} {output.fail}"""
+
+rule merge_long_contigs:
+    input:
+        s1 = rules.length_filter_long_step1.output
+        s2 = rules.length_filter_long_step2.output
+    output:
+        "results/{eid}/assembly/{sample}_merged_contigs.fa"
+    message:
+        "Merging long contigs"
+    run:
+        IO.cat_reads(input.s1, input.s2, output)
+
+rule merge_assembly_contigs_formatting:
+    input:
+        rules.merge_long_contigs.output
+    output:
+        "results/{eid}/assembly/{sample}_merged_contigs.afg"
+    message:
+        "Formatting all long contigs with minimus2"
+    shell:
+        "toAmos -s {input} -o {input}.afg"
+
+rule merge_assembly_contigs:
+    input:
+        rules.merge_assembly_contigs_formatting.ouput
+    output:
+        "results/{eid}/assembly/{sample}_hybrid_assembly.fa"
+    message:
+        "Merging all long contigs with minimus2"
+    params:
+        overlap = config['OVERLAP']
+        maxtrim = contig['MAXTRIM']
+    shell:
+        """minimus2 {input} -D REFCOUNT=0 -D MINID=99.9 -D OVERLAP={params.overlap} \
+        -D MAXTRIM={params.maxtrim} -D WIGGLE=15 -D CONSERR=0.01"""
+
 rule fgsplus_passed:
     input:
-        rules.length_filter.output.passing,
+        rules.length_filter.output.passing
     output:
         "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
     params:
