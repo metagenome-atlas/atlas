@@ -196,6 +196,7 @@ rule trim_reads:
             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
 
+
 rule fastqc_R1:
     input:
         rule.trim_reads.output.R1
@@ -204,6 +205,7 @@ rule fastqc_R1:
     shell:
         "fastqc {input} -o {output}"
 
+
 rule fastqc_R2:
     input:
         rule.trim_reads.output.R2
@@ -211,6 +213,7 @@ rule fastqc_R2:
         "results/{eid}/qc/{sample}_R2.fastq"
     shell:
         "fastqc {input} -o {output}"
+
 
 rule fastqc_joined:
     input:
@@ -397,6 +400,7 @@ rule merge_assembly_contigs_step1:
     shell:
         """./cap3 {input} -p 95 > {output}.out &"""
 
+
 rule length_filter_long_step1:
     input:
         rules.assemble.output
@@ -408,6 +412,7 @@ rule length_filter_long_step1:
     shell:
         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
         {input} {output.passing} {output.fail}"""
+
 
 rule length_filter_long_step2:
     input:
@@ -421,6 +426,7 @@ rule length_filter_long_step2:
         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
         {input} {output.passing} {output.fail}"""
 
+
 rule merge_long_contigs:
     input:
         s1 = rules.length_filter_long_step1.output
@@ -432,6 +438,7 @@ rule merge_long_contigs:
     run:
         IO.cat_reads(input.s1, input.s2, output)
 
+
 rule merge_assembly_contigs_formatting:
     input:
         rules.merge_long_contigs.output
@@ -441,6 +448,7 @@ rule merge_assembly_contigs_formatting:
         "Formatting all long contigs with minimus2"
     shell:
         "toAmos -s {input} -o {input}.afg"
+
 
 rule merge_assembly_contigs:
     input:
@@ -455,6 +463,7 @@ rule merge_assembly_contigs:
     shell:
         """minimus2 {input} -D REFCOUNT=0 -D MINID=99.9 -D OVERLAP={params.overlap} \
         -D MAXTRIM={params.maxtrim} -D WIGGLE=15 -D CONSERR=0.01"""
+
 
 rule fgsplus_passed:
     input:
