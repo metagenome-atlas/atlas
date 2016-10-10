@@ -101,7 +101,7 @@ rule build_functional_databases:
     params:
         protein_database = "p"  # for functional dbs only
     shell:
-        "lastdb+ {input.functional_db} {input.functional_db}"
+        "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"
 
 
 rule build_taxonomic_databases:
@@ -118,10 +118,8 @@ rule build_taxonomic_databases:
         f8 = "{lastal_database}-names.txt"
     message:
         "Formatting taxonomic databases for last+"
-    params:
-        protein_database = "p"  # for functional dbs only
     shell:
-        "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"
+        "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
 
 rule join_reads:
