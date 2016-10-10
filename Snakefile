@@ -194,7 +194,6 @@ rule trim_reads:
             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
 
-
 rule fastqc_R1:
     input:
         rule.trim_reads.output.R1
@@ -203,7 +202,6 @@ rule fastqc_R1:
     shell:
         """fastqc {input} -o {output}"""
 
-
 rule fastqc_R2:
     input:
         rule.trim_reads.output.R2
@@ -211,7 +209,6 @@ rule fastqc_R2:
         "results/{eid}/qc/{sample}_R2.fastq"
     shell:
         """fastqc {input} -o {output}"""
-
 
 rule fastqc_joined:
     input:
@@ -370,6 +367,18 @@ rule assembly_stats:
         filtered = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
     message:
         "Obtaining assembly statistics"
+    shell:
+        """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
+           perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
+        """
+
+rule merge_assembly_contigs_cap3:
+    input:
+        rules.length_filter
+    output:
+        "results/{eid}/assembly/{sample}_cap3-out.fa"
+    message:
+        "Merging contigs with CAP3"
     shell:
         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
            perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
