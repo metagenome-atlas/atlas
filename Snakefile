@@ -452,7 +452,7 @@ rule merge_assembly_contigs_formatting:
 
 rule merge_assembly_contigs:
     input:
-        rules.merge_assembly_contigs_formatting.ouput
+        rules.merge_assembly_contigs_formatting.output
     output:
         "results/{eid}/assembly/{sample}_hybrid_assembly.fa"
     message:
@@ -463,6 +463,17 @@ rule merge_assembly_contigs:
     shell:
         """minimus2 {input} -D REFCOUNT=0 -D MINID=99.9 -D OVERLAP={params.overlap} \
         -D MAXTRIM={params.maxtrim} -D WIGGLE=15 -D CONSERR=0.01"""
+
+
+rule assembly_stats_hybrid:
+    input:
+        rules.merge_assembly_contigs.output
+    output:
+        hybrid_assembled = "results/{eid}/assembly/{sample}_hybrid_assembly-stats.txt"
+    message:
+        "Obtaining hybrid assembly statistics"
+    shell:
+        """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}"""
 
 
 rule fgsplus_passed:
