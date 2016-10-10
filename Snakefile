@@ -278,8 +278,8 @@ rule megahit:
 rule trinity:
     input:
         # need to replace with reference to rule
-        extendedFrags = 'results/{eid}/trimmed/{sample}.trimmed_extendedFrags.fastq'  # after we fix trimming!
-        interleaved = 'results/{eid}/interleaved/{sample}.trimmed_interleaved.fastq'
+        extendedFrags = 'results/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq'  # after we fix trimming!
+        interleaved = 'results/{eid}/interleaved/{sample}_trimmed_interleaved.fastq'
     output:
         "results/{eid}/assembly/{sample}.contigs.fa"
     params:
@@ -311,15 +311,18 @@ rule length_filter:
 
 rule assembly_stats
     input:
-        output_assembly = rules.assembly.output
-        output_length_filte = rules.length_filter.output
+        assembled = rules.assembly.output
+        filtered = rules.length_filter.output
     output:
-        output_assembly = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
-        output_length_filter = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
+        assembled = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
+        filtered = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
     message:
         "Obtaining assembly statistics"
     shell:
-        "perl scripts/CountFasta.pl {params.output_assembly} {params.output_length_filter} > {output}"
+        """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
+           perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
+        """
+
 
 
 # have Joe review
