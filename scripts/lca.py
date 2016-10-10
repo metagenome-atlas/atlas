@@ -7,6 +7,7 @@ import logging
 import math
 import os
 import re
+import sys
 from collections import Counter, defaultdict, deque, OrderedDict
 from math import log, sqrt, erfc
 
@@ -307,13 +308,51 @@ class Tree(object):
 
 class BlastHits(object):
 
-    def __init__(self, names=None):
+    def __init__(self, names=None, max_hits=10, top_fraction=None):
         """Class that represents BLAST hits for a single target sequence. Hits are added to queues
         for bitscore and ID and ordered by increasing bitscore.
 
         Args:
             names (Optional[list]): when initiated with a name list; :func:`best_hit` and
                 :func:`add` will no longer operate as intended
+            max_hits (int): maximum number of hits to consider for this :class:`BlastHits` group
+            top_fraction (float): fraction cutoff from best bitscore, e.g. 0.3 will filter out 699 when best bitscore is 1000
+
+        Notes:
+            max_hits and top_fraction work in conjunction of one another
+
+        Examples:
+            >>> hits = BlastHits()
+            >>> hits.add("name_1", 100)
+            >>> hits.add("name_2", 110)
+            >>> hits.add("name_3", 120)
+            >>> hits.add("name_4", 130)
+            >>> hits.add("name_4", 140)
+            >>> hits.majority()
+            'name_4'
+            >>> hits.best_hit()
+            'name_4'
+            >>> hits.add("name_5", 150)
+            >>> hits.best_hit()
+            'name_5'
+            # demo max hits and top fraction
+            >>> hits = BlastHits(max_hits=3, top_fraction=0.7)
+            >>> hits.add("name_1", 100)
+            # filtered hit
+            >>> hits.add("name_2", 65)
+            >>> hits.names
+            deque(['name_1'])
+            >>> hits.add("name_3", 70)
+            deque(['name_3', 'name_1'])
+            >>> hits.add("name_4", 80)
+            >>> hits.add("name_5", 85)
+            >>> hits.names
+            deque(['name_4', 'name_5', 'name_1'])
+            # new best bitscore
+            >>> hits.add("name_6", 125)
+            >>> dict(zip(hits.names, hits.bitscores))
+            {'name_1': 100.0, 'name_6': 125.0}
+
         """
         if names is None:
             # increasing bitscore sorted
@@ -321,42 +360,52 @@ class BlastHits(object):
             self.bitscores = deque()
         else:
             self.names = names
+        self.max_hits = max_hits
+        self.top_fraction = top_fraction
 
     def __repr__(self):
-        return "{cls}[{tax}]".format(cls=self.__class__.name, tax=self.names)
+        return "{cls}[{tax}]".format(cls=self.__class__.__name__, tax=self.names)
 
-    def add(self, taxonomy, bitscore, max_hits=10, top_fraction=None):
+    def add(self, name, bitscore):
         """Add entry to this :class:`BlastHits` group.
 
         Args:
-            taxonomy (str): taxonomy name
+            name (str): hit identifier
             bitscore (str): bitscore for hit
-            max_hits (int): maximum number of hits to consider for this :class:`BlastHits` group
-            top_fraction (float): fraction cutoff from best bitscore, e.g. 0.3 will filter out 699 when best bitscore is 1000
 
-        Notes:
-            max_hits and top_fraction work in conjunction of one another
         """
         bitscore = float(bitscore)
 
-        if top_fraction and self.bitscores:
-             if bitscore < self.bitscores[-1] - (self.bitscores[-1] * top_fraction):
-                 bitscore = None
+        if self.top_fraction and self.bitscores:
+            # the filter
+            if bitscore < (self.bitscores[-1] * self.top_fraction):
+                bitscore = None
+            # new best
+            elif bitscore > self.bitscores[-1]:
+                score = self.bitscores[0]
+                while score < bitscore * self.top_fraction:
+                    self.names.popleft()
+                    self.bitscores.popleft()
+                    score = self.bitscores[0]
 
         if bitscore:
             # insert into sorted list
             idx = bisect.bisect_left(self.bitscores, bitscore)
             self.bitscores.insert(idx, bitscore)
-            self.names.insert(idx, taxonomy)
-            if len(self.names) > max_hits:
+            self.names.insert(idx, name)
+            if len(self.names) > self.max_hits:
                 # remove lowest bitscore
                 self.names.popleft()
                 self.bitscores.popleft()
 
     def best_hit(self):
+        """Returns the hit ID of the best scoring alignment."""
         return self.names[-1]
 
     def majority(self):
+        """Returns the hit ID of the best scoring hit ID that is repeated or the best hit when
+        no items are repeated.
+        """
         # no repeated names
         if len(self.names) == len(set(self.names)):
             return self.best_hit()
@@ -364,10 +413,68 @@ class BlastHits(object):
             # count each taxonomy, grab top taxonomy
             most_common = Counter(self.names).most_common(1)[0][0]
             # need to flip to grab best bitscore
-            self.names.reverse()
+            names_reversed = self.names.copy()
+            names_reversed.reverse()
             # left most index match
-            idx = self.names.index(most_common)
-            return self.names[idx]
+            idx = names_reversed.index(most_common)
+            return names_reversed[idx]
+
+
+@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+@click.version_option("0.0.0")
+@click.pass_context
+def cli(obj):
+    "LCA methods for BLAST tabular output."
+
+
+@cli.command("tree-based", short_help="enables tree based LCA and LCA star methods")
+@click.argument("tsv", type=click.Path(exists=True))
+@click.argument("annotation", type=click.Path(exists=True))
+@click.argument("tree", type=click.Path(exists=True))
+@click.argument("output", type=click.File("w"))
+@click.option("-m", "--name-map", type=click.Path(exists=True), help="taxonomy name map that uses taxonomy IDs within TREE and converts them to the name in this file, e.g. 'ncbi.map'; taxonomy IDs in column 1, new taxonomy name in column 2")
+@click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs")
+@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
+@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
+@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
+@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs; can drastically alter LCA assignments if too high; when too low, will affect error probability calculation resulting in higher p-values")
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits by only keep hits within this fraction of the highest bitscore")
+def tree_based_parsing(tsv, annotation, tree, output, name_map, summary_method, min_identity,
+                       min_bitscore, min_length, max_evalue, max_hits, top_fraction):
+    """Parse TSV (tabular BLAST output [-outfmt 6]), grabbing taxonomy from ANNOTATION, and use
+    TREE to compute LCAs.
+
+    Annotation file should include your BLAST subject sequence ID, a space, then product:
+
+        \b
+        >id1 hypothetical protein [Micromonospora lupini]
+        >id2 conserved exported hypothetical protein [Micromonospora lupini]
+
+    Taxonomy is contained with brackets '[]'.
+
+    The optional name map, takes derived taxonomy IDs from TREE and renames the taxonomy to its
+    match within this file. An example header for this tab-delimited file looks like:
+
+        \b
+        9	Buchnera aphidicola
+        10	Cellvibrio
+        11	[Cellvibrio] gilvus
+        13	Dictyoglomus
+
+    """
+    logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
+    logging.info("Parsing %s" % tree)
+    tree = Tree(tree)
+    logging.info("Parsing %s" % tsv)
+    orf_assignments = parse_blast_results(tsv, annotation, orf_summary=summary_method, tree=tree,
+                                          min_identity=min_identity, min_bitscore=min_bitscore,
+                                          min_length=min_length, max_evalue=max_evalue,
+                                          max_hits_per_orf=max_hits, top_fraction_of_hits=top_fraction)
+    logging.info("Assigning taxonomies to contigs")
+    # TODO: this should include name mapped 'product' column so we propogate function
+    process_orfs(orf_assignments, tree, output, taxonomy_name_map=name_map)
+    logging.info("Complete")
 
 
 def index_of_list_items(lists):
@@ -378,7 +485,7 @@ def index_of_list_items(lists):
         lists (list): list of lists
 
     Returns:
-        OrderedDict of taxonomy ID, sorted by depth with deepest node first
+        OrderedDict of list items, sorted by depth with deepest list item first
 
     Example:
         >>> lineages = [['1', '131567', '99999999', '2'],
@@ -427,7 +534,7 @@ def parse_annotation_map(path):
         Where the name and product are separated by a space.
 
     """
-    logging.debug("Reading the annotation map")
+    logging.debug("Reading the annotation map [%s]" % path)
     am = {}
     with open(path) as fh:
         for line in fh:
@@ -457,7 +564,7 @@ def parse_ncbi_map(path):
             dict('1':'root', '2':'Bacteria', '6':'Azorhizobium')
 
     """
-    logging.debug("Parsing NCBI map file")
+    logging.debug("Parsing NCBI map file [%s]" % path)
     m = {}
     with open(path) as fh:
         for line in fh:
@@ -498,7 +605,8 @@ def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
     blast_6 = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend',
                'sstart', 'send', 'evalue', 'bitscore']
 
-    contigs = defaultdict(lambda: defaultdict(BlastHits))
+    contigs = defaultdict(lambda: defaultdict(lambda: BlastHits(max_hits=max_hits_per_orf,
+                                                                top_fraction=top_fraction_of_hits)))
 
     with open(blast_tab) as blast_tab_fh:
         current_hit = ""
@@ -508,9 +616,8 @@ def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
             toks = dict(zip(blast_6, hsp.strip().split("\t")))
 
             # user filtering cutoffs
-            if int(toks['length']) < min_length or float(toks['pident']) < min_identity or \
-               float(toks['bitscore']) < min_bitscore or float(toks['evalue']) > max_evalue:
-                continue
+            if int(toks['length']) < min_length or float(toks['pident']) < min_identity or float(toks['evalue']) > max_evalue: continue
+            if min_bitscore and float(toks['bitscore']) < min_bitscore: continue
 
             try:
                 raw_product = annotations[toks['sseqid']]
@@ -525,7 +632,7 @@ def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
                 # this makes this a non-generic blast parser
                 taxonomy = tax_re.findall(raw_product)[0]
                 contig_name, _, orf_idx = toks['qseqid'].rpartition("_")
-                contigs[contig_name][orf_idx].add(taxonomy, toks['bitscore'], max_hits_per_orf, top_fraction_of_hits)
+                contigs[contig_name][orf_idx].add(taxonomy, toks['bitscore'])
             except IndexError:
                 continue
 
@@ -585,14 +692,20 @@ def nettleton_pvalue(items, key):
         return erfc(sqrt(t / 2))
 
 
-def process_orfs(orf_assignments, tree, taxonomy_name_map=None):
+def process_orfs(orf_assignments, tree, output, taxonomy_name_map=None):
     """Processing the already classified ORFs through secondary contig classification.
 
     Args:
-        orf_assignments
-
+        orf_assignments (dict): dict of dict for per ORF tax assignment per contig
+        tree (Tree): taxonomic tree object
+        output (filehandle): output file handle
+        taxonomy_name_map (str): file path to taxonomy name map
     """
-    print("contig", "lca_star", "lca_star_p", "majority", "majority_p", "lca_squared", sep="\t")
+    if taxonomy_name_map:
+        taxonomy_name_map = parse_ncbi_map(taxonomy_name_map)
+
+    print("contig", "lca_star", "lca_star_p", "majority", "majority_p", "lca_squared", sep="\t",
+          file=output)
     for contig, orfs in orf_assignments.items():
         taxonomies = list(orfs.values())
         lca_star_result = tree.lca_star(taxonomies)
@@ -608,55 +721,9 @@ def process_orfs(orf_assignments, tree, taxonomy_name_map=None):
             lca_star_lineage = ";".join(["%s (%s)" % (tree[i].taxonomy, i) for i in tree.taxonomic_lineage(lca_star_result['taxonomy'])])
             second_lca_lineage = ";".join(["%s (%s)" % (tree[i].taxonomy, i) for i in tree.taxonomic_lineage(second_lca)])
             majority_lineage = ";".join(["%s (%s)" % (tree[i].taxonomy, i) for i in tree.taxonomic_lineage(majority)])
-        print(contig, lca_star_lineage, lca_star_result['pvalue'], majority_lineage, majority_p, second_lca_lineage, sep="\t")
+        print(contig, lca_star_lineage, lca_star_result['pvalue'], majority_lineage, majority_p,
+              second_lca_lineage, sep="\t", file=output)
 
 
-# def main(fasta, blasttab, annotation_map, out_file, blast_lambda, blast_k, min_bsr, min_identity, min_bitscore, min_length, max_evalue, max_hits):
-    # logging.info("Finding best possible alignment score per sequence")
-annotation_map = "/Users/brow015/devel/blastlca/refseq-nr-2014-01-18-names.txt"
-taxonomy_tree = "/Users/brow015/devel/blastlca/ncbi_taxonomy_tree.txt"
-tree = Tree(taxonomy_tree)
-# best_scores = calculate_best_score(fasta, blast_lambda, blast_k)
-blasttab = "/Users/brow015/devel/blastlca/Metat_1000000_contigs.refseq-nr-2014-01-18.diamond"
-taxonomy_name_map = parse_ncbi_map("/Users/brow015/devel/blastlca/ncbi.map")
-orf_assignments = parse_blast_results(blasttab, annotation_map, orf_summary="lca", tree=tree, min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001, max_hits_per_orf=10, top_fraction_of_hits=1)
-process_orfs(orf_assignments, tree, taxonomy_name_map=taxonomy_name_map)
-    # logging.info("Complete")
-    # out_file = "test.parsed.new"
-    # ncbi_megan_map = "ncbi.map"
-    # tree_file = "ncbi_taxonomy_tree.txt"
-    # orf_summary = "majority"
-
-    # ncbi_tree = LCAStar(ncbi_tree, min_depth=1, alpha=0.51, min_reads=1)
-    ## calculate taxonomy statistics LCA,  for each ORF
-    # contig_to_taxa = {}
-    ## LCA^2, Majority, and LCA* for each ORF
-    # writeout(args, contig_to_lca, lcastar, ncbi_megan_map)
-
-
-# if __name__ == "__main__":
-#
-#     def _file_exists(parser, arg):
-#         if not os.path.exists(arg):
-#             parser.error("The file %s does not exist" % arg)
-#         if not os.path.isfile(arg):
-#             parser.error("Expected file, not folder (%s)" % arg)
-#         return arg
-#
-#     p = argparse.ArgumentParser(description=__doc__,
-#             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-#     p.add_argument("fasta", type=lambda x: _file_exists(p, x), help="query FASTA file path")
-#     p.add_argument("blasttab", type=lambda x: _file_exists(p, x), help="BLAST (-outfmt 6) result file path")
-#     p.add_argument("map", type=lambda x: _file_exists(p, x), help="BLAST database name map with space separated name product per line")
-#     p.add_argument("outfile", help="parsed blast results")
-#     # p.add_argument("--blast-lambda", type=float, default=0.267, help="lambda parameter for custom matrix")
-#     # p.add_argument("--blast-k", type=float, default=0.041, help="k parameter for custom matrix")
-#     # p.add_argument("--min-bsr", type=float, default=0.4, help="minimum allowable bitscore ratio (the bitscore of a query and target sequence over the bitscore when both query and target are the query sequence)")
-#     p.add_argument("--min-identity", type=float, default=60, help="minimum allowable percent ID of hsp")
-#     p.add_argument("--min-bitscore", type=float, default=0, help="minimum allowable bitscore of hsp")
-#     p.add_argument("--min-length", type=int, default=60, help="minimum allowable alignment length of hsp")
-#     p.add_argument("--max-evalue", type=float, default=0.000001, help="maximum allowable evalue of hsp")
-#     p.add_argument("--max-hits", type=int, default=25, help="maximum hits per query to be considered for LCA or majority")
-#     args = p.parse_args()
-#     logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
-#     main(args.fasta, args.blasttab, args.map, args.outfile, args.blast_lambda, args.blast_k, args.min_bsr, args.min_identity, args.min_bitscore, args.min_length, args.max_evalue, args.max_hits)
+if __name__ == "__main__":
+    cli()
