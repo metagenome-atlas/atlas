@@ -6,6 +6,7 @@
 
 - [x] bedtools
 - [x] bowtie2
+- [x] click
 - [x] fastqc
 - [x] flash
 - [ ] fraggenescan (1.30 - which actually doesn't exist) https://github.com/wltrimbl/FGS/releases
@@ -18,7 +19,7 @@
 - [ ] maxbin - http://downloads.jbei.org/data/microbial_communities/MaxBin/getfile.php?MaxBin-2.2.1.tar.gz
 - [x] megahit
 - [ ] perl-lwp-simple - http://search.cpan.org/dist/libwww-perl/lib/LWP/Simple.pm
-- [x] picard 
+- [x] picard
 - [x] prodigal
 - [x] pysam
 - [x] python 3
@@ -83,7 +84,7 @@ Preparing to run, place FASTQ files into `results/<eid>/demultiplexed`. At this 
 
 ## Read Joining
 
-flash 
+flash
 
 ```
 
