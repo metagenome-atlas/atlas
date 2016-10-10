@@ -309,7 +309,7 @@ rule length_filter:
         {input} {output.passing} {output.fail}"""
 
 
-rule assembly_stats
+rule assembly_stats:
     input:
         assembled = rules.assembly.output
         filtered = rules.length_filter.output
@@ -322,7 +322,6 @@ rule assembly_stats
         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
            perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
         """
-
 
 
 # have Joe review
