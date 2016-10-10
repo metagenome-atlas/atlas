@@ -201,6 +201,26 @@ rule fastqc_joined:
     shell:
         """fastqc {input} -o {output}"""
 
+rule remove_rRNAs: #For metatranscriptomes only!
+    input:
+        rule.interleave_reads.output
+        rule.trim_reads.joined.output
+    output:
+        joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_joined.fastq"
+        R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R1.fastq"
+        R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R2.fastq"
+    message:
+    "Aligning all joined and reads to remove rRNAs for mRNA de novo transcriptome assembly."
+    shadow:
+    "shallow"
+    threads:
+    config['contamination_filtering']['threads']
+    shell:
+    """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
+              | samtools view -@ {threads} -hf4 \
+              | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
+              | bedtools bamtofastq -i stdin -fq {output}
+       """
 
 rule interleave_reads:
     input:
@@ -215,6 +235,38 @@ rule interleave_reads:
         "Interleaving non combined R1 and R2 reads"
     run:
         IO.interleave_reads(input.r1, input.r2, output)
+
+rule annotate_reads_rRNA:
+    input:
+        rule.interleave_reads.output
+        rule.trim_reads.joined.output
+    output:
+        "results/{eid}/annotation/reads/{sample}_{database}"
+    message:
+        "Annotation of rRNAs in quality controlled reads"
+    params:
+        top_hit = config['lastplus']['top_best_hit'],
+        e_value_cutoff = config['lastplus']['e_value_cutoff'],
+        bit_score_cutoff = config['lastplus']['bit_score_cutoff']
+    threads:
+        config['lastplus']['threads']
+    shell:
+        """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
+            {input.database} {input.trim_reads}"""
+
+rule taxonomic_placement_rRNAs_LCA:
+    input:
+        rule.annotate_reads_rRNA.output
+    output:
+        "results/{eid}/annotation/reads/{sample}_{database}"
+    message:
+        "Parse rRNA reads and place taxonomy using LCA++"
+    params:
+    threads:
+        config['lastplus']['threads']
+    shell:
+
+
 
 
 # will want to change this as we add assemblers
