@@ -106,7 +106,7 @@ rule build_functional_databases:
 
 rule build_taxonomic_databases:
     input:
-        taxonomic_db = "annotation_dbs/taxonomic/{db}"
+        taxonomic_db = "databases/taxonomic/{db}"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -171,7 +171,65 @@ rule filter_contaminants:
                   | samtools view -@ {threads} -hf4 \
                   | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
                   | bedtools bamtofastq -i stdin -fq {output}
-           """
+        """
+
+
+rule decon:
+    input:
+        db = 'databases/contaminant/{db}'
+        joined = rules.join_reads.output.joined,
+        r1 = rules.join_reads.output.failed_r1,
+        r2 = rules.join_reads.output.failed_r2
+        prefix = rules.combine_contaminant_references.output
+    output:
+        r1 = "results/{eid}/decon/{sample}_r1.sam",
+        r2 = "results/{eid}/decon/{sample}_r2.sam",
+        joined = "results/{eid}/decon/{sample}_joined.sam"
+
+    message:
+        "Performing decontamination with bowtie2"
+
+    threads:
+        config['contamination_filtering']['threads']
+
+    shell:
+        "bowtie2 --threads {threads} --very-sensitive -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2}"
+
+
+rule decon2:
+    input:
+        rules.decon.output.r1,
+        rules.decon.output.r2,
+        rules.decon.output.joined
+    output:
+        r1 = "results/{eid}/decon/{sample}_r1_decon.sam",
+        r2 = "results/{eid}/decon/{sample}_r2_decon.sam",
+        joined = "results/{eid}/decon/{sample}_joined_decon.sam"
+    message:
+        "Filtering with SAM view"
+    shell:
+        """<PICARD> ALIGNMENT_STATUS=Unaligned I={input.r1} > {output.r1}
+           <PICARD> ALIGNMENT_STATUS=Unaligned I={input.r2} > {output.r2}
+           <PICARD> ALIGNMENT_STATUS=Unaligned I={input.joined} > {output.joined}
+        """
+
+
+rule decon3:
+    input:
+        rules.decon2.output.r1,
+        rules.decon2.output.r2,
+        rules.decon2.output.joined
+    output:
+        r1 = "results/{eid}/decon/{sample}_r1_decon.fastq",
+        r2 = "results/{eid}/decon/{sample}_r2_decon.fastq",
+        joined = "results/{eid}/decon/{sample}_joined_decon.fastq"
+    message:
+        "Converting SAM to FASTQ"
+    shell:
+    """<SAM_to_FASTQ> I={input.r1} F={output.r1}
+       <SAM_to_FASTQ> I={input.r2} F={output.r2}
+       <SAM_to_FASTQ> I={input.joined} F={output.joined}
+    """
 
 
 rule trim_reads:
@@ -287,7 +345,7 @@ rule annotate_reads_rRNA:
         config['lastplus']['threads']
     shell:
         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
-            {input.database} {input.trim_reads}"""
+           {input.database} {input.trim_reads}"""
 
 
 rule taxonomic_placement_rRNAs_LCA:
