@@ -54,7 +54,7 @@ def get_databases():
 
 EID = config['eid']
 SAMPLES = get_samples(EID)
-DBS = get_databases():
+DBS = get_databases()
 
 
 rule all:
