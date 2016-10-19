@@ -9,4 +9,5 @@ bin
 databases
 results
 data
+.snakemake
 
