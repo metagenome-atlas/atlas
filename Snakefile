@@ -54,7 +54,7 @@ def get_databases():
 
 EID = config['eid']
 SAMPLES = get_samples(EID)
-DBS = get_databases()
+DBS = get_databases():
 
 
 rule all:
@@ -106,7 +106,7 @@ rule build_functional_databases:
 
 rule build_taxonomic_databases:
     input:
-        taxonomic_db = "databases/taxonomic/{db}"
+        taxonomic_db = "annotation_dbs/taxonomic/{db}"
     output:
         f1 = "{lastal_database}.bck",
         f2 = "{lastal_database}.des",
@@ -121,7 +121,11 @@ rule build_taxonomic_databases:
     shell:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
+#########################
+###Illumina Paired End###
+########################
 
+#For Illumina paired end reads
 rule join_reads:
     input:
         r1 = rules.quality_filter_reads.output.r1,
@@ -171,8 +175,7 @@ rule filter_contaminants:
                   | samtools view -@ {threads} -hf4 \
                   | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
                   | bedtools bamtofastq -i stdin -fq {output}
-        """
-
+           """
 
 rule decon:
     input:
@@ -194,7 +197,6 @@ rule decon:
 
     shell:
         "bowtie2 --threads {threads} --very-sensitive -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2}"
-
 
 rule decon2:
     input:
@@ -231,7 +233,6 @@ rule decon3:
        <SAM_to_FASTQ> I={input.joined} F={output.joined}
     """
 
-
 rule trim_reads:
     input:
         filtered = rule.filter_contaminants.output,
@@ -254,7 +255,6 @@ rule trim_reads:
             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
 
-
 rule fastqc_R1:
     input:
         rule.trim_reads.output.R1
@@ -262,7 +262,6 @@ rule fastqc_R1:
         "results/{eid}/qc/{sample}_R1.fastq"
     shell:
         "fastqc {input} -o {output}"
-
 
 rule fastqc_R2:
     input:
@@ -272,7 +271,6 @@ rule fastqc_R2:
     shell:
         "fastqc {input} -o {output}"
 
-
 rule fastqc_joined:
     input:
         rule.trim_reads.output.joined
@@ -281,6 +279,78 @@ rule fastqc_joined:
     shell:
         "fastqc {input} -o {output}"
 
+#######################################################################################
+
+####################
+##Single end reads##
+####################
+
+#For single end reads (Illumina-SE, PacBio, SOiLD)
+rule decon_se:
+    input:
+        db = 'databases/contaminant/{db}'
+        se = rules.reads.output.se
+        prefix = rules.combine_contaminant_references.output
+    output:
+        se = "results/{eid}/decon/{sample}_se.sam",
+    message:
+        "Performing decontamination with bowtie2"
+    threads:
+        config['contamination_filtering']['threads']
+
+    shell:
+        "bowtie2 --threads {threads} --very-sensitive -x {input.prefix} -q {input.se}"
+
+rule decon_se2:
+    input:
+        rules.decon.output.se
+    output:
+        se = "results/{eid}/decon/{sample}_se_decon.sam"
+    message:
+        "Filtering with unaligned reads from Decon"
+    shell:
+        """<PICARD> ALIGNMENT_STATUS=Unaligned I={input.se} > {output.se}
+        """
+
+rule decon_se3:
+    input:
+        rules.decon2.output
+    output:
+        joined = "results/{eid}/decon/{sample}_se_decon.fastq"
+    message:
+        "Converting SAM to FASTQ"
+    shell:
+    """<SAM_to_FASTQ> I={input.se} F={output.se}"""
+
+rule trim_reads_se:
+    input:
+        filtered = rule.filter_contaminants.output,
+        picard = ?
+    output:
+        SE = "results/{eid}/trimmed/{sample}_trimmed_filtered_se.fastq",
+    params:
+        single_end = config['SE'],
+        phred_value = config['phred33'],
+        min_length = config['length?']
+    message:
+        "Trimming filtered reads using trimmomatic"
+    log:
+        "results/{eid}/trimmed/{sample}.log"
+    shell:
+        """java -Xmx32g -jar trimmomatic-0.33.jar SE -phred33 {input.filtered} -trimlog {log} \
+            ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
+            SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
+        """
+
+rule fastqc_se:
+    input:
+        rule.trim_reads.output.se
+    output:
+        "results/{eid}/qc/{sample}_se.fastq"
+    shell:
+        "fastqc {input} -o {output}"
+
+#################################################################################################
 
 # For metatranscriptomes only!
 rule remove_rRNAs:
@@ -345,7 +415,7 @@ rule annotate_reads_rRNA:
         config['lastplus']['threads']
     shell:
         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
-           {input.database} {input.trim_reads}"""
+            {input.database} {input.trim_reads}"""
 
 
 rule taxonomic_placement_rRNAs_LCA:
@@ -370,7 +440,10 @@ rule assemble:
         # TODO
 
 
-# for metagenomes only
+#####################
+##Metagenomes only##
+####################
+
 rule megahit:
     input:
         rules.filter_contaminants.output
@@ -398,8 +471,24 @@ rule megahit:
         --merge-level {params.merge_level} --prune-level {params.prune_level} \
         --low-local-ratio {params.low_local_ratio}"""
 
+rule metaspades:
+    input:
+        rules.filter_contaminants.output
+    output:
+        "results/results/{eid}/assembly/{sample}"
+    params:
+        memory = config['assembly']['memory']
+    message:
+        "Assembling using metaspades"
+    threads:
+        config['assembly']['threads']
+    shell:
+        """metaspades.py -s1 {input} -o {output} -t {threads} -m {params.memory}"""
 
-# for metatranscriptomes only
+###########################
+##Metatranscriptomes only##
+###########################
+
 rule trinity:
     input:
         # need to replace with reference to rule
@@ -420,6 +509,38 @@ rule trinity:
         """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved} \
         --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
 
+rule rnaspades:
+    input:
+        rules.filter_contaminants.output
+    output:
+        "results/results/{eid}/assembly/{sample}"
+    params:
+        memory = config['assembly']['memory']
+    message:
+        "Assembling using metaspades"
+    threads:
+        config['assembly']['threads']
+    shell:
+    """rnaspades.py -s1 {input} -o {output} -t {threads} -m {params.memory}"""
+
+
+#######################
+##Moleculo data only##
+######################
+
+rule truspades:
+    input:
+        input_dir = 'results/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R1.fastq', 'results/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R2.fastq'
+    output:
+        "results/{eid}/assembly/{sample}.contigs.fa"
+    message:
+        "Assembling moleculo data with truspades"
+    threads:
+        config['assembly']['threads']
+    shell:
+        """truspades.py --input-dir input_dir/ -o output_dir/ -t {threads}"""
+
+#################################################################################################################################3
 
 rule length_filter:
     input:
@@ -533,6 +654,25 @@ rule assembly_stats_hybrid:
     shell:
         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}"""
 
+rule map_to_assembly_db_format:
+    input:
+        assembly_db = "assembly/database/{db}"
+        assembly_db_name = os.path.splitext(assembly_db)
+    output:
+        f1 = "{fasta}.1.bt2",
+        f2 = "{fasta}.2.bt2",
+        f3 = "{fasta}.3.bt2",
+        f4 = "{fasta}.4.bt2",
+        r1 = "{fasta}.rev.1.bt2",
+        r2 = "{fasta}.rev.2.bt2"
+    message:
+        "Formatting assembly for mapping"
+    shell:
+        "bowtie2-build {input.assembly_db} {input.assembly_db_name}"
+
+rule map_to_assembly:
+
+
 
 rule fgsplus_passed:
     input:
@@ -562,13 +702,25 @@ rule fgsplus_failed:
         "FGS+ -s {input} -o {output} -w 1 -t {params.sem} -p {threads} -m {params.memory}"
 
 
-rule prodigal_orfs:
+rule prodigal_orfs_passed:
     input:
         rules.length_filter.output.passing
     output:
-        prot = "results/{eid}/annotation/orfs/{sample}.faa",
-        nuc = "results/{eid}/annotation/orfs/{sample}.fasta",
-        gff = "results/{eid}/annotation/orfs/{sample}.gff"
+        prot = "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
+        nuc = "results/{eid}/annotation/orfs/{sample}_length_pass.fasta",
+        gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+    params:
+        g = config['annotation']['translation_table']
+    shell:
+        "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
+
+rule prodigal_orfs_failed:
+    input:
+        rules.length_filter.output.fail
+    output:
+        prot = "results/{eid}/annotation/orfs/{sample}_length_fail.faa",
+        nuc = "results/{eid}/annotation/orfs/{sample}_length_fail.fasta",
+        gff = "results/{eid}/annotation/orfs/{sample}_length_fail.gff"
     params:
         g = config['annotation']['translation_table']
     shell:
