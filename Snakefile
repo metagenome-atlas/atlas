@@ -169,15 +169,15 @@ rule join_reads:
 #         R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq",
 #         R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
 #     params:
-#         single_end = config['SE'],
-#         phred_value = config['phred33'],
-#         min_length = config['length?']
+#         single_end = config['?']['SE'],
+#         phred_value = config['?]['phred33'],
+#         min_length = config['?']['length?']
 #     message:
 #         "Trimming filtered reads using trimmomatic"
 #     log:
 #         "results/{eid}/trimmed/{sample}.log"
 #     shell:
-#         """trimmomatic -Xmx32g SE -phred33 {input.filtered} -trimlog {log} \
+#         """trimmomatic -Xmx32g {params.single_end} -{params.phred_value} {input.filtered} -trimlog {log} \
 #             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
 #             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
 #         """
@@ -249,6 +249,7 @@ rule join_reads:
 #     shell:
 #     """<SAM_to_FASTQ> I={input.se} F={output.se}"""
 #
+#
 # rule trim_reads_se:
 #     input:
 #         filtered = rule.filter_contaminants.output,
@@ -256,15 +257,15 @@ rule join_reads:
 #     output:
 #         SE = "results/{eid}/trimmed/{sample}_trimmed_filtered_se.fastq",
 #     params:
-#         single_end = config['SE'],
-#         phred_value = config['phred33'],
-#         min_length = config['length?']
+#         single_end = config['?']['SE'],
+#         phred_value = config['?']['phred33'],
+#         min_length = config['?']['length?']
 #     message:
 #         "Trimming filtered reads using trimmomatic"
 #     log:
 #         "results/{eid}/trimmed/{sample}.log"
 #     shell:
-#         """java -Xmx32g -jar trimmomatic-0.33.jar SE -phred33 {input.filtered} -trimlog {log} \
+#         """java -Xmx32g -jar trimmomatic-0.33.jar {params.single_end} -{params.phred_value} {input.filtered} -trimlog {log} \
 #             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
 #             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
 #         """
