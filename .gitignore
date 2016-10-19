@@ -5,3 +5,5 @@ atlas_data/
 *.pyc
 output/
 *~
+bin
+
