@@ -82,14 +82,14 @@ rule build_contaminant_references:
 #     input:
 #         functional_db = "databases/functional/{db}"
 #     output:
-#         f1 = "{lastal_database}.bck",
-#         f2 = "{lastal_database}.des",
-#         f3 = "{lastal_database}.prj",
-#         f4 = "{lastal_database}.sds",
-#         f5 = "{lastal_database}.ssp",
-#         f6 = "{lastal_database}.suf",
-#         f7 = "{lastal_database}.tis",
-#         f8 = "{lastal_database}-names.txt"
+#         f1 = "databases/functional/{db}.bck",
+#         f2 = "databases/functional/{db}.des",
+#         f3 = "databases/functional/{db}.prj",
+#         f4 = "databases/functional/{db}.sds",
+#         f5 = "databases/functional/{db}.ssp",
+#         f6 = "databases/functional/{db}.suf",
+#         f7 = "databases/functional/{db}.tis",
+#         f8 = "databases/functional/{db}-names.txt"
 #     message:
 #         "Formatting functional databases"
 #     shell:
@@ -100,14 +100,14 @@ rule build_contaminant_references:
 #     input:
 #         taxonomic_db = "annotation_dbs/taxonomic/{db}"
 #     output:
-#         f1 = "{lastal_database}.bck",
-#         f2 = "{lastal_database}.des",
-#         f3 = "{lastal_database}.prj",
-#         f4 = "{lastal_database}.sds",
-#         f5 = "{lastal_database}.ssp",
-#         f6 = "{lastal_database}.suf",
-#         f7 = "{lastal_database}.tis",
-#         f8 = "{lastal_database}-names.txt"
+#         f1 = "databases/taxonomic/{db}.bck",
+#         f2 = "databases/taxonomic/{db}.des",
+#         f3 = "databases/taxonomic/{db}.prj",
+#         f4 = "databases/taxonomic/{db}.sds",
+#         f5 = "databases/taxonomic/{db}.ssp",
+#         f6 = "databases/taxonomic/{db}.suf",
+#         f7 = "databases/taxonomic/{db}.tis",
+#         f8 = "databases/taxonomic/{db}-names.txt"
 #     message:
 #         "Formatting taxonomic databases"
 #     shell:
