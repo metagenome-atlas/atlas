@@ -333,7 +333,7 @@ rule annotate_reads_rRNA:
         rule.interleave_reads.output,
         trim_reads = rule.trim_reads.joined.output
     output:
-        "results/{eid}/annotation/reads/{sample}_{database}"
+        rrna = "results/{eid}/annotation/reads/{sample}_{database}"
     message:
         "Annotation of rRNAs in quality controlled reads"
     params:
@@ -351,7 +351,7 @@ rule taxonomic_placement_rRNAs_LCA:
     input:
         rule.annotate_reads_rRNA.output
     output:
-        "results/{eid}/annotation/reads/{sample}_{database}"
+        rrna_parsed = "results/{eid}/annotation/reads/{sample}_{database}"
     message:
         "Parse rRNA reads and place taxonomy using LCA++"
     params:
@@ -611,6 +611,8 @@ rule fgsplus_passed:
     params:
         sem = config['annotation']['sequencing_error_model'],
         memory = config['annotation']['memory']
+    message:
+        "Calling protein-coding ORFS with FGS+"
     threads:
         config['annotation']['threads']
     shell:
@@ -625,6 +627,8 @@ rule fgsplus_failed:
     params:
         sem = config['annotation']['sequencing_error_model'],
         memory = config['annotation']['memory']
+    message:
+        "Calling protein-coding ORFS with FGS+"
     threads:
         config['annotation']['threads']
     shell:
@@ -640,6 +644,8 @@ rule prodigal_orfs_passed:
         gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
     params:
         g = config['annotation']['translation_table']
+    message:
+        "Calling protein-coding ORFS with prodigal"
     shell:
         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
 
@@ -652,6 +658,8 @@ rule prodigal_orfs_failed:
         gff = "results/{eid}/annotation/orfs/{sample}_length_fail.gff"
     params:
         g = config['annotation']['translation_table']
+    message:
+        "Calling protein-coding ORFS with prodigal"
     shell:
         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
 
@@ -675,6 +683,8 @@ rule maxbin_bins:
         markerset = config['binning']['marker_set']
     threads:
         config['binning']['threads']
+    message:
+        "Binning genomes with MaxBin2.2"
     shell:
         """run_MaxBin.pl -contig {input.contigs} -out {output} -reads {input.reads} \
         -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
@@ -687,13 +697,37 @@ rule lastplus_orfs
         prodigal_orfs = rules.prodigal.output,
         database = rules.format_database.output
     output:
-        annotation = "results/{eid}/annotation/orfs/{sample}_{database}"
+        annotation = "results/{eid}/annotation/last/{sample}_{database}"
     params:
         top_hit = config['lastplus']['top_best_hit'],
         e_value_cutoff = config['lastplus']['e_value_cutoff'],
         bit_score_cutoff = config['lastplus']['bit_score_cutoff']
     threads:
         config['lastplus']['threads']
+    message:
+        "Annotation of Protein-coding ORFs with Last+"
     shell:
         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
         {input.database} {input.fgsplus_orfs}"""
+
+rule LCA_parse_last
+    input:
+        last = rules.lastplus.output
+    output:
+        annotation = "results/{eid}/annotation/last/{sample}_{database}"
+    params:
+        #fill
+    threads
+        #fill
+    message:
+        "Running last+ parsing and taxonomic assignment LCA+"
+    shell:
+        #fill
+
+rule_generate_gff
+    input:
+        LCA = rules.lcaparselast.output
+    output:
+        gff = "results/{eid}/annotation/quantification/{sample}.gff"
+    shell:
+        "python src/generate_gff.py {input} {output}"
