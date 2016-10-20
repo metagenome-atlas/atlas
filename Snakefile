@@ -183,6 +183,7 @@ rule trim_reads:
             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
 
+
 rule fastqc_R1:
     input:
         rule.trim_reads.output.R1
@@ -191,6 +192,7 @@ rule fastqc_R1:
     shell:
         "fastqc {input} -o {output}"
 
+
 rule fastqc_R2:
     input:
         rule.trim_reads.output.R2
@@ -198,6 +200,7 @@ rule fastqc_R2:
         "results/{eid}/qc/{sample}_R2.fastq"
     shell:
         "fastqc {input} -o {output}"
+
 
 rule fastqc_joined:
     input:
@@ -228,6 +231,7 @@ rule decon_se:
 
     shell:
         "bowtie2 --threads {threads} --very-sensitive -x {input.prefix} -q {input.se}"
+
 
 rule decon_se2:
     input:
@@ -270,6 +274,7 @@ rule trim_reads_se:
             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
         """
+
 
 rule fastqc_se:
     input:
@@ -400,6 +405,7 @@ rule megahit:
         --merge-level {params.merge_level} --prune-level {params.prune_level} \
         --low-local-ratio {params.low_local_ratio}"""
 
+
 rule metaspades:
     input:
         rules.filter_contaminants.output
@@ -437,6 +443,7 @@ rule trinity:
     shell:
         """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved} \
         --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
+
 
 rule rnaspades:
     input:
@@ -497,6 +504,7 @@ rule assembly_stats:
         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
            perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
         """
+
 
 rule merge_assembly_contigs_step1:
     input:
@@ -583,6 +591,7 @@ rule assembly_stats_hybrid:
     shell:
         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}"""
 
+
 rule map_to_assembly_db_format:
     input:
         assembly_db = "assembly/database/{db}"
@@ -599,8 +608,27 @@ rule map_to_assembly_db_format:
     shell:
         "bowtie2-build {input.assembly_db} {input.assembly_db_name}"
 
-rule map_to_assembly:
 
+rule map_to_assembly:
+    input:
+        joined = rules.join_reads.joined
+        interleaved = rules.interleave_reads.output
+        ji = rules.merge_joined_interleaved.output
+        r1 = rules.trim_reads.output.r1
+        r2 = rules.trim_reads.output.r2
+        contigs = rules.megahit.output
+        prefix = os.path.splitext(contigs)
+    output:
+        joined = 'results/{eid}/coverage/{sample}_joined.sam'
+        interleaved = 'results/{eid}/coverage/{sample}_interleaved.sam'
+        ji = 'results/{eid}/coverage/{sample}_joined_interleaved.sam'
+        r1 = 'results/{eid}/coverage/{sample}_r1.sam'
+        r2 = 'results/{eid}/coverage/{sample}_r2.sam'
+    message:
+        "Mapping to assembly"
+    shell:
+        """bowtie2 -p {threads} -x {input.prefix} --very-sensitive-local \
+        -q -U {input.joined}, {input.interleaved}, {input.ji}, {input.r1}, {input.r2}"""
 
 
 rule fgsplus_passed:
@@ -642,6 +670,7 @@ rule prodigal_orfs_passed:
         g = config['annotation']['translation_table']
     shell:
         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
+
 
 rule prodigal_orfs_failed:
     input:
