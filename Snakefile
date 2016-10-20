@@ -739,7 +739,7 @@ rule lastplus_orfs
         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
         {input.database} {input.fgsplus_orfs}"""
 
-rule LCA_parse_last
+rule parse_lastplus_lca
     input:
         last = rules.lastplus.output
     output:
@@ -753,7 +753,7 @@ rule LCA_parse_last
     shell:
         #fill
 
-rule_generate_gtf
+rule generate_gtf
     input:
         LCA = rules.lcaparselast.output
     output:
