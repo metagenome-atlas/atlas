@@ -753,10 +753,71 @@ rule LCA_parse_last
     shell:
         #fill
 
-rule_generate_gff
+rule_generate_gtf
     input:
         LCA = rules.lcaparselast.output
     output:
-        gff = "results/{eid}/annotation/quantification/{sample}.gff"
+        gff = "results/{eid}/annotation/quantification/{sample}.gtf"
+    message:
+        "Generate annotated gtf for read quantification"
     shell:
         "python src/generate_gff.py {input} {output}"
+
+ rule run_counting
+    input:
+        gff = rules.generategtf.output
+        sam = rules.maptoassembly.output #aligned only
+    output:
+        verse_counts = "results/{eid}/annotation/quantification/{sample}.counts"
+    message:
+        "Generate counts from reads aligning to contig assembly using VERSE"
+    shell:
+        """verse -a {input.gft} -t {independentassign.default} -g {contig_id} -z 1 -o {output} {input.sam}"""
+
+ rule get_read_counts #from jeremy zucker scripts
+    input:
+        verse_counts = rules.runcounting.output
+    output:
+        verse_read_counts = "results/{eid}/annotation/quantification/{sample}_read_counts.tsv"
+    message:
+        "Generate read frequencies from VERSE"
+    shell:
+        """python get_read_counts.py --read_count_files {input} --out {output}"""
+
+ rule get_function_counts #from jeremy zucker scripts
+    input:
+        read_counts = rules.getreadcounts.output
+        annotation_summary_table = rules.lcaparselast.output
+    output:
+        functional_counts_ec = "results/{eid}/annotation/quantification/{sample}_ec.tsv"
+        functional_counts_cog = "results/{eid}/annotation/quantification/{sample}_cog.tsv"
+        functional_counts_ko = "results/{eid}/annotation/quantification/{sample}_ko.tsv"
+        functional_counts_dbcan = "results/{eid}/annotation/quantification/{sample}_dbcan.tsv"
+        functional_counts_metacyc = "results/{eid}/annotation/quantification/{sample}_metacyc.tsv"
+    shell:
+        """python src/get_function_counts.py {input.annotation_summary_table} {input.read_counts} \
+           --function {wildcards.function} --out {output}"""
+
+ rule get_taxa_counts: #from jeremy zucker scripts
+    input:
+        annotation_summary_table = rules.lcaparselast.output
+        read_counts = rules.getreadcounts.output
+        "Taxonomy/ncbi.map",
+        "Taxonomy/nodes.dmp",
+        "Taxonomy/merged.dmp"
+    output:
+        "{sample}_Counts/{sample}_taxa_{rank}_counts.tsv"
+    shell:
+        "python src/get_rank_counts.py {input} --rank {wildcards.rank} --out {output}"
+
+ rule funtaxa_counts:
+    input:
+        annotation_summary_table = rules.lcaparselast.output
+        read_counts = rules.getreadcounts.output
+        "Taxonomy/ncbi.map",
+        "Taxonomy/nodes.dmp",
+        "Taxonomy/merged.dmp"
+    output:
+        "{sample}_Counts/{sample}_funtaxa_{function}_{rank}_counts.tsv"
+    shell:
+        """python src/get_fun_rank_counts.py {input} --rank {wildcards.rank} --function {wildcards.function} --out {output}"""
