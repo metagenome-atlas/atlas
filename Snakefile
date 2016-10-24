@@ -171,7 +171,7 @@ rule trim_reads:
         R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
     params:
         single_end = config['?']['SE'],
-        phred_value = config['?]['phred33'],
+        phred_value = config['?']['phred33'],
         min_length = config['?']['length?']
     message:
         "Trimming filtered reads using trimmomatic"
@@ -212,9 +212,9 @@ rule fastqc_joined:
 
 #######################################################################################
 
-####################
-##Single end reads##
-####################
+######################
+## Single end reads ##
+######################
 
 #For single end reads (Illumina-SE, PacBio, SOiLD)
 rule decon_se:
@@ -243,6 +243,7 @@ rule decon_se2:
     shell:
         """<PICARD> ALIGNMENT_STATUS=Unaligned I={input.se} > {output.se}
         """
+
 
 rule decon_se3:
     input:
@@ -420,9 +421,9 @@ rule metaspades:
     shell:
         """metaspades.py -s1 {input} -o {output} -t {threads} -m {params.memory}"""
 
-###########################
-##Metatranscriptomes only##
-###########################
+#############################
+## Metatranscriptomes only ##
+#############################
 
 rule trinity:
     input:
@@ -460,9 +461,9 @@ rule rnaspades:
     """rnaspades.py -s1 {input} -o {output} -t {threads} -m {params.memory}"""
 
 
-#######################
-##Moleculo data only##
-######################
+########################
+## Moleculo data only ##
+########################
 
 rule truspades:
     input:
