@@ -58,8 +58,8 @@ rule all:
         expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
         expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
 
-        expand("databases/functional/{db}{ext}", ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'], db=FUNCTIONAL_DBS)
-        expand("databases/taxonomic/{db}{ext}", ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'], db=TAXONOMIC_DBS)
+        expand("databases/functional/{db}{ext}", db=FUNCTIONAL_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'])
+        expand("databases/taxonomic/{db}{ext}", db=TAXONOMIC_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'])
 
         # expand("input/{eid}/{sample}.fastq", eid=EID, sample=SAMPLES)
 
