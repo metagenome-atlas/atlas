@@ -41,18 +41,25 @@ def pattern_search(path, patterns):
 EID = config['eid']
 SAMPLES = get_samples(os.path.join("data", EID), 200)
 CONTAMINANT_DBS = pattern_search("databases/contaminant", ["*.fa", "*.fasta"])
+ANNOTATION_DBS = pattern_search("databases/annotation", ["*.fa", "*.fasta"])
+TAXONOMIC_DBS = pattern_search("databases/taxonomic", ["*.fa", "*.fasta"])
 
 
 rule all:
     input:
         # these can eventually be removed. testing purposes only.
-        expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
-        # these can eventually be removed. testing purposes only.
+        # contaminants
+        # expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
+        expand("databases/contaminant/{db}.{ext}", ext=['fa', 'fasta'], db=CONTAMINANT_DBS),
+        expand("databases/annotation/{db}.{ext}", ext=['fa', 'fasta'], db=ANNOTATION_DBS),
+        expand("databases/taxonomic/{db}.{ext}", ext=['fa', 'fasta'], db=TAXONOMIC_DBS),
+
+        # samples
         expand("results/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
         expand("results/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
         expand("results/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
@@ -65,7 +72,8 @@ rule all:
 
 
 rule build_contaminant_references:
-    input: contaminant_db = "databases/contaminant/{db}",
+    input:
+        contaminant_db = "databases/contaminant/{db}"
     output:
         f1 = "databases/contaminant/{db}.1.bt2",
         f2 = "databases/contaminant/{db}.2.bt2",
@@ -73,9 +81,11 @@ rule build_contaminant_references:
         f4 = "databases/contaminant/{db}.4.bt2",
         r1 = "databases/contaminant/{db}.rev.1.bt2",
         r2 = "databases/contaminant/{db}.rev.2.bt2"
-    message: "Formatting contaminant databases"
+    message:
+        "Formatting contaminant databases"
     threads: 1
-    shell: "bowtie2-build {input.contaminant_db} {input.contaminant_db}"
+    shell:
+        "bowtie2-build {input.contaminant_db} {input.contaminant_db}"
 
 
 rule build_functional_databases:
@@ -132,10 +142,11 @@ rule join_reads:
         phred_offset = config['phred_offset']
     log: "results/{eid}/logs/{sample}_flash.log"
     threads: config['merging']['threads']
-    shell: """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
-                  --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
-                  --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
-                  --output-directory results/{wildcards.eid}/joined/ --threads {threads}"""
+    shell: 
+        """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
+           --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
+           --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
+           --output-directory results/{wildcards.eid}/joined/ --threads {threads}"""
 
 
 rule filter_contaminants:
@@ -157,7 +168,7 @@ rule filter_contaminants:
                   | samtools view -@ {threads} -hf4 \
                   | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
                   | bedtools bamtofastq -i stdin -fq {output}
-           """
+        """
 
 
 rule trim_reads:
