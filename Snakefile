@@ -38,6 +38,8 @@ def pattern_search(path, patterns):
 
 
 # snakemake --configfile config/atlas_config.yaml --config eid=test-experiment
+configfile: "./config/atlas_config.yaml"
+
 EID = config['eid']
 SAMPLES = get_samples(os.path.join("data", EID), 200)
 CONTAMINANT_DBS = pattern_search("databases/contaminant", ["*.fa", "*.fasta"])
