@@ -1,3 +1,4 @@
+eid: debug
 phred_offset: 33
 filtering:
     threads: 4
