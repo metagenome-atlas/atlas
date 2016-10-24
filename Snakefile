@@ -41,7 +41,7 @@ def pattern_search(path, patterns):
 configfile: "./config/atlas_config.yaml"
 
 EID = config['eid']
-SAMPLES = get_samples(os.path.join("data", EID), 200)
+SAMPLES = get_samples(os.path.join("input", EID), 200)
 CONTAMINANT_DBS = pattern_search("databases/contaminant", ["*.fa", "*.fasta"])
 ANNOTATION_DBS = pattern_search("databases/annotation", ["*.fa", "*.fasta"])
 TAXONOMIC_DBS = pattern_search("databases/taxonomic", ["*.fa", "*.fasta"])
