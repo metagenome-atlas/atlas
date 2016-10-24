@@ -112,7 +112,7 @@ rule build_functional_databases:
 
 rule build_taxonomic_databases:
     input:
-        taxonomic_db = "annotation_dbs/taxonomic/{db}"
+        taxonomic_db = "databases/taxonomic/{db}"
     output:
         f1 = "databases/taxonomic/{db}.bck",
         f2 = "databases/taxonomic/{db}.des",
