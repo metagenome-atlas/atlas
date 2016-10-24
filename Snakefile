@@ -107,7 +107,7 @@ rule build_functional_databases:
     message:
         "Formatting functional databases"
     shell:
-        "lastdb+ {input.taxonomic_db} {input.taxonomic_db} -p"
+        "lastdb+ {input.functional_db} {input.functional_db} -p"
 
 
 rule build_taxonomic_databases:
