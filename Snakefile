@@ -61,7 +61,6 @@ rule all:
         expand("databases/functional/{db}{ext}", ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'], db=FUNCTIONAL_DBS)
         expand("databases/taxonomic/{db}{ext}", ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'], db=TAXONOMIC_DBS)
 
-
         # expand("input/{eid}/{sample}.fastq", eid=EID, sample=SAMPLES)
 
         # samples
@@ -78,7 +77,7 @@ rule all:
 
 rule build_contaminant_references:
     input:
-        contaminant_db = "databases/contaminant/{db}.{ext}"
+        contaminant_db = "databases/contaminant/{db}"
     output:
         f1 = "databases/contaminant/{db}.1.bt2",
         f2 = "databases/contaminant/{db}.2.bt2",
@@ -95,7 +94,7 @@ rule build_contaminant_references:
 
 rule build_functional_databases:
     input:
-        functional_db = "databases/functional/{db}.{ext}"
+        functional_db = "databases/functional/{db}"
     output:
         f1 = "databases/functional/{db}.bck",
         f2 = "databases/functional/{db}.des",
@@ -113,7 +112,7 @@ rule build_functional_databases:
 
 rule build_taxonomic_databases:
     input:
-        taxonomic_db = "annotation_dbs/taxonomic/{db}.{ext}"
+        taxonomic_db = "annotation_dbs/taxonomic/{db}"
     output:
         f1 = "databases/taxonomic/{db}.bck",
         f2 = "databases/taxonomic/{db}.des",
