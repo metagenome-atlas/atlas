@@ -77,7 +77,7 @@ rule all:
 
 rule build_contaminant_references:
     input:
-        contaminant_db = "databases/contaminant/{db}.fa"
+        contaminant_db = "databases/contaminant/{db}"
     output:
         f1 = "databases/contaminant/{db}.1.bt2",
         f2 = "databases/contaminant/{db}.2.bt2",
@@ -94,7 +94,7 @@ rule build_contaminant_references:
 
 rule build_functional_databases:
     input:
-        functional_db = "databases/functional/{db}.fa"
+        functional_db = "databases/functional/{db}"
     output:
         f1 = "databases/functional/{db}.bck",
         f2 = "databases/functional/{db}.des",
@@ -112,7 +112,7 @@ rule build_functional_databases:
 
 rule build_taxonomic_databases:
     input:
-        taxonomic_db = "annotation_dbs/taxonomic/{db}.fa"
+        taxonomic_db = "annotation_dbs/taxonomic/{db}"
     output:
         f1 = "databases/taxonomic/{db}.bck",
         f2 = "databases/taxonomic/{db}.des",
