@@ -43,7 +43,7 @@ configfile: "./config/atlas_config.yaml"
 EID = config['eid']
 SAMPLES = get_samples(os.path.join("input", EID), 200)
 CONTAMINANT_DBS = pattern_search("databases/contaminant", ["*.fa", "*.fasta"])
-ANNOTATION_DBS = pattern_search("databases/functional", ["*.fa", "*.fasta"])
+FUNCTIONAL_DBS = pattern_search("databases/functional", ["*.fa", "*.fasta"])
 TAXONOMIC_DBS = pattern_search("databases/taxonomic", ["*.fa", "*.fasta"])
 
 
@@ -51,15 +51,16 @@ rule all:
     input:
         # these can eventually be removed. testing purposes only.
         # contaminants
-        # expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.{ext}", ext=['fa', 'fasta'], db=CONTAMINANT_DBS),
-        expand("databases/functional/{db}.{ext}", ext=['fa', 'fasta'], db=ANNOTATION_DBS),
-        expand("databases/taxonomic/{db}.{ext}", ext=['fa', 'fasta'], db=TAXONOMIC_DBS),
+        expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
+        expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
+        expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
+        expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
+        expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
+        expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
+
+        expand("databases/functional/{db}{ext}", ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'], db=FUNCTIONAL_DBS)
+        expand("databases/taxonomic/{db}{ext}", ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'], db=TAXONOMIC_DBS)
+
 
         # expand("input/{eid}/{sample}.fastq", eid=EID, sample=SAMPLES)
 
