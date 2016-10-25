@@ -51,23 +51,21 @@ rule all:
     input:
         # these can eventually be removed. testing purposes only.
         # contaminants
-        expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
-        expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
+        # expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
 
         # expand("databases/functional/{db}{ext}", db=FUNCTIONAL_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt']),
-        expand("databases/taxonomic/{db}{ext}", db=TAXONOMIC_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'])
-
-        # expand("input/{eid}/{sample}.fastq", eid=EID, sample=SAMPLES)
+        # expand("databases/taxonomic/{db}{ext}", db=TAXONOMIC_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis'])
 
         # samples
-        # expand("results/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
-        # expand("results/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
-        # expand("results/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
-        # expand("results/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
+        expand("output/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
+        expand("output/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
+        expand("output/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
+        expand("output/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
 
 
 rule build_contaminant_references:
@@ -115,37 +113,36 @@ rule build_taxonomic_databases:
         f4 = "databases/taxonomic/{db}.sds",
         f5 = "databases/taxonomic/{db}.ssp",
         f6 = "databases/taxonomic/{db}.suf",
-        f7 = "databases/taxonomic/{db}.tis",
-        f8 = "databases/taxonomic/{db}-names.txt"
+        f7 = "databases/taxonomic/{db}.tis"
     message:
         "Formatting taxonomic databases"
     shell:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
 
-# rule join_reads:
-#     input:
-#         r1 = "data/{eid}/{sample}_R1.fastq",
-#         r2 = "data/{eid}/{sample}_R2.fastq"
-#     output:
-#         joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
-#         hist = "results/{eid}/joined/{sample}.hist",
-#         failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
-#         failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
-#     message: "Joining reads using `flash`"
-#     shadow: "shallow"
-#     params:
-#         min_overlap = config['merging']['minimum_overlap'],
-#         max_overlap = config['merging']['maximum_overlap'],
-#         max_mismatch_density = config['merging']['maximum_mismatch_density'],
-#         phred_offset = config['phred_offset']
-#     log: "results/{eid}/logs/{sample}_flash.log"
-#     threads: config['merging']['threads']
-#     shell: 
-#         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
-#            --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
-#            --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
-#            --output-directory results/{wildcards.eid}/joined/ --threads {threads}"""
+rule join_reads:
+    input:
+        r1 = "input/{eid}/{sample}_R1.fastq",
+        r2 = "input/{eid}/{sample}_R2.fastq"
+    output:
+        joined = "output/{eid}/joined/{sample}.extendedFrags.fastq",
+        hist = "output/{eid}/joined/{sample}.hist",
+        failed_r1 = "output/{eid}/joined/{sample}.notCombined_1.fastq",
+        failed_r2 = "output/{eid}/joined/{sample}.notCombined_2.fastq"
+    message: "Joining reads using `flash`"
+    shadow: "shallow"
+    params:
+        min_overlap = config['merging']['minimum_overlap'],
+        max_overlap = config['merging']['maximum_overlap'],
+        max_mismatch_density = config['merging']['maximum_mismatch_density'],
+        phred_offset = config['phred_offset']
+    log: "output/{eid}/logs/{sample}_flash.log"
+    threads: config['merging']['threads']
+    shell: 
+        """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
+           --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
+           --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
+           --output-directory output/{wildcards.eid}/joined/ --threads {threads}"""
 
 
 # rule filter_contaminants:
@@ -155,7 +152,7 @@ rule build_taxonomic_databases:
 #         r2 = rules.join_reads.output.failed_r2,
 #         prefix = rules.combine_contaminant_references.output
 #     output:
-#         "results/{eid}/joined/{sample}_joined_filtered.fastq"
+#         "output/{eid}/joined/{sample}_joined_filtered.fastq"
 #     message:
 #         "Aligning all joined and reads that failed to join as single-end against the contamination reference."
 #     shadow:
@@ -176,9 +173,9 @@ rule build_taxonomic_databases:
 #         # or
 #         # filtered = rule.decon_se3.output
 #     output:
-#         joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq",
-#         R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq",
-#         R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
+#         joined = "output/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq",
+#         R1 = "output/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq",
+#         R2 = "output/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
 #     params:
 #         single_end = config['?']['SE'],
 #         phred_value = config['?']['phred33'],
@@ -186,7 +183,7 @@ rule build_taxonomic_databases:
 #     message:
 #         "Trimming filtered reads using trimmomatic"
 #     log:
-#         "results/{eid}/trimmed/{sample}.log"
+#         "output/{eid}/trimmed/{sample}.log"
 #     shell:
 #         """trimmomatic -Xmx32g {params.single_end} -{params.phred_value} {input.filtered} -trimlog {log} \
 #             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
@@ -198,7 +195,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rule.trim_reads.output.R1
 #     output:
-#         "results/{eid}/qc/{sample}_R1.fastq"
+#         "output/{eid}/qc/{sample}_R1.fastq"
 #     shell:
 #         "fastqc {input} -o {output}"
 
@@ -207,7 +204,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rule.trim_reads.output.R2
 #     output:
-#         "results/{eid}/qc/{sample}_R2.fastq"
+#         "output/{eid}/qc/{sample}_R2.fastq"
 #     shell:
 #         "fastqc {input} -o {output}"
 
@@ -216,7 +213,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rule.trim_reads.output.joined
 #     output:
-#         "results/{eid}/qc/{sample}_joined.fastq"
+#         "output/{eid}/qc/{sample}_joined.fastq"
 #     shell:
 #         "fastqc {input} -o {output}"
 
@@ -233,7 +230,7 @@ rule build_taxonomic_databases:
 #         se = rules.reads.output.se
 #         prefix = rules.combine_contaminant_references.output
 #     output:
-#         se = "results/{eid}/decon/{sample}_se.sam",
+#         se = "output/{eid}/decon/{sample}_se.sam",
 #     message:
 #         "Performing decontamination with bowtie2"
 #     threads:
@@ -247,7 +244,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.decon.output.se
 #     output:
-#         se = "results/{eid}/decon/{sample}_se_decon.sam"
+#         se = "output/{eid}/decon/{sample}_se_decon.sam"
 #     message:
 #         "Filtering with unaligned reads from Decon"
 #     shell:
@@ -259,7 +256,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.decon2.output
 #     output:
-#         joined = "results/{eid}/decon/{sample}_se_decon.fastq"
+#         joined = "output/{eid}/decon/{sample}_se_decon.fastq"
 #     message:
 #         "Converting SAM to FASTQ"
 #     shell:
@@ -271,7 +268,7 @@ rule build_taxonomic_databases:
 #         filtered = rule.filter_contaminants.output,
 #         picard = ?
 #     output:
-#         SE = "results/{eid}/trimmed/{sample}_trimmed_filtered_se.fastq",
+#         SE = "output/{eid}/trimmed/{sample}_trimmed_filtered_se.fastq",
 #     params:
 #         single_end = config['?']['SE'],
 #         phred_value = config['?']['phred33'],
@@ -279,7 +276,7 @@ rule build_taxonomic_databases:
 #     message:
 #         "Trimming filtered reads using trimmomatic"
 #     log:
-#         "results/{eid}/trimmed/{sample}.log"
+#         "output/{eid}/trimmed/{sample}.log"
 #     shell:
 #         """java -Xmx32g -jar trimmomatic-0.33.jar {params.single_end} -{params.phred_value} {input.filtered} -trimlog {log} \
 #             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
@@ -291,7 +288,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rule.trim_reads.output.se
 #     output:
-#         "results/{eid}/qc/{sample}_se.fastq"
+#         "output/{eid}/qc/{sample}_se.fastq"
 #     shell:
 #         "fastqc {input} -o {output}"
 
@@ -303,9 +300,9 @@ rule build_taxonomic_databases:
 #         rule.interleave_reads.output,
 #         rule.trim_reads.joined.output
 #     output:
-#         joined = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_joined.fastq",
-#         R1 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R1.fastq",
-#         R2 = "results/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R2.fastq"
+#         joined = "output/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_joined.fastq",
+#         R1 = "output/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R1.fastq",
+#         R2 = "output/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R2.fastq"
 #     message:
 #         "Aligning all joined and reads to remove rRNAs for mRNA de novo transcriptome assembly."
 #     shadow:
@@ -325,7 +322,7 @@ rule build_taxonomic_databases:
 #         r1 = rules.join_reads.output.failed_r1,
 #         r2 = rules.join_reads.output.failed_r2
 #     output:
-#         "results/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
+#         "output/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
 #     message:
 #         "Interleaving non combined R1 and R2 reads"
 #     run:
@@ -337,7 +334,7 @@ rule build_taxonomic_databases:
 #         il = rules.interleave_reads.output,
 #         joined = rules.join_reads.output.joined
 #     output:
-#         "results/{eid}/assembly/{sample}_merged.fastq"
+#         "output/{eid}/assembly/{sample}_merged.fastq"
 #     message:
 #         "Merging joined and interleaved reads"
 #     run:
@@ -349,7 +346,7 @@ rule build_taxonomic_databases:
 #         rule.interleave_reads.output,
 #         trim_reads = rule.trim_reads.joined.output
 #     output:
-#         rrna = "results/{eid}/annotation/reads/{sample}_{database}"
+#         rrna = "output/{eid}/annotation/reads/{sample}_{database}"
 #     message:
 #         "Annotation of rRNAs in quality controlled reads"
 #     params:
@@ -367,7 +364,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rule.annotate_reads_rRNA.output
 #     output:
-#         rrna_parsed = "results/{eid}/annotation/reads/{sample}_{database}"
+#         rrna_parsed = "output/{eid}/annotation/reads/{sample}_{database}"
 #     message:
 #         "Parse rRNA reads and place taxonomy using LCA++"
 #     params:
@@ -393,7 +390,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.filter_contaminants.output
 #     output:
-#         "results/{eid}/assembly/{sample}.contigs.fa"
+#         "output/{eid}/assembly/{sample}.contigs.fa"
 #     params:
 #         memory = config['assembly']['memory'],
 #         min_count = config['assembly']['minimum_count'],
@@ -411,7 +408,7 @@ rule build_taxonomic_databases:
 #     shell:
 #         """megahit --num-cpu-threads {threads} --memory {params.memory} --read {input} \
 #         --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
-#         --out-dir results/{wildcards.eid}/assembly --out-prefix {wildcards.sample} \
+#         --out-dir output/{wildcards.eid}/assembly --out-prefix {wildcards.sample} \
 #         --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
 #         --merge-level {params.merge_level} --prune-level {params.prune_level} \
 #         --low-local-ratio {params.low_local_ratio}"""
@@ -421,7 +418,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.filter_contaminants.output
 #     output:
-#         "results/results/{eid}/assembly/{sample}"
+#         "output/{eid}/assembly/{sample}"
 #     params:
 #         memory = config['assembly']['memory']
 #     message:
@@ -438,10 +435,10 @@ rule build_taxonomic_databases:
 # rule trinity:
 #     input:
 #         # need to replace with reference to rule
-#         extendedFrags = 'results/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq',  # after we fix trimming!
-#         interleaved = 'results/{eid}/interleaved/{sample}_trimmed_interleaved.fastq'
+#         extendedFrags = 'output/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq',  # after we fix trimming!
+#         interleaved = 'output/{eid}/interleaved/{sample}_trimmed_interleaved.fastq'
 #     output:
-#         "results/{eid}/assembly/{sample}.contigs.fa"
+#         "output/{eid}/assembly/{sample}.contigs.fa"
 #     params:
 #         seqtype = config['assembly']['seqtype'],  # default fastq
 #         read_pairing = config['assembly']['single'],  # default single for extendedFrags
@@ -460,7 +457,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.filter_contaminants.output
 #     output:
-#         "results/results/{eid}/assembly/{sample}"
+#         "output/{eid}/assembly/{sample}"
 #     params:
 #         memory = config['assembly']['memory']
 #     message:
@@ -477,9 +474,9 @@ rule build_taxonomic_databases:
 
 # rule truspades:
 #     input:
-#         input_dir = 'results/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R1.fastq', 'results/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R2.fastq'
+#         input_dir = 'output/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R1.fastq', 'output/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R2.fastq'
 #     output:
-#         "results/{eid}/assembly/{sample}.contigs.fa"
+#         "output/{eid}/assembly/{sample}.contigs.fa"
 #     message:
 #         "Assembling moleculo data with truspades"
 #     threads:
@@ -493,8 +490,8 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.assemble.output
 #     output:
-#         passing = "results/{eid}/assembly/{sample}_length_pass.fa",
-#         fail = "results/{eid}/assembly/{sample}_length_fail.fa"
+#         passing = "output/{eid}/assembly/{sample}_length_pass.fa",
+#         fail = "output/{eid}/assembly/{sample}_length_fail.fa"
 #     params:
 #         min_contig_length = config['assembly']['filtered_contig_length']
 #     shell:
@@ -507,8 +504,8 @@ rule build_taxonomic_databases:
 #         assembled = rules.assembly.output,
 #         filtered = rules.length_filter.output
 #     output:
-#         assembled = "results/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
-#         filtered = "results/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
+#         assembled = "output/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
+#         filtered = "output/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
 #     message:
 #         "Obtaining assembly statistics"
 #     shell:
@@ -521,7 +518,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.length_filter.output #>1k contigs
 #     output:
-#         "results/{eid}/assembly/{sample}_cap3-out.fa"
+#         "output/{eid}/assembly/{sample}_cap3-out.fa"
 #     message:
 #         "Merging contigs with CAP3"
 #     shell:
@@ -532,8 +529,8 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.assemble.output
 #     output:
-#         passing = "results/{eid}/assembly/{sample}_length_pass.fa",
-#         fail = "results/{eid}/assembly/{sample}_length_fail.fa"
+#         passing = "output/{eid}/assembly/{sample}_length_pass.fa",
+#         fail = "output/{eid}/assembly/{sample}_length_fail.fa"
 #     params:
 #         min_contig_length = config['assembly']['filtered_contig_length']
 #     shell:
@@ -545,8 +542,8 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.merge_assembly_contigs_step1.output
 #     output:
-#         passing = "results/{eid}/assembly/{sample}_length_pass.fa",
-#         fail = "results/{eid}/assembly/{sample}_length_fail.fa"
+#         passing = "output/{eid}/assembly/{sample}_length_pass.fa",
+#         fail = "output/{eid}/assembly/{sample}_length_fail.fa"
 #     params:
 #         min_contig_length = config['assembly']['filtered_contig_length']
 #     shell:
@@ -559,7 +556,7 @@ rule build_taxonomic_databases:
 #         s1 = rules.length_filter_long_step1.output
 #         s2 = rules.length_filter_long_step2.output
 #     output:
-#         "results/{eid}/assembly/{sample}_merged_contigs.fa"
+#         "output/{eid}/assembly/{sample}_merged_contigs.fa"
 #     message:
 #         "Merging long contigs"
 #     run:
@@ -570,7 +567,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.merge_long_contigs.output
 #     output:
-#         "results/{eid}/assembly/{sample}_merged_contigs.afg"
+#         "output/{eid}/assembly/{sample}_merged_contigs.afg"
 #     message:
 #         "Formatting all long contigs with minimus2"
 #     shell:
@@ -581,7 +578,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.merge_assembly_contigs_formatting.output
 #     output:
-#         "results/{eid}/assembly/{sample}_hybrid_assembly.fa"
+#         "output/{eid}/assembly/{sample}_hybrid_assembly.fa"
 #     message:
 #         "Merging all long contigs with minimus2"
 #     params:
@@ -596,7 +593,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.merge_assembly_contigs.output
 #     output:
-#         hybrid_assembled = "results/{eid}/assembly/{sample}_hybrid_assembly-stats.txt"
+#         hybrid_assembled = "output/{eid}/assembly/{sample}_hybrid_assembly-stats.txt"
 #     message:
 #         "Obtaining hybrid assembly statistics"
 #     shell:
@@ -630,11 +627,11 @@ rule build_taxonomic_databases:
 #         contigs = rules.megahit.output
 #         prefix = os.path.splitext(contigs)
 #     output:
-#         joined = 'results/{eid}/coverage/{sample}_joined.sam'
-#         interleaved = 'results/{eid}/coverage/{sample}_interleaved.sam'
-#         ji = 'results/{eid}/coverage/{sample}_joined_interleaved.sam'
-#         r1 = 'results/{eid}/coverage/{sample}_r1.sam'
-#         r2 = 'results/{eid}/coverage/{sample}_r2.sam'
+#         joined = 'output/{eid}/coverage/{sample}_joined.sam'
+#         interleaved = 'output/{eid}/coverage/{sample}_interleaved.sam'
+#         ji = 'output/{eid}/coverage/{sample}_joined_interleaved.sam'
+#         r1 = 'output/{eid}/coverage/{sample}_r1.sam'
+#         r2 = 'output/{eid}/coverage/{sample}_r2.sam'
 #     message:
 #         "Mapping to assembly"
 #     shell:
@@ -646,7 +643,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.length_filter.output.passing
 #     output:
-#         "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
+#         "output/{eid}/annotation/orfs/{sample}_length_pass.faa",
 #     params:
 #         sem = config['annotation']['sequencing_error_model'],
 #         memory = config['annotation']['memory']
@@ -662,7 +659,7 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.length_filter.output.fail
 #     output:
-#         "results/{eid}/annotation/orfs/{sample}_length_fail.faa"
+#         "output/{eid}/annotation/orfs/{sample}_length_fail.faa"
 #     params:
 #         sem = config['annotation']['sequencing_error_model'],
 #         memory = config['annotation']['memory']
@@ -678,9 +675,9 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.length_filter.output.passing
 #     output:
-#         prot = "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
-#         nuc = "results/{eid}/annotation/orfs/{sample}_length_pass.fasta",
-#         gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+#         prot = "output/{eid}/annotation/orfs/{sample}_length_pass.faa",
+#         nuc = "output/{eid}/annotation/orfs/{sample}_length_pass.fasta",
+#         gff = "output/{eid}/annotation/orfs/{sample}_length_pass.gff"
 #     params:
 #         g = config['annotation']['translation_table']
 #     message:
@@ -693,9 +690,9 @@ rule build_taxonomic_databases:
 #     input:
 #         rules.length_filter.output.fail
 #     output:
-#         prot = "results/{eid}/annotation/orfs/{sample}_length_fail.faa",
-#         nuc = "results/{eid}/annotation/orfs/{sample}_length_fail.fasta",
-#         gff = "results/{eid}/annotation/orfs/{sample}_length_fail.gff"
+#         prot = "output/{eid}/annotation/orfs/{sample}_length_fail.faa",
+#         nuc = "output/{eid}/annotation/orfs/{sample}_length_fail.fasta",
+#         gff = "output/{eid}/annotation/orfs/{sample}_length_fail.gff"
 #     params:
 #         g = config['annotation']['translation_table']
 #     message:
@@ -709,13 +706,13 @@ rule build_taxonomic_databases:
 #         reads = rules.filter_contaminants.output
 #         contigs = rules.assemble.output
 #     output:
-#         bins = "results/{eid}/binning/{sample}.fasta",
-#         abundance = "results/{eid}/binning/{sample}.abund1",
-#         log = "results/{eid}/binning/{sample}.log",
-#         marker = "results/{eid}/binning/{sample}.marker",
-#         summary = "results/{eid}/binning/{sample}.summary",
-#         tooshort = "results/{eid}/binning/{sample}.tooshort",
-#         noclass = "results/{eid}/binning/{sample}.noclass"
+#         bins = "output/{eid}/binning/{sample}.fasta",
+#         abundance = "output/{eid}/binning/{sample}.abund1",
+#         log = "output/{eid}/binning/{sample}.log",
+#         marker = "output/{eid}/binning/{sample}.marker",
+#         summary = "output/{eid}/binning/{sample}.summary",
+#         tooshort = "output/{eid}/binning/{sample}.tooshort",
+#         noclass = "output/{eid}/binning/{sample}.noclass"
 #     params:
 #         min_contig_len = config['binning']['minimum_contig_length'],
 #         max_iteration = config['binning']['maximum_iterations'],
@@ -737,7 +734,7 @@ rule build_taxonomic_databases:
 #         prodigal_orfs = rules.prodigal.output,
 #         database = rules.format_database.output
 #     output:
-#         annotation = "results/{eid}/annotation/last/{sample}_{database}"
+#         annotation = "output/{eid}/annotation/last/{sample}_{database}"
 #     params:
 #         top_hit = config['lastplus']['top_best_hit'],
 #         e_value_cutoff = config['lastplus']['e_value_cutoff'],
@@ -754,7 +751,7 @@ rule build_taxonomic_databases:
 #     input:
 #         last = rules.lastplus.output
 #     output:
-#         annotation = "results/{eid}/annotation/last/{sample}_{database}"
+#         annotation = "output/{eid}/annotation/last/{sample}_{database}"
 #     params:
 #         #fill
 #     threads
@@ -768,7 +765,7 @@ rule build_taxonomic_databases:
 #     input:
 #         LCA = rules.lcaparselast.output
 #     output:
-#         gff = "results/{eid}/annotation/quantification/{sample}.gtf"
+#         gff = "output/{eid}/annotation/quantification/{sample}.gtf"
 #     message:
 #         "Generate annotated gtf for read quantification"
 #     shell:
@@ -779,7 +776,7 @@ rule build_taxonomic_databases:
 #         gff = rules.generategtf.output
 #         sam = rules.maptoassembly.output #aligned only
 #     output:
-#         verse_counts = "results/{eid}/annotation/quantification/{sample}.counts"
+#         verse_counts = "output/{eid}/annotation/quantification/{sample}.counts"
 #     message:
 #         "Generate counts from reads aligning to contig assembly using VERSE"
 #     shell:
@@ -789,7 +786,7 @@ rule build_taxonomic_databases:
 #     input:
 #         verse_counts = rules.runcounting.output
 #     output:
-#         verse_read_counts = "results/{eid}/annotation/quantification/{sample}_read_counts.tsv"
+#         verse_read_counts = "output/{eid}/annotation/quantification/{sample}_read_counts.tsv"
 #     message:
 #         "Generate read frequencies from VERSE"
 #     shell:
@@ -800,11 +797,11 @@ rule build_taxonomic_databases:
 #         read_counts = rules.getreadcounts.output
 #         annotation_summary_table = rules.lcaparselast.output
 #     output:
-#         functional_counts_ec = "results/{eid}/annotation/quantification/{sample}_ec.tsv"
-#         functional_counts_cog = "results/{eid}/annotation/quantification/{sample}_cog.tsv"
-#         functional_counts_ko = "results/{eid}/annotation/quantification/{sample}_ko.tsv"
-#         functional_counts_dbcan = "results/{eid}/annotation/quantification/{sample}_dbcan.tsv"
-#         functional_counts_metacyc = "results/{eid}/annotation/quantification/{sample}_metacyc.tsv"
+#         functional_counts_ec = "output/{eid}/annotation/quantification/{sample}_ec.tsv"
+#         functional_counts_cog = "output/{eid}/annotation/quantification/{sample}_cog.tsv"
+#         functional_counts_ko = "output/{eid}/annotation/quantification/{sample}_ko.tsv"
+#         functional_counts_dbcan = "output/{eid}/annotation/quantification/{sample}_dbcan.tsv"
+#         functional_counts_metacyc = "output/{eid}/annotation/quantification/{sample}_metacyc.tsv"
 #     shell:
 #         """python src/get_function_counts.py {input.annotation_summary_table} {input.read_counts} \
 #            --function {wildcards.function} --out {output}"""
