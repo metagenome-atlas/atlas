@@ -68,56 +68,56 @@ rule all:
         expand("output/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
 
 
-rule build_contaminant_references:
-    input:
-        contaminant_db = "databases/contaminant/{db}"
-    output:
-        f1 = "databases/contaminant/{db}.1.bt2",
-        f2 = "databases/contaminant/{db}.2.bt2",
-        f3 = "databases/contaminant/{db}.3.bt2",
-        f4 = "databases/contaminant/{db}.4.bt2",
-        r1 = "databases/contaminant/{db}.rev.1.bt2",
-        r2 = "databases/contaminant/{db}.rev.2.bt2"
-    message:
-        "Formatting contaminant databases"
-    threads: 1
-    shell:
-        "bowtie2-build {input.contaminant_db} {input.contaminant_db}"
+# rule build_contaminant_references:
+#     input:
+#         contaminant_db = "databases/contaminant/{db}"
+#     output:
+#         f1 = "databases/contaminant/{db}.1.bt2",
+#         f2 = "databases/contaminant/{db}.2.bt2",
+#         f3 = "databases/contaminant/{db}.3.bt2",
+#         f4 = "databases/contaminant/{db}.4.bt2",
+#         r1 = "databases/contaminant/{db}.rev.1.bt2",
+#         r2 = "databases/contaminant/{db}.rev.2.bt2"
+#     message:
+#         "Formatting contaminant databases"
+#     threads: 1
+#     shell:
+#         "bowtie2-build {input.contaminant_db} {input.contaminant_db}"
 
 
-rule build_functional_databases:
-    input:
-        functional_db = "databases/functional/{db}"
-    output:
-        f1 = "databases/functional/{db}.bck",
-        f2 = "databases/functional/{db}.des",
-        f3 = "databases/functional/{db}.prj",
-        f4 = "databases/functional/{db}.sds",
-        f5 = "databases/functional/{db}.ssp",
-        f6 = "databases/functional/{db}.suf",
-        f7 = "databases/functional/{db}.tis",
-        f8 = "databases/functional/{db}-names.txt"
-    message:
-        "Formatting functional databases"
-    shell:
-        "lastdb+ {input.functional_db} {input.functional_db} -p"
+# rule build_functional_databases:
+#     input:
+#         functional_db = "databases/functional/{db}"
+#     output:
+#         f1 = "databases/functional/{db}.bck",
+#         f2 = "databases/functional/{db}.des",
+#         f3 = "databases/functional/{db}.prj",
+#         f4 = "databases/functional/{db}.sds",
+#         f5 = "databases/functional/{db}.ssp",
+#         f6 = "databases/functional/{db}.suf",
+#         f7 = "databases/functional/{db}.tis",
+#         f8 = "databases/functional/{db}-names.txt"
+#     message:
+#         "Formatting functional databases"
+#     shell:
+#         "lastdb+ {input.functional_db} {input.functional_db} -p"
 
 
-rule build_taxonomic_databases:
-    input:
-        taxonomic_db = "databases/taxonomic/{db}"
-    output:
-        f1 = "databases/taxonomic/{db}.bck",
-        f2 = "databases/taxonomic/{db}.des",
-        f3 = "databases/taxonomic/{db}.prj",
-        f4 = "databases/taxonomic/{db}.sds",
-        f5 = "databases/taxonomic/{db}.ssp",
-        f6 = "databases/taxonomic/{db}.suf",
-        f7 = "databases/taxonomic/{db}.tis"
-    message:
-        "Formatting taxonomic databases"
-    shell:
-        "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
+# rule build_taxonomic_databases:
+#     input:
+#         taxonomic_db = "databases/taxonomic/{db}"
+#     output:
+#         f1 = "databases/taxonomic/{db}.bck",
+#         f2 = "databases/taxonomic/{db}.des",
+#         f3 = "databases/taxonomic/{db}.prj",
+#         f4 = "databases/taxonomic/{db}.sds",
+#         f5 = "databases/taxonomic/{db}.ssp",
+#         f6 = "databases/taxonomic/{db}.suf",
+#         f7 = "databases/taxonomic/{db}.tis"
+#     message:
+#         "Formatting taxonomic databases"
+#     shell:
+#         "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
 
 rule join_reads:
