@@ -51,10 +51,10 @@ rule all:
     input:
         # these can eventually be removed. testing purposes only.
         # samples
-        expand("result/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
-        expand("result/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
-        expand("result/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
-        expand("result/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
+        expand("output/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
+        expand("output/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
+        expand("output/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
+        expand("output/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
         
         # contaminants
         # expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
