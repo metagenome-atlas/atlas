@@ -58,7 +58,7 @@ rule all:
         expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
         expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
 
-        expand("databases/functional/{db}{ext}", db=FUNCTIONAL_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt']),
+        # expand("databases/functional/{db}{ext}", db=FUNCTIONAL_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt']),
         expand("databases/taxonomic/{db}{ext}", db=TAXONOMIC_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt'])
 
         # expand("input/{eid}/{sample}.fastq", eid=EID, sample=SAMPLES)
@@ -68,11 +68,6 @@ rule all:
         # expand("results/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
         # expand("results/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
         # expand("results/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
-
-
-# rule gunzip:
-#     input:
-#         zipfile = "input/{eid}/{sample}."
 
 
 rule build_contaminant_references:
