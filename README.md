@@ -79,13 +79,3 @@ Preparing to run, place FASTQ files into `results/<eid>/demultiplexed`. At this 
 <sample-name-2>_R1.fastq
 <sample-name-2>_R2.fastq
 ```
-
-# Protocol
-
-## Read Joining
-
-flash
-
-```
-
-```
