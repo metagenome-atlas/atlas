@@ -1,0 +1,39 @@
+# Das Pipeline 1.0
+# Richard White III, Chris Overall
+# Parameter File
+
+#INPUT:format fastq
+# e.g. fastq, gz
+
+# serial or parallel
+
+decon:contaminant_dbs phiX174_virus, silva_rfam_all_rRNAs
+
+# Flash parameters
+flash:num_threads 4
+flash:min_overlap 10
+flash:max_overlap 150
+flash:mismatch_ratio 0.25
+flash:phred_offset 33
+flash:max_overlap 150
+
+# Megahit parameters
+megahit:max_mem 0.99
+megahit:length_of_library_insert 250
+megahit:kmer_min 21
+megahit:kmer_max 121
+
+# Trinity parameters
+# so far not needed (trying to autodetect)
+
+# subsampler_length.py
+subsampler:min 1000
+subsampler:max 10000000000
+
+# FGS+ parameters
+fgs+:sequencing_error_model illumina_10
+
+# lastal+ parameters
+lastal+:bit_score_cutoff 20
+lastal+:e_value_cutoff 1E-06
+lastal+:n_best 10

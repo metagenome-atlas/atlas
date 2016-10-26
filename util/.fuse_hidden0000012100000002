@@ -1,0 +1,20 @@
+import gzip
+import os
+
+
+def gunzip(gzFile, dest):
+    inFn = os.path.basename(gzFile)
+    parts = inFn.split('.')
+    outFn = '.'.join([p for p in parts[0:-1]])
+    print outFn
+
+    inF = gzip.open(gzFile, 'rb')
+    outPath = os.path.join(dest, outFn)
+    print outPath
+    outF = open(outPath, 'wb')
+    outF.write(inF.read())
+    inF.close()
+    outF.close()
+
+if __name__ == '__main__':
+    gunzip('./test.fastq.gz', '.')

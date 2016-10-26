@@ -1,0 +1,61 @@
+main()
+    run_parallel()
+        worker()
+            merge_reads()
+                get_forward_read_path()
+                get_reverse_read_path()
+                **REMOVE FLASH DIRECTORY IF EXISTS**
+                **MAKE FLASH DIRECTORY**
+                **RUN FLASH EXECUTABLE**
+
+            decon()
+                **REMOVE DECON DIRECTORY IF EXISTS**
+                **MAKE DECON DIRECTORY**
+                for db in contaminant_dbs:      # what is this section doing?
+                    search_for_contaminants()   #
+                    remove_contaminants()       #
+                concat_decon_files()
+
+            trim_reads()
+                **REMOVE TRIMMOMATIC DIRECTORY IF EXISTS**
+                **MAKE TRIMMOMATIC DIRECTORY**
+                for db in contaminant dbs:
+                    **GATHER A BUNCH OF FILES**     # this is done twice...
+                    **RUN TRIMMOMATIC EXECUTABLE**  # ...why?
+
+            qc_reads()
+                **REMOVE FASTQC DIRECTORY IF EXISTS**
+                **MAKE FASTQC DIRECTORY**
+                **RUN FASTQC EXECUTABLE**           # three times.  why?
+
+            interleave_reads()
+                **REMOVE AND/OR MAKE INTERLEAVE DIRECTORY**
+                **OPEN TWO FASTQ FILES**
+                **INTERLEAVE THEIR LINES**
+
+**NOTES**
+-> Looks like each handoff (e.g., merge_reads() to decon()) requires the downstream call references the output directory of the upstream call
+-> Highly repeated step: look for presence of directory, clear it, make it
+-> Command execution can be wrapped such that only the command needs to be passed (subprocess and writing to /dev/null can be abstracted)
+-> 
+
+**TODO**
+make new output folder assembly
+take *_Unaligned_extended_frags_trimmed.fastq from Trimmomatic folder and move to assembly
+take *_trimmed_interleaved.fastq and move to assembly
+combine those two files (cat)
+load into megahit
+assembly stats (in perl, need to rewrite in python) [CountFasta.pl]
+EXISTS: sample assembly (<1K contigs) [subsampler_length.py]
+in parallel
+    maxbin/BT2 >1k contigs
+    DNA->[Orfcaller]->protein
+
+
+###
+Move output from Megahit or trinity to the root of Assembly
+Run subsampler_length.py with user specified read length
+Run stats (CountFasta.pl--REWRITE THIS IN PYTHON) on both subsampled file, AND on the output from Megahit/Trinity
+    Output from stats goes into new folder "stats" WITHIN Assembly folder
+
+Map reads 

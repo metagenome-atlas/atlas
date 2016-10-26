@@ -6,7 +6,8 @@
 PYTHON_EXECUTABLE:/usr/bin/python
 
 # Database folders
-CONTAMINANT_DB_DIR:/pic/projects/mint2/Chowdhury_cDNA-29727713/Contaminant_DBs
+CONTAMINANT_DB_DIR:/people/whit040/ATLAS_pipeline/atlas/Contaminant_DBs
+ANNOTATION_DB_DIR:/people/whit040/ATLAS_pipeline/atlas/Annotation_DBs
 
 TRIMMOMATIC_ADAPTER_FILE:/people/whit040/Trimmomatic-0.33/adapters/Adapters.fa
 
@@ -18,3 +19,10 @@ PICARD_VIEW_SAM_EXECUTABLE:java -Xmx32g -jar /people/whit040/picard-1.90/dist/Vi
 PICARD_SAM_TO_FASTQ_EXECUTABLE:java -Xmx32g -jar /people/whit040/picard-1.90/dist/SamToFastq.jar
 TRIMMOMATIC_EXECUTABLE:java -Xmx32g -jar /people/whit040/Trimmomatic-0.33/trimmomatic-0.33.jar
 FASTQC_EXECUTABLE:/people/whit040/FastQC/fastqc
+MEGAHIT_EXECUTABLE:megahit
+TRINITY_EXECUTABLE:/people/whit040/trinityrnaseq-2.1.1
+MAXBIN_EXECUTABLE:/people/whit040/MaxBin-2.1/run_MaxBin.pl
+FGS+_EXECUTABLE:/people/whit040/ATLAS_pipeline/FragGeneScanPlus/FGS+
+LASTDB+_EXECUTABLE:lastdb+
+LASTAL+_EXECUTABLE:lastal+
+SAMTOOLS_EXECUTABLE:~/samtools-1.1/samtools

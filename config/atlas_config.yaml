@@ -1,0 +1,67 @@
+eid: debug
+phred_offset: 33
+filtering:
+    threads: 4
+    # fastas to parse into kmers which are then trimmed from the sequences
+    adapters: ref/phix174_ill.ref.fa.gz,ref/adapters.fa.gz
+    # lower than 20 to allow overlap the chance to increase the quality
+    minimum_base_quality: 10
+    # kmer mismatches allowed during adapter trim process
+    allowable_kmer_mismatches: 1
+    # length of kmer to search against sequences
+    reference_kmer_match_length: 31
+    # passing single-end read length, prior to merging
+    minimum_passing_read_length: 51
+    # after merging; the allowable limit of erroneous bases; accepts fractions as well
+    maximum_expected_error: 1
+merging:
+    threads: 4
+    minimum_overlap: 10
+    maximum_overlap: 150
+    maximum_mismatch_density: 0.25
+contamination_filtering:
+    threads: 12
+    # fastas placed into ref/contamination_references, list their file names
+    # omitting the path
+    references: adapter.fa,adapter.fa
+assembly:
+    threads: 24
+    # fraction of the machine's total memory or bytes
+    memory: 0.99
+    # minimum multiplicity for filtering (k_min+1)-mers
+    minimum_count: 2
+    # minimum kmer size (<= 255), must be odd number
+    kmer_min: 21
+    # maximum kmer size (<= 255), must be odd number
+    kmer_max: 121
+    # increment of kmer size of each iteration (<= 28), must be even number
+    kmer_step: 20
+    # merge complex bubbles of length <= l*kmer_size and similarity >= s
+    merge_level: 20,0.98
+    # strength of low depth pruning (0-3)
+    prune_level: 2
+    # ratio threshold to define low local coverage contigs
+    low_local_ratio: 0.2
+    # minimum length of contigs to output
+    minimum_contig_length: 200
+    filtered_contig_length: 1000
+annotation:
+    memory: 8096 # needs megabyte amount.  autodetect?
+    threads: 24
+    sequencing_error_model: illumina_10
+    # https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
+    translation_table: 11
+
+binning:
+    threads: 12
+    minimum_contig_length: 1000
+    # iterations of Expectation-Maximization algorithm
+    maximum_iterations: 50
+    # probability threshold for EM final classification
+    probability_threshold: 0.9
+    # By default MaxBin will look for 107 marker genes present in >95% of bacteria.
+    # Alternatively you can also choose 40 marker gene sets that are universal
+    # among bacteria and archaea (Wu et al., PLoS ONE 2013). This option may
+    # be better suited for environment dominated by archaea; however it tends
+    # to split genomes into more bins.
+    marker_set: 107

@@ -1,0 +1,25 @@
+###############################
+###after mapping to assembly###
+###############################
+-rw-r--r-- 1 whit040 65M Jun 16 20:46 Contrl-A_rep1_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 51M Jun 16 20:46 Contrl-C_rep1_ext-R1_trim_hybrid.aligned.bam
+
+-rw-r--r-- 1 whit040 64M Jun 28 03:02 Soil_A_dry_rep-1_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 82M Jun 28 03:03 Soil_A_dry_rep-2_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 36M Jun 28 03:03 Soil_A_dry_rep-3_ext-R1_trim_hybrid.aligned.bam
+
+-rw-r--r-- 1 whit040 36M Jul 10 11:08 Soil_A_wet_rep-1_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 33M Jul 10 11:08 Soil_A_wet_rep-2_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 53M Jun 16 20:47 Soil_A_wet_rep-3_ext-R1_trim_hybrid.aligned.bam
+
+-rw-r--r-- 1 whit040 29M Jun 16 20:47 Soil_B_wet_rep-1_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 62M Jun 16 20:47 Soil_B_wet_rep-2_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 39M Jun 16 20:47 Soil_B_wet_rep-3_ext-R1_trim_hybrid.aligned.bam
+
+-rw-r--r-- 1 whit040 71M Jun 28 03:03 Soil_C_dry_rep-1_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 59M Jun 16 20:48 Soil_C_dry_rep-2_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 55M Jul 10 10:58 Soil_C_dry_rep-3_ext-R1_trim_hybrid.aligned.bam
+
+-rw-r--r-- 1 whit040 54M Jun 28 03:04 Soil_C_wet_rep-1_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 33M Jun 28 03:04 Soil_C_wet_rep-2_ext-R1_trim_hybrid.aligned.bam
+-rw-r--r-- 1 whit040 35M Jul 10 10:58 Soil_C_wet_rep-3_ext-R1_trim_hybrid.aligned.bam
