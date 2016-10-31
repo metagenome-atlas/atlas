@@ -94,15 +94,37 @@ Preparing to run, place FASTQ files into `results/<eid>/demultiplexed`. At this 
 + format these into single table
 
 
-## EE filter rather than quality
+## EE filter and quality trimming
 
-Before
+Before EE:
 
 ![img](images/before_ee.png)
 
-After
+After EE:
 
 ![img](images/after_ee.png)
+
+![img](images/after_ee_length_dist.png)
+
+EE filter drops over 1m reads.
+
+## quality trimming
+
+ILLUMINACLIP:ref/adapters.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:8:28 MINLEN:100
+
+This is very strict.
+
+Input Reads: 3314282 Surviving: 2681906 (80.92%) Dropped: 632376 (19.08%)
+
+![img](images/after_qual.png)
+
+More reads survive, but you're clipping (selecting shorter reads)
+
+![img](images/after_qual_length_dist.png)
+
+You see the same effect even with less strict settings with respect to length (SLIDINGWINDOW:4:15):
+
+![img](images/less_strict_qual_trim.png)
 
 ## merging notes
 
