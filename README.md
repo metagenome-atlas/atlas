@@ -79,3 +79,31 @@ Preparing to run, place FASTQ files into `results/<eid>/demultiplexed`. At this 
 <sample-name-2>_R1.fastq
 <sample-name-2>_R2.fastq
 ```
+
+/pic/projects/mint/diamond #folder
+/pic/projects/mint/diamond/Barefallow_all-rep1-3_megahit_cDNA.faa #protein orfs from prodigal
+/pic/projects/mint/diamond/Barefallow_all-rep1-3_megahit_cDNA.fna #nucleotide contigs input prodigal
+/pic/projects/mint/diamond/Barefallow_all-rep1-3_megahit_cDNA.ffa  #nucleotide orfs from prodigal
+/pic/projects/mint/diamond/Barefallow_all-rep1-3_megahit_cDNA.gff  #prodigal gff
+/pic/projects/mint/diamond/Bf_ref_cDNA_prodigal #diamond to protein orfs to refseq
+/pic/projects/mint/diamond/Bf_egg_cDNA_prodigal #diamond to protein orfs to eggnog
+
+
++ refseq with local alignments for taxonomy
++ hmm to tigrfam for function, ec #
++ format these into single table
+
+
+## EE filter rather than quality
+
+Before
+
+![img](images/before_ee.png)
+
+After
+
+![img](images/after_ee.png)
+
+## merging notes
+
+bbmerge and flash output a comparable amount of joined reads with comparable expected error rates
