@@ -1,7 +1,6 @@
 import os
 from glob import glob
 from subprocess import check_output
-from util.IO import interleave_reads
 
 
 def read_count(fastq):
@@ -113,12 +112,14 @@ rule quality_filter_reads:
         k = config['filtering']['reference_kmer_match_length'],
         qtrim = "rl",
         minlength = config['filtering']['minimum_passing_read_length']
-    threads: 24
-    shell: """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
-                  rref={params.rref} lref={params.lref} mink={params.mink} \
-                  stats={output.stats} hdist={params.hdist} k={params.k} \
-                  trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
-                  minlength={params.minlength} overwrite=true"""
+    threads:
+        24
+    shell:
+        """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
+               rref={params.rref} lref={params.lref} mink={params.mink} \
+               stats={output.stats} hdist={params.hdist} k={params.k} \
+               trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
+               minlength={params.minlength} overwrite=true"""
 
 
 rule join_reads:
@@ -130,21 +131,25 @@ rule join_reads:
         hist = "results/{eid}/joined/{sample}.hist",
         failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
         failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
-    message: "Joining reads using `flash`"
-    shadow: "shallow"
+    message:
+        "Joining reads using `flash`"
+    shadow:
+        "shallow"
     params:
         output_dir = lambda wildcards: "results/%s/joined/" % wildcards.eid,
         min_overlap = config['merging']['minimum_overlap'],
         max_overlap = config['merging']['maximum_overlap'],
         max_mismatch_density = config['merging']['maximum_mismatch_density'],
         phred_offset = config['phred_offset']
-    log: "results/{eid}/logs/{sample}_flash.log"
-    threads: 24
+    log:
+        "results/{eid}/logs/{sample}_flash.log"
+    threads:
+        24
     shell:
         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
-           --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
-           --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
-           --output-directory {params.output_dir} --threads {threads}"""
+               --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
+               --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
+               --output-directory {params.output_dir} --threads {threads}"""
 
 
 rule concatenate_joined_reads:
@@ -152,19 +157,26 @@ rule concatenate_joined_reads:
         joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
         failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
         failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
-    output: "results/{eid}/joined/{sample}_joined.fastq"
-    shell: "cat {input.joined} {input.failed_r1} {input.failed_r2} > {output}"
+    output:
+        "results/{eid}/joined/{sample}_joined.fastq"
+    shell:
+        "cat {input.joined} {input.failed_r1} {input.failed_r2} > {output}"
 
 
 rule error_correction:
-    input: "results/{eid}/joined/{sample}_joined.fastq"
-    output: "results/{eid}/joined/{sample}_corrected.fastq"
-    threads: 24
-    shell: "tadpole.sh in={input} out={output} mode=correct threads={threads}"
+    input:
+        "results/{eid}/joined/{sample}_joined.fastq"
+    output:
+        "results/{eid}/joined/{sample}_corrected.fastq"
+    threads:
+        24
+    shell:
+        "tadpole.sh in={input} out={output} mode=correct threads={threads}"
 
 
 rule decontaminate_joined:
-    input: "results/{eid}/joined/{sample}_corrected.fastq"
+    input:
+        "results/{eid}/joined/{sample}_corrected.fastq"
     output:
         dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in DECON_DBS],
         stats = "results/{eid}/decon/{sample}_refstats.txt",
@@ -177,10 +189,12 @@ rule decontaminate_joined:
         minratio = config['contamination_filtering'].get('minratio', 0.65),
         minhits = config['contamination_filtering'].get('minhits', 1),
         ambiguous = config['contamination_filtering'].get('ambiguous', "best")
-    threads: 24
-    shell: """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
-                  {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
-                  minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"""
+    threads:
+        24
+    shell:
+        """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
+               {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
+               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"""
 
 
 # rule subset_reads_by_quality:
@@ -196,8 +210,10 @@ rule decontaminate_joined:
 
 
 rule subset_reads_by_quality:
-    input: "results/{eid}/decon/{sample}_clean.fastq.gz"
-    output: "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+    input:
+        "results/{eid}/decon/{sample}_clean.fastq.gz"
+    output:
+        "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
     params:
         adapter_clip = "" if not config["filtering"].get("adapters", "") else "ILLUMINACLIP:%s:%s" % (config["filtering"]["adapters"], config["filtering"].get("adapter_clip", "2:30:10"))
         window_size_qual = "" if not config["filtering"].get("window_size_quality", "") else "SLIDINGWINDOW:%s" % config["filtering"]["window_size_quality"]
@@ -206,18 +222,25 @@ rule subset_reads_by_quality:
         crop = "" if not config["filtering"].get("crop", 0) else "CROP:%s" % config["filtering"]["crop"]
         headcrop = "" if not config["filtering"].get("headcrop", 0) else "HEADCROP:%s" % config["filtering"]["headcrop"]
         minlen = "MINLEN:%s" % config["filtering"]["minimum_passing_read_length"]
-    threads: 24
-    shell: """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
-                  {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
+    threads:
+        24
+    shell:
+        """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
+               {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
 
 
 rule fastqc:
-    input: "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
-    output: "results/{eid}/fastqc/{sample}_clean_qual_fastqc.zip",
-            "results/{eid}/fastqc/{sample}_clean_qual_fastqc.html"
-    params: output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
-    threads: 24
-    shell: "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
+    input:
+        "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+    output:
+        "results/{eid}/fastqc/{sample}_clean_qual_fastqc.zip",
+        "results/{eid}/fastqc/{sample}_clean_qual_fastqc.html"
+    params:
+        output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
+    threads:
+        24
+    shell:
+        "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
 
 
 # # For metatranscriptomes only!
