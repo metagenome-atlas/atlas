@@ -1,5 +1,8 @@
 # prototype stuffs
 data_type: Metagenome
+# sliding_window OR expected_error
+qual_method: sliding_window
+
 
 # regular stuffs
 eid: test
