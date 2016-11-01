@@ -14,10 +14,24 @@ filtering:
     reference_kmer_match_length: 31
     # passing single-end read length, prior to merging
     minimum_passing_read_length: 51
+    ## Optional VSEARCH MAX EE filter
     # after merging; the allowable limit of erroneous bases; accepts fractions as well
     maximum_expected_error: 5
     # maximum number of N's for FASTQ filter
     maxns: 5
+    ## TRIMMOMATIC quality trimming/filtering
+    # adapter mismatch, palindrome clip threshold, and simple clip threshold (the values are nonsensical), e.g. 2:30:10
+    adapter_clip: 2:30:10
+    # Cut bases off the start of a read, if below this quality
+    leading: 15
+    # Cut bases off the end of a read, if below this quality
+    trailing: 15
+    # specifies the number of bases to average across and required quality, e.g. 4:15
+    window_size_quality: 8:25
+    # The number of bases to keep, from the start of the read; 0 disables
+    crop: 0
+    # The number of bases to remove from the start of the read; 0 disables
+    headcrop: 0
 merging:
     threads: 4
     minimum_overlap: 30
