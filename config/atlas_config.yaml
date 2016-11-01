@@ -1,9 +1,11 @@
-eid: debug
+eid: test
 phred_offset: 33
 filtering:
     threads: 4
     # fastas to parse into kmers which are then trimmed from the sequences
-    adapters: ref/phix174_ill.ref.fa.gz,ref/adapters.fa.gz
+    adapters: ref/adapters.fa.gz
+    # Look for shorter kmers at read tips down to this length; 0 disables
+    mink: 8
     # lower than 20 to allow overlap the chance to increase the quality
     minimum_base_quality: 10
     # kmer mismatches allowed during adapter trim process
@@ -12,18 +14,46 @@ filtering:
     reference_kmer_match_length: 31
     # passing single-end read length, prior to merging
     minimum_passing_read_length: 51
+    ## Optional VSEARCH MAX EE filter
     # after merging; the allowable limit of erroneous bases; accepts fractions as well
-    maximum_expected_error: 1
+    maximum_expected_error: 5
+    # maximum number of N's for FASTQ filter
+    maxns: 5
+    ## TRIMMOMATIC quality trimming/filtering
+    # adapter mismatch, palindrome clip threshold, and simple clip threshold (the values are nonsensical), e.g. 2:30:10
+    adapter_clip: 2:30:10
+    # Cut bases off the start of a read, if below this quality
+    leading: 15
+    # Cut bases off the end of a read, if below this quality
+    trailing: 15
+    # specifies the number of bases to average across and required quality, e.g. 4:15
+    window_size_quality: 8:25
+    # The number of bases to keep, from the start of the read; 0 disables
+    crop: 0
+    # The number of bases to remove from the start of the read; 0 disables
+    headcrop: 0
 merging:
     threads: 4
-    minimum_overlap: 10
-    maximum_overlap: 150
+    minimum_overlap: 30
+    maximum_overlap: 220
     maximum_mismatch_density: 0.25
 contamination_filtering:
     threads: 12
-    # fastas placed into ref/contamination_references, list their file names
-    # omitting the path
-    references: adapter.fa,adapter.fa
+    references:
+        ecoli: databases/contaminant/Escherichia_coli_K-12.fa
+        phiX: databases/contaminant/phiX174_virus.fa
+    # Don't look for indels longer than this
+    maxindel: 20
+    # Fraction of max alignment score required to keep a site
+    minratio: 0.65
+    # Minimum number of seed hits required for candidate sites
+    minhits: 1
+    # Set behavior on ambiguously-mapped reads (with multiple top-scoring mapping locations).
+    #   best    (use the first best site)
+    #   toss    (consider unmapped)
+    #   random  (select one top-scoring site randomly)
+    #   all     (retain all top-scoring sites.  Does not work yet with SAM output)
+    ambiguous: best
 assembly:
     threads: 24
     # fraction of the machine's total memory or bytes

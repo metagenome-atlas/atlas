@@ -1,7 +1,6 @@
 import os
 from glob import glob
 from subprocess import check_output
-from util.IO import interleave_reads
 
 
 def read_count(fastq):
@@ -41,50 +40,24 @@ def pattern_search(path, patterns):
 configfile: "./config/atlas_config.yaml"
 
 EID = config['eid']
-SAMPLES = get_samples(os.path.join("input", EID), 200)
+SAMPLES = get_samples(os.path.join("data", EID), 200)
 CONTAMINANT_DBS = pattern_search("databases/contaminant", ["*.fa", "*.fasta"])
 FUNCTIONAL_DBS = pattern_search("databases/functional", ["*.fa", "*.fasta"])
 TAXONOMIC_DBS = pattern_search("databases/taxonomic", ["*.fa", "*.fasta"])
 
+DECON_DBS = list(config["contamination_filtering"]["references"].keys())
+
 
 rule all:
     input:
-        # these can eventually be removed. testing purposes only.
-        # samples
-        expand("output/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
-        expand("output/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
-        expand("output/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
-        expand("output/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES)
-        
-        # contaminants
-        # expand("databases/contaminant/{db}.1.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.2.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.3.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.4.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.rev.1.bt2", db=CONTAMINANT_DBS),
-        # expand("databases/contaminant/{db}.rev.2.bt2", db=CONTAMINANT_DBS),
-
-        # expand("databases/functional/{db}{ext}", db=FUNCTIONAL_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis', '-names.txt']),
-        # expand("databases/taxonomic/{db}{ext}", db=TAXONOMIC_DBS, ext=['.bck', '.des', '.prj', '.sds', '.ssp', '.suf', '.tis'])
-
-        
-
-
-rule build_contaminant_references:
-    input:
-        contaminant_db = "databases/contaminant/{db}"
-    output:
-        f1 = "databases/contaminant/{db}.1.bt2",
-        f2 = "databases/contaminant/{db}.2.bt2",
-        f3 = "databases/contaminant/{db}.3.bt2",
-        f4 = "databases/contaminant/{db}.4.bt2",
-        r1 = "databases/contaminant/{db}.rev.1.bt2",
-        r2 = "databases/contaminant/{db}.rev.2.bt2"
-    message:
-        "Formatting contaminant databases"
-    threads: 1
-    shell:
-        "bowtie2-build {input.contaminant_db} {input.contaminant_db}"
+        expand("results/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=EID, sample=SAMPLES, decon_dbs=DECON_DBS),
+        expand("results/{eid}/decon/{sample}_refstats.txt", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_clean_qual_fastqc.zip", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_clean_qual_fastqc.html", eid=EID, sample=SAMPLES)
 
 
 rule build_functional_databases:
@@ -122,179 +95,153 @@ rule build_taxonomic_databases:
         "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
 
 
+rule quality_filter_reads:
+    input:
+        r1 = "data/{eid}/{sample}_R1.fastq",
+        r2 = "data/{eid}/{sample}_R2.fastq"
+    output:
+        r1 = "results/{eid}/quality_filter/{sample}_R1.fastq",
+        r2 = "results/{eid}/quality_filter/{sample}_R2.fastq",
+        stats = "results/{eid}/logs/{sample}_quality_filtering_stats.txt"
+    params:
+        lref = config['filtering']['adapters'],
+        rref = config['filtering']['adapters'],
+        mink = config['filtering']['mink'],
+        trimq = config['filtering']['minimum_base_quality'],
+        hdist = config['filtering']['allowable_kmer_mismatches'],
+        k = config['filtering']['reference_kmer_match_length'],
+        qtrim = "rl",
+        minlength = config['filtering']['minimum_passing_read_length']
+    threads:
+        24
+    shell:
+        """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
+               rref={params.rref} lref={params.lref} mink={params.mink} \
+               stats={output.stats} hdist={params.hdist} k={params.k} \
+               trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
+               minlength={params.minlength} overwrite=true"""
+
+
 rule join_reads:
     input:
-        r1 = "input/{eid}/{sample}_R1.fastq",
-        r2 = "input/{eid}/{sample}_R2.fastq"
+        r1 = "results/{eid}/quality_filter/{sample}_R1.fastq",
+        r2 = "results/{eid}/quality_filter/{sample}_R2.fastq"
     output:
-        joined = "output/{eid}/joined/{sample}.extendedFrags.fastq",
-        hist = "output/{eid}/joined/{sample}.hist",
-        failed_r1 = "output/{eid}/joined/{sample}.notCombined_1.fastq",
-        failed_r2 = "output/{eid}/joined/{sample}.notCombined_2.fastq"
-    message: "Joining reads using `flash`"
-    shadow: "shallow"
+        joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
+        hist = "results/{eid}/joined/{sample}.hist",
+        failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
+        failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
+    message:
+        "Joining reads using `flash`"
+    shadow:
+        "shallow"
     params:
+        output_dir = lambda wildcards: "results/%s/joined/" % wildcards.eid,
         min_overlap = config['merging']['minimum_overlap'],
         max_overlap = config['merging']['maximum_overlap'],
         max_mismatch_density = config['merging']['maximum_mismatch_density'],
         phred_offset = config['phred_offset']
-    log: "output/{eid}/logs/{sample}_flash.log"
-    threads: config['merging']['threads']
-    shell: 
+    log:
+        "results/{eid}/logs/{sample}_flash.log"
+    threads:
+        24
+    shell:
         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
-           --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
-           --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
-           --output-directory output/{wildcards.eid}/joined/ --threads {threads}"""
+               --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
+               --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
+               --output-directory {params.output_dir} --threads {threads}"""
 
 
-# rule filter_contaminants:
-#     input:
-#         joined = rules.join_reads.output.joined,
-#         r1 = rules.join_reads.output.failed_r1,
-#         r2 = rules.join_reads.output.failed_r2,
-#         prefix = rules.combine_contaminant_references.output
-#     output:
-#         "output/{eid}/joined/{sample}_joined_filtered.fastq"
-#     message:
-#         "Aligning all joined and reads that failed to join as single-end against the contamination reference."
-#     shadow:
-#         "shallow"
-#     threads:
-#         config['contamination_filtering']['threads']
-#     shell:
-#         """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
-#                   | samtools view -@ {threads} -hf4 \
-#                   | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
-#                   | bedtools bamtofastq -i stdin -fq {output}
-#         """
+rule concatenate_joined_reads:
+    input:
+        joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
+        failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
+        failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
+    output:
+        "results/{eid}/joined/{sample}_joined.fastq"
+    shell:
+        "cat {input.joined} {input.failed_r1} {input.failed_r2} > {output}"
 
 
-# rule trim_reads:
-#     input:
-#         filtered = rule.filter_contaminants.output,
-#         # or
-#         # filtered = rule.decon_se3.output
-#     output:
-#         joined = "output/{eid}/trimmed/{sample}_trimmed_filtered_joined.fastq",
-#         R1 = "output/{eid}/trimmed/{sample}_trimmed_filtered_R1.fastq",
-#         R2 = "output/{eid}/trimmed/{sample}_trimmed_filtered_R2.fastq"
+rule error_correction:
+    input:
+        "results/{eid}/joined/{sample}_joined.fastq"
+    output:
+        "results/{eid}/joined/{sample}_corrected.fastq"
+    threads:
+        24
+    shell:
+        "tadpole.sh in={input} out={output} mode=correct threads={threads}"
+
+
+rule decontaminate_joined:
+    input:
+        "results/{eid}/joined/{sample}_corrected.fastq"
+    output:
+        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in DECON_DBS],
+        stats = "results/{eid}/decon/{sample}_refstats.txt",
+        clean = "results/{eid}/decon/{sample}_clean.fastq.gz"
+    params:
+        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config['contamination_filtering']['references'].items()]),
+        refs_out = lambda wildcards: " ".join(["out_%s=results/%s/decon/%s_%s.fastq.gz" % (n, wildcards.eid, wildcards.sample, n) for n in list(config['contamination_filtering']['references'].keys())]),
+        path = "databases/contaminant/",
+        maxindel = config['contamination_filtering'].get('maxindel', 20),
+        minratio = config['contamination_filtering'].get('minratio', 0.65),
+        minhits = config['contamination_filtering'].get('minhits', 1),
+        ambiguous = config['contamination_filtering'].get('ambiguous', "best")
+    threads:
+        24
+    shell:
+        """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
+               {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
+               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"""
+
+
+# rule subset_reads_by_quality:
+#     input: "results/{eid}/decon/{sample}_clean.fastq.gz"
+#     output: "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
 #     params:
-#         single_end = config['?']['SE'],
-#         phred_value = config['?']['phred33'],
-#         min_length = config['?']['length?']
-#     message:
-#         "Trimming filtered reads using trimmomatic"
-#     log:
-#         "output/{eid}/trimmed/{sample}.log"
-#     shell:
-#         """trimmomatic -Xmx32g {params.single_end} -{params.phred_value} {input.filtered} -trimlog {log} \
-#             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
-#             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
-#         """
+#         phred = config.get("phred_offset", 33),
+#         maxee = config["filtering"].get("maximum_expected_error", 2),
+#         maxns = config["filtering"].get("maxns", 3)
+#     threads: 1
+#     shell: """vsearch --fastq_filter {input} --fastqout {output} --fastq_ascii {params.phred} \
+#                   --fastq_maxee {params.maxee} --fastq_maxns {params.maxns}"""
 
 
-# rule fastqc_R1:
-#     input:
-#         rule.trim_reads.output.R1
-#     output:
-#         "output/{eid}/qc/{sample}_R1.fastq"
-#     shell:
-#         "fastqc {input} -o {output}"
+rule subset_reads_by_quality:
+    input:
+        "results/{eid}/decon/{sample}_clean.fastq.gz"
+    output:
+        "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+    params:
+        adapter_clip = "" if not config["filtering"].get("adapters", "") else "ILLUMINACLIP:%s:%s" % (config["filtering"]["adapters"], config["filtering"].get("adapter_clip", "2:30:10"))
+        window_size_qual = "" if not config["filtering"].get("window_size_quality", "") else "SLIDINGWINDOW:%s" % config["filtering"]["window_size_quality"]
+        leading = "" if not config["filtering"].get("leading", 0) else "LEADING:%s" % config["filtering"]["leading"]
+        trailing = "" if not config["filtering"].get("trailing", 0) else "TRAILING:%s" % config["filtering"]["trailing"]
+        crop = "" if not config["filtering"].get("crop", 0) else "CROP:%s" % config["filtering"]["crop"]
+        headcrop = "" if not config["filtering"].get("headcrop", 0) else "HEADCROP:%s" % config["filtering"]["headcrop"]
+        minlen = "MINLEN:%s" % config["filtering"]["minimum_passing_read_length"]
+    threads:
+        24
+    shell:
+        """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
+               {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
 
 
-# rule fastqc_R2:
-#     input:
-#         rule.trim_reads.output.R2
-#     output:
-#         "output/{eid}/qc/{sample}_R2.fastq"
-#     shell:
-#         "fastqc {input} -o {output}"
+rule fastqc:
+    input:
+        "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+    output:
+        "results/{eid}/fastqc/{sample}_clean_qual_fastqc.zip",
+        "results/{eid}/fastqc/{sample}_clean_qual_fastqc.html"
+    params:
+        output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
+    threads:
+        24
+    shell:
+        "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
 
-
-# rule fastqc_joined:
-#     input:
-#         rule.trim_reads.output.joined
-#     output:
-#         "output/{eid}/qc/{sample}_joined.fastq"
-#     shell:
-#         "fastqc {input} -o {output}"
-
-# #######################################################################################
-
-# ######################
-# ## Single end reads ##
-# ######################
-
-# #For single end reads (Illumina-SE, PacBio, SOiLD)
-# rule decon_se:
-#     input:
-#         db = 'databases/contaminant/{db}'
-#         se = rules.reads.output.se
-#         prefix = rules.combine_contaminant_references.output
-#     output:
-#         se = "output/{eid}/decon/{sample}_se.sam",
-#     message:
-#         "Performing decontamination with bowtie2"
-#     threads:
-#         config['contamination_filtering']['threads']
-
-#     shell:
-#         "bowtie2 --threads {threads} --very-sensitive -x {input.prefix} -q {input.se}"
-
-
-# rule decon_se2:
-#     input:
-#         rules.decon.output.se
-#     output:
-#         se = "output/{eid}/decon/{sample}_se_decon.sam"
-#     message:
-#         "Filtering with unaligned reads from Decon"
-#     shell:
-#         """<PICARD> ALIGNMENT_STATUS=Unaligned I={input.se} > {output.se}
-#         """
-
-
-# rule decon_se3:
-#     input:
-#         rules.decon2.output
-#     output:
-#         joined = "output/{eid}/decon/{sample}_se_decon.fastq"
-#     message:
-#         "Converting SAM to FASTQ"
-#     shell:
-#         """<SAM_to_FASTQ> I={input.se} F={output.se}"""
-
-
-# rule trim_reads_se:
-#     input:
-#         filtered = rule.filter_contaminants.output,
-#         picard = ?
-#     output:
-#         SE = "output/{eid}/trimmed/{sample}_trimmed_filtered_se.fastq",
-#     params:
-#         single_end = config['?']['SE'],
-#         phred_value = config['?']['phred33'],
-#         min_length = config['?']['length?']
-#     message:
-#         "Trimming filtered reads using trimmomatic"
-#     log:
-#         "output/{eid}/trimmed/{sample}.log"
-#     shell:
-#         """java -Xmx32g -jar trimmomatic-0.33.jar {params.single_end} -{params.phred_value} {input.filtered} -trimlog {log} \
-#             ILLUMINACLIP:adapters/TruSeq2-SE:2:30:10 LEADING:3 TRAILING:3 \
-#             SLIDINGWINDOW:4:15 MINLEN:{params.min_length} {output}
-#         """
-
-
-# rule fastqc_se:
-#     input:
-#         rule.trim_reads.output.se
-#     output:
-#         "output/{eid}/qc/{sample}_se.fastq"
-#     shell:
-#         "fastqc {input} -o {output}"
-
-# #################################################################################################
 
 # # For metatranscriptomes only!
 # rule remove_rRNAs:
