@@ -29,9 +29,6 @@
 - [x] trimmomatic
 - [x] verse
 
-
-
-
 # Current Protocol
 
 1. Build contaminant DBs
