@@ -114,11 +114,12 @@ rule quality_filter_reads:
         qtrim = "rl",
         minlength = config['filtering']['minimum_passing_read_length']
     threads: 24
-    shell: """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
-                  rref={params.rref} lref={params.lref} mink={params.mink} \
-                  stats={output.stats} hdist={params.hdist} k={params.k} \
-                  trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
-                  minlength={params.minlength} overwrite=true"""
+    shell:
+        """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
+           rref={params.rref} lref={params.lref} mink={params.mink} \
+           stats={output.stats} hdist={params.hdist} k={params.k} \
+           trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
+           minlength={params.minlength} overwrite=true"""
 
 
 rule join_reads:
@@ -130,15 +131,18 @@ rule join_reads:
         hist = "results/{eid}/joined/{sample}.hist",
         failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
         failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
-    message: "Joining reads using `flash`"
-    shadow: "shallow"
+    message:
+        "Joining reads using `flash`"
+    shadow:
+        "shallow"
     params:
         output_dir = lambda wildcards: "results/%s/joined/" % wildcards.eid,
         min_overlap = config['merging']['minimum_overlap'],
         max_overlap = config['merging']['maximum_overlap'],
         max_mismatch_density = config['merging']['maximum_mismatch_density'],
         phred_offset = config['phred_offset']
-    log: "results/{eid}/logs/{sample}_flash.log"
+    log:
+        "results/{eid}/logs/{sample}_flash.log"
     threads: 24
     shell:
         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
@@ -178,9 +182,10 @@ rule decontaminate_joined:
         minhits = config['contamination_filtering'].get('minhits', 1),
         ambiguous = config['contamination_filtering'].get('ambiguous', "best")
     threads: 24
-    shell: """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
-                  {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
-                  minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"""
+    shell: 
+        """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
+           {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
+           minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"""
 
 
 rule error_filter:
@@ -191,8 +196,9 @@ rule error_filter:
         maxee = config["filtering"].get("maximum_expected_error", 2),
         maxns = config["filtering"].get("maxns", 3)
     threads: 1
-    shell: """vsearch --fastq_filter {input} --fastqout {output} --fastq_ascii {params.phred} \
-                  --fastq_maxee {params.maxee} --fastq_maxns {params.maxns}"""
+    shell: 
+        """vsearch --fastq_filter {input} --fastqout {output} --fastq_ascii {params.phred} \
+           --fastq_maxee {params.maxee} --fastq_maxns {params.maxns}"""
 
 
 rule fastqc:
