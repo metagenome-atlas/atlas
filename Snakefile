@@ -56,8 +56,8 @@ rule all:
         expand("results/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES),
         expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=EID, sample=SAMPLES, decon_dbs=DECON_DBS),
         expand("results/{eid}/decon/{sample}_refstats.txt", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_clean_qual_fastqc.zip", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_clean_qual_fastqc.html", eid=EID, sample=SAMPLES)
+        expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=EID, sample=SAMPLES)
 
 
 rule build_functional_databases:
@@ -167,39 +167,16 @@ rule error_correction:
     input:
         "results/{eid}/joined/{sample}_joined.fastq"
     output:
-        "results/{eid}/joined/{sample}_corrected.fastq"
+        "results/{eid}/joined/{sample}_corrected.fastq.gz"
     threads:
         24
     shell:
         "tadpole.sh in={input} out={output} mode=correct threads={threads}"
 
 
-rule decontaminate_joined:
-    input:
-        "results/{eid}/joined/{sample}_corrected.fastq"
-    output:
-        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in DECON_DBS],
-        stats = "results/{eid}/decon/{sample}_refstats.txt",
-        clean = "results/{eid}/decon/{sample}_clean.fastq.gz"
-    params:
-        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config['contamination_filtering']['references'].items()]),
-        refs_out = lambda wildcards: " ".join(["out_%s=results/%s/decon/%s_%s.fastq.gz" % (n, wildcards.eid, wildcards.sample, n) for n in list(config['contamination_filtering']['references'].keys())]),
-        path = "databases/contaminant/",
-        maxindel = config['contamination_filtering'].get('maxindel', 20),
-        minratio = config['contamination_filtering'].get('minratio', 0.65),
-        minhits = config['contamination_filtering'].get('minhits', 1),
-        ambiguous = config['contamination_filtering'].get('ambiguous', "best")
-    threads:
-        24
-    shell:
-        """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
-               {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
-               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"""
-
-
 # rule subset_reads_by_quality:
-#     input: "results/{eid}/decon/{sample}_clean.fastq.gz"
-#     output: "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+#     input: "results/{eid}/joined/{sample}_corrected.fastq.gz"
+#     output: "results/{eid}/quality_filter/{sample}_filtered.fastq"
 #     params:
 #         phred = config.get("phred_offset", 33),
 #         maxee = config["filtering"].get("maximum_expected_error", 2),
@@ -211,9 +188,9 @@ rule decontaminate_joined:
 
 rule subset_reads_by_quality:
     input:
-        "results/{eid}/decon/{sample}_clean.fastq.gz"
+        "results/{eid}/joined/{sample}_corrected.fastq.gz"
     output:
-        "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+        "results/{eid}/quality_filter/{sample}_filtered.fastq"
     params:
         adapter_clip = "" if not config["filtering"].get("adapters", "") else "ILLUMINACLIP:%s:%s" % (config["filtering"]["adapters"], config["filtering"].get("adapter_clip", "2:30:10")),
         window_size_qual = "" if not config["filtering"].get("window_size_quality", "") else "SLIDINGWINDOW:%s" % config["filtering"]["window_size_quality"],
@@ -229,65 +206,62 @@ rule subset_reads_by_quality:
                {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
 
 
+rule decontaminate_joined:
+    input:
+        "results/{eid}/quality_filter/{sample}_filtered.fastq"
+    output:
+        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in DECON_DBS],
+        stats = "results/{eid}/decon/{sample}_refstats.txt",
+        clean = "results/{eid}/decon/{sample}_clean.fastq.gz"
+    params:
+        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config['contamination_filtering']['references'].items()]),
+        refs_out = lambda wildcards: " ".join(["out_%s=results/%s/decon/%s_%s.fastq.gz" % (n, wildcards.eid, wildcards.sample, n) for n in list(config['contamination_filtering']['references'].keys())]),
+        path = "databases/contaminant/",
+        maxindel = config['contamination_filtering'].get('maxindel', 20),
+        minratio = config['contamination_filtering'].get('minratio', 0.65),
+        minhits = config['contamination_filtering'].get('minhits', 1),
+        ambiguous = config['contamination_filtering'].get('ambiguous', "best"),
+        k = config["contamination_filtering"].get("k", 15)
+    threads:
+        24
+    shell:
+        """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
+               {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
+               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+               threads={threads} k={params.k} local=t"""
+
+
+if config['data_type'] == "metatranscriptome":
+    rule ribosomal_rna:
+        input:
+            "results/{eid}/decon/{sample}_clean.fastq.gz"
+        output:
+            "results/{eid}/decon/{sample}_final.fastq.gz"
+        shell:
+            "cp {input} {output}"
+else:
+    rule ribosomal_rna:
+        input:
+            clean = "results/{eid}/decon/{sample}_clean.fastq.gz",
+            rrna = "results/{eid}/decon/{sample}_rRNA.fastq.gz"
+        output:
+            "results/{eid}/decon/{sample}_final.fastq.gz"
+        shell:
+            "cat {input.clean} {input.rrna} > {output}"
+
+
 rule fastqc:
     input:
-        "results/{eid}/quality_filter/{sample}_clean_qual.fastq"
+        "results/{eid}/decon/{sample}_final.fastq.gz"
     output:
-        "results/{eid}/fastqc/{sample}_clean_qual_fastqc.zip",
-        "results/{eid}/fastqc/{sample}_clean_qual_fastqc.html"
+        "results/{eid}/fastqc/{sample}_final_fastqc.zip",
+        "results/{eid}/fastqc/{sample}_final_fastqc.html"
     params:
         output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
     threads:
         24
     shell:
         "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
-
-
-# # For metatranscriptomes only!
-# rule remove_rRNAs:
-#     input:
-#         rule.interleave_reads.output,
-#         rule.trim_reads.joined.output
-#     output:
-#         joined = "output/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_joined.fastq",
-#         R1 = "output/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R1.fastq",
-#         R2 = "output/{eid}/trimmed/{sample}_trimmed_filtered_no-rrna_R2.fastq"
-#     message:
-#         "Aligning all joined and reads to remove rRNAs for mRNA de novo transcriptome assembly."
-#     shadow:
-#         "shallow"
-#     threads:
-#         config['contamination_filtering']['threads']
-#     shell:
-#         """bowtie2 --threads {threads} --very-sensitive-local -x {input.prefix} -q -U {input.joined},{input.r1},{input.r2} \
-#               | samtools view -@ {threads} -hf4 \
-#               | samtools sort -@ {threads} -T {wildcards.sample} -o -m 8G - \
-#               | bedtools bamtofastq -i stdin -fq {output}
-#         """
-
-
-# rule interleave_reads:
-#     input:
-#         r1 = rules.join_reads.output.failed_r1,
-#         r2 = rules.join_reads.output.failed_r2
-#     output:
-#         "output/{eid}/trimmed/{sample}_trimmed_filtered_interleaved.fastq"
-#     message:
-#         "Interleaving non combined R1 and R2 reads"
-#     run:
-#         IO.interleave_reads(input.r1, input.r2, output)
-
-
-# rule merge_joined_interleaved:
-#     input:
-#         il = rules.interleave_reads.output,
-#         joined = rules.join_reads.output.joined
-#     output:
-#         "output/{eid}/assembly/{sample}_merged.fastq"
-#     message:
-#         "Merging joined and interleaved reads"
-#     run:
-#         IO.cat_reads(input.il, input.joined, output)
 
 
 # rule annotate_reads_rRNA:
