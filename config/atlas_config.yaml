@@ -1,3 +1,7 @@
+# prototype stuffs
+data_type: Metagenome
+
+# regular stuffs
 eid: test
 phred_offset: 33
 filtering:
@@ -40,12 +44,15 @@ merging:
 contamination_filtering:
     threads: 12
     references:
-        ecoli: databases/contaminant/Escherichia_coli_K-12.fa
         phiX: databases/contaminant/phiX174_virus.fa
+        # this key [rRNA] and case is required
+        rRNA: databases/contaminant/silva_rfam_all_rRNAs.fa
     # Don't look for indels longer than this
     maxindel: 20
     # Fraction of max alignment score required to keep a site
     minratio: 0.65
+    # mapping kmer length; range 8-15; longer is faster but uses more memory; shorter is more sensitive
+    k: 12
     # Minimum number of seed hits required for candidate sites
     minhits: 1
     # Set behavior on ambiguously-mapped reads (with multiple top-scoring mapping locations).
