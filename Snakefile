@@ -1,7 +1,7 @@
 import os
 from glob import glob
 from subprocess import check_output
-from util.IO import interleave_reads
+from scripts.IO import interleave_reads
 
 
 def read_count(fastq):
