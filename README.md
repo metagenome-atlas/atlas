@@ -23,6 +23,7 @@
 - [x] prodigal
 - [x] pysam
 - [x] python 3
+- [ ] quorum - PR open here: https://github.com/bioconda/bioconda-recipes/pull/2765
 - [x] samtools
 - [x] snakemake -- TODO: check on other python deps
 - [x] trinity
