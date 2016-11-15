@@ -708,7 +708,7 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
         aggregation_method (str): lca, lca-majority, or majority
         majority_threshold (float): constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method
     """
-    print("contig", "orf", "taxonomy", "erfc", "orf_taxonomy", table_name,
+    print("contig", "orf", "taxonomy", "erfc", "orf_taxonomy", "%s_product" % table_name,
           "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
     for contig, orfs in orf_assignments.items():
         taxonomies = [x[1] for x in orfs.values()]
@@ -947,6 +947,35 @@ def read_fasta(fh):
         else:
             seq = ''.join(line.strip() for line in group)
             yield name, seq
+
+
+@cli.command("merge-tables", short_help="for a sample, merge its eggnog and refseq tables")
+@click.argument("refseq", type=click.File("r"))
+@click.argument("eggnog", type=click.File("r"))
+@click.argument("output", type=click.File("w"))
+def merge_tables(refseq, eggnog, output):
+    """Takes the output from `refseq` and `eggnog` and combines them into a single TSV table.
+
+    Headers are required and should contain 'contig' and 'orf' column labels.
+    """
+    import pandas as pd
+
+    index_cols = ["contig", "orf"]
+    try:
+        ref_df = pd.read_table(refseq, index_col=index_cols)
+    except ValueError:
+        logging.critical("The expected headers ('contig', 'orf') are missing from %s" % refseq.name)
+        sys.exit(1)
+    logging.info("%d contained in %s" % (len(ref_df), refseq.name))
+    try:
+        egg_df = pd.read_table(eggnog, index_col=index_cols)
+    except ValueError:
+        logging.critical("The expected headers ('contig', 'orf') are missing from %s" % eggnog.name)
+        sys.exit(1)
+    logging.info("%d contained in %s" % (len(egg_df), eggnog.name))
+    merged = pd.merge(left=ref_df, right=egg_df, how="outer", left_index=True, right_index=True)
+    logging.info("%d total lines after merging" % len(merged))
+    merged.to_csv(output, sep="\t", na_rep="NA")
 
 
 if __name__ == "__main__":
