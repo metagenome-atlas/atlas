@@ -424,15 +424,20 @@ def cli(obj):
     "Methods for BLAST tabular output."
 
 
-@cli.command("best-only", short_help="process blast hits and aggregate across ORFs")
+@cli.command("eggnog", short_help="process blast hits and aggregate across ORFs")
 @click.argument("tsv", type=click.Path(exists=True))
 @click.argument("namemap", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w"))
+@click.option("--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
 @click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
 @click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
 @click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-def best_only_parsing(tsv, namemap, output, min_identity, min_bitscore, min_length, max_evalue):
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
+@click.option("--table-name", default="eggnog", help="table name within namemap database; expected columns are 'eggnog_ssid_b', 'uniprot_id', 'ko_id', 'kegg_id', 'kegg_ec', 'cog_id', 'cog_func_id', 'cog_product', 'cog_path'")
+def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
+                   max_evalue, top_fraction, max_hits, table_name):
     """Parse BLAST hits from EGGNOG.
 
     The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
@@ -444,20 +449,34 @@ def best_only_parsing(tsv, namemap, output, min_identity, min_bitscore, min_leng
     import sqlite3
     logging.info("Parsing %s" % tsv)
 
-    with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(tsv) as blast_tab_fh:
+    print("contig", "orf", "uniprot_id", "ko_id", "kegg_id", "kegg_ec", "cog_id", "cog_func_id",
+          "cog_product", "cog_path", "%s_evalue" % table_name, "%s_bitscore" % table_name,
+          sep="\t", file=output)
+    with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
         cursor = conn.cursor()
         for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
 
             contig_name, _, orf_idx = query.rpartition("_")
-            protein_function = "hypothetical protein"
-            protein_set = False
-            taxonomy_id = "1"
-
-            # orf_hits = BlastHits(max_hits=max_hits_per_orf, top_fraction=top_fraction_of_hits)
+            hit_id = ""
+            bitscore = "NA"
+            evalue = "NA"
+            uniprot_id = "NA"
+            ko_id = "NA"
+            kegg_id = "NA"
+            kegg_ec = "NA"
+            cog_id = "NA"
+            cog_func_id = "NA"
+            cog_product = "NA"
+            cog_path = "NA"
+            orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
+            lines = []
+            idx = 0
 
             # iterate over blast hits per ORF
-            for i, hsp in enumerate(qgroup):
+            for hsp in qgroup:
                 toks = dict(zip(BLAST6, hsp.strip().split("\t")))
+                # legacy for files mapped with incorrect reference
+                toks["sseqid"] = toks["sseqid"].partition(".")[-1]
                 if (int(toks["length"]) < min_length or
                         float(toks["pident"]) < min_identity or
                         float(toks["evalue"]) > max_evalue):
@@ -466,36 +485,40 @@ def best_only_parsing(tsv, namemap, output, min_identity, min_bitscore, min_leng
                     # input is sorted by decreasing bitscore
                     break
 
-                cursor.execute('SELECT function, taxonomy FROM %s WHERE name="%s"' % (table_name, toks["sseqid"]))
-                current_function, current_taxonomy = cursor.fetchone()
-
-                # protein function is always assigned to best, passing alignment
-                if not protein_set:
-                    # this assumes no passing hits will occur after the first one was filtered
-                    # which may not always be the case
-                    protein_function = current_function
+                if summary_method == "best":
+                    hit_id = toks["sseqid"]
                     bitscore = toks["bitscore"]
                     evalue = toks["evalue"]
-                    protein_set = True
-                    if orf_summary == "best":
-                        taxonomy_id = current_taxonomy
-                        break
-                orf_hits.add(current_taxonomy, toks["bitscore"])
+                    break
 
-            # ensure we have passing hits
-            if len(orf_hits) > 0 and not orf_summary == "best":
-                if orf_summary == "majority":
-                    taxonomy_id = orf_hits.majority()
-                # perform LCA to obtain taxonomy ID
-                else:
-                    orf_hits.names.reverse()
-                    taxonomy_id = tree.lca(orf_hits.names, threshold=lca_threshold)
-            contigs[contig_name][orf_idx] = (protein_function, taxonomy_id, bitscore, evalue)
+                orf_hits.add(toks["sseqid"] + "_%d" % idx, toks["bitscore"])
+                idx += 1
+                lines.append(toks)
 
-    return contigs
+            # summary method is majority and we have passing HSPs
+            if not hit_id and lines:
+                majority_id = orf_hits.majority()
+                line_idx = int(majority_id.rpartition("_")[-1])
+                toks = lines[line_idx]
+                hit_id = toks["sseqid"]
+                bitscore = toks["bitscore"]
+                evalue = toks["evalue"]
 
+            if hit_id:
+                cursor.execute('SELECT uniprot_id, ko_id, kegg_id, kegg_ec, cog_id, cog_func_id, cog_product, cog_path FROM %s WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
+                try:
+                    uniprot_id, ko_id, kegg_id, kegg_ec, cog_id, cog_func_id, cog_product, cog_path = cursor.fetchone()
+                # legacy before database was pruned; can have hits not in metadata
+                except TypeError:
+                    pass
 
-@cli.command("tree-based", short_help="enables tree based LCA and LCA star methods")
+            # print for this query
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), uniprot_id, ko_id, kegg_id,
+                  kegg_ec, cog_id, cog_func_id, cog_product, cog_path, evalue, bitscore, sep="\t",
+                  file=output)
+    logging.info("Complete")
+
+@cli.command("refseq", short_help="enables tree based LCA and LCA star methods")
 @click.argument("tsv", type=click.Path(exists=True))
 @click.argument("namemap", type=click.Path(exists=True))
 @click.argument("treefile", type=click.Path(exists=True))
@@ -508,11 +531,11 @@ def best_only_parsing(tsv, namemap, output, min_identity, min_bitscore, min_leng
 @click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
 @click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs; can drastically alter ORF LCA assignments if too high without further limits")
-@click.option("--table-name", default="refseq", help="table name within namemap database")
+@click.option("--table-name", default="refseq", help="table name within namemap database; expected columns are 'name', 'function', and 'taxonomy'")
 @click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits")
-def tree_based_parsing(tsv, namemap, treefile, output, summary_method, aggregation_method,
-                       majority_threshold, min_identity, min_bitscore, min_length, max_evalue,
-                       max_hits, table_name, top_fraction):
+def refseq_parsing(tsv, namemap, treefile, output, summary_method, aggregation_method,
+                   majority_threshold, min_identity, min_bitscore, min_length, max_evalue,
+                   max_hits, table_name, top_fraction):
     """Parse TSV (tabular BLAST output [-outfmt 6]), grabbing taxonomy metadata from ANNOTATION to
     compute LCAs.
 
@@ -576,8 +599,6 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
     import sqlite3
 
     assert orf_summary in ["lca", "best", "majority"]
-    blast_6 = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend",
-               "sstart", "send", "evalue", "bitscore"]
 
     # annotation_map = parse_name_map(name_map)
     contigs = defaultdict(dict)
@@ -590,13 +611,13 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
             protein_function = "hypothetical protein"
             protein_set = False
             taxonomy_id = "1"
-            bitscore = "na"
-            evalue = "na"
+            bitscore = "NA"
+            evalue = "NA"
             orf_hits = BlastHits(max_hits=max_hits_per_orf, top_fraction=top_fraction_of_hits)
 
             # iterate over blast hits per ORF
             for i, hsp in enumerate(qgroup):
-                toks = dict(zip(blast_6, hsp.strip().split("\t")))
+                toks = dict(zip(BLAST6, hsp.strip().split("\t")))
                 if (int(toks["length"]) < min_length or
                         float(toks["pident"]) < min_identity or
                         float(toks["evalue"]) > max_evalue):
@@ -607,6 +628,9 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
 
                 cursor.execute('SELECT function, taxonomy FROM %s WHERE name="%s"' % (table_name, toks["sseqid"]))
                 current_function, current_taxonomy = cursor.fetchone()
+
+                # update taxonomy based on pident
+                # current_taxonomy = tree.climb_tree(current_taxonomy, float(toks["pident"]))
 
                 # protein function is always assigned to best, passing alignment
                 if not protein_set:
@@ -845,6 +869,49 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
             print(toks[0], taxonomy_name, toks[1], sep="\t", file=tree)
 
     logging.info("Process complete")
+
+
+@cli.command("prepare-eggnog", short_help="prepares eggnog mapping and reference files")
+@click.argument("fasta", type=click.File("r"))
+@click.argument("namemap", type=click.File("r"))
+@click.argument("outputfasta", type=click.File("w"))
+@click.argument("outputmap", type=click.File("w"))
+def prepare_eggnog_reference(fasta, namemap, outputfasta, outputmap):
+    names = set()
+    # IDs for which we have uniprot AC
+    for line in namemap:
+        toks = line.strip().split("\t")
+        names.add(toks[3])
+    fasta_names = set()
+    # IDs for which we have sequences
+    for name, seq in read_fasta(fasta):
+        name = name.partition(".")[-1]
+        if name in names: continue
+        fasta_names.add(name)
+        print_fasta_record(name, seq, outputfasta)
+    # the union of IDs
+    for line in namemap:
+        toks = line.strip().split("\t")
+        if toks[3] in fasta_names:
+            print(*toks, sep="\t", file=outputmap)
+
+
+def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=100):
+    """Print a fasta record accounting for line wraps in the sequence.
+
+    Args:
+        name (str): name or header for fasta entry
+        seq (str): sequence
+        out_handle (Optional): open file handle in which to write or stdout
+        wrap (Optional[int]) : line width of fasta sequence; None is supported for no wrapping
+
+    """
+    print('>', name, sep='', file=out_handle)
+    if wrap:
+        for i in range(0, len(seq), wrap):
+            print(seq[i:i + wrap], file=out_handle)
+    else:
+        print(seq, file=out_handle)
 
 
 def read_fasta(fh):

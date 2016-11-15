@@ -137,5 +137,16 @@ bbmerge and flash output a comparable amount of joined reads with comparable exp
 sqlite> .open refseq78.complete.nonredundant_protein.faa.db
 sqlite> .mode tabs
 sqlite> create table refseq (name text PRIMARY KEY, function text, taxonomy text);
-sqlite> .import refseq78.complete.nonredundant_protein.faa.map
+sqlite> .import refseq78.complete.nonredundant_protein.faa.map refseq
 ```
+
+# EGGNOG
+
+9637437 unique proteins in conversion
+14803007 unique proteins in reference fasta
+
+
+sqlite> .open eggnog.db
+sqlite> .mode tabs
+sqlite> create table eggnog (cog_func_id text, cog_id text, uniprot_id text, eggnog_ssid_b text PRIMARY KEY, ko_id text, kegg_id text, nog_id text, kegg_ec text, refseq_id text, cog_product text, cog_path text);
+sqlite> .import eggnog.map eggnog
