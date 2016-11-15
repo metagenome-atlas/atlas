@@ -111,7 +111,7 @@ class Tree(object):
             while not current_taxonomy == "1":
                 count_taxonomies[current_taxonomy] += 1
                 if count_taxonomies[current_taxonomy] >= count_target:
-                    return self.tree[current_taxonomy].taxonomy
+                    return self.tree[current_taxonomy].node_id
                 # traverse up tree
                 current_taxonomy = self.tree[current_taxonomy].parent_id
         return "1"
