@@ -48,7 +48,9 @@ rule all:
         expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=EID, sample=SAMPLES),
         expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=EID, sample=SAMPLES),
         expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/aligned_reads/{sample}.bam", eid=EID, sample=SAMPLES)
+        expand("results/{eid}/aligned_reads/{sample}.bam", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/annotation/orfs/{sample}_length_pass.gff", eid=EID, sample=SAMPLES)
 
 
 rule quality_filter_reads:
@@ -295,73 +297,18 @@ rule align_reads_to_assembly:
                | samtools sort -@ {threads} -T {wildcards.sample} -o {output} -O bam -"""
 
 
-# rule map_to_assembly_db_format:
-#     input:
-#         assembly_db = "assembly/database/{db}"
-#         assembly_db_name = os.path.splitext(assembly_db)
-#     output:
-#         f1 = "{fasta}.1.bt2",
-#         f2 = "{fasta}.2.bt2",
-#         f3 = "{fasta}.3.bt2",
-#         f4 = "{fasta}.4.bt2",
-#         r1 = "{fasta}.rev.1.bt2",
-#         r2 = "{fasta}.rev.2.bt2"
-#     message:
-#         "Formatting assembly for mapping"
-#     shell:
-#         "bowtie2-build {input.assembly_db} {input.assembly_db_name}"
-
-
-# rule map_to_assembly:
-#     input:
-#         joined = rules.join_reads.joined
-#         interleaved = rules.interleave_reads.output
-#         ji = rules.merge_joined_interleaved.output
-#         r1 = rules.trim_reads.output.r1
-#         r2 = rules.trim_reads.output.r2
-#         contigs = rules.megahit.output
-#         prefix = os.path.splitext(contigs)
-#     output:
-#         joined = 'output/{eid}/coverage/{sample}_joined.sam'
-#         interleaved = 'output/{eid}/coverage/{sample}_interleaved.sam'
-#         ji = 'output/{eid}/coverage/{sample}_joined_interleaved.sam'
-#         r1 = 'output/{eid}/coverage/{sample}_r1.sam'
-#         r2 = 'output/{eid}/coverage/{sample}_r2.sam'
-#     message:
-#         "Mapping to assembly"
-#     shell:
-#         """bowtie2 -p {threads} -x {input.prefix} --very-sensitive-local \
-#         -q -U {input.joined}, {input.interleaved}, {input.ji}, {input.r1}, {input.r2}"""
-
-
-# rule prodigal_orfs_passed:
-#     input:
-#         rules.length_filter.output.passing
-#     output:
-#         prot = "output/{eid}/annotation/orfs/{sample}_length_pass.faa",
-#         nuc = "output/{eid}/annotation/orfs/{sample}_length_pass.fasta",
-#         gff = "output/{eid}/annotation/orfs/{sample}_length_pass.gff"
-#     params:
-#         g = config['annotation']['translation_table']
-#     message:
-#         "Calling protein-coding ORFS with prodigal"
-#     shell:
-#         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
-
-
-# rule prodigal_orfs_failed:
-#     input:
-#         rules.length_filter.output.fail
-#     output:
-#         prot = "output/{eid}/annotation/orfs/{sample}_length_fail.faa",
-#         nuc = "output/{eid}/annotation/orfs/{sample}_length_fail.fasta",
-#         gff = "output/{eid}/annotation/orfs/{sample}_length_fail.gff"
-#     params:
-#         g = config['annotation']['translation_table']
-#     message:
-#         "Calling protein-coding ORFS with prodigal"
-#     shell:
-#         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
+rule prodigal_orfs_passed:
+    input:
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa"
+    output:
+        prot = "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
+        nuc = "results/{eid}/annotation/orfs/{sample}_length_pass.fna",
+        gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+    params:
+        g = config['annotation']['translation_table']
+    shell:
+        """prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} \
+               -g {params.g} -p meta"""
 
 
 # rule maxbin_bins:
