@@ -9,13 +9,9 @@
 - [x] click
 - [x] fastqc
 - [x] flash
-- [ ] fraggenescan (1.30 - which actually doesn't exist) https://github.com/wltrimbl/FGS/releases
-- [ ] fraggenescan plus
 - [x] hmmer3
 - [x] HTSeq
 - [x] idba-ud
-- [ ] last-plus
-- [ ] lcastar-plus
 - [ ] maxbin - http://downloads.jbei.org/data/microbial_communities/MaxBin/getfile.php?MaxBin-2.2.1.tar.gz
 - [x] megahit
 - [ ] perl-lwp-simple - http://search.cpan.org/dist/libwww-perl/lib/LWP/Simple.pm
@@ -126,3 +122,20 @@ You see the same effect even with less strict settings with respect to length (S
 ## merging notes
 
 bbmerge and flash output a comparable amount of joined reads with comparable expected error rates
+
+
+# metaspades
+
+0:00:00.000     4M / 4M    ERROR   General                 (launch.hpp                :  32)   Sorry, current version of metaSPAdes can work with single library only (paired-end only).
+
+== Error ==  system call for: "['/people/brow015/anaconda3/share/spades-3.9.0-0/bin/spades', '/pic/projects/mint/atlas/results/test-experiment/decon/ttttt/K21/configs/config.info', '/pic/projects/mint/atlas/results/test-experiment/decon/ttttt/K21/configs/mda_mode.info', '/pic/projects/mint/atlas/results/test-experiment/decon/ttttt/K21/configs/meta_mode.info']" finished abnormally, err code: 239
+
+
+# RefSeq
+
+```
+sqlite> .open refseq78.complete.nonredundant_protein.faa.db
+sqlite> .mode tabs
+sqlite> create table refseq (name text PRIMARY KEY, function text, taxonomy text);
+sqlite> .import refseq78.complete.nonredundant_protein.faa.map
+```
