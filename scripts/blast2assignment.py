@@ -1,15 +1,26 @@
 #!/usr/bin/env python
 # coding=utf-8
-
 import bisect
 import click
+import contextlib
+import gzip
 import logging
 import math
 import os
 import re
+import shelve
 import sys
 from collections import Counter, defaultdict, deque, OrderedDict
+from itertools import groupby
 from math import log, sqrt, erfc
+
+
+BLAST6 = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart",
+          "qend", "sstart", "send", "evalue", "bitscore"]
+
+
+logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
+gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
 
 
 class Node(object):
@@ -32,35 +43,19 @@ class Node(object):
 
 class Tree(object):
 
-    def __init__(self, tax_tree):
-        """Builds reference dictionary from tab delimited text of Taxonomy Name, Taxonomy ID,
-        Parent Taxonomy ID.
-
-        Args:
-            tax_tree (str): file path to taxonomy tree txt
-
-        Raises:
-            AssertionError when child and parent IDs are equal when not root
-
-        Notes:
-            An example of the file:
-
-                root	    1	        1
-                all	        1	        1
-                prokaryotes	99999999    131567
-
-        """
+    def __init__(self, tree_file):
+        """Builds reference dictionary of Taxonomy Name, Taxonomy ID, and Parent Taxonomy ID."""
         self.tree = defaultdict(dict)
 
-        with open(tax_tree) as tree_fh:
+        with open(tree_file) as tree_fh:
             for line in tree_fh:
                 toks = line.strip().split("\t")
-                if not toks[1] == '1' and not toks[2] == '1':
-                    assert not toks[1] == toks[2]
+                if not toks[0] == '1' and not toks[2] == '1':
+                    assert not toks[0] == toks[2]
                 if not len(toks) == 3:
-                    logging.warning("Line [%s] does not have NAME, ID, PARENTID" % line.strip())
+                    logging.warning("Line [%s] does not have ID, NAME, PARENTID" % line.strip())
                     continue
-                self.add_node(toks[0], toks[1], toks[2])
+                self.add_node(toks[1], toks[0], toks[2])
 
     def add_node(self, taxonomy, node_id, parent_id):
         """Adds node to tree dictionary.
@@ -71,27 +66,20 @@ class Tree(object):
             parent_id (str): the parent's taxonomy id
 
         """
+        # taxonomy id to node mapping; ensures unique nodes despite non-unique names
+        self.tree[node_id] = Node(taxonomy, node_id, parent_id)
         # taxonomy string to node mapping
-        self.tree[taxonomy] = Node(taxonomy, node_id, parent_id)
-        # taxonomy id to node mapping
-        self.tree[node_id] = self.tree[taxonomy]
+        # self.tree[taxonomy] = self.tree[node_id]
 
-    def taxonomy_id_to_name(self, id_map, key):
+    def taxonomy_id_to_name(self, key):
         """
         Args:
-            id_map (dict): the keys are taxonomy IDs with values of names you'd like to use instead
-                of the names in the taxonomy tree file
             key (str): taxonomy ID used to search `id_map`
 
         Returns:
-            string of mapped key along with key, e.g. New Name (1224), or if they key is missing
-                from `id_map`, it is translated into taxonomy name and used instead
+            string of mapped key along with key, e.g. New Name (1224)
         """
-        val = "{name} ({digit})"
-        if key in id_map:
-            return val.format(name=id_map[key], digit=key)
-        else:
-            return val.format(name=self.tree[key].taxonomy, digit=key)
+        return "{name} ({digit})".format(name=self.tree[key].taxonomy, digit=key)
 
     def lca(self, taxonomies, threshold=1.):
         """Returns the taxonomy of the LCA and optionally only use the top fraction of hits.
@@ -126,7 +114,7 @@ class Tree(object):
                     return self.tree[current_taxonomy].taxonomy
                 # traverse up tree
                 current_taxonomy = self.tree[current_taxonomy].parent_id
-        return "root"
+        return "1"
 
     def filter_taxonomy_list(self, taxonomy_list, min_tree_depth=3):
         """Filters a taxonomy list by tree depth in an effort to classify at a higher resolution.
@@ -151,11 +139,12 @@ class Tree(object):
         filtered_list = []
         for taxonomy in taxonomy_list:
             tree_depth = 0
-            try:
-                current_taxonomy = self.tree[taxonomy].node_id
-            except TypeError:
-                # taxonomy represented in the reference database, but is not present in the tree
-                continue
+            current_taxonomy = taxonomy
+            # try:
+            #     current_taxonomy = self.tree[taxonomy].node_id
+            # except TypeError:
+            #     # taxonomy represented in the reference database, but is not present in the tree
+            #     continue
             while not current_taxonomy == "1":
                 tree_depth += 1
                 current_taxonomy = self.tree[current_taxonomy].parent_id
@@ -165,7 +154,7 @@ class Tree(object):
         return filtered_list
 
     def taxonomic_lineage(self, taxonomy):
-        """For a given taxonomy name or ID, return its lineage as a list of IDs.
+        """For a given taxonomy ID, return its lineage as a list of IDs.
 
         Args:
             taxonomy (str): taxonomy name or taxonomy ID
@@ -175,16 +164,21 @@ class Tree(object):
 
         Example:
             >>> tree = Tree("ref/ncbi_taxonomy_tree.txt")
-            >>> tree.taxonomic_lineage("Pseudomonadaceae")
+            >>> tree.taxonomic_lineage("135621")
             ['1', '131567', '99999999', '2', '1224', '1236', '72274', '135621']
 
         """
-        taxonomy_id = self.tree[taxonomy].node_id
-        lineage = [taxonomy_id]
-        while not taxonomy_id == "1":
-            taxonomy_id = self.tree[taxonomy_id].parent_id
-            lineage.insert(0, taxonomy_id)
+        # a large portion of ORFs
+        if taxonomy == "1":
+            return [taxonomy]
+
+        lineage = [taxonomy]
+        while not taxonomy == "1":
+            taxonomy = self.tree[taxonomy].parent_id
+            # prepend
+            lineage.insert(0, taxonomy)
         return lineage
+
 
     def lca_majority(self, taxonomy_list, majority_cutoff):
         """Finds a consensus majority up a tree structure.
@@ -218,7 +212,7 @@ class Tree(object):
         for taxonomy in taxonomy_list:
             lineage = self.taxonomic_lineage(taxonomy)
             lineage_counts.update(lineage)
-            lineages[self.tree[taxonomy].node_id] = lineage
+            lineages[taxonomy] = lineage
         lineage_indexes = index_of_list_items(lineages.values())
         for taxonomy in lineage_indexes:
             if lineage_counts[taxonomy] > majority_cutoff:
@@ -251,16 +245,16 @@ class Tree(object):
         """
         aggregate_counts = []
         for taxonomy, taxonomy_count in taxonomy_counts.items():
-            taxonomy_id = self.tree[taxonomy].node_id
+            taxonomy_id = taxonomy
             if majority_id in lineages[taxonomy_id]:
                 taxonomy_id = majority_id
             aggregate_counts.extend([taxonomy_id] * taxonomy_count)
         return aggregate_counts
 
-    def lca_star(self, taxonomy_list, min_tree_depth=3, majority_threshold=0.50):
+    def lca_star(self, taxonomy_list, min_tree_depth=3, majority_threshold=0.51):
         """Find the LCA within a list of taxonomies after filtering those taxonomies by tree depth.
         One can also vary what constitutes a majority consensus for the counts, with the default
-        being 50%.
+        being 51%.
 
         Args:
             taxonomy_list (list): list of taxonomy names or IDs
@@ -289,7 +283,7 @@ class Tree(object):
         taxonomy_list = self.filter_taxonomy_list(taxonomy_list, min_tree_depth)
         # all have been filtered
         if not taxonomy_list:
-            majority = "root"
+            majority = "1"
             p = 1.
         else:
             taxonomy_counts = Counter(taxonomy_list)
@@ -316,7 +310,7 @@ class BlastHits(object):
             names (Optional[list]): when initiated with a name list; :func:`best_hit` and
                 :func:`add` will no longer operate as intended
             max_hits (int): maximum number of hits to consider for this :class:`BlastHits` group
-            top_fraction (float): fraction cutoff from best bitscore, e.g. 0.3 will filter out 699 when best bitscore is 1000
+            top_fraction (float): fraction cutoff from best bitscore, e.g. 0.7 will filter out 699 when best bitscore is 1000
 
         Notes:
             max_hits and top_fraction work in conjunction of one another
@@ -365,6 +359,9 @@ class BlastHits(object):
 
     def __repr__(self):
         return "{cls}[{tax}]".format(cls=self.__class__.__name__, tax=self.names)
+
+    def __len__(self):
+        return len(self.names)
 
     def add(self, name, bitscore):
         """Add entry to this :class:`BlastHits` group.
@@ -421,234 +418,243 @@ class BlastHits(object):
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option("0.0.0")
+@click.version_option("0.2.0")
 @click.pass_context
 def cli(obj):
-    "LCA methods for BLAST tabular output."
+    "Methods for BLAST tabular output."
 
 
-@cli.command("tree-based", short_help="enables tree based LCA and LCA star methods")
+@cli.command("eggnog", short_help="process blast hits and aggregate across ORFs")
 @click.argument("tsv", type=click.Path(exists=True))
-@click.argument("annotation", type=click.Path(exists=True))
-@click.argument("tree", type=click.Path(exists=True))
+@click.argument("namemap", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w"))
-@click.option("-m", "--name-map", type=click.Path(exists=True), help="taxonomy name map that uses taxonomy IDs within TREE and converts them to the name in this file, e.g. 'ncbi.map'; taxonomy IDs in column 1, new taxonomy name in column 2")
-@click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs")
+@click.option("--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
 @click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
 @click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
 @click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs; can drastically alter LCA assignments if too high; when too low, will affect error probability calculation resulting in higher p-values")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits by only keep hits within this fraction of the highest bitscore")
-def tree_based_parsing(tsv, annotation, tree, output, name_map, summary_method, min_identity,
-                       min_bitscore, min_length, max_evalue, max_hits, top_fraction):
-    """Parse TSV (tabular BLAST output [-outfmt 6]), grabbing taxonomy from ANNOTATION, and use
-    TREE to compute LCAs.
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
+@click.option("--table-name", default="eggnog", help="table name within namemap database; expected columns are 'eggnog_ssid_b', 'uniprot_id', 'ko_id', 'kegg_id', 'kegg_ec', 'cog_id', 'cog_func_id', 'cog_product', 'cog_path'")
+def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
+                   max_evalue, top_fraction, max_hits, table_name):
+    """Parse BLAST hits from EGGNOG.
 
-    Annotation file should include your BLAST subject sequence ID, a space, then product:
-
-        \b
-        >id1 hypothetical protein [Micromonospora lupini]
-        >id2 conserved exported hypothetical protein [Micromonospora lupini]
-
-    Taxonomy is contained with brackets '[]'.
-
-    The optional name map, takes derived taxonomy IDs from TREE and renames the taxonomy to its
-    match within this file. An example header for this tab-delimited file looks like:
+    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
 
         \b
-        9	Buchnera aphidicola
-        10	Cellvibrio
-        11	[Cellvibrio] gilvus
-        13	Dictyoglomus
+        sort -k1,1 -k12,12rn tsv > sorted_tsv
 
     """
-    logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
-    logging.info("Parsing %s" % tree)
-    tree = Tree(tree)
+    import sqlite3
     logging.info("Parsing %s" % tsv)
-    orf_assignments = parse_blast_results(tsv, annotation, orf_summary=summary_method, tree=tree,
-                                          min_identity=min_identity, min_bitscore=min_bitscore,
-                                          min_length=min_length, max_evalue=max_evalue,
-                                          max_hits_per_orf=max_hits, top_fraction_of_hits=top_fraction)
-    logging.info("Assigning taxonomies to contigs")
-    # TODO: this should include name mapped 'product' column so we propogate function
-    process_orfs(orf_assignments, tree, output, taxonomy_name_map=name_map)
+
+    print("contig", "orf", "uniprot_id", "ko_id", "kegg_id", "kegg_ec", "cog_id", "cog_func_id",
+          "cog_product", "cog_path", "%s_evalue" % table_name, "%s_bitscore" % table_name,
+          sep="\t", file=output)
+    with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
+        cursor = conn.cursor()
+        for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
+
+            contig_name, _, orf_idx = query.rpartition("_")
+            hit_id = ""
+            bitscore = "NA"
+            evalue = "NA"
+            uniprot_id = "NA"
+            ko_id = "NA"
+            kegg_id = "NA"
+            kegg_ec = "NA"
+            cog_id = "NA"
+            cog_func_id = "NA"
+            cog_product = "NA"
+            cog_path = "NA"
+            orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
+            lines = []
+            idx = 0
+
+            # iterate over blast hits per ORF
+            for hsp in qgroup:
+                toks = dict(zip(BLAST6, hsp.strip().split("\t")))
+                # legacy for files mapped with incorrect reference
+                toks["sseqid"] = toks["sseqid"].partition(".")[-1]
+                if (int(toks["length"]) < min_length or
+                        float(toks["pident"]) < min_identity or
+                        float(toks["evalue"]) > max_evalue):
+                    continue
+                if min_bitscore and float(toks["bitscore"]) < min_bitscore:
+                    # input is sorted by decreasing bitscore
+                    break
+
+                if summary_method == "best":
+                    hit_id = toks["sseqid"]
+                    bitscore = toks["bitscore"]
+                    evalue = toks["evalue"]
+                    break
+
+                orf_hits.add(toks["sseqid"] + "_%d" % idx, toks["bitscore"])
+                idx += 1
+                lines.append(toks)
+
+            # summary method is majority and we have passing HSPs
+            if not hit_id and lines:
+                majority_id = orf_hits.majority()
+                line_idx = int(majority_id.rpartition("_")[-1])
+                toks = lines[line_idx]
+                hit_id = toks["sseqid"]
+                bitscore = toks["bitscore"]
+                evalue = toks["evalue"]
+
+            if hit_id:
+                cursor.execute('SELECT uniprot_id, ko_id, kegg_id, kegg_ec, cog_id, cog_func_id, cog_product, cog_path FROM %s WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
+                try:
+                    uniprot_id, ko_id, kegg_id, kegg_ec, cog_id, cog_func_id, cog_product, cog_path = cursor.fetchone()
+                # legacy before database was pruned; can have hits not in metadata
+                except TypeError:
+                    pass
+
+            # print for this query
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), uniprot_id, ko_id, kegg_id,
+                  kegg_ec, cog_id, cog_func_id, cog_product, cog_path, evalue, bitscore, sep="\t",
+                  file=output)
     logging.info("Complete")
 
 
-def index_of_list_items(lists):
-    """Find the highest index for items among list of lists and return ordered dictionary sorted by
-    decreasing index value.
+@cli.command("refseq", short_help="enables tree based LCA and LCA star methods")
+@click.argument("tsv", type=click.Path(exists=True))
+@click.argument("namemap", type=click.Path(exists=True))
+@click.argument("treefile", type=click.Path(exists=True))
+@click.argument("output", type=click.File("w"))
+@click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs; when using LCA, it's recommended that one limits the number of hits using --top-fraction")
+@click.option("-a", "--aggregation-method", type=click.Choice(["lca", "lca-majority", "majority"]), default="lca-majority", show_default=True, help="summary method for aggregating ORF taxonomic assignments to contig level assignment; 'lca' will result in most stringent, least specific assignments")
+@click.option("--majority-threshold", type=float, default=0.51, show_default=True, help="constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method")
+@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
+@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
+@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
+@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs; can drastically alter ORF LCA assignments if too high without further limits")
+@click.option("--table-name", default="refseq", help="table name within namemap database; expected columns are 'name', 'function', and 'taxonomy'")
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits")
+def refseq_parsing(tsv, namemap, treefile, output, summary_method, aggregation_method,
+                   majority_threshold, min_identity, min_bitscore, min_length, max_evalue,
+                   max_hits, table_name, top_fraction):
+    """Parse TSV (tabular BLAST output [-outfmt 6]), grabbing taxonomy metadata from ANNOTATION to
+    compute LCAs.
 
-    Args:
-        lists (list): list of lists
+    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
 
-    Returns:
-        OrderedDict of list items, sorted by depth with deepest list item first
+        \b
+        sort -k1,1 -k12,12rn tsv > sorted_tsv
 
-    Example:
-        >>> lineages = [['1', '131567', '99999999', '2'],
-                        ['1', '131567', '99999999', '2', '1224', '1236', '72274', '135621', '286'],
-                        ['1', '131567', '99999999', '2', '1224'],
-                        ['1', '131567', '99999999', '2', '1224', '1236']]
-        >>> index_of_list_items(lineages)
-        OrderedDict([('286', 8),
-                     ('135621', 7),
-                     ('72274', 6),
-                     ('1236', 5),
-                     ('1224', 4),
-                     ('2', 3),
-                     ('99999999', 2),
-                     ('131567', 1),
-                     ('1', 0)])
+    Annotation file should include your BLAST subject sequence ID, a function, a taxonomy name,
+    the taxonomy ID, and the parent taxonomy ID. This file is generated from `prepare-refseq`:
 
-    """
-    indexes = {}
-    for l in lists:
-        for i, item in enumerate(l):
-            if item in indexes:
-                if indexes[item] < i:
-                    indexes[item] = i
-            else:
-                indexes[item] = i
-    return OrderedDict(sorted(indexes.items(), key=lambda t: t[1], reverse=True))
+        \b
+        gi|507051347|ref|WP_016122340.1| two-component sensor histidine kinase Bacillus cereus 1396 86661
+        gi|507052147|ref|WP_016123132.1| two-component sensor histidine kinase Bacillus cereus 1396 86661
+        gi|507053266|ref|WP_016124222.1| two-component sensor histidine kinase Bacillus cereus 1396 86661
 
+    The RefSeq function is always derived from the best BLAST hit.
 
-def parse_annotation_map(path):
-    """Parse file and return dict of column 1 to value of column 2.
+    The output will give contig, ORF ID, the lineage assigned to the contig based on
+    --aggregation-method, the probability of error (erfc), taxonomy assigned to the ORF, the
+    best hit's product, the best hit's evalue, and the best hit's bitscore:
 
-    Args:
-        path (str): file path to annotation map file of name to product
-
-    Returns:
-        dict: name to product
-
-    Notes:
-        For RefSeq, the annotation map file would look like:
-
-            >gi|494717612|ref|WP_007453478.1| hypothetical protein [Micromonospora lupini]
-            >gi|494717623|ref|WP_007453489.1| Tryptophanyl-tRNA synthetase (fragment) [Micromonospora lupini]
-            >gi|494717625|ref|WP_007453491.1| Tryptophanyl-tRNA synthetase (fragment) [Micromonospora lupini]
-
-        Where the name and product are separated by a space.
+        \b
+        contig     orf          taxonomy erfc orf_taxonomy refseq               refseq_evalue refseq_bitscore
+        k121_52126 k121_52126_1 root     1.0  root         hypothetical protein 1.0e-41       176.8
 
     """
-    logging.debug("Reading the annotation map [%s]" % path)
-    am = {}
-    with open(path) as fh:
-        for line in fh:
-            toks = line.strip().partition(" ")
-            am[toks[0].strip(">")] = toks[2] if toks[2] else "hypothetical protein"
-    return am
+    logging.info("Parsing %s" % tsv)
+    tree = Tree(treefile)
+    orf_assignments = parse_blast_results_with_tree(tsv, namemap, orf_summary=summary_method, tree=tree,
+                          min_identity=min_identity, min_bitscore=min_bitscore,
+                          min_length=min_length, max_evalue=max_evalue,
+                          max_hits_per_orf=max_hits, table_name=table_name,
+                          top_fraction_of_hits=top_fraction)
+    logging.info("Assigning taxonomies to contigs using %s" % aggregation_method)
+    process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold, table_name)
+    logging.info("Complete")
 
 
-def parse_ncbi_map(path):
-    """Parse file and create dict of column 1 to value of column 2.
-
-    Args:
-        path (str): file path to NCBI map file of taxonomic ID to Taxonomic name
-
-    Returns:
-        dict: taxonomy ID number (as str) to taxonomy name
-
-    Notes:
-        The NCBI map file (tab delimited) looks like:
-
-            1  root	         -1   0
-            2  Bacteria	     -1   0
-            6  Azorhizobium  -1  98
-
-        Gives:
-
-            dict('1':'root', '2':'Bacteria', '6':'Azorhizobium')
-
-    """
-    logging.debug("Parsing NCBI map file [%s]" % path)
-    m = {}
-    with open(path) as fh:
-        for line in fh:
-            toks = line.strip().split("\t")
-            m[toks[0]] = toks[1]
-    return m
-
-
-def parse_blast_results(blast_tab, annotation_map, orf_summary, tree=None,
-                        min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001,
-                        max_hits_per_orf=25, top_fraction_of_hits=None, lca_threshold=1):
+def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_identity=60,
+                                  min_bitscore=0, min_length=60, max_evalue=0.000001,
+                                  max_hits_per_orf=10, top_fraction_of_hits=None,
+                                  table_name="refseq", lca_threshold=1):
     """Parse BLAST results (-outfmt 6), filter, and aggregate ORF taxonomies.
 
     Args:
-        blast_tab (str):
-        annotation_map (str):
-        orf_summary (dict):
+        blast_tab (str): file path to blast TSV file
+        name_map (dict): dict of tuples from parse_tree_annotation
+        orf_summary (dict): method of ORF annotation selection
 
         lca_threshold (float): the first parent above this fraction of representation (its count is
             greater than the total * lca_threshold)
 
     Returns:
-        dict of dicts where first key is contig name, inner key is ORF ID with a value of its
-            consensus taxonomy name as a string
+        dict: dict of dicts where first key is contig name, inner key is ORF ID; values are tuple of
+              protein function, taxonomy ID, bitscore, evalue
 
     Raises:
         AssertionError when ORF summary method is not supported (['lca', 'best', 'majority'])
     """
-    assert orf_summary in ['lca', 'best', 'majority']
-    annotations = parse_annotation_map(annotation_map)
+    import sqlite3
 
-    if orf_summary == "lca" and tree is None:
-        logging.critical("LCA summaries require a taxonomic tree")
-        sys.exit(1)
+    assert orf_summary in ["lca", "best", "majority"]
+    contigs = defaultdict(dict)
 
-    # ec_re = re.compile(r'(\d+[.]\d+[.]\d+[.]\d+)')
-    tax_re = re.compile(r'\[([^\[]+)\]')
-    blast_6 = ['qseqid', 'sseqid', 'pident', 'length', 'mismatch', 'gapopen', 'qstart', 'qend',
-               'sstart', 'send', 'evalue', 'bitscore']
+    with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(blast_tab) as blast_tab_fh:
+        cursor = conn.cursor()
+        for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
 
-    contigs = defaultdict(lambda: defaultdict(lambda: BlastHits(max_hits=max_hits_per_orf,
-                                                                top_fraction=top_fraction_of_hits)))
+            contig_name, _, orf_idx = query.rpartition("_")
+            protein_function = "hypothetical protein"
+            protein_set = False
+            taxonomy_id = "1"
+            bitscore = "NA"
+            evalue = "NA"
+            orf_hits = BlastHits(max_hits=max_hits_per_orf, top_fraction=top_fraction_of_hits)
 
-    with open(blast_tab) as blast_tab_fh:
-        current_hit = ""
-        hit_count = 0
+            # iterate over blast hits per ORF
+            for i, hsp in enumerate(qgroup):
+                toks = dict(zip(BLAST6, hsp.strip().split("\t")))
+                if (int(toks["length"]) < min_length or
+                        float(toks["pident"]) < min_identity or
+                        float(toks["evalue"]) > max_evalue):
+                    continue
+                if min_bitscore and float(toks["bitscore"]) < min_bitscore:
+                    # input is sorted by decreasing bitscore
+                    break
 
-        for hsp in blast_tab_fh:
-            toks = dict(zip(blast_6, hsp.strip().split("\t")))
+                cursor.execute('SELECT function, taxonomy FROM %s WHERE name="%s"' % (table_name, toks["sseqid"]))
+                current_function, current_taxonomy = cursor.fetchone()
 
-            # user filtering cutoffs
-            if int(toks['length']) < min_length or float(toks['pident']) < min_identity or float(toks['evalue']) > max_evalue: continue
-            if min_bitscore and float(toks['bitscore']) < min_bitscore: continue
+                # update taxonomy based on pident
+                # current_taxonomy = tree.climb_tree(current_taxonomy, float(toks["pident"]))
 
-            try:
-                raw_product = annotations[toks['sseqid']]
-            except KeyError:
-                logging.critical("Annotations are missing from your map [see: %s] that appear in your BLAST reference database." % toks['sseqid'])
-                sys.exit(1)
-            # try:
-            #     ec = ec_re.findall(raw_product)[0]
-            # except IndexError:
-            #     ec = ""
-            try:
-                # this makes this a non-generic blast parser
-                taxonomy = tax_re.findall(raw_product)[0]
-                contig_name, _, orf_idx = toks['qseqid'].rpartition("_")
-                contigs[contig_name][orf_idx].add(taxonomy, toks['bitscore'])
-            except IndexError:
-                continue
+                # protein function is always assigned to best, passing alignment
+                if not protein_set:
+                    protein_function = current_function
+                    bitscore = toks["bitscore"]
+                    evalue = toks["evalue"]
+                    protein_set = True
+                    if orf_summary == "best":
+                        taxonomy_id = current_taxonomy
+                        break
+                orf_hits.add(current_taxonomy, toks["bitscore"])
 
-    # can't guarantee ordering, so iterate again and aggregate ORF assignments
-    orf_assignments = defaultdict(dict)
-    for contig, orfs in contigs.items():
-        for orf, hits in orfs.items():
-            if orf_summary == "best":
-                orf_assignments[contig][orf] = hits.best_hit()
-            elif orf_summary == "majority":
-                orf_assignments[contig][orf] = hits.majority()
-            # orf_summary == "lca":
-            else:
-                hits.names.reverse()
-                orf_assignments[contig][orf] = tree.lca(hits.names, threshold=lca_threshold)
-    return orf_assignments
+                # TODO if majority, function should be grabbed from its sseqid
+
+            # ensure we have passing hits
+            if len(orf_hits) > 0 and not orf_summary == "best":
+                if orf_summary == "majority":
+                    taxonomy_id = orf_hits.majority()
+                # perform LCA to obtain taxonomy ID
+                else:
+                    orf_hits.names.reverse()
+                    taxonomy_id = tree.lca(orf_hits.names, threshold=lca_threshold)
+            contigs[contig_name][orf_idx] = (protein_function, taxonomy_id, bitscore, evalue)
+
+    return contigs
 
 
 def nettleton_pvalue(items, key):
@@ -692,37 +698,255 @@ def nettleton_pvalue(items, key):
         return erfc(sqrt(t / 2))
 
 
-def process_orfs(orf_assignments, tree, output, taxonomy_name_map=None):
+def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold=0.51, table_name="refseq"):
     """Processing the already classified ORFs through secondary contig classification.
 
     Args:
         orf_assignments (dict): dict of dict for per ORF tax assignment per contig
         tree (Tree): taxonomic tree object
         output (filehandle): output file handle
-        taxonomy_name_map (str): file path to taxonomy name map
+        aggregation_method (str): lca, lca-majority, or majority
+        majority_threshold (float): constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method
     """
-    if taxonomy_name_map:
-        taxonomy_name_map = parse_ncbi_map(taxonomy_name_map)
-
-    print("contig", "lca_star", "lca_star_p", "majority", "majority_p", "lca_squared", sep="\t",
-          file=output)
+    print("contig", "orf", "taxonomy", "erfc", "orf_taxonomy", table_name,
+          "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
     for contig, orfs in orf_assignments.items():
-        taxonomies = list(orfs.values())
-        lca_star_result = tree.lca_star(taxonomies)
-        second_lca = tree.lca(taxonomies, threshold=1)
-        majority = BlastHits(taxonomies).majority()
-        majority_p = nettleton_pvalue(taxonomies, majority)
-
-        if taxonomy_name_map:
-            lca_star_lineage = ";".join([tree.taxonomy_id_to_name(taxonomy_name_map, i) for i in tree.taxonomic_lineage(lca_star_result['taxonomy'])])
-            second_lca_lineage = ";".join([tree.taxonomy_id_to_name(taxonomy_name_map, i) for i in tree.taxonomic_lineage(second_lca)])
-            majority_lineage = ";".join([tree.taxonomy_id_to_name(taxonomy_name_map, i) for i in tree.taxonomic_lineage(majority)])
+        taxonomies = [x[1] for x in orfs.values()]
+        if aggregation_method == "lca-majority":
+            res = tree.lca_star(taxonomies, majority_threshold=majority_threshold)
+            contig_taxonomy = res["taxonomy"]
+            error_function = res["pvalue"]
+        elif aggregation_method == "lca":
+            # TODO incorporate threshold into LCAs?
+            contig_taxonomy = tree.lca(taxonomies)
+            error_function = nettleton_pvalue(taxonomies, contig_taxonomy)
+        # simple majority
         else:
-            lca_star_lineage = ";".join(["%s (%s)" % (tree[i].taxonomy, i) for i in tree.taxonomic_lineage(lca_star_result['taxonomy'])])
-            second_lca_lineage = ";".join(["%s (%s)" % (tree[i].taxonomy, i) for i in tree.taxonomic_lineage(second_lca)])
-            majority_lineage = ";".join(["%s (%s)" % (tree[i].taxonomy, i) for i in tree.taxonomic_lineage(majority)])
-        print(contig, lca_star_lineage, lca_star_result['pvalue'], majority_lineage, majority_p,
-              second_lca_lineage, sep="\t", file=output)
+            contig_taxonomy = BlastHits(taxonomies).majority()
+            error_function = nettleton_pvalue(taxonomies, contig_taxonomy)
+        lineage = ";".join(["%s" % (tree.tree[i].taxonomy) for i in tree.taxonomic_lineage(contig_taxonomy)])
+
+        for idx in sorted(orfs.keys()):
+            orf_function, orf_tax_id, bitscore, evalue = orfs[idx]
+            orf_taxonomy = tree.tree[orf_tax_id].taxonomy
+            print(contig, "%s_%s" % (contig, idx), lineage, error_function, orf_taxonomy,
+                  orf_function, evalue, bitscore, sep="\t", file=output)
+
+
+def index_of_list_items(lists):
+    """Find the highest index for items among list of lists and return ordered dictionary sorted by
+    decreasing index value.
+
+    Args:
+        lists (list): list of lists
+
+    Returns:
+        OrderedDict of list items, sorted by depth with deepest list item first
+
+    Example:
+        >>> lineages = [['1', '131567', '99999999', '2'],
+                        ['1', '131567', '99999999', '2', '1224', '1236', '72274', '135621', '286'],
+                        ['1', '131567', '99999999', '2', '1224'],
+                        ['1', '131567', '99999999', '2', '1224', '1236']]
+        >>> index_of_list_items(lineages)
+        OrderedDict([('286', 8),
+                     ('135621', 7),
+                     ('72274', 6),
+                     ('1236', 5),
+                     ('1224', 4),
+                     ('2', 3),
+                     ('99999999', 2),
+                     ('131567', 1),
+                     ('1', 0)])
+
+    """
+    indexes = {}
+    for l in lists:
+        for i, item in enumerate(l):
+            if item in indexes:
+                if indexes[item] < i:
+                    indexes[item] = i
+            else:
+                indexes[item] = i
+    return OrderedDict(sorted(indexes.items(), key=lambda t: t[1], reverse=True))
+
+
+@cli.command("prepare-refseq", short_help="prepares refseq mapping files")
+@click.argument("fasta", type=click.Path(exists=True))
+@click.argument("namesdmp", type=click.Path(exists=True))
+@click.argument("nodesdmp", type=click.Path(exists=True))
+@click.argument("namemap", type=click.File("w"))
+@click.argument("tree", type=click.File("w"))
+def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
+    """Takes the RefSeq FASTA which will look like:
+
+        \b
+        >gi|507053311|ref|WP_016124266.1| two-component sensor histidine kinase [Bacillus cereus]
+        MNFNKRLIIQFIMQHVFVLVTLLIAVVAAFTYLIFLLTSTLYEPNIPDSDSFTISRYISSEDGHISLQSEVQDLIKEKND
+
+    And from NCBI's taxonomy dump, names.dmp, which starts like:
+
+        \b
+        1 | all      |                         | synonym         |
+        1 | root     |                         | scientific name |
+        2 | Bacteria | Bacteria <prokaryotes>  | scientific name |
+
+    And nodes.dmp:
+
+        \b
+        1 | 1      | no rank      |...
+        2 | 131567 | superkingdom |...
+        6 | 335928 | genus        |...
+
+    To create a TSV map (NAMEMAP) of FASTA entry ID to function, taxonomy name, taxonomy ID, and parent
+    taxonomy ID:
+
+        \b
+        gi|507053311|ref|WP_016124266.1|<tab>two-component sensor histidine kinase<tab>Bacillus cereus
+
+    As well as TREE:
+
+        \b
+        Bacillus cereus<tab>1396<tab>86661
+
+    """
+
+    # most names, for translating reference fasta from tax name to tax id
+    name_to_tax = {}
+    tax_to_name = {}
+    # for best names, for translating nodes.dmp tax id to tax name
+    tax_to_scientific_name = {}
+
+    logging.info("Reading in %s" % namesdmp)
+    with open(namesdmp) as dmp:
+        for tax_id, group in groupby(dmp, key=lambda x: [i.strip() for i in x.strip().split("|")][0]):
+            scientific_name = ""
+            synonym = ""
+            for line in group:
+                toks = [x.strip() for x in line.strip().split("|")]
+                if toks[-2] == "scientific name":
+                    tax_to_scientific_name[toks[0]] = toks[1]
+                    break
+                elif toks[-2] == "misspelling":
+                    continue
+                elif toks[-2] == "synonym":
+                    synonym = toks[1]
+                else:
+                    if synonym:
+                        tax_to_name[toks[0]] = synonym
+                    else:
+                        tax_to_name[toks[0]] = toks[1]
+                name_to_tax[toks[1]] = toks[0]
+
+    logging.info("Iterating over %s" % fasta)
+    with open(fasta) as fa:
+        for name, seq in read_fasta(fa):
+            name_parts = name.partition(" ")
+            # biotin--[acetyl-CoA-carboxylase] synthetase [Aeromonas allosaccharophila]
+            function = name_parts[2].rpartition("[")[0].strip()
+            taxonomy_name = name_parts[2].rpartition("[")[2].strip("]")
+            # phosphoribosyltransferase [[Haemophilus] parasuis]
+            if "[[" in name_parts[2]:
+                taxonomy_name = "[%s" % taxonomy_name
+            # https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?lvl=0&id=1737424
+            if taxonomy_name == "Blautia sp. GD8":
+                taxonomy_name = "Blautia sp. GD9"
+            try:
+                taxonomy_id = name_to_tax[taxonomy_name]
+            except KeyError:
+                taxonomy_name = taxonomy_name.replace("]", "").replace("[", "")
+                taxonomy_id = name_to_tax[taxonomy_name]
+
+            print(name_parts[0], function, taxonomy_id, sep="\t", file=namemap)
+
+    logging.info("Reading in %s" % nodesdmp)
+    with open(nodesdmp) as dmp:
+        for line in dmp:
+            toks = [x.strip() for x in line.strip().split("|")]
+            try:
+                taxonomy_name = tax_to_scientific_name[toks[0]]
+            except KeyError:
+                taxonomy_name = tax_to_name[toks[0]]
+            print(toks[0], taxonomy_name, toks[1], sep="\t", file=tree)
+
+    logging.info("Process complete")
+
+
+@cli.command("prepare-eggnog", short_help="prepares eggnog mapping and reference files")
+@click.argument("fasta", type=click.File("r"))
+@click.argument("namemap", type=click.File("r"))
+@click.argument("outputfasta", type=click.File("w"))
+@click.argument("outputmap", type=click.File("w"))
+def prepare_eggnog_reference(fasta, namemap, outputfasta, outputmap):
+    names = set()
+    # IDs for which we have uniprot AC
+    for line in namemap:
+        toks = line.strip().split("\t")
+        names.add(toks[3])
+    fasta_names = set()
+    # IDs for which we have sequences
+    for name, seq in read_fasta(fasta):
+        name = name.partition(".")[-1]
+        if name in names: continue
+        fasta_names.add(name)
+        print_fasta_record(name, seq, outputfasta)
+    # the union of IDs
+    for line in namemap:
+        toks = line.strip().split("\t")
+        if toks[3] in fasta_names:
+            print(*toks, sep="\t", file=outputmap)
+
+
+def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=100):
+    """Print a fasta record accounting for line wraps in the sequence.
+
+    Args:
+        name (str): name or header for fasta entry
+        seq (str): sequence
+        out_handle (Optional): open file handle in which to write or stdout
+        wrap (Optional[int]) : line width of fasta sequence; None is supported for no wrapping
+
+    """
+    print('>', name, sep='', file=out_handle)
+    if wrap:
+        for i in range(0, len(seq), wrap):
+            print(seq[i:i + wrap], file=out_handle)
+    else:
+        print(seq, file=out_handle)
+
+
+def read_fasta(fh):
+    """Fasta iterator.
+
+    Accepts file handle of .fasta and yields name and sequence.
+
+    Args:
+        fh (file): Open file handle of .fasta file
+
+    Yields:
+        tuple: name, sequence
+
+    Example:
+        >>> import os
+        >>> from itertools import groupby
+        >>> f = open("test.fasta", 'w')
+        >>> f.write("@seq1\nACTG")
+        >>> f.close()
+        >>> f = open("test.fastq")
+        >>> for name, seq in read_fastq(f):
+                assert name == "seq1"
+                assert seq == "ACTG"
+        >>> f.close()
+        >>> os.remove("test.fasta")
+
+    """
+    for header, group in groupby(fh, lambda line: line[0] == '>'):
+        if header:
+            line = next(group)
+            name = line[1:].strip()
+        else:
+            seq = ''.join(line.strip() for line in group)
+            yield name, seq
 
 
 if __name__ == "__main__":

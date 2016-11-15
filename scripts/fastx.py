@@ -1,4 +1,3 @@
-from __future__ import print_function
 import argparse
 import os
 import sys
@@ -162,7 +161,7 @@ def main():
     if args.subparser_name == "length-sort":
         length_sort(args.fasta, args.out_file)
     elif args.subparser_name == "length-filter":
-        length_filter(args.fasta, args.pass_file, args.fail_file, args.min_len, args.wrap)
+        length_filter(args.fasta, args.pass_file, args.fail_file, args.min_length, args.wrap)
     elif args.subparser_name == "trim-fastx":
         trim_fastx(args.fastx_file, args.out_file, args.left, args.right)
     else:
