@@ -518,6 +518,7 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
                   file=output)
     logging.info("Complete")
 
+
 @cli.command("refseq", short_help="enables tree based LCA and LCA star methods")
 @click.argument("tsv", type=click.Path(exists=True))
 @click.argument("namemap", type=click.Path(exists=True))
@@ -599,8 +600,6 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
     import sqlite3
 
     assert orf_summary in ["lca", "best", "majority"]
-
-    # annotation_map = parse_name_map(name_map)
     contigs = defaultdict(dict)
 
     with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(blast_tab) as blast_tab_fh:
@@ -642,6 +641,8 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
                         taxonomy_id = current_taxonomy
                         break
                 orf_hits.add(current_taxonomy, toks["bitscore"])
+
+                # TODO if majority, function should be grabbed from its sseqid
 
             # ensure we have passing hits
             if len(orf_hits) > 0 and not orf_summary == "best":
