@@ -297,7 +297,7 @@ rule align_reads_to_assembly:
                | samtools sort -@ {threads} -T {wildcards.sample} -o {output} -O bam -"""
 
 
-rule prodigal_orfs_passed:
+rule prodigal_orfs:
     input:
         "results/{eid}/assembly/{sample}/{sample}_length_pass.fa"
     output:
@@ -311,7 +311,43 @@ rule prodigal_orfs_passed:
                -g {params.g} -p meta"""
 
 
-# rule maxbin_bins:
+rule gff_to_gtf:
+    input:
+        "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+    output:
+        "results/{eid}/annotation/orfs/{sample}_length_pass.gtf"
+    run:
+        import re
+        t = re.compile(r'ID=[0-9]+_([0-9]+);')
+        with open(output[0], "w") as fh, open(input[0]) as gff:
+            print("##gff-version  3", file=fh)
+            for line in gff:
+                if line.startswith("#"): continue
+                toks = line.strip().split("\t")
+                orf = t.findall(toks[-1])[0]
+                gene_id = toks[0] + "_" + orf
+                toks[-1] = toks[-1] + "gene_id " + gene_id + ";"
+                print(*toks, sep="\t", file=fh)
+
+
+rule counts_per_region:
+    input:
+        gtf = "results/{eid}/annotation/orfs/{sample}_length_pass.gtf",
+        bam = "results/{eid}/aligned_reads/{sample}.bam"
+    output:
+        summary = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.summary.txt",
+        counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
+    params:
+        min_read_overlap = config['annotation']['minimum_overlap']
+    threads:
+        4
+    shell:
+        """verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
+               --singleEnd -t CDS -z 5 -a {input.gtf} \
+               -o results/{wildcards.eid}/annotation/orfs/{wildcards.sample}_length_pass \
+               {input.bam}"""
+
+# rule run_maxbin:
 #     input:
 #         reads = rules.filter_contaminants.output
 #         contigs = rules.assemble.output
@@ -336,25 +372,6 @@ rule prodigal_orfs_passed:
 #         -thread {threads} -markerset {params.markerset}"""
 
 
-# rule lastplus_orfs
-#     input:  # how to do wrap rule or ifelse?
-#         fgsplus_orfs = rules.fgsplus.output,
-#         prodigal_orfs = rules.prodigal.output,
-#         database = rules.format_database.output
-#     output:
-#         annotation = "output/{eid}/annotation/last/{sample}_{database}"
-#     params:
-#         top_hit = config['lastplus']['top_best_hit'],
-#         e_value_cutoff = config['lastplus']['e_value_cutoff'],
-#         bit_score_cutoff = config['lastplus']['bit_score_cutoff']
-#     threads:
-#         config['lastplus']['threads']
-#     message:
-#         "Annotation of Protein-coding ORFs with Last+"
-#     shell:
-#         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
-#         {input.database} {input.fgsplus_orfs}"""
-
 # rule parse_lastplus_lca
 #     input:
 #         last = rules.lastplus.output
@@ -368,6 +385,7 @@ rule prodigal_orfs_passed:
 #         "Running last+ parsing and taxonomic assignment LCA+"
 #     shell:
 #         #fill
+
 
 # rule generate_gtf
 #     input:

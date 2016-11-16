@@ -84,14 +84,14 @@ assembly:
     low_local_ratio: 0.2
     # minimum length of contigs to output
     minimum_contig_length: 200
-    filtered_contig_length: 1000
+    filtered_contig_length: 300
 annotation:
-    memory: 8096 # needs megabyte amount.  autodetect?
     threads: 24
-    sequencing_error_model: illumina_10
     # https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
     translation_table: 11
-
+    # when counting reads aligning to ORFs, require at least this many bp
+    # overlapping the ORF
+    minimum_overlap: 20
 binning:
     threads: 12
     minimum_contig_length: 1000
