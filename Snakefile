@@ -48,9 +48,9 @@ rule all:
         expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=EID, sample=SAMPLES),
         expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=EID, sample=SAMPLES),
         expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/aligned_reads/{sample}.bam", eid=EID, sample=SAMPLES),
         expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/annotation/orfs/{sample}_length_pass.gff", eid=EID, sample=SAMPLES)
+        expand("results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt", eid=EID, sample=SAMPLES),
+        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=EID, reference=config["annotation"]["references"].split(","), sample=SAMPLES)
 
 
 rule quality_filter_reads:
@@ -71,7 +71,7 @@ rule quality_filter_reads:
         qtrim = "rl",
         minlength = config['filtering']['minimum_passing_read_length']
     threads:
-        24
+        config["threads"]["medium"]
     shell:
         """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
                rref={params.rref} lref={params.lref} mink={params.mink} \
@@ -127,7 +127,7 @@ rule error_correction:
     output:
         "results/{eid}/joined/{sample}_corrected.fastq.gz"
     threads:
-        24
+        config["threads"]["large"]
     shell:
         "tadpole.sh in={input} out={output} mode=correct threads={threads}"
 
@@ -140,7 +140,8 @@ if config["qual_method"] == "expected_error":
             phred = config.get("phred_offset", 33),
             maxee = config["filtering"].get("maximum_expected_error", 2),
             maxns = config["filtering"].get("maxns", 3)
-        threads: 1
+        threads:
+            1
         shell: """vsearch --fastq_filter {input} --fastqout {output} --fastq_ascii {params.phred} \
                       --fastq_maxee {params.maxee} --fastq_maxns {params.maxns}"""
 else:
@@ -158,7 +159,7 @@ else:
             headcrop = "" if not config["filtering"].get("headcrop", 0) else "HEADCROP:%s" % config["filtering"]["headcrop"],
             minlen = "MINLEN:%s" % config["filtering"]["minimum_passing_read_length"]
         threads:
-            24
+            config["threads"]["large"]
         shell:
             """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
                    {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
@@ -181,7 +182,7 @@ rule decontaminate_joined:
         ambiguous = config['contamination_filtering'].get('ambiguous', "best"),
         k = config["contamination_filtering"].get("k", 15)
     threads:
-        24
+        config["threads"]["large"]
     shell:
         """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
                {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
@@ -217,7 +218,7 @@ rule fastqc:
     params:
         output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
     threads:
-        24
+        config["threads"]["large"]
     shell:
         "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
 
@@ -239,7 +240,7 @@ rule megahit_assembly:
         min_contig_len = config['assembly']['minimum_contig_length'],
         outdir = lambda wildcards: "results/%s/assembly/%s" % (wildcards.eid, wildcards.sample)
     threads:
-        config['assembly']['threads']
+        config["threads"]["large"]
     log:
         "results/{eid}/assembly/{sample}/{sample}.log"
     shell:
@@ -290,7 +291,7 @@ rule align_reads_to_assembly:
     output:
         "results/{eid}/aligned_reads/{sample}.bam"
     threads:
-        24
+        config["threads"]["large"]
     shell:
         """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
                | samtools view -@ {threads} -bS - \
@@ -340,12 +341,68 @@ rule counts_per_region:
     params:
         min_read_overlap = config['annotation']['minimum_overlap']
     threads:
-        4
+        config["threads"]["medium"]
     shell:
         """verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 5 -a {input.gtf} \
                -o results/{wildcards.eid}/annotation/orfs/{wildcards.sample}_length_pass \
-               {input.bam}"""
+               {input.bam} 2> /dev/null"""
+
+
+rule build_dmnd_database:
+    input:
+        "databases/{reference}.fasta"
+    output:
+        "databases/{reference}.fasta.dmnd"
+    threads:
+        config["threads"]["large"]
+    shell:
+        "diamond makedb --threads {threads} --in {input} --db {input}"
+
+
+rule split:
+    input:
+        "results/{eid}/annotation/orfs/{sample}_length_pass.faa"
+    output:
+        temp(dynamic("results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa"))
+    params:
+        chunk_size = config["annotation"].get("chunk_size", "250000")
+    shell:
+        "python scripts/fastx.py split-fasta --chunk-size {params.chunk_size} {input}"
+
+
+rule diamond_alignments:
+    input:
+        fasta = "results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa",
+        db = "databases/{reference}.fasta.dmnd"
+    output:
+        temp("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+    params:
+        tmpdir = "--tmpdir %s" % config.get("temporary_directory", "") if config.get("temporary_directory", "") else "",
+        max_target_seqs = config["annotation"].get("max_target_seqs", "10"),
+        e_value = config["annotation"].get("e_value", "0.000001"),
+        min_identity = config["annotation"].get("min_identity", "50"),
+        query_cover = config["annotation"].get("query_coverage", "60"),
+        gap_open = config["annotation"].get("gap_open", "11"),
+        gap_extend = config["annotation"].get("gap_extend", "1")
+    threads:
+        config["annotation"]["threads"]
+    shell:
+        """diamond blastp --quiet --threads {threads} --outfmt 6 --out {output} \
+               --query {input.fasta} --db {input.db} --max-target-seqs {params.max_target_seqs} \
+               --evalue {params.e_value} --id {params.min_identity} \
+               --query-cover {params.query_cover} --more-sensitive --gapopen {params.gap_open} \
+               --gapextend {params.gap_extend} {params.tmpdir}"""
+
+
+rule merge_alignments:
+    input:
+        dynamic("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+    output:
+        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+    shell:
+        "cat {input} > {output}"
+
 
 # rule run_maxbin:
 #     input:
@@ -372,41 +429,6 @@ rule counts_per_region:
 #         -thread {threads} -markerset {params.markerset}"""
 
 
-# rule parse_lastplus_lca
-#     input:
-#         last = rules.lastplus.output
-#     output:
-#         annotation = "output/{eid}/annotation/last/{sample}_{database}"
-#     params:
-#         #fill
-#     threads
-#         #fill
-#     message:
-#         "Running last+ parsing and taxonomic assignment LCA+"
-#     shell:
-#         #fill
-
-
-# rule generate_gtf
-#     input:
-#         LCA = rules.lcaparselast.output
-#     output:
-#         gff = "output/{eid}/annotation/quantification/{sample}.gtf"
-#     message:
-#         "Generate annotated gtf for read quantification"
-#     shell:
-#         "python src/generate_gff.py {input} {output}"
-
-#  rule run_counting
-#     input:
-#         gff = rules.generategtf.output
-#         sam = rules.maptoassembly.output #aligned only
-#     output:
-#         verse_counts = "output/{eid}/annotation/quantification/{sample}.counts"
-#     message:
-#         "Generate counts from reads aligning to contig assembly using VERSE"
-#     shell:
-#         """verse -a {input.gft} -t {independentassign.default} -g {contig_id} -z 1 -o {output} {input.sam}"""
 
 #  rule get_read_counts #from jeremy zucker scripts
 #     input:
