@@ -125,10 +125,39 @@ def trim_fastx(fastx_file, out_file, left=0, right=0):
     return out_file
 
 
+def tsv_to_fasta(tsv, out_file):
+    with open(tsv) as ifh, open(out_file, "w") as ofh:
+        for line in tsv:
+            toks = line.strip().split("\t")
+            print_fasta_record(toks[0], toks[1], out_handle=ofh, wrap=100)
+
+
+def split_fasta(fasta, chunk_size=250000):
+    fasta = os.path.expanduser(fasta)
+    root, ext = os.path.splitext(fasta)
+
+    file_idx = 0
+    for i, (name, seq, qual) in enumerate(readfx(fasta)):
+        if i % chunk_size == 0:
+            if i == 0:
+                ofh = open("%s_%d%s" % (root, file_idx, ext), "w")
+                print_fasta_record(name, seq, out_handle=ofh)
+            else:
+                ofh.close()
+                file_idx += 1
+                ofh = open("%s_%d%s" % (root, file_idx, ext), "w")
+                print_fasta_record(name, seq, out_handle=ofh)
+        else:
+            print_fasta_record(name, seq, out_handle=ofh)
+    ofh.close()
+
+
 description = """
 length-sort        sort fasta by decreasing length
 length-filter      filter fasta by minimum length
+split-fasta        split fasta into specified entries per file
 trim-fastx         trim 3' or 5' ends of fasta or fastq
+tsv-to-fasta       convert TSV to FASTA
 """
 
 
@@ -152,18 +181,28 @@ def main():
     length_filter_sp.add_argument("fail_file", help="fasta of reads failing threshold")
     length_filter_sp.add_argument("--min-length", type=int, default=1000, help="minimum length of a passing sequence")
     length_filter_sp.add_argument("--wrap", type=int, default=80, help="sequence wrap length")
+    split_fasta_sp = sp.add_parser('split-fasta', formatter_class=fmt, description="TODO")
+    split_fasta_sp.add_argument("fasta", help="fasta file path")
+    split_fasta_sp.add_argument("--chunk-size", default=250000, type=int, help="number of lines per output fasta")
     trim_fastx_sp = sp.add_parser('trim-fastx', formatter_class=fmt, description="TODO")
     trim_fastx_sp.add_argument("fastx", type=lambda x: pfile_exists(p, x), help="fasta or fastq file path")
     trim_fastx_sp.add_argument("out_file", help="trimmed fasta or fastq file path")
     trim_fastx_sp.add_argument("-l", "--left", type=int, default=0, help="5' trim length")
     trim_fastx_sp.add_argument("-r", "--right", type=int, default=0, help="3' trim length")
+    tsv_to_fasta_sp = sp.add_parser('tsv-to-fasta', formatter_class=fmt, description="TODO")
+    tsv_to_fasta_sp.add_argument("tsv", help="name[tab]sequence file")
+    tsv_to_fasta_sp.add_argument("out_file", help="FASTA formatted file with line wraps")
     args = p.parse_args()
     if args.subparser_name == "length-sort":
         length_sort(args.fasta, args.out_file)
     elif args.subparser_name == "length-filter":
         length_filter(args.fasta, args.pass_file, args.fail_file, args.min_length, args.wrap)
+    elif args.subparser_name == "split-fasta":
+        split_fasta(args.fasta, args.chunk_size)
     elif args.subparser_name == "trim-fastx":
         trim_fastx(args.fastx_file, args.out_file, args.left, args.right)
+    elif args.subparser_name == "tsv-to-fasta":
+        tsv_to_fasta(args.tsv, args.out_file)
     else:
         p.print_help()
 
