@@ -3,10 +3,21 @@ data_type: Metagenome
 # sliding_window OR expected_error
 qual_method: sliding_window
 
-
 # regular stuffs
 eid: test
+# can be removed or set to '' to disable
+temporary_directory: /scratch
 phred_offset: 33
+
+
+threads:
+    # for some tasks, it is optimal to run more jobs with fewer cpus
+    small: 4
+    # if you're only running a single sample, set medium to what you would consider large
+    medium: 11
+    # this is utilized for tasks that are expected to take the longest;
+    # in some cases it may be optimal to use one less than the total cpu cores available
+    large: 23
 filtering:
     threads: 4
     # fastas to parse into kmers which are then trimmed from the sequences
@@ -39,11 +50,13 @@ filtering:
     crop: 0
     # The number of bases to remove from the start of the read; 0 disables
     headcrop: 0
+
 merging:
     threads: 4
     minimum_overlap: 30
     maximum_overlap: 220
     maximum_mismatch_density: 0.25
+
 contamination_filtering:
     threads: 12
     references:
@@ -64,6 +77,7 @@ contamination_filtering:
     #   random  (select one top-scoring site randomly)
     #   all     (retain all top-scoring sites.  Does not work yet with SAM output)
     ambiguous: best
+
 assembly:
     threads: 24
     # fraction of the machine's total memory or bytes
@@ -85,13 +99,34 @@ assembly:
     # minimum length of contigs to output
     minimum_contig_length: 200
     filtered_contig_length: 300
+
 annotation:
+    # databases/functional/<example1>.fasta
+    # databases/functional/<example2>.fasta
+    # references: example1,example2
+    references: eggnog4,refseq78_nonredundant
     threads: 24
     # https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
     translation_table: 11
     # when counting reads aligning to ORFs, require at least this many bp
     # overlapping the ORF
     minimum_overlap: 20
+    # number of entries per FASTA to be aligned with DIAMOND
+    chunk_size: 100
+    # local alignment settings
+    # maximum number of target sequences to report alignments for
+    max_target_seqs: 10
+    # maximum e-value to report alignments
+    e_value: "0.000001"
+    # minimum identity % to report an alignment
+    min_identity: 50
+    # minimum query cover % to report an alignment
+    query_coverage: 60
+    # gap open penalty
+    gap_open: 11
+    # gap extension penalty
+    gap_extend: 1
+
 binning:
     threads: 12
     minimum_contig_length: 1000
