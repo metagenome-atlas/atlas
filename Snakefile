@@ -386,7 +386,7 @@ rule diamond_alignments:
         gap_open = config["annotation"].get("gap_open", "11"),
         gap_extend = config["annotation"].get("gap_extend", "1")
     threads:
-        config["annotation"]["threads"]
+        config["threads"]["large"]
     shell:
         """diamond blastp --quiet --threads {threads} --outfmt 6 --out {output} \
                --query {input.fasta} --db {input.db} --max-target-seqs {params.max_target_seqs} \
@@ -402,6 +402,28 @@ rule merge_alignments:
         "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
     shell:
         "cat {input} > {output}"
+
+
+rule parse_blast:
+    input:
+        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+    output:
+        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+    params:
+
+    shell:
+        """python scripts/blast2assignment.py {params.} """
+
+
+rule merge_blast:
+    input:
+        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+    output:
+        "results/{eid}/annotation/{sample}_merged_assignments.tsv"
+    shell:
+        # input list...
+        # script will need to sniff headers or even if it matters
+        """python scripts/blast2assignment.py merge-tables {input}"""
 
 
 # rule run_maxbin:
@@ -429,7 +451,6 @@ rule merge_alignments:
 #         -thread {threads} -markerset {params.markerset}"""
 
 
-
 #  rule get_read_counts #from jeremy zucker scripts
 #     input:
 #         verse_counts = rules.runcounting.output
@@ -439,6 +460,7 @@ rule merge_alignments:
 #         "Generate read frequencies from VERSE"
 #     shell:
 #         """python get_read_counts.py --read_count_files {input} --out {output}"""
+
 
 #  rule get_function_counts #from jeremy zucker scripts
 #     input:
@@ -454,6 +476,7 @@ rule merge_alignments:
 #         """python src/get_function_counts.py {input.annotation_summary_table} {input.read_counts} \
 #            --function {wildcards.function} --out {output}"""
 
+
 #  rule get_taxa_counts: #from jeremy zucker scripts
 #     input:
 #         annotation_summary_table = rules.lcaparselast.output
@@ -465,6 +488,7 @@ rule merge_alignments:
 #         "{sample}_Counts/{sample}_taxa_{rank}_counts.tsv"
 #     shell:
 #         "python src/get_rank_counts.py {input} --rank {wildcards.rank} --out {output}"
+
 
 #  rule funtaxa_counts:
 #     input:
