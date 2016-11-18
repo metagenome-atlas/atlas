@@ -114,8 +114,8 @@ annotation:
     # number of entries per FASTA to be aligned with DIAMOND
     chunk_size: 100
     # local alignment settings
-    # maximum number of target sequences to report alignments for
-    max_target_seqs: 10
+    # setting top_seqs to 5 will report all alignments whose score is at most 5% lower than the top alignment score for a query
+    top_seqs: 5
     # maximum e-value to report alignments
     e_value: "0.000001"
     # minimum identity % to report an alignment
@@ -126,6 +126,18 @@ annotation:
     gap_open: 11
     # gap extension penalty
     gap_extend: 1
+    # Block size in billions of sequence letters to be processed at a time.
+    # This is the main parameter for controlling DIAMOND's memory usage.
+    # Bigger numbers will increase the use of memory and temporary disk space,
+    # but also improve performance. The program can be expected to roughly use
+    # six times this number of memory (in GB).
+    block_size: 4
+    # The number of chunks for processing the seed index (default=4). This
+    # option can be additionally used to tune the performance. It is
+    # recommended to set this to 1 on a high memory server, which will
+    # increase performance and memory usage, but not the usage of temporary
+    # disk space.
+    index_chunks: 4
 
 binning:
     threads: 12

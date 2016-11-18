@@ -379,20 +379,23 @@ rule diamond_alignments:
         temp("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:
         tmpdir = "--tmpdir %s" % config.get("temporary_directory", "") if config.get("temporary_directory", "") else "",
-        max_target_seqs = config["annotation"].get("max_target_seqs", "10"),
+        top_seqs = config["annotation"].get("top_seqs", "5"),
         e_value = config["annotation"].get("e_value", "0.000001"),
         min_identity = config["annotation"].get("min_identity", "50"),
         query_cover = config["annotation"].get("query_coverage", "60"),
         gap_open = config["annotation"].get("gap_open", "11"),
-        gap_extend = config["annotation"].get("gap_extend", "1")
+        gap_extend = config["annotation"].get("gap_extend", "1"),
+        block_size = config["annotation"].get("block_size", "2"),
+        index_chunks = config["annotation"].get("index_chunks", "4")
     threads:
         config["threads"]["large"]
     shell:
-        """diamond blastp --quiet --threads {threads} --outfmt 6 --out {output} \
-               --query {input.fasta} --db {input.db} --max-target-seqs {params.max_target_seqs} \
+        """diamond blastp --threads {threads} --outfmt 6 --out {output} \
+               --query {input.fasta} --db {input.db} --top {params.max_top_seqs} \
                --evalue {params.e_value} --id {params.min_identity} \
                --query-cover {params.query_cover} --more-sensitive --gapopen {params.gap_open} \
-               --gapextend {params.gap_extend} {params.tmpdir}"""
+               --gapextend {params.gap_extend} {params.tmpdir} --block-size {params.block_size} \
+               --index-chunks {params.index_chunks}"""
 
 
 rule merge_alignments:
@@ -404,26 +407,26 @@ rule merge_alignments:
         "cat {input} > {output}"
 
 
-rule parse_blast:
-    input:
-        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
-    output:
-        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
-    params:
-
-    shell:
-        """python scripts/blast2assignment.py {params.} """
-
-
-rule merge_blast:
-    input:
-        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
-    output:
-        "results/{eid}/annotation/{sample}_merged_assignments.tsv"
-    shell:
-        # input list...
-        # script will need to sniff headers or even if it matters
-        """python scripts/blast2assignment.py merge-tables {input}"""
+# rule parse_blast:
+#     input:
+#         "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+#     output:
+#         "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+#     params:
+#
+#     shell:
+#         """python scripts/blast2assignment.py {params.} """
+#
+#
+# rule merge_blast:
+#     input:
+#         "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+#     output:
+#         "results/{eid}/annotation/{sample}_merged_assignments.tsv"
+#     shell:
+#         # input list...
+#         # script will need to sniff headers or even if it matters
+#         """python scripts/blast2assignment.py merge-tables {input}"""
 
 
 # rule run_maxbin:
