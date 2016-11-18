@@ -113,7 +113,9 @@ annotation:
     minimum_overlap: 20
     # number of entries per FASTA to be aligned with DIAMOND
     chunk_size: 100
+
     # local alignment settings
+
     # setting top_seqs to 5 will report all alignments whose score is at most 5% lower than the top alignment score for a query
     top_seqs: 5
     # maximum e-value to report alignments
@@ -138,6 +140,37 @@ annotation:
     # increase performance and memory usage, but not the usage of temporary
     # disk space.
     index_chunks: 4
+
+    # blast parser
+    # 'lca', 'majority', or 'best'; summary method for annotating ORFs; when
+    # using LCA, it's recommended that one limits the number of hits using a
+    # low top_fraction
+    # 'best' is fastest
+    summary_method: best
+    # 'lca', 'lca-majority', or 'majority'; summary method for aggregating ORF
+    # taxonomic assignments to contig level assignment; 'lca' will result in
+    # most stringent, least specific assignments
+    aggregation_method: lca-majority
+    # constitutes a majority fraction at tree node for 'lca-majority' ORF
+    # aggregation method
+    majority_threshold: 0.51
+
+  --min-length INTEGER            minimum allowable BLAST alignment length
+                                  [default: 60]
+  --max-evalue FLOAT              maximum allowable e-value of BLAST hit
+                                  [default: 1e-06]
+  --max-hits INTEGER              maximum number of BLAST hits to consider
+                                  when summarizing ORFs; can drastically alter
+                                  ORF LCA assignments if too high without
+                                  further limits  [default: 10]
+  --table-name TEXT               table name within namemap database; expected
+                                  columns are 'name', 'function', and
+                                  'taxonomy'
+  --top-fraction FLOAT            filters ORF BLAST hits by only keep hits
+                                  within this fraction of the highest
+                                  bitscore; this is recommended over --max-
+                                  hits  [default: 1]
+
 
 binning:
     threads: 12
