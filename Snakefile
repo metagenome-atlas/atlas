@@ -404,7 +404,7 @@ rule merge_alignments:
     output:
         "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
     shell:
-        "cat {input} > {output}"
+        "cat {input} | sort -k1,1 -k12,12rn > {output}"
 
 
 # rule parse_blast:
@@ -413,11 +413,11 @@ rule merge_alignments:
 #     output:
 #         "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
 #     params:
-#
+#         subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog"
 #     shell:
 #         """python scripts/blast2assignment.py {params.} """
-#
-#
+
+
 # rule merge_blast:
 #     input:
 #         "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
