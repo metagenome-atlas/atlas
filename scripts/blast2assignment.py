@@ -433,9 +433,9 @@ def cli(obj):
 @click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
 @click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits")
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
 @click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="eggnog", help="table name within namemap database; expected columns are 'eggnog_ssid_b', 'uniprot_id', 'ko_id', 'kegg_id', 'kegg_ec', 'cog_id', 'cog_func_id', 'cog_product', 'cog_path'")
+@click.option("--table-name", default="eggnog", help="table name within namemap database; expected columns are listed above")
 def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
                    max_evalue, top_fraction, max_hits, table_name):
     """Parse BLAST hits from EGGNOG.
@@ -445,29 +445,80 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
         \b
         sort -k1,1 -k12,12rn tsv > sorted_tsv
 
+    Expected columns in the EggNOG database:
+
+        \b
+        uniprot_ac
+        eggnog_ssid_b
+        eggnog_species_id
+        uniprot_id
+        cog_func_id
+        cog_id
+        cog_product
+        cog_level1_code
+        cog_level1_name
+        cog_level2_name
+        cazy_id1
+        cazy_id2
+        cazy_class
+        cazy_clan
+        cazy_product
+        cazy_gene_id
+        cazy_taxa
+        cazy_ec
+        ko_id
+        ko_level1_name
+        ko_level2_name
+        ko_level3_id
+        ko_level3_name
+        ko_gene_symbol
+        ko_product
+        ko_ec
+
     """
     import sqlite3
     logging.info("Parsing %s" % tsv)
 
-    print("contig", "orf", "uniprot_id", "ko_id", "kegg_id", "kegg_ec", "cog_id", "cog_func_id",
-          "cog_product", "cog_path", "%s_evalue" % table_name, "%s_bitscore" % table_name,
-          sep="\t", file=output)
+    print("contig", "orf", "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id", "uniprot_id",
+          "cog_func_id", "cog_id", "cog_product", "cog_level1_code", "cog_level1_name",
+          "cog_level2_name", "cazy_id1", "cazy_id2", "cazy_class", "cazy_clan", "cazy_product",
+          "cazy_gene_id", "cazy_taxa", "cazy_ec", "ko_id", "ko_level1_name", "ko_level2_name",
+          "ko_level3_id", "ko_level3_name", "ko_gene_symbol", "ko_product", "ko_ec",
+          "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
     with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
         cursor = conn.cursor()
         for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
 
             contig_name, _, orf_idx = query.rpartition("_")
             hit_id = ""
+            uniprot_ac = "NA"
+            eggnog_ssid_b = "NA"
+            eggnog_species_id = "NA"
+            uniprot_id = "NA"
+            cog_func_id = "NA"
+            cog_id = "NA"
+            cog_product = "NA"
+            cog_level1_code = "NA"
+            cog_level1_name = "NA"
+            cog_level2_name = "NA"
+            cazy_id1 = "NA"
+            cazy_id2 = "NA"
+            cazy_class = "NA"
+            cazy_clan = "NA"
+            cazy_product = "NA"
+            cazy_gene_id = "NA"
+            cazy_taxa = "NA"
+            cazy_ec = "NA"
+            ko_id = "NA"
+            ko_level1_name = "NA"
+            ko_level2_name = "NA"
+            ko_level3_id = "NA"
+            ko_level3_name = "NA"
+            ko_gene_symbol = "NA"
+            ko_product = "NA"
+            ko_ec = "NA"
             bitscore = "NA"
             evalue = "NA"
-            uniprot_id = "NA"
-            ko_id = "NA"
-            kegg_id = "NA"
-            kegg_ec = "NA"
-            cog_id = "NA"
-            cog_func_id = "NA"
-            cog_product = "NA"
-            cog_path = "NA"
             orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
             lines = []
             idx = 0
@@ -505,17 +556,20 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
                 evalue = toks["evalue"]
 
             if hit_id:
-                cursor.execute('SELECT uniprot_id, ko_id, kegg_id, kegg_ec, cog_id, cog_func_id, cog_product, cog_path FROM %s WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
+                cursor.execute('SELECT uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code, cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id, cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec FROM %s WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
                 try:
-                    uniprot_id, ko_id, kegg_id, kegg_ec, cog_id, cog_func_id, cog_product, cog_path = cursor.fetchone()
+                    uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code, cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id, cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
                 # legacy before database was pruned; can have hits not in metadata
                 except TypeError:
                     pass
 
             # print for this query
-            print(contig_name, "%s_%s" % (contig_name, orf_idx), uniprot_id, ko_id, kegg_id,
-                  kegg_ec, cog_id, cog_func_id, cog_product, cog_path, evalue, bitscore, sep="\t",
-                  file=output)
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), uniprot_ac, eggnog_ssid_b,
+                  eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code,
+                  cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, cazy_class, cazy_clan,
+                  cazy_product, cazy_gene_id, cazy_taxa, cazy_ec, ko_id, ko_level1_name,
+                  ko_level2_name, ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec,
+                  evalue, bitscore, sep="\t", file=output)
     logging.info("Complete")
 
 
@@ -874,27 +928,40 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
 
 @cli.command("prepare-eggnog", short_help="prepares eggnog mapping and reference files")
 @click.argument("fasta", type=click.File("r"))
-@click.argument("namemap", type=click.File("r"))
+@click.argument("namemap", type=click.Path(exists=True))
 @click.argument("outputfasta", type=click.File("w"))
-@click.argument("outputmap", type=click.File("w"))
+@click.argument("outputmap", type=click.Path())
 def prepare_eggnog_reference(fasta, namemap, outputfasta, outputmap):
+    import csv
     names = set()
     # IDs for which we have uniprot AC
-    for line in namemap:
-        toks = line.strip().split("\t")
-        names.add(toks[3])
-    fasta_names = set()
+    with open(namemap, "r", encoding="ISO-8859-1") as nm:
+        reader = csv.reader(nm, delimiter="\t")
+        # skip the header
+        next(reader)
+        for toks in reader:
+            names.add(toks[1])
+    logging.info("Total names in %s: %d" % (namemap, len(names)))
     # IDs for which we have sequences
+    fasta_names = set()
+    fasta_counter = 0
     for name, seq in read_fasta(fasta):
+        fasta_counter += 1
         name = name.partition(".")[-1]
-        if name in names: continue
+        # we were unable to translate this to meaningful metadata
+        if not name in names: continue
+        # save the entry
         fasta_names.add(name)
+        # print this nonredundant fasta
         print_fasta_record(name, seq, outputfasta)
+    logging.info("Total unique matching fasta entries: %d (from %d entries)" % (len(fasta_names), fasta_counter))
     # the union of IDs
-    for line in namemap:
-        toks = line.strip().split("\t")
-        if toks[3] in fasta_names:
-            print(*toks, sep="\t", file=outputmap)
+    with open(namemap, "r", encoding="ISO-8859-1") as nm, open(outputmap, "w") as ofh:
+        reader = csv.reader(nm, delimiter="\t")
+        logging.info("Finding union of name map and fasta")
+        for toks in reader:
+            if toks[1] in fasta_names:
+                print(*toks, sep="\t", file=ofh)
 
 
 def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=100):
