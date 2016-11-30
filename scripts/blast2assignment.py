@@ -8,7 +8,6 @@ import logging
 import math
 import os
 import re
-import shelve
 import sys
 from collections import Counter, defaultdict, deque, OrderedDict
 from itertools import groupby
@@ -17,6 +16,18 @@ from math import log, sqrt, erfc
 
 BLAST6 = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart",
           "qend", "sstart", "send", "evalue", "bitscore"]
+
+MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
+                 "refseq_product", "refseq_evalue", "refseq_bitscore",
+                 "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id",
+                 "uniprot_id", "cog_func_id", "cog_id", "cog_product",
+                 "cog_level1_code", "cog_level1_name",
+                 "cog_level2_name", "cazy_id1", "cazy_id2",
+                 "cazy_class", "cazy_clan", "cazy_product",
+                 "cazy_gene_id", "cazy_taxa", "cazy_ec", "ko_id",
+                 "ko_level1_name", "ko_level2_name", "ko_level3_id",
+                 "ko_level3_name", "ko_gene_symbol", "ko_product",
+                 "ko_ec", "eggnog_evalue", "eggnog_bitscore"]
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
@@ -1043,6 +1054,96 @@ def merge_tables(refseq, eggnog, output):
     merged = pd.merge(left=ref_df, right=egg_df, how="outer", left_index=True, right_index=True)
     logging.info("%d total lines after merging" % len(merged))
     merged.to_csv(output, sep="\t", na_rep="NA")
+
+
+@cli.command("counts", short_help="integrate reads counts and annotations")
+@click.argument("prefix")
+@click.argument("merged", click.Path(exists=True, dir_okay=False, resolve_path=True))
+@click.argument("counts", click.Path(exists=True, dir_okay=False, resolve_path=True))
+@click.argument("combinations")
+@click.option("--suffix", default=".tsv", show_default=True, help="output file suffix")
+def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
+    """Aggregate and integrate count data from `counts` with annotation data in `merged`. The
+    merged data is the result of `merge-tables`. Count data is a TSV formatted with a header:
+
+        \b
+        gene  count
+        orf1  10
+        orf2  7
+        orf3  9
+
+    `combinations` are specified as a JSON string with key to values pairs, e.g.:
+
+        \b
+        '{"KO":["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"], "KO_Product":["ko_product"]}'
+
+    Counts get aggregated (summed) across all values, such that the above example gives two files:
+
+        \b
+        <prefix>_KO.tsv
+
+            \b
+            ko_id   ko_gene_symbol  ko_product                         ko_ec      count
+            K00784  rnz             ribonuclease Z                     3.1.26.11  72
+            K01006  ppdK            pyruvate, orthophosphate dikinase  2.7.9.1    177
+            K01187  malZ            alpha-glucosidase                  3.2.1.20   91
+
+        \b
+        <prefix>_KO_product.tsv
+
+            \b
+            ko_product                  count
+            alpha-glucosidase           91
+            beta-galactosidase          267
+            cell division protein FtsQ  8
+    """
+    import json
+    import pandas as pd
+
+    def _get_valid_dataframe(file_path, expected_cols, **kwargs):
+        """
+        Args:
+            file_path (str): file path to data
+            expected_cols (list): column headers necessary for validation
+
+        Returns:
+            pandas.core.frame.DataFrame
+
+        Raises:
+            ValueError: lists missing required columns
+        """
+        df = pd.read_csv(file_path, **kwargs)
+        missing_cols = []
+        for c in expected_cols:
+            if c not in df.columns:
+                missing_cols.append(c)
+        if len(missing_cols) > 0:
+            raise ValueError("%s missing required columns: %s" % (file_path, ", ".join(missing_cols)))
+        return df
+
+    def _merge_counts_annotations(count_file, merged_file):
+        """Reads input files, creates temporary dataframes, and performs the merge."""
+        count_df = _get_valid_dataframe(count_file, ["gene", "count"], sep="\t")
+        merged_df = _get_valid_dataframe(merged_file, MERGED_HEADER, sep="\t")
+        df = pd.merge(left=count_df, right=merged_df, how="left", left_on="gene", right_on="orf")
+        return df
+
+    try:
+        combos = json.loads(combinations)
+    except json.decoder.JSONDecodeError:
+        logging.critical("`combinations` was not in valid JSON format")
+        sys.exit(1)
+    df = _merge_counts_annotations(counts, merged)
+    for name, vals in combos.items():
+        logging.info("Writing %s table to %s_%s%s" % (name, prefix, name, suffix))
+        # adds count per combination
+        vals.append("count")
+        # drops unwanted columns
+        tdf = df[vals].copy()
+        # remove rows with no metadata; allows partial metadata
+        tdf.dropna(how="any", thresh=2, inplace=True)
+        # aggregate counts and print
+        tdf.groupby(vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, name, suffix), sep="\t")
 
 
 if __name__ == "__main__":
