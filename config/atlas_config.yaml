@@ -10,16 +10,10 @@ temporary_directory: /scratch
 phred_offset: 33
 
 
-threads:
-    # for some tasks, it is optimal to run more jobs with fewer cpus
-    small: 4
-    # if you're only running a single sample, set medium to what you would consider large
-    medium: 11
-    # this is utilized for tasks that are expected to take the longest;
-    # in some cases it may be optimal to use one less than the total cpu cores available
-    large: 23
+# some tasks in the workflow are single threaded, so leaving one or two open
+# cores can improve throughput
+threads: 23
 filtering:
-    threads: 4
     # fastas to parse into kmers which are then trimmed from the sequences
     adapters: ref/adapters.fa.gz
     # Look for shorter kmers at read tips down to this length; 0 disables
@@ -52,13 +46,11 @@ filtering:
     headcrop: 0
 
 merging:
-    threads: 4
     minimum_overlap: 30
     maximum_overlap: 220
     maximum_mismatch_density: 0.25
 
 contamination_filtering:
-    threads: 12
     references:
         phiX: databases/contaminant/phiX174_virus.fa
         # this key [rRNA] and case is required
@@ -79,7 +71,6 @@ contamination_filtering:
     ambiguous: best
 
 assembly:
-    threads: 24
     # fraction of the machine's total memory or bytes
     memory: 0.99
     # minimum multiplicity for filtering (k_min+1)-mers
@@ -105,7 +96,6 @@ annotation:
     # databases/functional/<example2>.fasta
     # references: example1,example2
     references: eggnog4,refseq78_nonredundant
-    threads: 24
     # https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
     translation_table: 11
     # when counting reads aligning to ORFs, require at least this many bp
@@ -185,3 +175,74 @@ binning:
     # be better suited for environment dominated by archaea; however it tends
     # to split genomes into more bins.
     marker_set: 107
+
+# this takes the form of name (for the file) and columns with which to
+# aggregate counts
+
+# Possible columns
+    # contig
+    # orf
+    # taxonomy
+    # erfc
+    # orf_taxonomy
+    # refseq_product
+    # uniprot_ac
+    # eggnog_ssid_b
+    # eggnog_species_id
+    # uniprot_id
+    # cog_func_id
+    # cog_id
+    # cog_product
+    # cog_level1_code
+    # cog_level1_name
+    # cog_level2_name
+    # cazy_id1
+    # cazy_id2
+    # cazy_class
+    # cazy_clan
+    # cazy_product
+    # cazy_gene_id
+    # cazy_taxa
+    # cazy_ec
+    # ko_id
+    # ko_level1_name
+    # ko_level2_name
+    # ko_level3_id
+    # ko_level3_name
+    # ko_gene_symbol
+    # ko_product
+    # ko_ec
+
+summary_counts:
+    KO:
+        - ko_id
+        - ko_gene_symbol
+        - ko_product
+        - ko_ec
+    KO_lvl1:
+        - ko_level1_name
+    KO_lvl2:
+        - ko_level2_name
+    KO_lvl3:
+        - ko_level3_name
+    EC:
+        - ko_ec
+    COG:
+        - cog_id
+        - cog_product
+    COG_lvl1:
+        - cog_level1_name
+        - cog_level2_name
+    # this will likely be a special case to allow for taxon level specification
+    Taxonomy:
+        - taxonomy
+    Uniprot:
+        - uniprot_ac
+        - cazy_id1
+        - cazy_class
+        - cazy_product
+        - cazy_ec
+        - cazy_gene_id
+        - cazy_taxa
+        - cazy_id1
+        - cazy_class
