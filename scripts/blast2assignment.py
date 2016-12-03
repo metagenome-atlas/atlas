@@ -27,7 +27,7 @@ MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "ko_level1_name", "ko_level2_name", "ko_level3_id",
                  "ko_level3_name", "ko_gene_symbol", "ko_product",
                  "ko_ec", "eggnog_evalue", "eggnog_bitscore"]
-TAX_LEVELS = ["kingdom", "domain", "phylum", "class", "order", "family", "genus", "species"]
+TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
@@ -65,8 +65,8 @@ class Tree(object):
                 toks = line.strip().split("\t")
                 if not toks[0] == '1' and not toks[2] == '1':
                     assert not toks[0] == toks[2]
-                if not len(toks) == 3:
-                    logging.warning("Line [%s] does not have ID, NAME, PARENTID" % line.strip())
+                if not len(toks) == 4:
+                    logging.warning("Line [%s] does not have ID, NAME, PARENTID, TAX LEVEL" % line.strip())
                     continue
                 self.add_node(toks[1], toks[0], toks[2], toks[3])
 
@@ -779,7 +779,8 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
         for item in tree.taxonomic_lineage(contig_taxonomy):
             node = tree.tree[item]
             if node.tax_level in TAX_LEVELS:
-                lineage.append("%s_%s" % (node.tax_level[0], node.taxonomy))
+
+                lineage.append("%s__%s" % ("k" if node.tax_level == "superkingdom" else node.tax_level[0], node.taxonomy))
         lineage = ";".join(lineage)
 
         for idx in sorted(orfs.keys()):
@@ -882,8 +883,8 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
                 toks = [x.strip() for x in line.strip().split("|")]
                 if toks[-2] == "scientific name":
                     tax_to_scientific_name[toks[0]] = toks[1]
-                    break
                 elif toks[-2] == "misspelling":
+                    name_to_tax[toks[1]] = toks[0]
                     continue
                 elif toks[-2] == "synonym":
                     synonym = toks[1]

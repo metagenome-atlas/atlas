@@ -1,0 +1,21 @@
+ko_id	ko_gene_symbol	ko_product	ko_ec	count
+K00031	IDH1, IDH2, icd	isocitrate dehydrogenase	1.1.1.42	163
+K00208	fabI	enoyl-[acyl-carrier protein] reductase I	1.3.1.9,1.3.1.10	100
+K00767	nadC, QPRT	nicotinate-nucleotide pyrophosphorylase (carboxylating)	2.4.2.19	73
+K00784	rnz	ribonuclease Z	3.1.26.11	72
+K00826	E2.6.1.42, ilvE	branched-chain amino acid aminotransferase	2.6.1.42	54
+K00971	manC, cpsB	mannose-1-phosphate guanylyltransferase	2.7.7.13	65
+K01006	ppdK	pyruvate, orthophosphate dikinase	2.7.9.1	177
+K01187	malZ	alpha-glucosidase	3.2.1.20	91
+K01190	lacZ	beta-galactosidase	3.2.1.23	267
+K01676	E4.2.1.2A, fumA, fumB	fumarate hydratase, class I	4.2.1.2	67
+K01696	trpB	tryptophan synthase beta chain	4.2.1.20	68
+K01733	thrC	threonine synthase	4.2.3.1	82
+K01835	pgm	phosphoglucomutase	5.4.2.2	82
+K01915	glnA, GLUL	glutamine synthetase	6.3.1.2	17
+K01940	argG, ASS1	argininosuccinate synthase	6.3.4.5	45
+K02013	ABC.FEV.A	iron complex transport system ATP-binding protein	3.6.3.34	41
+K02112	ATPF1B, atpD	F-type H+-transporting ATPase subunit beta	3.6.3.14	59
+K02564	nagB, GNPDA	glucosamine-6-phosphate deaminase	3.5.99.6	63
+K07248	aldA	lactaldehyde dehydrogenase / glycolaldehyde dehydrogenase	1.2.1.22,1.2.1.21	36
+K12373	HEXA_B	hexosaminidase	3.2.1.52	17
