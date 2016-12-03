@@ -1,5 +1,5 @@
 <p align="center">
-    <img src=images/logo.jpg width=300 style="border-radius: 25px; border: 2px solid #000000; align: right" />
+    <img src=images/logo.jpg width=300 />
 </p>
 
 # ATLAS
