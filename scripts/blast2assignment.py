@@ -16,7 +16,6 @@ from math import log, sqrt, erfc
 
 BLAST6 = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart",
           "qend", "sstart", "send", "evalue", "bitscore"]
-
 MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "refseq_product", "refseq_evalue", "refseq_bitscore",
                  "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id",
@@ -28,6 +27,7 @@ MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "ko_level1_name", "ko_level2_name", "ko_level3_id",
                  "ko_level3_name", "ko_gene_symbol", "ko_product",
                  "ko_ec", "eggnog_evalue", "eggnog_bitscore"]
+TAX_LEVELS = ["kingdom", "domain", "phylum", "class", "order", "family", "genus", "species"]
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
@@ -36,13 +36,14 @@ gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
 
 class Node(object):
 
-    def __init__(self, taxonomy, node_id, parent_id):
+    def __init__(self, taxonomy, node_id, parent_id, tax_level):
         """Represents a node within a tree.
 
         Args:
             taxonomy (str): taxonomy name or ID
             node_id (str): taxonomy ID
             parent_id (str): taxonomy ID of parent
+            tax_level (str): the taxonomic level for this node_id
 
         """
         # the current node's string ID
@@ -50,6 +51,7 @@ class Node(object):
         # the current node's digit ID
         self.node_id = node_id
         self.parent_id = parent_id
+        self.tax_level = tax_level
 
 
 class Tree(object):
@@ -66,31 +68,20 @@ class Tree(object):
                 if not len(toks) == 3:
                     logging.warning("Line [%s] does not have ID, NAME, PARENTID" % line.strip())
                     continue
-                self.add_node(toks[1], toks[0], toks[2])
+                self.add_node(toks[1], toks[0], toks[2], toks[3])
 
-    def add_node(self, taxonomy, node_id, parent_id):
+    def add_node(self, taxonomy, node_id, parent_id, tax_level):
         """Adds node to tree dictionary.
 
         Args:
             taxonomy (str): the taxonomy name
             node_id (str): the taxonomy id
             parent_id (str): the parent's taxonomy id
+            tax_level (str): the taxonomic level for this node_id
 
         """
         # taxonomy id to node mapping; ensures unique nodes despite non-unique names
-        self.tree[node_id] = Node(taxonomy, node_id, parent_id)
-        # taxonomy string to node mapping
-        # self.tree[taxonomy] = self.tree[node_id]
-
-    def taxonomy_id_to_name(self, key):
-        """
-        Args:
-            key (str): taxonomy ID used to search `id_map`
-
-        Returns:
-            string of mapped key along with key, e.g. New Name (1224)
-        """
-        return "{name} ({digit})".format(name=self.tree[key].taxonomy, digit=key)
+        self.tree[node_id] = Node(taxonomy, node_id, parent_id, tax_level)
 
     def lca(self, taxonomies, threshold=1.):
         """Returns the taxonomy of the LCA and optionally only use the top fraction of hits.
@@ -151,11 +142,6 @@ class Tree(object):
         for taxonomy in taxonomy_list:
             tree_depth = 0
             current_taxonomy = taxonomy
-            # try:
-            #     current_taxonomy = self.tree[taxonomy].node_id
-            # except TypeError:
-            #     # taxonomy represented in the reference database, but is not present in the tree
-            #     continue
             while not current_taxonomy == "1":
                 tree_depth += 1
                 current_taxonomy = self.tree[current_taxonomy].parent_id
@@ -429,7 +415,7 @@ class BlastHits(object):
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option("0.2.0")
+@click.version_option("0.2.1")
 @click.pass_context
 def cli(obj):
     "Methods for BLAST tabular output."
@@ -789,7 +775,12 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
         else:
             contig_taxonomy = BlastHits(taxonomies).majority()
             error_function = nettleton_pvalue(taxonomies, contig_taxonomy)
-        lineage = ";".join(["%s" % (tree.tree[i].taxonomy) for i in tree.taxonomic_lineage(contig_taxonomy)])
+        lineage = []
+        for item in tree.taxonomic_lineage(contig_taxonomy):
+            node = tree.tree[item]
+            if node.tax_level in TAX_LEVELS:
+                lineage.append("%s_%s" % (node.tax_level[0], node.taxonomy))
+        lineage = ";".join(lineage)
 
         for idx in sorted(orfs.keys()):
             orf_function, orf_tax_id, bitscore, evalue = orfs[idx]
@@ -872,7 +863,7 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
     As well as TREE:
 
         \b
-        Bacillus cereus<tab>1396<tab>86661
+        Bacillus cereus<tab>1396<tab>86661<tab>species
 
     """
 
@@ -932,7 +923,7 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
                 taxonomy_name = tax_to_scientific_name[toks[0]]
             except KeyError:
                 taxonomy_name = tax_to_name[toks[0]]
-            print(toks[0], taxonomy_name, toks[1], sep="\t", file=tree)
+            print(toks[0], taxonomy_name, toks[1], toks[2], sep="\t", file=tree)
 
     logging.info("Process complete")
 
@@ -1133,17 +1124,56 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
     except json.decoder.JSONDecodeError:
         logging.critical("`combinations` was not in valid JSON format")
         sys.exit(1)
+
     df = _merge_counts_annotations(counts, merged)
     for name, vals in combos.items():
-        logging.info("Writing %s table to %s_%s%s" % (name, prefix, name, suffix))
-        # adds count per combination
-        vals.append("count")
-        # drops unwanted columns
-        tdf = df[vals].copy()
-        # remove rows with no metadata; allows partial metadata
-        tdf.dropna(how="any", thresh=2, inplace=True)
-        # aggregate counts and print
-        tdf.groupby(vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, name, suffix), sep="\t")
+        if name.lower() == "taxonomy":
+
+            # {"taxonomy": {
+            #     "levels": ["phylum", "class", "order"],
+            #     "KO": ["ko_id", "ko_ec"]
+            #              }
+            # }
+
+# {"taxonomy":{"levels":["phylum", "class", "order"], "KO":["ko_id", "ko_ec"]}, "kegg":["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"], "ko_level1_name":["ko_level1_name"],"ko_product":["ko_product"],"EC":["ko_ec"],"EC2":["cazy_ec"]}
+
+            tax_levels = vals.get("levels", ["species"])
+
+            for level in tax_levels:
+                level = level.lower()
+
+                try:
+                    level_idx = TAX_LEVELS.index(level) + 1
+                except ValueError:
+                    logging.warning("Skipping taxonomy level %s" % level)
+                    continue
+
+                # taxonomy_phylum
+                tax_name = "taxonomy_%s" % level
+                if not tax_name in df.columns:
+                    # convert taxonomy from full lineage to specified level
+                    df[tax_name] = df["taxonomy"].apply(lambda x: ";".join(x.split(";")[0:level_idx]) if isinstance(x, str) else x)
+
+                for subname, subvals in vals.items():
+                    if subname.lower() == "levels": continue
+                    table_name = "%s_%s" % (subname, tax_name)
+                    logging.info("Writing %s table to %s_%s%s" % (table_name, prefix, table_name, suffix))
+                    tax_vals = subvals + [tax_name, "count"]
+                    # subvals.extend([tax_name, "count"])
+                    tdf = df[tax_vals].copy()
+                    tdf.dropna(how="any", thresh=2, inplace=True)
+                    tdf.groupby(tax_vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
+
+        else:
+            logging.info("Writing %s table to %s_%s%s" % (name, prefix, name, suffix))
+            # adds count per combination
+            vals.append("count")
+            # drops unwanted columns
+            tdf = df[vals].copy()
+            # remove rows with no metadata; allows partial metadata
+            tdf.dropna(how="any", thresh=2, inplace=True)
+            # aggregate counts and print
+            tdf.groupby(vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, name, suffix), sep="\t")
 
 
 if __name__ == "__main__":

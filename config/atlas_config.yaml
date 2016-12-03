@@ -214,6 +214,25 @@ binning:
     # ko_ec
 
 summary_counts:
+    # this is a special case to allow for taxon level specification
+    taxonomy:
+        # limit taxonomy in classification to the depth specified
+        # possible values: kingdom, domain, phylum, class, order, family, genus, species
+        # all levels if omitted
+        levels:
+            - phylum
+            - class
+            - order
+            - species
+        # tables to generate at these taxonomic levels
+        KO:
+            - ko_id
+            - ko_ec
+        COG:
+            - cog_id
+        CAZY:
+            - cazy_id1
+            - cazy_ec
     KO:
         - ko_id
         - ko_gene_symbol
@@ -233,9 +252,6 @@ summary_counts:
     COG_lvl1:
         - cog_level1_name
         - cog_level2_name
-    # this will likely be a special case to allow for taxon level specification
-    Taxonomy:
-        - taxonomy
     Uniprot:
         - uniprot_ac
         - cazy_id1
