@@ -38,19 +38,18 @@ def pattern_search(path, patterns):
 
 EID = config['eid']
 SAMPLES = get_samples(os.path.join("data", EID), 200)
-DECON_DBS = list(config["contamination_filtering"]["references"].keys())
 
 
 rule all:
     input:
-        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=EID, sample=SAMPLES, decon_dbs=DECON_DBS),
+        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=EID, sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
         expand("results/{eid}/decon/{sample}_refstats.txt", eid=EID, sample=SAMPLES),
         expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=EID, sample=SAMPLES),
         expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=EID, sample=SAMPLES),
         expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=EID, sample=SAMPLES),
         expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=EID, sample=SAMPLES),
         expand("results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=EID, reference=config["annotation"]["references"].split(","), sample=SAMPLES)
+        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=EID, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES)
 
 
 rule quality_filter_reads:
@@ -71,7 +70,7 @@ rule quality_filter_reads:
         qtrim = "rl",
         minlength = config['filtering']['minimum_passing_read_length']
     threads:
-        config["threads"]["medium"]
+        config["threads"]
     shell:
         """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
                rref={params.rref} lref={params.lref} mink={params.mink} \
@@ -102,7 +101,7 @@ rule join_reads:
     log:
         "results/{eid}/logs/{sample}_flash.log"
     threads:
-        24
+        config["threads"]
     shell:
         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
                --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
@@ -127,7 +126,7 @@ rule error_correction:
     output:
         "results/{eid}/joined/{sample}_corrected.fastq.gz"
     threads:
-        config["threads"]["large"]
+        config["threads"]
     shell:
         "tadpole.sh in={input} out={output} mode=correct threads={threads}"
 
@@ -159,7 +158,7 @@ else:
             headcrop = "" if not config["filtering"].get("headcrop", 0) else "HEADCROP:%s" % config["filtering"]["headcrop"],
             minlen = "MINLEN:%s" % config["filtering"]["minimum_passing_read_length"]
         threads:
-            config["threads"]["large"]
+            config["threads"]
         shell:
             """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
                    {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
@@ -169,7 +168,7 @@ rule decontaminate_joined:
     input:
         "results/{eid}/quality_filter/{sample}_filtered.fastq"
     output:
-        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in DECON_DBS],
+        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in list(config["contamination_filtering"]["references"].keys())],
         stats = "results/{eid}/decon/{sample}_refstats.txt",
         clean = "results/{eid}/decon/{sample}_clean.fastq.gz"
     params:
@@ -182,7 +181,7 @@ rule decontaminate_joined:
         ambiguous = config['contamination_filtering'].get('ambiguous', "best"),
         k = config["contamination_filtering"].get("k", 15)
     threads:
-        config["threads"]["large"]
+        config["threads"]
     shell:
         """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
                {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
@@ -218,7 +217,7 @@ rule fastqc:
     params:
         output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
     threads:
-        config["threads"]["large"]
+        config["threads"]
     shell:
         "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
 
@@ -240,7 +239,7 @@ rule megahit_assembly:
         min_contig_len = config['assembly']['minimum_contig_length'],
         outdir = lambda wildcards: "results/%s/assembly/%s" % (wildcards.eid, wildcards.sample)
     threads:
-        config["threads"]["large"]
+        config["threads"]
     log:
         "results/{eid}/assembly/{sample}/{sample}.log"
     shell:
@@ -291,7 +290,7 @@ rule align_reads_to_assembly:
     output:
         "results/{eid}/aligned_reads/{sample}.bam"
     threads:
-        config["threads"]["large"]
+        config["threads"]
     shell:
         """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
                | samtools view -@ {threads} -bS - \
@@ -341,7 +340,7 @@ rule counts_per_region:
     params:
         min_read_overlap = config['annotation']['minimum_overlap']
     threads:
-        config["threads"]["medium"]
+        config["threads"]
     shell:
         """verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 5 -a {input.gtf} \
@@ -351,13 +350,13 @@ rule counts_per_region:
 
 rule build_dmnd_database:
     input:
-        "databases/{reference}.fasta"
+        lambda wc: config["annotation"]["references"][wc.reference]["fasta"]
     output:
-        "databases/{reference}.fasta.dmnd"
+        "databases/annotation/{reference}.dmnd"
     threads:
-        config["threads"]["large"]
+        config["threads"]
     shell:
-        "diamond makedb --threads {threads} --in {input} --db {input}"
+        "diamond makedb --no-auto-append --threads {threads} --in {input} --db {output}"
 
 
 rule split:
@@ -374,7 +373,7 @@ rule split:
 rule diamond_alignments:
     input:
         fasta = "results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa",
-        db = "databases/{reference}.fasta.dmnd"
+        db = "databases/annotation/{reference}.dmnd"
     output:
         temp("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:
@@ -388,10 +387,10 @@ rule diamond_alignments:
         block_size = config["annotation"].get("block_size", "2"),
         index_chunks = config["annotation"].get("index_chunks", "4")
     threads:
-        config["threads"]["large"]
+        config["threads"]
     shell:
         """diamond blastp --threads {threads} --outfmt 6 --out {output} \
-               --query {input.fasta} --db {input.db} --top {params.max_top_seqs} \
+               --query {input.fasta} --db {input.db} --top {params.top_seqs} \
                --evalue {params.e_value} --id {params.min_identity} \
                --query-cover {params.query_cover} --more-sensitive --gapopen {params.gap_open} \
                --gapextend {params.gap_extend} {params.tmpdir} --block-size {params.block_size} \
@@ -413,20 +412,39 @@ rule parse_blast:
     output:
         "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
     params:
-        subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog"
+        subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
+        namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
+        treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
+        summary_method = lambda wc: config["annotation"]["references"][wc.reference].get("summary_method", "best"),
+        aggregation_method = lambda wc: "--aggregation-method %s" % config["annotation"]["references"][wc.reference].get("aggregation_method", "") if "refseq" in wc.reference else "",
+        majority_threshold = lambda wc: "--majority-threshold %f" % config["annotation"]["references"][wc.reference].get("majority_threshold", 0.51) if "refseq" in wc.reference else "",
+        min_identity = lambda wc: config["annotation"]["references"][wc.reference].get("min_identity", "50"),
+        min_bitscore = lambda wc: config["annotation"]["references"][wc.reference].get("min_bitscore", "0"),
+        min_length = lambda wc: config["annotation"]["references"][wc.reference].get("min_length", "60"),
+        max_evalue = lambda wc: config["annotation"]["references"][wc.reference].get("max_evalue", "0.000001"),
+        max_hits = lambda wc: config["annotation"]["references"][wc.reference].get("max_hits", "10"),
+        top_fraction = lambda wc: config["annotation"]["references"][wc.reference].get("top_fraction", "0.50")
     shell:
-        """python scripts/blast2assignment.py {params.subcommand} """
+        """python scripts/blast2assignment.py {params.subcommand} \
+               --summary-method {params.summary_method} {params.aggregation_method} \
+               {params.majority_threshold} --min-identity {params.min_identity} \
+               --min-bitscore {params.min_bitscore} --min-length {params.minlength} \
+               --max-evalue {params.max_evalue} --max-hits {params.max_hits} \
+               --top-fraction {params.top_fraction} {input} {params.namemap} {params.treefile} \
+               {output}"""
 
 
-# rule merge_blast:
-#     input:
-#         "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
-#     output:
-#         "results/{eid}/annotation/{sample}_merged_assignments.tsv"
-#     shell:
-#         # input list...
-#         # script will need to sniff headers or even if it matters
-#         """python scripts/blast2assignment.py merge-tables {input}"""
+rule merge_blast:
+    input:
+        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+    output:
+        "results/{eid}/annotation/{sample}_merged_assignments.tsv"
+    params:
+        # very hacky
+        eggnog = lambda wc: "results/%s/annotation/%s/%s_assignments.tsv" % (wc.eid, wc.reference, wc.sample),
+        refseq = lambda wc: "results/%s/annotation/%s/%s_assignments.tsv" % (wc.eid, wc.reference, wc.sample)
+    shell:
+        """python scripts/blast2assignment.py merge-tables {params.refseq} {params.eggnog} {output}"""
 
 
 # rule run_maxbin:
