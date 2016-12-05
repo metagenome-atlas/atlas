@@ -1136,8 +1136,6 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
             #              }
             # }
 
-# {"taxonomy":{"levels":["phylum", "class", "order"], "KO":["ko_id", "ko_ec"]}, "kegg":["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"], "ko_level1_name":["ko_level1_name"],"ko_product":["ko_product"],"EC":["ko_ec"],"EC2":["cazy_ec"]}
-
             tax_levels = vals.get("levels", ["species"])
 
             for level in tax_levels:
