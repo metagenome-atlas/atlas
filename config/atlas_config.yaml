@@ -102,10 +102,9 @@ annotation:
     # overlapping the ORF
     minimum_overlap: 20
     # number of entries per FASTA to be aligned with DIAMOND
-    chunk_size: 100
+    chunk_size: 200000
 
-    # local alignment settings
-
+    ## local alignment settings
     # setting top_seqs to 5 will report all alignments whose score is at most 5% lower than the top alignment score for a query
     top_seqs: 5
     # maximum e-value to report alignments
@@ -131,7 +130,7 @@ annotation:
     # disk space.
     index_chunks: 4
 
-    # blast parser
+    ## blast parser
     # 'lca', 'majority', or 'best'; summary method for annotating ORFs; when
     # using LCA, it's recommended that one limits the number of hits using a
     # low top_fraction
@@ -144,23 +143,16 @@ annotation:
     # constitutes a majority fraction at tree node for 'lca-majority' ORF
     # aggregation method
     majority_threshold: 0.51
-
-  --min-length INTEGER            minimum allowable BLAST alignment length
-                                  [default: 60]
-  --max-evalue FLOAT              maximum allowable e-value of BLAST hit
-                                  [default: 1e-06]
-  --max-hits INTEGER              maximum number of BLAST hits to consider
-                                  when summarizing ORFs; can drastically alter
-                                  ORF LCA assignments if too high without
-                                  further limits  [default: 10]
-  --table-name TEXT               table name within namemap database; expected
-                                  columns are 'name', 'function', and
-                                  'taxonomy'
-  --top-fraction FLOAT            filters ORF BLAST hits by only keep hits
-                                  within this fraction of the highest
-                                  bitscore; this is recommended over --max-
-                                  hits  [default: 1]
-
+    # minimum allowable BLAST alignment length
+    min_length: 60
+    # maximum allowable e-value of BLAST hit
+    max_evalue: 0.000001
+    # maximum number of BLAST hits to consider when summarizing ORFs; can
+    # drastically alter ORF LCA assignments if too high without further limits
+    max_hits: 10
+    # 1 to disable; filters ORF BLAST hits by only keep hits within this
+    # fraction of the highest bitscore; this is recommended over max_hits
+    top-fraction: 1
 
 binning:
     threads: 12
@@ -176,44 +168,15 @@ binning:
     # to split genomes into more bins.
     marker_set: 107
 
-# this takes the form of name (for the file) and columns with which to
-# aggregate counts
-
-# Possible columns
-    # contig
-    # orf
-    # taxonomy
-    # erfc
-    # orf_taxonomy
-    # refseq_product
-    # uniprot_ac
-    # eggnog_ssid_b
-    # eggnog_species_id
-    # uniprot_id
-    # cog_func_id
-    # cog_id
-    # cog_product
-    # cog_level1_code
-    # cog_level1_name
-    # cog_level2_name
-    # cazy_id1
-    # cazy_id2
-    # cazy_class
-    # cazy_clan
-    # cazy_product
-    # cazy_gene_id
-    # cazy_taxa
-    # cazy_ec
-    # ko_id
-    # ko_level1_name
-    # ko_level2_name
-    # ko_level3_id
-    # ko_level3_name
-    # ko_gene_symbol
-    # ko_product
-    # ko_ec
-
 summary_counts:
+    # Possible columns table column values upon which to aggregate:
+        # contig, orf, taxonomy, orf_taxonomy, refseq_product, uniprot_ac
+        # eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id,
+        # cog_product, cog_level1_code, cog_level1_name, cog_level2_name,
+        # cazy_id1, cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id,
+        # cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id,
+        # ko_level3_name, ko_gene_symbol, ko_product, ko_ec
+
     # this is a special case to allow for taxon level specification
     taxonomy:
         # limit taxonomy in classification to the depth specified
