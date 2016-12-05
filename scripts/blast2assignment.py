@@ -425,7 +425,7 @@ def cli(obj):
 @click.argument("tsv", type=click.Path(exists=True))
 @click.argument("namemap", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w"))
-@click.option("--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
+@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
 @click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
 @click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
 @click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
@@ -476,6 +476,9 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
     import sqlite3
     logging.info("Parsing %s" % tsv)
 
+    if top_fraction == 1:
+        top_fraction = None
+
     print("contig", "orf", "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id", "uniprot_id",
           "cog_func_id", "cog_id", "cog_product", "cog_level1_code", "cog_level1_name",
           "cog_level2_name", "cazy_id1", "cazy_id2", "cazy_class", "cazy_clan", "cazy_product",
@@ -518,7 +521,6 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
             evalue = "NA"
             orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
             lines = []
-            idx = 0
 
             # iterate over blast hits per ORF
             for hsp in qgroup:
@@ -539,23 +541,38 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
                     evalue = toks["evalue"]
                     break
 
-                orf_hits.add(toks["sseqid"] + "_%d" % idx, toks["bitscore"])
-                idx += 1
+                orf_hits.add(toks["sseqid"], toks["bitscore"])
                 lines.append(toks)
 
             # summary method is majority and we have passing HSPs
-            if not hit_id and lines:
-                majority_id = orf_hits.majority()
-                line_idx = int(majority_id.rpartition("_")[-1])
-                toks = lines[line_idx]
-                hit_id = toks["sseqid"]
-                bitscore = toks["bitscore"]
-                evalue = toks["evalue"]
+            if summary_method == "majority" and lines:
+                hit_id = orf_hits.majority()
 
+                for toks in lines:
+                    if toks["sseqid"] == hit_id:
+                        bitscore = toks["bitscore"]
+                        evalue = toks["evalue"]
+                        break
+                if bitscore == "NA":
+                    logging.critical("The majority ID was not assigned a bitscore")
+
+            # everything could have been filtered out due to user constraints
             if hit_id:
-                cursor.execute('SELECT uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code, cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id, cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec FROM %s WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
+                cursor.execute('SELECT uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, \
+                                       cog_func_id, cog_id, cog_product, cog_level1_code, \
+                                       cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, \
+                                       cazy_class, cazy_clan, cazy_product, cazy_gene_id, \
+                                       cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, \
+                                       ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, \
+                                       ko_ec \
+                                FROM %s \
+                                WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
                 try:
-                    uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code, cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id, cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
+                    uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, \
+                        cog_product, cog_level1_code, cog_level1_name, cog_level2_name, cazy_id1, \
+                        cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id, cazy_taxa, \
+                        cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id, \
+                        ko_level3_name, ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
                 # legacy before database was pruned; can have hits not in metadata
                 except TypeError:
                     pass
@@ -575,7 +592,7 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
 @click.argument("namemap", type=click.Path(exists=True))
 @click.argument("treefile", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w"))
-@click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs; when using LCA, it's recommended that one limits the number of hits using --top-fraction; 'best' is fastest")
+@click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs; when using LCA, it's recommended that one limits the number of hits using --top-fraction though function will be assigned per the best hit; 'best' is fastest")
 @click.option("-a", "--aggregation-method", type=click.Choice(["lca", "lca-majority", "majority"]), default="lca-majority", show_default=True, help="summary method for aggregating ORF taxonomic assignments to contig level assignment; 'lca' will result in most stringent, least specific assignments")
 @click.option("--majority-threshold", type=float, default=0.51, show_default=True, help="constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method")
 @click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
@@ -617,7 +634,7 @@ def refseq_parsing(tsv, namemap, treefile, output, summary_method, aggregation_m
     """
     logging.info("Parsing %s" % tsv)
     tree = Tree(treefile)
-    orf_assignments = parse_blast_results_with_tree(tsv, namemap, orf_summary=summary_method, tree=tree,
+    orf_assignments = parse_blast_results_with_tree(tsv, namemap, summary_method=summary_method, tree=tree,
                           min_identity=min_identity, min_bitscore=min_bitscore,
                           min_length=min_length, max_evalue=max_evalue,
                           max_hits_per_orf=max_hits, table_name=table_name,
@@ -627,7 +644,7 @@ def refseq_parsing(tsv, namemap, treefile, output, summary_method, aggregation_m
     logging.info("Complete")
 
 
-def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_identity=60,
+def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min_identity=60,
                                   min_bitscore=0, min_length=60, max_evalue=0.000001,
                                   max_hits_per_orf=10, top_fraction_of_hits=None,
                                   table_name="refseq", lca_threshold=1):
@@ -636,7 +653,7 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
     Args:
         blast_tab (str): file path to blast TSV file
         name_map (dict): dict of tuples from parse_tree_annotation
-        orf_summary (dict): method of ORF annotation selection
+        summary_method (dict): method of ORF annotation selection
 
         lca_threshold (float): the first parent above this fraction of representation (its count is
             greater than the total * lca_threshold)
@@ -650,7 +667,11 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
     """
     import sqlite3
 
-    assert orf_summary in ["lca", "best", "majority"]
+    # allowing 1 and 0 to disable
+    if top_fraction_of_hits == 1:
+        top_fraction_of_hits = None
+
+    assert summary_method in ["lca", "best", "majority"]
     contigs = defaultdict(dict)
 
     with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(blast_tab) as blast_tab_fh:
@@ -664,9 +685,10 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
             bitscore = "NA"
             evalue = "NA"
             orf_hits = BlastHits(max_hits=max_hits_per_orf, top_fraction=top_fraction_of_hits)
+            lines = []
 
             # iterate over blast hits per ORF
-            for i, hsp in enumerate(qgroup):
+            for hsp in qgroup:
                 toks = dict(zip(BLAST6, hsp.strip().split("\t")))
                 if (int(toks["length"]) < min_length or
                         float(toks["pident"]) < min_identity or
@@ -682,27 +704,44 @@ def parse_blast_results_with_tree(blast_tab, name_map, orf_summary, tree, min_id
                 # update taxonomy based on pident
                 # current_taxonomy = tree.climb_tree(current_taxonomy, float(toks["pident"]))
 
-                # protein function is always assigned to best, passing alignment
-                if not protein_set:
+                if summary_method == "best":
+                    taxonomy_id = current_taxonomy
                     protein_function = current_function
                     bitscore = toks["bitscore"]
                     evalue = toks["evalue"]
-                    protein_set = True
-                    if orf_summary == "best":
-                        taxonomy_id = current_taxonomy
-                        break
+                    break
+
                 orf_hits.add(current_taxonomy, toks["bitscore"])
+                toks["current_function"] = current_function
+                toks["current_taxonomy"] = current_taxonomy
+                lines.append(toks)
 
-                # TODO if majority, function should be grabbed from its sseqid
-
-            # ensure we have passing hits
-            if len(orf_hits) > 0 and not orf_summary == "best":
-                if orf_summary == "majority":
+            # summary method is majority and we have passing HSPs
+            if not summary_method == "best" and lines:
+                print(summary_method)
+                if summary_method == "majority":
+                    print(orf_hits.names)
                     taxonomy_id = orf_hits.majority()
-                # perform LCA to obtain taxonomy ID
+                    print(taxonomy_id)
+                    print(lines)
+                    for toks in lines:
+                        if toks["current_taxonomy"] == taxonomy_id:
+                            bitscore = toks["bitscore"]
+                            evalue = toks["evalue"]
+                            protein_function = toks["current_function"]
+                            break
+                # summary method is 'lca'
                 else:
                     orf_hits.names.reverse()
                     taxonomy_id = tree.lca(orf_hits.names, threshold=lca_threshold)
+                    # grabbing best hit's bitscore and evalue
+                    bitscore = lines[0]["bitscore"]
+                    evalue = lines[0]["evalue"]
+                    protein_function = lines[0]["current_function"]
+
+                if bitscore == "NA":
+                    logging.critical("The summarized ID (%s) was not assigned metadata" % taxonomy_id)
+
             contigs[contig_name][orf_idx] = (protein_function, taxonomy_id, bitscore, evalue)
 
     return contigs
