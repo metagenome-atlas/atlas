@@ -1067,6 +1067,7 @@ def merge_tables(refseq, eggnog, output):
 
     Headers are required and should contain 'contig' and 'orf' column labels.
     """
+    # input file order doesn't actually matter...
     import pandas as pd
 
     index_cols = ["contig", "orf"]
@@ -1193,6 +1194,8 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
                     df[tax_name] = df["taxonomy"].apply(lambda x: ";".join(x.split(";")[0:level_idx]) if isinstance(x, str) else x)
 
                 for subname, subvals in vals.items():
+                    # remove duplicates and entries not in the expected merged header
+                    subvals = [i for i in list(set(subvals)) if i in MERGED_HEADER]
                     if subname.lower() == "levels": continue
                     table_name = "%s_%s" % (subname, tax_name)
                     logging.info("Writing %s table to %s_%s%s" % (table_name, prefix, table_name, suffix))
@@ -1204,6 +1207,8 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
 
         else:
             logging.info("Writing %s table to %s_%s%s" % (name, prefix, name, suffix))
+            # remove duplicates and entries not in the expected merged header
+            vals = [i for i in list(set(vals)) if i in MERGED_HEADER]
             # adds count per combination
             vals.append("count")
             # drops unwanted columns
