@@ -1,3 +1,4 @@
+import json
 import os
 from glob import glob
 from subprocess import check_output
@@ -36,63 +37,37 @@ def pattern_search(path, patterns):
     return [os.path.basename(i) for i in files]
 
 
-# snakemake --configfile config/atlas_config.yaml --config eid=test-experiment
-configfile: "./config/atlas_config.yaml"
+def get_count_tables(config, key):
+    expected_tables = []
+    for name, vals in config[key].items():
+        if name.lower() == "taxonomy":
+            tax_levels = vals.get("levels", ["species"])
+            for level in tax_levels:
+                level = level.lower()
+                tax_name = "taxonomy_%s" % level
+                for subname, subvals in vals.items():
+                    if subname.lower() == "levels": continue
+                    expected_tables.append("%s_%s" % (subname, tax_name))
+        else:
+            expected_tables.append(name)
+    return expected_tables
 
-EID = config['eid']
-SAMPLES = get_samples(os.path.join("data", EID), 200)
-CONTAMINANT_DBS = pattern_search("databases/contaminant", ["*.fa", "*.fasta"])
-FUNCTIONAL_DBS = pattern_search("databases/functional", ["*.fa", "*.fasta"])
-TAXONOMIC_DBS = pattern_search("databases/taxonomic", ["*.fa", "*.fasta"])
 
-DECON_DBS = list(config["contamination_filtering"]["references"].keys())
-
+SAMPLES = get_samples(os.path.join("data", config["eid"]), 200)
+TABLES = get_count_tables(config, "summary_counts")
 
 rule all:
     input:
-        expand("results/{eid}/joined/{sample}.extendedFrags.fastq", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/joined/{sample}.hist", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/joined/{sample}.notCombined_1.fastq", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/joined/{sample}.notCombined_2.fastq", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=EID, sample=SAMPLES, decon_dbs=DECON_DBS),
-        expand("results/{eid}/decon/{sample}_refstats.txt", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=EID, sample=SAMPLES)
-
-
-rule build_functional_databases:
-    input:
-        functional_db = "databases/functional/{db}"
-    output:
-        f1 = "databases/functional/{db}.bck",
-        f2 = "databases/functional/{db}.des",
-        f3 = "databases/functional/{db}.prj",
-        f4 = "databases/functional/{db}.sds",
-        f5 = "databases/functional/{db}.ssp",
-        f6 = "databases/functional/{db}.suf",
-        f7 = "databases/functional/{db}.tis",
-        f8 = "databases/functional/{db}-names.txt"
-    message:
-        "Formatting functional databases"
-    shell:
-        "lastdb+ {input.functional_db} {input.functional_db} -p"
-
-
-rule build_taxonomic_databases:
-    input:
-        taxonomic_db = "databases/taxonomic/{db}"
-    output:
-        f1 = "databases/taxonomic/{db}.bck",
-        f2 = "databases/taxonomic/{db}.des",
-        f3 = "databases/taxonomic/{db}.prj",
-        f4 = "databases/taxonomic/{db}.sds",
-        f5 = "databases/taxonomic/{db}.ssp",
-        f6 = "databases/taxonomic/{db}.suf",
-        f7 = "databases/taxonomic/{db}.tis"
-    message:
-        "Formatting taxonomic databases"
-    shell:
-        "lastdb+ {input.taxonomic_db} {input.taxonomic_db}"
+        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
+        expand("results/{eid}/decon/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/counts/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
 
 
 rule quality_filter_reads:
@@ -113,7 +88,7 @@ rule quality_filter_reads:
         qtrim = "rl",
         minlength = config['filtering']['minimum_passing_read_length']
     threads:
-        24
+        config["threads"]
     shell:
         """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
                rref={params.rref} lref={params.lref} mink={params.mink} \
@@ -144,7 +119,7 @@ rule join_reads:
     log:
         "results/{eid}/logs/{sample}_flash.log"
     threads:
-        24
+        config["threads"]
     shell:
         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
                --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
@@ -169,7 +144,7 @@ rule error_correction:
     output:
         "results/{eid}/joined/{sample}_corrected.fastq.gz"
     threads:
-        24
+        config["threads"]
     shell:
         "tadpole.sh in={input} out={output} mode=correct threads={threads}"
 
@@ -182,7 +157,8 @@ if config["qual_method"] == "expected_error":
             phred = config.get("phred_offset", 33),
             maxee = config["filtering"].get("maximum_expected_error", 2),
             maxns = config["filtering"].get("maxns", 3)
-        threads: 1
+        threads:
+            1
         shell: """vsearch --fastq_filter {input} --fastqout {output} --fastq_ascii {params.phred} \
                       --fastq_maxee {params.maxee} --fastq_maxns {params.maxns}"""
 else:
@@ -200,7 +176,7 @@ else:
             headcrop = "" if not config["filtering"].get("headcrop", 0) else "HEADCROP:%s" % config["filtering"]["headcrop"],
             minlen = "MINLEN:%s" % config["filtering"]["minimum_passing_read_length"]
         threads:
-            24
+            config["threads"]
         shell:
             """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
                    {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
@@ -210,7 +186,7 @@ rule decontaminate_joined:
     input:
         "results/{eid}/quality_filter/{sample}_filtered.fastq"
     output:
-        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in DECON_DBS],
+        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in list(config["contamination_filtering"]["references"].keys())],
         stats = "results/{eid}/decon/{sample}_refstats.txt",
         clean = "results/{eid}/decon/{sample}_clean.fastq.gz"
     params:
@@ -223,7 +199,7 @@ rule decontaminate_joined:
         ambiguous = config['contamination_filtering'].get('ambiguous', "best"),
         k = config["contamination_filtering"].get("k", 15)
     threads:
-        24
+        config["threads"]
     shell:
         """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
                {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
@@ -259,496 +235,241 @@ rule fastqc:
     params:
         output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
     threads:
-        24
+        config["threads"]
     shell:
         "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
 
 
-# rule annotate_reads_rRNA:
-#     input:
-#         rule.interleave_reads.output,
-#         trim_reads = rule.trim_reads.joined.output
-#     output:
-#         rrna = "output/{eid}/annotation/reads/{sample}_{database}"
-#     message:
-#         "Annotation of rRNAs in quality controlled reads"
-#     params:
-#         top_hit = config['lastplus']['top_best_hit'],
-#         e_value_cutoff = config['lastplus']['e_value_cutoff'],
-#         bit_score_cutoff = config['lastplus']['bit_score_cutoff']
-#     threads:
-#         config['lastplus']['threads']
-#     shell:
-#         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
-#             {input.database} {input.trim_reads}"""
+rule megahit_assembly:
+    input:
+        "results/{eid}/decon/{sample}_final.fastq.gz"
+    output:
+        "results/{eid}/assembly/{sample}/{sample}.contigs.fa"
+    params:
+        memory = config['assembly']['memory'],
+        min_count = config['assembly']['minimum_count'],
+        k_min = config['assembly']['kmer_min'],
+        k_max = config['assembly']['kmer_max'],
+        k_step = config['assembly']['kmer_step'],
+        merge_level = config['assembly']['merge_level'],
+        prune_level = config['assembly']['prune_level'],
+        low_local_ratio = config['assembly']['low_local_ratio'],
+        min_contig_len = config['assembly']['minimum_contig_length'],
+        outdir = lambda wildcards: "results/%s/assembly/%s" % (wildcards.eid, wildcards.sample)
+    threads:
+        config["threads"]
+    log:
+        "results/{eid}/assembly/{sample}/{sample}.log"
+    shell:
+        """megahit --num-cpu-threads {threads} --read {input} --continue \
+               --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
+               --out-dir {params.outdir} --out-prefix {wildcards.sample} \
+               --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
+               --merge-level {params.merge_level} --prune-level {params.prune_level} \
+               --low-local-ratio {params.low_local_ratio}"""
 
 
-# rule taxonomic_placement_rRNAs_LCA:
-#     input:
-#         rule.annotate_reads_rRNA.output
-#     output:
-#         rrna_parsed = "output/{eid}/annotation/reads/{sample}_{database}"
-#     message:
-#         "Parse rRNA reads and place taxonomy using LCA++"
-#     params:
-#         # TODO
-#     threads:
-#         config['lastplus']['threads']
-#     shell:
-
-
-# # will want to change this as we add assemblers
-# rule assemble:
-#     input:
-#         # TODO
-#     output:
-#         # TODO
-
-
-# #####################
-# ##Metagenomes only##
-# ####################
-
-# rule megahit:
-#     input:
-#         rules.filter_contaminants.output
-#     output:
-#         "output/{eid}/assembly/{sample}.contigs.fa"
-#     params:
-#         memory = config['assembly']['memory'],
-#         min_count = config['assembly']['minimum_count'],
-#         k_min = config['assembly']['kmer_min'],
-#         k_max = config['assembly']['kmer_max'],
-#         k_step = config['assembly']['kmer_step'],
-#         merge_level = config['assembly']['merge_level'],
-#         prune_level = config['assembly']['prune_level'],
-#         low_local_ratio = config['assembly']['low_local_ratio'],
-#         min_contig_len = config['assembly']['minimum_contig_length']
-#     message:
-#         "Assembling using megahit"
-#     threads:
-#         config['assembly']['threads']
-#     shell:
-#         """megahit --num-cpu-threads {threads} --memory {params.memory} --read {input} \
-#         --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
-#         --out-dir output/{wildcards.eid}/assembly --out-prefix {wildcards.sample} \
-#         --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
-#         --merge-level {params.merge_level} --prune-level {params.prune_level} \
-#         --low-local-ratio {params.low_local_ratio}"""
-
-
-# rule metaspades:
-#     input:
-#         rules.filter_contaminants.output
-#     output:
-#         "output/{eid}/assembly/{sample}"
-#     params:
-#         memory = config['assembly']['memory']
-#     message:
-#         "Assembling using metaspades"
-#     threads:
-#         config['assembly']['threads']
-#     shell:
-#         """metaspades.py -s1 {input} -o {output} -t {threads} -m {params.memory}"""
-
-# #############################
-# ## Metatranscriptomes only ##
-# #############################
-
-# rule trinity:
-#     input:
-#         # need to replace with reference to rule
-#         extendedFrags = 'output/{eid}/trimmed/{sample}_trimmed_extendedFrags.fastq',  # after we fix trimming!
-#         interleaved = 'output/{eid}/interleaved/{sample}_trimmed_interleaved.fastq'
-#     output:
-#         "output/{eid}/assembly/{sample}.contigs.fa"
-#     params:
-#         seqtype = config['assembly']['seqtype'],  # default fastq
-#         read_pairing = config['assembly']['single'],  # default single for extendedFrags
-#         memory = config['assembly']['max_memory'],
-#         run_as_paired = config['assembly']['run_as_paired']
-#     message:
-#         "Assembling using trinity"
-#     threads:
-#         config['assembly']['threads']
-#     shell:
-#         """Trinity --seqType {params.seqtype} --single {input.extendedFrags}, {input.interleaved} \
-#         --run_as_paired --max_memory {params.max_memory} --CPU {threads}"""
-
-
-# rule rnaspades:
-#     input:
-#         rules.filter_contaminants.output
-#     output:
-#         "output/{eid}/assembly/{sample}"
-#     params:
-#         memory = config['assembly']['memory']
-#     message:
-#         "Assembling using metaspades"
-#     threads:
-#         config['assembly']['threads']
-#     shell:
-#     """rnaspades.py -s1 {input} -o {output} -t {threads} -m {params.memory}"""
-
-
-# ########################
-# ## Moleculo data only ##
-# ########################
-
-# rule truspades:
-#     input:
-#         input_dir = 'output/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R1.fastq', 'output/{eid}/trimmed/{sample}_trimmed_barcodes1-384_R2.fastq'
-#     output:
-#         "output/{eid}/assembly/{sample}.contigs.fa"
-#     message:
-#         "Assembling moleculo data with truspades"
-#     threads:
-#         config['assembly']['threads']
-#     shell:
-#         """truspades.py --input-dir input_dir/ -o output_dir/ -t {threads}"""
-
-# #################################################################################################################################3
-
-# rule length_filter:
-#     input:
-#         rules.assemble.output
-#     output:
-#         passing = "output/{eid}/assembly/{sample}_length_pass.fa",
-#         fail = "output/{eid}/assembly/{sample}_length_fail.fa"
-#     params:
-#         min_contig_length = config['assembly']['filtered_contig_length']
-#     shell:
-#         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-#         {input} {output.passing} {output.fail}"""
+rule length_filter:
+    input:
+        "results/{eid}/assembly/{sample}/{sample}.contigs.fa"
+    output:
+        passing = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa",
+        failing = "results/{eid}/assembly/{sample}/{sample}_length_fail.fa"
+    params:
+        min_contig_length = config['assembly']['filtered_contig_length']
+    threads:
+        1
+    shell:
+        """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
+               {input} {output.passing} {output.failing}"""
 
 
 # rule assembly_stats:
-#     input:
-#         assembled = rules.assembly.output,
-#         filtered = rules.length_filter.output
-#     output:
-#         assembled = "output/{eid}/assembly/{sample}_length_fail_assembly-stats.txt",
-#         filtered = "output/{eid}/assembly/{sample}_length_pass_assembly-stats.txt"
-#     message:
-#         "Obtaining assembly statistics"
-#     shell:
-#         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}
-#            perl scripts/CountFasta.pl {input.filtered} > {output.filtered}
-#         """
 
 
-# rule merge_assembly_contigs_step1:
-#     input:
-#         rules.length_filter.output #>1k contigs
-#     output:
-#         "output/{eid}/assembly/{sample}_cap3-out.fa"
-#     message:
-#         "Merging contigs with CAP3"
-#     shell:
-#         """./cap3 {input} -p 95 > {output}.out &"""
+rule build_assembly_index:
+    input:
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa"
+    output:
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.amb",
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.ann",
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.bwt",
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.pac",
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.sa"
+    shell:
+        "bwa index {input}"
 
 
-# rule length_filter_long_step1:
-#     input:
-#         rules.assemble.output
-#     output:
-#         passing = "output/{eid}/assembly/{sample}_length_pass.fa",
-#         fail = "output/{eid}/assembly/{sample}_length_fail.fa"
-#     params:
-#         min_contig_length = config['assembly']['filtered_contig_length']
-#     shell:
-#         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-#         {input} {output.passing} {output.fail}"""
+rule align_reads_to_assembly:
+    input:
+        fastq = "results/{eid}/decon/{sample}_final.fastq.gz",
+        ref = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa",
+        idx = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.bwt"
+    output:
+        "results/{eid}/aligned_reads/{sample}.bam"
+    threads:
+        config["threads"]
+    shell:
+        """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
+               | samtools view -@ {threads} -bS - \
+               | samtools sort -@ {threads} -T {wildcards.sample} -o {output} -O bam -"""
 
 
-# rule length_filter_long_step2:
-#     input:
-#         rules.merge_assembly_contigs_step1.output
-#     output:
-#         passing = "output/{eid}/assembly/{sample}_length_pass.fa",
-#         fail = "output/{eid}/assembly/{sample}_length_fail.fa"
-#     params:
-#         min_contig_length = config['assembly']['filtered_contig_length']
-#     shell:
-#         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-#         {input} {output.passing} {output.fail}"""
+rule prodigal_orfs:
+    input:
+        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa"
+    output:
+        prot = "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
+        nuc = "results/{eid}/annotation/orfs/{sample}_length_pass.fna",
+        gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+    params:
+        g = config['annotation']['translation_table']
+    shell:
+        """prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} \
+               -g {params.g} -p meta"""
 
 
-# rule merge_long_contigs:
-#     input:
-#         s1 = rules.length_filter_long_step1.output
-#         s2 = rules.length_filter_long_step2.output
-#     output:
-#         "output/{eid}/assembly/{sample}_merged_contigs.fa"
-#     message:
-#         "Merging long contigs"
-#     run:
-#         IO.cat_reads(input.s1, input.s2, output)
+rule gff_to_gtf:
+    input:
+        "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+    output:
+        "results/{eid}/annotation/orfs/{sample}_length_pass.gtf"
+    run:
+        import re
+        t = re.compile(r'ID=[0-9]+_([0-9]+);')
+        with open(output[0], "w") as fh, open(input[0]) as gff:
+            print("##gff-version  3", file=fh)
+            for line in gff:
+                if line.startswith("#"): continue
+                toks = line.strip().split("\t")
+                orf = t.findall(toks[-1])[0]
+                gene_id = toks[0] + "_" + orf
+                toks[-1] = toks[-1] + "gene_id " + gene_id + ";"
+                print(*toks, sep="\t", file=fh)
 
 
-# rule merge_assembly_contigs_formatting:
-#     input:
-#         rules.merge_long_contigs.output
-#     output:
-#         "output/{eid}/assembly/{sample}_merged_contigs.afg"
-#     message:
-#         "Formatting all long contigs with minimus2"
-#     shell:
-#         "toAmos -s {input} -o {input}.afg"
+rule counts_per_region:
+    input:
+        gtf = "results/{eid}/annotation/orfs/{sample}_length_pass.gtf",
+        bam = "results/{eid}/aligned_reads/{sample}.bam"
+    output:
+        summary = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.summary.txt",
+        counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
+    params:
+        min_read_overlap = config['annotation']['minimum_overlap']
+    threads:
+        config["threads"]
+    shell:
+        """verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
+               --singleEnd -t CDS -z 5 -a {input.gtf} \
+               -o results/{wildcards.eid}/annotation/orfs/{wildcards.sample}_length_pass \
+               {input.bam} 2> /dev/null"""
 
 
-# rule merge_assembly_contigs:
-#     input:
-#         rules.merge_assembly_contigs_formatting.output
-#     output:
-#         "output/{eid}/assembly/{sample}_hybrid_assembly.fa"
-#     message:
-#         "Merging all long contigs with minimus2"
-#     params:
-#         overlap = config['OVERLAP']
-#         maxtrim = contig['MAXTRIM']
-#     shell:
-#         """minimus2 {input} -D REFCOUNT=0 -D MINID=99.9 -D OVERLAP={params.overlap} \
-#         -D MAXTRIM={params.maxtrim} -D WIGGLE=15 -D CONSERR=0.01"""
+rule build_dmnd_database:
+    input:
+        lambda wc: config["annotation"]["references"][wc.reference]["fasta"]
+    output:
+        "databases/annotation/{reference}.dmnd"
+    threads:
+        config["threads"]
+    shell:
+        "diamond makedb --no-auto-append --threads {threads} --in {input} --db {output}"
 
 
-# rule assembly_stats_hybrid:
-#     input:
-#         rules.merge_assembly_contigs.output
-#     output:
-#         hybrid_assembled = "output/{eid}/assembly/{sample}_hybrid_assembly-stats.txt"
-#     message:
-#         "Obtaining hybrid assembly statistics"
-#     shell:
-#         """perl scripts/CountFasta.pl {input.assembled} > {output.assembled}"""
+rule split:
+    input:
+        "results/{eid}/annotation/orfs/{sample}_length_pass.faa"
+    output:
+        temp(dynamic("results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa"))
+    params:
+        chunk_size = config["annotation"].get("chunk_size", "250000")
+    shell:
+        "python scripts/fastx.py split-fasta --chunk-size {params.chunk_size} {input}"
 
 
-# rule map_to_assembly_db_format:
-#     input:
-#         assembly_db = "assembly/database/{db}"
-#         assembly_db_name = os.path.splitext(assembly_db)
-#     output:
-#         f1 = "{fasta}.1.bt2",
-#         f2 = "{fasta}.2.bt2",
-#         f3 = "{fasta}.3.bt2",
-#         f4 = "{fasta}.4.bt2",
-#         r1 = "{fasta}.rev.1.bt2",
-#         r2 = "{fasta}.rev.2.bt2"
-#     message:
-#         "Formatting assembly for mapping"
-#     shell:
-#         "bowtie2-build {input.assembly_db} {input.assembly_db_name}"
+rule diamond_alignments:
+    input:
+        fasta = "results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa",
+        db = "databases/annotation/{reference}.dmnd"
+    output:
+        temp("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+    params:
+        tmpdir = "--tmpdir %s" % config.get("temporary_directory", "") if config.get("temporary_directory", "") else "",
+        top_seqs = lambda wc: config["annotation"]["references"][wc.reference].get("top_seqs", "5"),
+        e_value = lambda wc: config["annotation"]["references"][wc.reference].get("e_value", "0.000001"),
+        min_identity = lambda wc: config["annotation"]["references"][wc.reference].get("min_identity", "50"),
+        query_cover = lambda wc: config["annotation"]["references"][wc.reference].get("query_coverage", "60"),
+        gap_open = lambda wc: config["annotation"]["references"][wc.reference].get("gap_open", "11"),
+        gap_extend = lambda wc: config["annotation"]["references"][wc.reference].get("gap_extend", "1"),
+        block_size = lambda wc: config["annotation"]["references"][wc.reference].get("block_size", "2"),
+        index_chunks = lambda wc: config["annotation"]["references"][wc.reference].get("index_chunks", "4")
+    threads:
+        config["threads"]
+    shell:
+        """diamond blastp --threads {threads} --outfmt 6 --out {output} \
+               --query {input.fasta} --db {input.db} --top {params.top_seqs} \
+               --evalue {params.e_value} --id {params.min_identity} \
+               --query-cover {params.query_cover} --more-sensitive --gapopen {params.gap_open} \
+               --gapextend {params.gap_extend} {params.tmpdir} --block-size {params.block_size} \
+               --index-chunks {params.index_chunks}"""
 
 
-# rule map_to_assembly:
-#     input:
-#         joined = rules.join_reads.joined
-#         interleaved = rules.interleave_reads.output
-#         ji = rules.merge_joined_interleaved.output
-#         r1 = rules.trim_reads.output.r1
-#         r2 = rules.trim_reads.output.r2
-#         contigs = rules.megahit.output
-#         prefix = os.path.splitext(contigs)
-#     output:
-#         joined = 'output/{eid}/coverage/{sample}_joined.sam'
-#         interleaved = 'output/{eid}/coverage/{sample}_interleaved.sam'
-#         ji = 'output/{eid}/coverage/{sample}_joined_interleaved.sam'
-#         r1 = 'output/{eid}/coverage/{sample}_r1.sam'
-#         r2 = 'output/{eid}/coverage/{sample}_r2.sam'
-#     message:
-#         "Mapping to assembly"
-#     shell:
-#         """bowtie2 -p {threads} -x {input.prefix} --very-sensitive-local \
-#         -q -U {input.joined}, {input.interleaved}, {input.ji}, {input.r1}, {input.r2}"""
+rule merge_alignments:
+    input:
+        dynamic("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+    output:
+        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+    shell:
+        "cat {input} | sort -k1,1 -k12,12rn > {output}"
 
 
-# rule fgsplus_passed:
-#     input:
-#         rules.length_filter.output.passing
-#     output:
-#         "output/{eid}/annotation/orfs/{sample}_length_pass.faa",
-#     params:
-#         sem = config['annotation']['sequencing_error_model'],
-#         memory = config['annotation']['memory']
-#     message:
-#         "Calling protein-coding ORFS with FGS+"
-#     threads:
-#         config['annotation']['threads']
-#     shell:
-#         "FGS+ -s {input} -o {output} -w 1 -t {params.sem} -p {threads} -m {params.memory}"
+rule parse_blast:
+    input:
+        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+    output:
+        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+    params:
+        subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
+        namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
+        treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
+        summary_method = lambda wc: config["annotation"]["references"][wc.reference].get("summary_method", "best"),
+        aggregation_method = lambda wc: "--aggregation-method %s" % config["annotation"]["references"][wc.reference].get("aggregation_method", "") if "refseq" in wc.reference else "",
+        majority_threshold = lambda wc: "--majority-threshold %f" % config["annotation"]["references"][wc.reference].get("majority_threshold", 0.51) if "refseq" in wc.reference else "",
+        min_identity = lambda wc: config["annotation"]["references"][wc.reference].get("min_identity", "50"),
+        min_bitscore = lambda wc: config["annotation"]["references"][wc.reference].get("min_bitscore", "0"),
+        min_length = lambda wc: config["annotation"]["references"][wc.reference].get("min_length", "60"),
+        max_evalue = lambda wc: config["annotation"]["references"][wc.reference].get("max_evalue", "0.000001"),
+        max_hits = lambda wc: config["annotation"]["references"][wc.reference].get("max_hits", "10"),
+        top_fraction = lambda wc: config["annotation"]["references"][wc.reference].get("top_fraction", "0.50")
+    shell:
+        """python scripts/blast2assignment.py {params.subcommand} \
+               --summary-method {params.summary_method} {params.aggregation_method} \
+               {params.majority_threshold} --min-identity {params.min_identity} \
+               --min-bitscore {params.min_bitscore} --min-length {params.min_length} \
+               --max-evalue {params.max_evalue} --max-hits {params.max_hits} \
+               --top-fraction {params.top_fraction} {input} {params.namemap} {params.treefile} \
+               {output}"""
 
 
-# rule fgsplus_failed:
-#     input:
-#         rules.length_filter.output.fail
-#     output:
-#         "output/{eid}/annotation/orfs/{sample}_length_fail.faa"
-#     params:
-#         sem = config['annotation']['sequencing_error_model'],
-#         memory = config['annotation']['memory']
-#     message:
-#         "Calling protein-coding ORFS with FGS+"
-#     threads:
-#         config['annotation']['threads']
-#     shell:
-#         "FGS+ -s {input} -o {output} -w 1 -t {params.sem} -p {threads} -m {params.memory}"
+rule merge_blast:
+    input:
+        ["results/{eid}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
+    output:
+        "results/{eid}/annotation/{sample}_merged_assignments.tsv"
+    shell:
+        "python scripts/blast2assignment.py merge-tables {input} {output}"
 
 
-# rule prodigal_orfs_passed:
-#     input:
-#         rules.length_filter.output.passing
-#     output:
-#         prot = "output/{eid}/annotation/orfs/{sample}_length_pass.faa",
-#         nuc = "output/{eid}/annotation/orfs/{sample}_length_pass.fasta",
-#         gff = "output/{eid}/annotation/orfs/{sample}_length_pass.gff"
-#     params:
-#         g = config['annotation']['translation_table']
-#     message:
-#         "Calling protein-coding ORFS with prodigal"
-#     shell:
-#         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
-
-
-# rule prodigal_orfs_failed:
-#     input:
-#         rules.length_filter.output.fail
-#     output:
-#         prot = "output/{eid}/annotation/orfs/{sample}_length_fail.faa",
-#         nuc = "output/{eid}/annotation/orfs/{sample}_length_fail.fasta",
-#         gff = "output/{eid}/annotation/orfs/{sample}_length_fail.gff"
-#     params:
-#         g = config['annotation']['translation_table']
-#     message:
-#         "Calling protein-coding ORFS with prodigal"
-#     shell:
-#         "prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} -g {params.g} -p meta"
-
-
-# rule maxbin_bins:
-#     input:
-#         reads = rules.filter_contaminants.output
-#         contigs = rules.assemble.output
-#     output:
-#         bins = "output/{eid}/binning/{sample}.fasta",
-#         abundance = "output/{eid}/binning/{sample}.abund1",
-#         log = "output/{eid}/binning/{sample}.log",
-#         marker = "output/{eid}/binning/{sample}.marker",
-#         summary = "output/{eid}/binning/{sample}.summary",
-#         tooshort = "output/{eid}/binning/{sample}.tooshort",
-#         noclass = "output/{eid}/binning/{sample}.noclass"
-#     params:
-#         min_contig_len = config['binning']['minimum_contig_length'],
-#         max_iteration = config['binning']['maximum_iterations'],
-#         prob_threshold = config['binning']['probability_threshold'],
-#         markerset = config['binning']['marker_set']
-#     threads:
-#         config['binning']['threads']
-#     message:
-#         "Binning genomes with MaxBin2.2"
-#     shell:
-#         """run_MaxBin.pl -contig {input.contigs} -out {output} -reads {input.reads} \
-#         -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
-#         -thread {threads} -markerset {params.markerset}"""
-
-
-# rule lastplus_orfs
-#     input:  # how to do wrap rule or ifelse?
-#         fgsplus_orfs = rules.fgsplus.output,
-#         prodigal_orfs = rules.prodigal.output,
-#         database = rules.format_database.output
-#     output:
-#         annotation = "output/{eid}/annotation/last/{sample}_{database}"
-#     params:
-#         top_hit = config['lastplus']['top_best_hit'],
-#         e_value_cutoff = config['lastplus']['e_value_cutoff'],
-#         bit_score_cutoff = config['lastplus']['bit_score_cutoff']
-#     threads:
-#         config['lastplus']['threads']
-#     message:
-#         "Annotation of Protein-coding ORFs with Last+"
-#     shell:
-#         """lastal+ -P {threads} -K {params.top_hit} -E {params.e_value_cutoff} -S {params.bit_score_cutoff} -o {output} \
-#         {input.database} {input.fgsplus_orfs}"""
-
-# rule parse_lastplus_lca
-#     input:
-#         last = rules.lastplus.output
-#     output:
-#         annotation = "output/{eid}/annotation/last/{sample}_{database}"
-#     params:
-#         #fill
-#     threads
-#         #fill
-#     message:
-#         "Running last+ parsing and taxonomic assignment LCA+"
-#     shell:
-#         #fill
-
-# rule generate_gtf
-#     input:
-#         LCA = rules.lcaparselast.output
-#     output:
-#         gff = "output/{eid}/annotation/quantification/{sample}.gtf"
-#     message:
-#         "Generate annotated gtf for read quantification"
-#     shell:
-#         "python src/generate_gff.py {input} {output}"
-
-#  rule run_counting
-#     input:
-#         gff = rules.generategtf.output
-#         sam = rules.maptoassembly.output #aligned only
-#     output:
-#         verse_counts = "output/{eid}/annotation/quantification/{sample}.counts"
-#     message:
-#         "Generate counts from reads aligning to contig assembly using VERSE"
-#     shell:
-#         """verse -a {input.gft} -t {independentassign.default} -g {contig_id} -z 1 -o {output} {input.sam}"""
-
-#  rule get_read_counts #from jeremy zucker scripts
-#     input:
-#         verse_counts = rules.runcounting.output
-#     output:
-#         verse_read_counts = "output/{eid}/annotation/quantification/{sample}_read_counts.tsv"
-#     message:
-#         "Generate read frequencies from VERSE"
-#     shell:
-#         """python get_read_counts.py --read_count_files {input} --out {output}"""
-
-#  rule get_function_counts #from jeremy zucker scripts
-#     input:
-#         read_counts = rules.getreadcounts.output
-#         annotation_summary_table = rules.lcaparselast.output
-#     output:
-#         functional_counts_ec = "output/{eid}/annotation/quantification/{sample}_ec.tsv"
-#         functional_counts_cog = "output/{eid}/annotation/quantification/{sample}_cog.tsv"
-#         functional_counts_ko = "output/{eid}/annotation/quantification/{sample}_ko.tsv"
-#         functional_counts_dbcan = "output/{eid}/annotation/quantification/{sample}_dbcan.tsv"
-#         functional_counts_metacyc = "output/{eid}/annotation/quantification/{sample}_metacyc.tsv"
-#     shell:
-#         """python src/get_function_counts.py {input.annotation_summary_table} {input.read_counts} \
-#            --function {wildcards.function} --out {output}"""
-
-#  rule get_taxa_counts: #from jeremy zucker scripts
-#     input:
-#         annotation_summary_table = rules.lcaparselast.output
-#         read_counts = rules.getreadcounts.output
-#         "Taxonomy/ncbi.map",
-#         "Taxonomy/nodes.dmp",
-#         "Taxonomy/merged.dmp"
-#     output:
-#         "{sample}_Counts/{sample}_taxa_{rank}_counts.tsv"
-#     shell:
-#         "python src/get_rank_counts.py {input} --rank {wildcards.rank} --out {output}"
-
-#  rule funtaxa_counts:
-#     input:
-#         annotation_summary_table = rules.lcaparselast.output
-#         read_counts = rules.getreadcounts.output
-#         "Taxonomy/ncbi.map",
-#         "Taxonomy/nodes.dmp",
-#         "Taxonomy/merged.dmp"
-#     output:
-#         "{sample}_Counts/{sample}_funtaxa_{function}_{rank}_counts.tsv"
-#     shell:
-#         """python src/get_fun_rank_counts.py {input} --rank {wildcards.rank} --function {wildcards.function} --out {output}"""
+rule aggregate_counts:
+    input:
+        merged = "results/{eid}/annotation/{sample}_merged_assignments.tsv",
+        counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
+    output:
+        "results/{eid}/{sample}/counts/{sample}_{table}.tsv"
+    params:
+        prefix = lambda wc: "results/%s/%s/counts/%s" % (wc.eid, wc.sample, wc.sample),
+        combos = json.dumps(config["summary_counts"])
+    shell:
+        """python scripts/blast2assignment.py counts {params.prefix} {input.merged} \
+               {input.counts} '{params.combos}'"""
