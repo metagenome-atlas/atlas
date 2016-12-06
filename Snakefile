@@ -1,3 +1,4 @@
+import json
 import os
 from glob import glob
 from subprocess import check_output
@@ -36,20 +37,37 @@ def pattern_search(path, patterns):
     return [os.path.basename(i) for i in files]
 
 
-EID = config['eid']
-SAMPLES = get_samples(os.path.join("data", EID), 200)
+def get_count_tables(config, key):
+    expected_tables = []
+    for name, vals in config[key].items():
+        if name.lower() == "taxonomy":
+            tax_levels = vals.get("levels", ["species"])
+            for level in tax_levels:
+                level = level.lower()
+                tax_name = "taxonomy_%s" % level
+                for subname, subvals in vals.items():
+                    if subname.lower() == "levels": continue
+                    expected_tables.append("%s_%s" % (subname, tax_name))
+        else:
+            expected_tables.append(name)
+    return expected_tables
 
+
+SAMPLES = get_samples(os.path.join("data", config["eid"]), 200)
+TABLES = get_count_tables(config, "summary_counts")
 
 rule all:
     input:
-        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=EID, sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
-        expand("results/{eid}/decon/{sample}_refstats.txt", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt", eid=EID, sample=SAMPLES),
-        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=EID, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES)
+        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
+        expand("results/{eid}/decon/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/counts/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
 
 
 rule quality_filter_reads:
@@ -378,14 +396,14 @@ rule diamond_alignments:
         temp("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:
         tmpdir = "--tmpdir %s" % config.get("temporary_directory", "") if config.get("temporary_directory", "") else "",
-        top_seqs = config["annotation"].get("top_seqs", "5"),
-        e_value = config["annotation"].get("e_value", "0.000001"),
-        min_identity = config["annotation"].get("min_identity", "50"),
-        query_cover = config["annotation"].get("query_coverage", "60"),
-        gap_open = config["annotation"].get("gap_open", "11"),
-        gap_extend = config["annotation"].get("gap_extend", "1"),
-        block_size = config["annotation"].get("block_size", "2"),
-        index_chunks = config["annotation"].get("index_chunks", "4")
+        top_seqs = lambda wc: config["annotation"]["references"][wc.reference].get("top_seqs", "5"),
+        e_value = lambda wc: config["annotation"]["references"][wc.reference].get("e_value", "0.000001"),
+        min_identity = lambda wc: config["annotation"]["references"][wc.reference].get("min_identity", "50"),
+        query_cover = lambda wc: config["annotation"]["references"][wc.reference].get("query_coverage", "60"),
+        gap_open = lambda wc: config["annotation"]["references"][wc.reference].get("gap_open", "11"),
+        gap_extend = lambda wc: config["annotation"]["references"][wc.reference].get("gap_extend", "1"),
+        block_size = lambda wc: config["annotation"]["references"][wc.reference].get("block_size", "2"),
+        index_chunks = lambda wc: config["annotation"]["references"][wc.reference].get("index_chunks", "4")
     threads:
         config["threads"]
     shell:
@@ -428,7 +446,7 @@ rule parse_blast:
         """python scripts/blast2assignment.py {params.subcommand} \
                --summary-method {params.summary_method} {params.aggregation_method} \
                {params.majority_threshold} --min-identity {params.min_identity} \
-               --min-bitscore {params.min_bitscore} --min-length {params.minlength} \
+               --min-bitscore {params.min_bitscore} --min-length {params.min_length} \
                --max-evalue {params.max_evalue} --max-hits {params.max_hits} \
                --top-fraction {params.top_fraction} {input} {params.namemap} {params.treefile} \
                {output}"""
@@ -436,89 +454,22 @@ rule parse_blast:
 
 rule merge_blast:
     input:
-        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+        ["results/{eid}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
     output:
         "results/{eid}/annotation/{sample}_merged_assignments.tsv"
-    params:
-        # very hacky
-        eggnog = lambda wc: "results/%s/annotation/%s/%s_assignments.tsv" % (wc.eid, wc.reference, wc.sample),
-        refseq = lambda wc: "results/%s/annotation/%s/%s_assignments.tsv" % (wc.eid, wc.reference, wc.sample)
     shell:
-        """python scripts/blast2assignment.py merge-tables {params.refseq} {params.eggnog} {output}"""
+        "python scripts/blast2assignment.py merge-tables {input} {output}"
 
 
-# rule run_maxbin:
-#     input:
-#         reads = rules.filter_contaminants.output
-#         contigs = rules.assemble.output
-#     output:
-#         bins = "output/{eid}/binning/{sample}.fasta",
-#         abundance = "output/{eid}/binning/{sample}.abund1",
-#         log = "output/{eid}/binning/{sample}.log",
-#         marker = "output/{eid}/binning/{sample}.marker",
-#         summary = "output/{eid}/binning/{sample}.summary",
-#         tooshort = "output/{eid}/binning/{sample}.tooshort",
-#         noclass = "output/{eid}/binning/{sample}.noclass"
-#     params:
-#         min_contig_len = config['binning']['minimum_contig_length'],
-#         max_iteration = config['binning']['maximum_iterations'],
-#         prob_threshold = config['binning']['probability_threshold'],
-#         markerset = config['binning']['marker_set']
-#     threads:
-#         config['binning']['threads']
-#     shell:
-#         """run_MaxBin.pl -contig {input.contigs} -out {output} -reads {input.reads} \
-#         -min_contig_length {params.min_contig_len} -max_iteration {params.max_iteration} \
-#         -thread {threads} -markerset {params.markerset}"""
-
-
-#  rule get_read_counts #from jeremy zucker scripts
-#     input:
-#         verse_counts = rules.runcounting.output
-#     output:
-#         verse_read_counts = "output/{eid}/annotation/quantification/{sample}_read_counts.tsv"
-#     message:
-#         "Generate read frequencies from VERSE"
-#     shell:
-#         """python get_read_counts.py --read_count_files {input} --out {output}"""
-
-
-#  rule get_function_counts #from jeremy zucker scripts
-#     input:
-#         read_counts = rules.getreadcounts.output
-#         annotation_summary_table = rules.lcaparselast.output
-#     output:
-#         functional_counts_ec = "output/{eid}/annotation/quantification/{sample}_ec.tsv"
-#         functional_counts_cog = "output/{eid}/annotation/quantification/{sample}_cog.tsv"
-#         functional_counts_ko = "output/{eid}/annotation/quantification/{sample}_ko.tsv"
-#         functional_counts_dbcan = "output/{eid}/annotation/quantification/{sample}_dbcan.tsv"
-#         functional_counts_metacyc = "output/{eid}/annotation/quantification/{sample}_metacyc.tsv"
-#     shell:
-#         """python src/get_function_counts.py {input.annotation_summary_table} {input.read_counts} \
-#            --function {wildcards.function} --out {output}"""
-
-
-#  rule get_taxa_counts: #from jeremy zucker scripts
-#     input:
-#         annotation_summary_table = rules.lcaparselast.output
-#         read_counts = rules.getreadcounts.output
-#         "Taxonomy/ncbi.map",
-#         "Taxonomy/nodes.dmp",
-#         "Taxonomy/merged.dmp"
-#     output:
-#         "{sample}_Counts/{sample}_taxa_{rank}_counts.tsv"
-#     shell:
-#         "python src/get_rank_counts.py {input} --rank {wildcards.rank} --out {output}"
-
-
-#  rule funtaxa_counts:
-#     input:
-#         annotation_summary_table = rules.lcaparselast.output
-#         read_counts = rules.getreadcounts.output
-#         "Taxonomy/ncbi.map",
-#         "Taxonomy/nodes.dmp",
-#         "Taxonomy/merged.dmp"
-#     output:
-#         "{sample}_Counts/{sample}_funtaxa_{function}_{rank}_counts.tsv"
-#     shell:
-#         """python src/get_fun_rank_counts.py {input} --rank {wildcards.rank} --function {wildcards.function} --out {output}"""
+rule aggregate_counts:
+    input:
+        merged = "results/{eid}/annotation/{sample}_merged_assignments.tsv",
+        counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
+    output:
+        "results/{eid}/{sample}/counts/{sample}_{table}.tsv"
+    params:
+        prefix = lambda wc: "results/%s/%s/counts/%s" % (wc.eid, wc.sample, wc.sample),
+        combos = json.dumps(config["summary_counts"])
+    shell:
+        """python scripts/blast2assignment.py counts {params.prefix} {input.merged} \
+               {input.counts} '{params.combos}'"""
