@@ -158,7 +158,7 @@ annotation:
             query_coverage: 60
             gap_open: 11
             gap_extend: 1
-            block_size: 4
+            block_size: 6
             index_chunks: 1
             # 'lca', 'majority', or 'best'; summary method for annotating ORFs; when
             # using LCA, it's recommended that one limits the number of hits using a
@@ -249,5 +249,3 @@ summary_counts:
         - cazy_ec
         - cazy_gene_id
         - cazy_taxa
-        - cazy_id1
-        - cazy_class
