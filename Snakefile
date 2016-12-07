@@ -143,7 +143,9 @@ rule quality_filter_reads:
         hdist = config["filtering"].get("allowable_kmer_mismatches", "1"),
         k = config["filtering"].get("reference_kmer_match_length", "31"),
         qtrim = "rl",
-        minlength = config["filtering"].get("minimum_passing_read_length", "51")
+        minlength = config["filtering"].get("minimum_passing_read_length", "51"),
+        # read complexity filter
+        minbasefrequency = config["filtering"].get("min_base_frequency", 0.05)
     threads:
         config.get("threads", 1)
     shell:
@@ -151,7 +153,8 @@ rule quality_filter_reads:
                rref={params.rref} lref={params.lref} mink={params.mink} \
                stats={output.stats} hdist={params.hdist} k={params.k} \
                trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
-               minlength={params.minlength} overwrite=true"""
+               minlength={params.minlength} minbasefrequency={params.minbasefrequency} \
+               overwrite=true"""
 
 
 rule join_reads:
@@ -282,12 +285,12 @@ else:
 
 rule fastqc:
     input:
-        "results/{eid}/decon/{sample}_final.fastq.gz"
+        "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
     output:
-        "results/{eid}/fastqc/{sample}_final_fastqc.zip",
-        "results/{eid}/fastqc/{sample}_final_fastqc.html"
+        "results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.zip",
+        "results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.html"
     params:
-        output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
+        output_dir = lambda wc: "results/%s/%s/quality_control/fastqc/" % (wc.eid, wc.sample)
     threads:
         config.get("threads", 1)
     shell:
@@ -296,24 +299,24 @@ rule fastqc:
 
 rule megahit_assembly:
     input:
-        "results/{eid}/decon/{sample}_final.fastq.gz"
+        "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
     output:
-        "results/{eid}/assembly/{sample}/{sample}.contigs.fa"
+        "results/{eid}/{sample}/assembly/{sample}.contigs.fa"
     params:
-        memory = config["assembly"]["memory"],
-        min_count = config["assembly"]["minimum_count"],
-        k_min = config["assembly"]["kmer_min"],
-        k_max = config["assembly"]["kmer_max"],
-        k_step = config["assembly"]["kmer_step"],
-        merge_level = config["assembly"]["merge_level"],
-        prune_level = config["assembly"]["prune_level"],
-        low_local_ratio = config["assembly"]["low_local_ratio"],
-        min_contig_len = config["assembly"]["minimum_contig_length"],
-        outdir = lambda wildcards: "results/%s/assembly/%s" % (wildcards.eid, wildcards.sample)
+        memory = config["assembly"].get("memory", 0.90),
+        min_count = config["assembly"].get("minimum_count", 2),
+        k_min = config["assembly"].get("kmer_min", 21),
+        k_max = config["assembly"].get("kmer_max", 121),
+        k_step = config["assembly"].get("kmer_step", 20),
+        merge_level = config["assembly"].get("merge_level", "20,0.98"),
+        prune_level = config["assembly"].get("prune_level", 2),
+        low_local_ratio = config["assembly"].get("low_local_ratio", 0.2),
+        min_contig_len = config["assembly"].get("minimum_contig_length", 200),
+        outdir = lambda wc: "results/%s/%s/assembly" % (wc.eid, wc.sample)
     threads:
         config.get("threads", 1)
     log:
-        "results/{eid}/assembly/{sample}/{sample}.log"
+        "results/{eid}/{sample}/assembly/{sample}.log"
     shell:
         """megahit --num-cpu-threads {threads} --read {input} --continue \
                --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
@@ -323,61 +326,118 @@ rule megahit_assembly:
                --low-local-ratio {params.low_local_ratio}"""
 
 
-rule length_filter:
+# rule length_filter:
+#     input:
+#         "results/{eid}/{sample}/assembly/{sample}.contigs.fa"
+#     output:
+#         passing = "results/{eid}/assembly/{sample}_length_pass.fa",
+#         failing = "results/{eid}/assembly/{sample}_length_fail.fa"
+#     params:
+#         min_contig_length = config["assembly"]["filtered_contig_length"]
+#     threads:
+#         1
+#     shell:
+#         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
+#                {input} {output.passing} {output.failing}"""
+#
+#
+# # rule assembly_stats:
+#
+#
+# rule build_assembly_index:
+#     input:
+#         "results/{eid}/assembly/{sample}_length_pass.fa"
+#     output:
+#         "results/{eid}/assembly/{sample}_length_pass.fa.amb",
+#         "results/{eid}/assembly/{sample}_length_pass.fa.ann",
+#         "results/{eid}/assembly/{sample}_length_pass.fa.bwt",
+#         "results/{eid}/assembly/{sample}_length_pass.fa.pac",
+#         "results/{eid}/assembly/{sample}_length_pass.fa.sa"
+#     shell:
+#         "bwa index {input}"
+#
+#
+# rule align_reads_to_assembly:
+#     input:
+#         fastq = "results/{eid}/decon/{sample}_final.fastq.gz",
+#         ref = "results/{eid}/assembly/{sample}_length_pass.fa",
+#         idx = "results/{eid}/assembly/{sample}_length_pass.fa.bwt"
+#     output:
+#         "results/{eid}/aligned_reads/{sample}.bam"
+#     threads:
+#         config.get("threads", 1)
+#     shell:
+#         """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
+#                | samtools view -@ {threads} -bS - \
+#                | samtools sort -@ {threads} -T {wildcards.sample} -o {output} -O bam -"""
+
+
+rule dirty_contig_coverage_stats:
     input:
-        "results/{eid}/assembly/{sample}/{sample}.contigs.fa"
+        fasta = "results/{eid}/{sample}/assembly/{sample}.contigs.fa",
+        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
     output:
-        passing = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa",
-        failing = "results/{eid}/assembly/{sample}/{sample}_length_fail.fa"
-    params:
-        min_contig_length = config["assembly"]["filtered_contig_length"]
-    threads:
-        1
-    shell:
-        """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-               {input} {output.passing} {output.failing}"""
-
-
-# rule assembly_stats:
-
-
-rule build_assembly_index:
-    input:
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa"
-    output:
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.amb",
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.ann",
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.bwt",
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.pac",
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.sa"
-    shell:
-        "bwa index {input}"
-
-
-rule align_reads_to_assembly:
-    input:
-        fastq = "results/{eid}/decon/{sample}_final.fastq.gz",
-        ref = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa",
-        idx = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa.bwt"
-    output:
-        "results/{eid}/aligned_reads/{sample}.bam"
+        bhist = "results/{eid}/{sample}/assembly/stats/prefilter_base_composition.txt",
+        bqhist = "results/{eid}/{sample}/assembly/stats/prefilter_box_quality.txt",
+        mhist = "results/{eid}/{sample}/assembly/stats/prefilter_mutation_rates.txt",
+        statsfile = "results/{eid}/{sample}/assembly/stats/prefilter_mapping_stats.txt",
+        covstats = "results/{eid}/{sample}/assembly/stats/prefilter_coverage_stats.txt"
     threads:
         config.get("threads", 1)
     shell:
-        """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
-               | samtools view -@ {threads} -bS - \
-               | samtools sort -@ {threads} -T {wildcards.sample} -o {output} -O bam -"""
+        """bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t threads={threads} \
+               bhist={output.bhist} bqhist={output.bqhist} mhist={output.mhist} \
+               gchist={output.gchist} statsfile={params.statsfile} covstats={output.covstats}"""
+
+
+rule filter_by_coverage:
+    input:
+        fasta = "results/{eid}/{sample}/assembly/{sample}/{sample}.contigs.fa",
+        covstats = "results/{eid}/{sample}/assembly/stats/prefilter_coverage_stats.txt"
+    output:
+        fasta = "results/{eid}/{sample}/assembly/{sample}/{sample}_final_contigs.fasta",
+        removed_names = "results/{eid}/{sample}/assembly/{sample}/{sample}_discarded_contigs.txt"
+    params:
+        minc = config["assembly"].get("minc", 5)
+        minp = config["assembly"].get("minp", 40)
+        minr = config["assembly"].get("minr", 0)
+        minl = config["assembly"].get("minl", 1)
+        trim = config["assembly"].get("trim", 0)
+    threads:
+        1
+    shell:
+        """filterbycoverage.sh in={input.fasta} cov={input.covstats} out={output.fasta} \
+               outd={output.removed_names} minc={params.minc} minp={params.minp} \
+               minr={params.minr} minl={params.minl} trim={params.trim}"""
+
+
+rule contig_coverage_stats:
+    input:
+        fasta = "results/{eid}/{sample}/assembly/{sample}/{sample}_final_contigs.fasta",
+        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
+    output:
+        bhist = "results/{eid}/{sample}/assembly/stats/postfilter_base_composition.txt",
+        bqhist = "results/{eid}/{sample}/assembly/stats/postfilter_box_quality.txt",
+        mhist = "results/{eid}/{sample}/assembly/stats/postfilter_mutation_rates.txt",
+        statsfile = "results/{eid}/{sample}/assembly/stats/postfilter_mapping_stats.txt",
+        covstats = "results/{eid}/{sample}/assembly/stats/postfilter_coverage_stats.txt"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t threads={threads} \
+               bhist={output.bhist} bqhist={output.bqhist} mhist={output.mhist} \
+               gchist={output.gchist} statsfile={params.statsfile} covstats={output.covstats}"""
 
 
 rule prodigal_orfs:
     input:
-        "results/{eid}/assembly/{sample}/{sample}_length_pass.fa"
+        "results/{eid}/{sample}/assembly/{sample}/{sample}_final_contigs.fasta"
     output:
-        prot = "results/{eid}/annotation/orfs/{sample}_length_pass.faa",
-        nuc = "results/{eid}/annotation/orfs/{sample}_length_pass.fna",
-        gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+        prot = "results/{eid}/{sample}/annotation/orfs/{sample}.faa",
+        nuc = "results/{eid}/{sample}/annotation/orfs/{sample}.fna",
+        gff = "results/{eid}/{sample}/annotation/orfs/{sample}.gff"
     params:
-        g = config["annotation"]["translation_table"]
+        g = config["annotation"].get("translation_table", "11")
     shell:
         """prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} \
                -g {params.g} -p meta"""
@@ -385,9 +445,9 @@ rule prodigal_orfs:
 
 rule gff_to_gtf:
     input:
-        "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
+        "results/{eid}/{sample}/annotation/orfs/{sample}.gff"
     output:
-        "results/{eid}/annotation/orfs/{sample}_length_pass.gtf"
+        "results/{eid}/{sample}/annotation/orfs/{sample}.gtf"
     run:
         import re
         t = re.compile(r'ID=[0-9]+_([0-9]+);')
@@ -404,19 +464,19 @@ rule gff_to_gtf:
 
 rule counts_per_region:
     input:
-        gtf = "results/{eid}/annotation/orfs/{sample}_length_pass.gtf",
-        bam = "results/{eid}/aligned_reads/{sample}.bam"
+        gtf = "results/{eid}/{sample}/annotation/orfs/{sample}.gtf",
+        bam = "results/{eid}/{sample}/annotation/{sample}.bam"
     output:
-        summary = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.summary.txt",
-        counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
+        summary = "results/{eid}/{sample}/annotation/orfs/{sample}.CDS.summary.txt",
+        counts = "results/{eid}/{sample}/annotation/orfs/{sample}.CDS.txt"
     params:
-        min_read_overlap = config["annotation"]["minimum_overlap"]
+        min_read_overlap = config["annotation"].get("minimum_overlap", 20)
     threads:
         config.get("threads", 1)
     shell:
         """verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 5 -a {input.gtf} \
-               -o results/{wildcards.eid}/annotation/orfs/{wildcards.sample}_length_pass \
+               -o results/{wildcards.eid}/{wildcards.sample}/annotation/orfs/{wildcards.sample} \
                {input.bam} 2> /dev/null"""
 
 
@@ -433,9 +493,9 @@ rule build_dmnd_database:
 
 rule split:
     input:
-        "results/{eid}/annotation/orfs/{sample}_length_pass.faa"
+        "results/{eid}/{sample}/annotation/orfs/{sample}.faa"
     output:
-        temp(dynamic("results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa"))
+        temp(dynamic("results/{eid}/{sample}/annotation/orfs/{sample}_{n}.faa"))
     params:
         chunk_size = config["annotation"].get("chunk_size", "250000")
     shell:
@@ -444,10 +504,10 @@ rule split:
 
 rule diamond_alignments:
     input:
-        fasta = "results/{eid}/annotation/orfs/{sample}_length_pass_{n}.faa",
+        fasta = "results/{eid}/{sample}/annotation/orfs/{sample}_{n}.faa",
         db = "databases/annotation/{reference}.dmnd"
     output:
-        temp("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        temp("results/{eid}/{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:
         tmpdir = "--tmpdir %s" % config.get("temporary_directory", "") if config.get("temporary_directory", "") else "",
         top_seqs = lambda wc: config["annotation"]["references"][wc.reference].get("top_seqs", "5"),
@@ -457,32 +517,33 @@ rule diamond_alignments:
         gap_open = lambda wc: config["annotation"]["references"][wc.reference].get("gap_open", "11"),
         gap_extend = lambda wc: config["annotation"]["references"][wc.reference].get("gap_extend", "1"),
         block_size = lambda wc: config["annotation"]["references"][wc.reference].get("block_size", "2"),
-        index_chunks = lambda wc: config["annotation"]["references"][wc.reference].get("index_chunks", "4")
+        index_chunks = lambda wc: config["annotation"]["references"][wc.reference].get("index_chunks", "4"),
+        run_mode = lambda wc: "" if config["annotation"]["references"][wc.reference].get("run_mode", "fast") == "fast" else "--more-sensitive"
     threads:
         config.get("threads", 1)
     shell:
         """diamond blastp --threads {threads} --outfmt 6 --out {output} \
                --query {input.fasta} --db {input.db} --top {params.top_seqs} \
                --evalue {params.e_value} --id {params.min_identity} \
-               --query-cover {params.query_cover} --more-sensitive --gapopen {params.gap_open} \
+               --query-cover {params.query_cover} {params.run_mode} --gapopen {params.gap_open} \
                --gapextend {params.gap_extend} {params.tmpdir} --block-size {params.block_size} \
                --index-chunks {params.index_chunks}"""
 
 
 rule merge_alignments:
     input:
-        dynamic("results/{eid}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        dynamic("results/{eid}/{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     output:
-        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+        "results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv"
     shell:
         "cat {input} | sort -k1,1 -k12,12rn > {output}"
 
 
 rule parse_blast:
     input:
-        "results/{eid}/annotation/{reference}/{sample}_hits.tsv"
+        "results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv"
     output:
-        "results/{eid}/annotation/{reference}/{sample}_assignments.tsv"
+        "results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv"
     params:
         subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
@@ -508,19 +569,19 @@ rule parse_blast:
 
 rule merge_blast:
     input:
-        ["results/{eid}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
+        ["results/{eid}/{sample}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
     output:
-        "results/{eid}/annotation/{sample}_merged_assignments.tsv"
+        "results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv"
     shell:
         "python scripts/blast2assignment.py merge-tables {input} {output}"
 
 
 rule aggregate_counts:
     input:
-        merged = "results/{eid}/annotation/{sample}_merged_assignments.tsv",
-        counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
+        merged = "results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv",
+        counts = "results/{eid}/{sample}/annotation/orfs/{sample}.CDS.txt"
     output:
-        "results/{eid}/{sample}/counts/{sample}_{table}.tsv"
+        "results/{eid}/{sample}/count_tables/{sample}_{table}.tsv"
     params:
         prefix = lambda wc: "results/%s/%s/counts/%s" % (wc.eid, wc.sample, wc.sample),
         combos = json.dumps(config["summary_counts"])
