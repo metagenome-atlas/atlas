@@ -31,6 +31,8 @@ filtering:
     maximum_expected_error: 5
     # maximum number of N's for FASTQ filter
     maxns: 5
+    # Discard reads with a minimum base frequency below this
+    min_base_frequency: 0.05
     ## TRIMMOMATIC quality trimming/filtering
     # adapter mismatch, palindrome clip threshold, and simple clip threshold (the values are nonsensical), e.g. 2:30:10
     adapter_clip: "2:30:10"
@@ -87,9 +89,19 @@ assembly:
     prune_level: 2
     # ratio threshold to define low local coverage contigs
     low_local_ratio: 0.2
-    # minimum length of contigs to output
+    # minimum length of contigs to output from the assembler; can be filtered
+    # downstream using minl
     minimum_contig_length: 200
-    filtered_contig_length: 300
+    # Discard contigs with lower average coverage.
+    minc: 5
+    # Discard contigs with a lower percent covered bases.
+    minp: 40
+    # Discard contigs with fewer mapped reads.
+    minr: 0
+    # Discard contigs shorter than this (after trimming).
+    minl: 250
+    # Trim the first and last X bases of each sequence.
+    trim: 0
 
 annotation:
     ## ORFs
@@ -107,6 +119,8 @@ annotation:
             fasta: /pic/projects/mint/atlas_databases/functional/eggnog/eggnog4_nonredundant.fasta
             # number of entries per FASTA to be aligned with DIAMOND
             chunk_size: 250000
+            # 'fast' or 'sensitive'
+            run_mode: fast
             # setting top_seqs to 5 will report all alignments whose score is
             # at most 5% lower than the top alignment score for a query
             top_seqs: 5
@@ -152,6 +166,7 @@ annotation:
             fasta: /pic/projects/mint/atlas_databases/functional/refseq/refseq78.complete.nonredundant_protein.faa
             # number of entries per FASTA to be aligned with DIAMOND
             chunk_size: 250000
+            run_mode: fast
             top_seqs: 5
             e_value: "0.000001"
             min_identity: 50
