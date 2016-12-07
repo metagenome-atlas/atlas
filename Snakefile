@@ -212,7 +212,7 @@ rule decontaminate_joined:
 
 
 if config["data_type"] == "metatranscriptome":
-    rule ribosomal_rna:
+    rule omit_ribosomal_rna:
         input:
             "results/{eid}/{sample}/quality_control/decontamination/{sample}_clean.fastq.gz"
         output:
@@ -220,7 +220,7 @@ if config["data_type"] == "metatranscriptome":
         shell:
             "cp {input} {output}"
 else:
-    rule ribosomal_rna:
+    rule recombine_ribosomal_rna:
         input:
             clean = "results/{eid}/{sample}/quality_control/decontamination/{sample}_clean.fastq.gz",
             rrna = "results/{eid}/{sample}/quality_control/decontamination/{sample}_rRNA.fastq.gz"
