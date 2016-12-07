@@ -56,39 +56,96 @@ def get_count_tables(config, key):
 SAMPLES = get_samples(os.path.join("data", config["eid"]), 200)
 TABLES = get_count_tables(config, "summary_counts")
 
+
+
+test-experiment
+    sample-id
+        count_tables
+        sample-id.bam
+        annotation
+            eggnog
+                sample_assignments.tsv
+                sample_hits.tsv
+            refseq
+                sample_assignments.tsv
+                sample_hits.tsv
+            sample_merged_assignments.tsv
+            orfs
+                sample_length_pass.CDS.summary.txt
+                sample_length_pass.CDS.txt
+                faa, fna, gtf, gff
+        assembly
+            sample_contigs.fa
+            sample_extended.fa
+            sample_length_fail.fa
+            sample_length_pass.fa
+            sample_length_pass.fa.amb .ann .pac .sa
+            sample.log
+            intermediate_contigs
+                junk
+            opts.txt
+        quality_control
+            join
+            decontamination
+                sample_clean.fastq.gz
+                sample_final.fastq.gz
+                sample_phiX.fastq.gz
+                sample_refstats.txt
+                sample_rRNA.fastq.gz
+            fastqc
+                sample_final_fastqc.html
+                sample_final_fastqc.zip
+            quality_filter
+                sample_filtered.fastq
+                sample_r1.fastq
+                sample_r2.fastq
+
+
+
 rule all:
     input:
-        expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
-        expand("results/{eid}/decon/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-        expand("results/{eid}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-        expand("results/{eid}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/counts/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
+        # expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
+        expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
+        # expand("results/{eid}/decon/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
+        # expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
+        # expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
+        # expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/assembly/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
+        # expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
+        # expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        # expand("results/{eid}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        # expand("results/{eid}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
+        # expand("results/{eid}/{sample}/counts/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
+        expand("results/{eid}/{sample}/count_tables/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
 
 
 rule quality_filter_reads:
+    """This needs to be reconfigured to allow multiple input locations."""
     input:
         r1 = "data/{eid}/{sample}_R1.fastq",
         r2 = "data/{eid}/{sample}_R2.fastq"
     output:
-        r1 = "results/{eid}/quality_filter/{sample}_R1.fastq",
-        r2 = "results/{eid}/quality_filter/{sample}_R2.fastq",
-        stats = "results/{eid}/logs/{sample}_quality_filtering_stats.txt"
+        r1 = "results/{eid}/{sample}/quality_control/quality_filter/{sample}_R1.fastq",
+        r2 = "results/{eid}/{sample}/quality_control/quality_filter/{sample}_R2.fastq",
+        stats = "results/{eid}/{sample}/logs/{sample}_quality_filtering_stats.txt"
     params:
-        lref = config['filtering']['adapters'],
-        rref = config['filtering']['adapters'],
-        mink = config['filtering']['mink'],
-        trimq = config['filtering']['minimum_base_quality'],
-        hdist = config['filtering']['allowable_kmer_mismatches'],
-        k = config['filtering']['reference_kmer_match_length'],
+        lref = config["filtering"]["adapters"],
+        rref = config["filtering"]["adapters"],
+        mink = config["filtering"].get("mink", "8"),
+        trimq = config["filtering"].get("minimum_base_quality", "10"),
+        hdist = config["filtering"].get("allowable_kmer_mismatches", "1"),
+        k = config["filtering"].get("reference_kmer_match_length", "31"),
         qtrim = "rl",
-        minlength = config['filtering']['minimum_passing_read_length']
+        minlength = config["filtering"].get("minimum_passing_read_length", "51")
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         """bbduk2.sh -Xmx8g in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} \
                rref={params.rref} lref={params.lref} mink={params.mink} \
@@ -99,27 +156,25 @@ rule quality_filter_reads:
 
 rule join_reads:
     input:
-        r1 = "results/{eid}/quality_filter/{sample}_R1.fastq",
-        r2 = "results/{eid}/quality_filter/{sample}_R2.fastq"
+        r1 = "results/{eid}/{sample}/quality_control/quality_filter/{sample}_R1.fastq",
+        r2 = "results/{eid}/{sample}/quality_control/quality_filter/{sample}_R2.fastq"
     output:
-        joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
-        hist = "results/{eid}/joined/{sample}.hist",
-        failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
-        failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
-    message:
-        "Joining reads using `flash`"
+        joined = "results/{eid}/{sample}/quality_control/join/{sample}.extendedFrags.fastq",
+        hist = "results/{eid}/{sample}/quality_control/join/{sample}.hist",
+        failed_r1 = "results/{eid}/{sample}/quality_control/join/{sample}.notCombined_1.fastq",
+        failed_r2 = "results/{eid}/{sample}/quality_control/join/{sample}.notCombined_2.fastq"
     shadow:
         "shallow"
     params:
-        output_dir = lambda wildcards: "results/%s/joined/" % wildcards.eid,
-        min_overlap = config['merging']['minimum_overlap'],
-        max_overlap = config['merging']['maximum_overlap'],
-        max_mismatch_density = config['merging']['maximum_mismatch_density'],
-        phred_offset = config['phred_offset']
+        output_dir = lambda wc: "results/%s/%s/quality_control/join/" % (wc.eid, wc.sample),
+        min_overlap = config["merging"].get("minimum_overlap", "30"),
+        max_overlap = config["merging"].get("maximum_overlap", "250"),
+        max_mismatch_density = config["merging"].get("maximum_mismatch_density", "0.25")
+        phred_offset = config.get("phred_offset", "33")
     log:
-        "results/{eid}/logs/{sample}_flash.log"
+        "results/{eid}/{sample}/logs/{sample}_join.log"
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         """flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
                --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
@@ -129,30 +184,30 @@ rule join_reads:
 
 rule concatenate_joined_reads:
     input:
-        joined = "results/{eid}/joined/{sample}.extendedFrags.fastq",
-        failed_r1 = "results/{eid}/joined/{sample}.notCombined_1.fastq",
-        failed_r2 = "results/{eid}/joined/{sample}.notCombined_2.fastq"
+        joined = "results/{eid}/{sample}/quality_control/join/{sample}.extendedFrags.fastq",
+        failed_r1 = "results/{eid}/{sample}/quality_control/join/{sample}.notCombined_1.fastq",
+        failed_r2 = "results/{eid}/{sample}/quality_control/join/{sample}.notCombined_2.fastq"
     output:
-        "results/{eid}/joined/{sample}_joined.fastq"
+        "results/{eid}/{sample}/quality_control/join/{sample}_joined.fastq"
     shell:
         "cat {input.joined} {input.failed_r1} {input.failed_r2} > {output}"
 
 
 rule error_correction:
     input:
-        "results/{eid}/joined/{sample}_joined.fastq"
+        "results/{eid}/{sample}/quality_control/join/{sample}_joined.fastq"
     output:
-        "results/{eid}/joined/{sample}_corrected.fastq.gz"
+        "results/{eid}/{sample}/quality_control/error_correction/{sample}_corrected.fastq.gz"
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         "tadpole.sh in={input} out={output} mode=correct threads={threads}"
 
 
-if config["qual_method"] == "expected_error":
+if config.get("qual_method") == "expected_error":
     rule subset_reads_by_quality:
-        input: "results/{eid}/joined/{sample}_corrected.fastq.gz"
-        output: "results/{eid}/quality_filter/{sample}_filtered.fastq"
+        input: "results/{eid}/{sample}/quality_control/error_correction/{sample}_corrected.fastq.gz"
+        output: "results/{eid}/{sample}/quality_control/quality_filter/{sample}_filtered.fastq"
         params:
             phred = config.get("phred_offset", 33),
             maxee = config["filtering"].get("maximum_expected_error", 2),
@@ -164,9 +219,9 @@ if config["qual_method"] == "expected_error":
 else:
     rule subset_reads_by_quality:
         input:
-            "results/{eid}/joined/{sample}_corrected.fastq.gz"
+            "results/{eid}/{sample}/quality_control/error_correction/{sample}_corrected.fastq.gz"
         output:
-            "results/{eid}/quality_filter/{sample}_filtered.fastq"
+            "results/{eid}/{sample}/quality_control/quality_filter/{sample}_filtered.fastq"
         params:
             adapter_clip = "" if not config["filtering"].get("adapters", "") else "ILLUMINACLIP:%s:%s" % (config["filtering"]["adapters"], config["filtering"].get("adapter_clip", "2:30:10")),
             window_size_qual = "" if not config["filtering"].get("window_size_quality", "") else "SLIDINGWINDOW:%s" % config["filtering"]["window_size_quality"],
@@ -176,7 +231,7 @@ else:
             headcrop = "" if not config["filtering"].get("headcrop", 0) else "HEADCROP:%s" % config["filtering"]["headcrop"],
             minlen = "MINLEN:%s" % config["filtering"]["minimum_passing_read_length"]
         threads:
-            config["threads"]
+            config.get("threads", 1)
         shell:
             """trimmomatic SE -threads {threads} {input} {output} {params.adapter_clip} \
                    {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
@@ -184,44 +239,43 @@ else:
 
 rule decontaminate_joined:
     input:
-        "results/{eid}/quality_filter/{sample}_filtered.fastq"
+        "results/{eid}/{sample}/quality_control/quality_filter/{sample}_filtered.fastq"
     output:
-        dbs = ["results/{eid}/decon/{sample}_%s.fastq.gz" % db for db in list(config["contamination_filtering"]["references"].keys())],
-        stats = "results/{eid}/decon/{sample}_refstats.txt",
-        clean = "results/{eid}/decon/{sample}_clean.fastq.gz"
+        dbs = ["results/{eid}/{sample}/quality_control/decontamination/{sample}_%s.fastq.gz" % db for db in list(config["contamination_filtering"]["references"].keys())],
+        stats = "results/{eid}/{sample}/quality_control/decontamination/{sample}_refstats.txt",
+        clean = "results/{eid}/{sample}/quality_control/decontamination/{sample}_clean.fastq.gz"
     params:
-        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config['contamination_filtering']['references'].items()]),
-        refs_out = lambda wildcards: " ".join(["out_%s=results/%s/decon/%s_%s.fastq.gz" % (n, wildcards.eid, wildcards.sample, n) for n in list(config['contamination_filtering']['references'].keys())]),
-        path = "databases/contaminant/",
-        maxindel = config['contamination_filtering'].get('maxindel', 20),
-        minratio = config['contamination_filtering'].get('minratio', 0.65),
-        minhits = config['contamination_filtering'].get('minhits', 1),
-        ambiguous = config['contamination_filtering'].get('ambiguous', "best"),
+        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contamination_filtering"]["references"].items()]),
+        refs_out = lambda wc: " ".join(["out_%s=results/%s/%s/quality_control/decontamination/%s_%s.fastq.gz" % (n, wc.eid, wc.sample, wc.sample, n) for n in list(config["contamination_filtering"]["references"].keys())]),
+        maxindel = config["contamination_filtering"].get("maxindel", 20),
+        minratio = config["contamination_filtering"].get("minratio", 0.65),
+        minhits = config["contamination_filtering"].get("minhits", 1),
+        ambiguous = config["contamination_filtering"].get("ambiguous", "best"),
         k = config["contamination_filtering"].get("k", 15)
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
-        """bbsplit.sh {params.refs_in} path={params.path} in={input} outu={output.clean} \
+        """bbsplit.sh {params.refs_in} in={input} outu={output.clean} \
                {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
                threads={threads} k={params.k} local=t"""
 
 
-if config['data_type'] == "metatranscriptome":
+if config["data_type"] == "metatranscriptome":
     rule ribosomal_rna:
         input:
-            "results/{eid}/decon/{sample}_clean.fastq.gz"
+            "results/{eid}/{sample}/quality_control/decontamination/{sample}_clean.fastq.gz"
         output:
-            "results/{eid}/decon/{sample}_final.fastq.gz"
+            "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
         shell:
             "cp {input} {output}"
 else:
     rule ribosomal_rna:
         input:
-            clean = "results/{eid}/decon/{sample}_clean.fastq.gz",
-            rrna = "results/{eid}/decon/{sample}_rRNA.fastq.gz"
+            clean = "results/{eid}/{sample}/quality_control/decontamination/{sample}_clean.fastq.gz",
+            rrna = "results/{eid}/{sample}/quality_control/decontamination/{sample}_rRNA.fastq.gz"
         output:
-            "results/{eid}/decon/{sample}_final.fastq.gz"
+            "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
         shell:
             "cat {input.clean} {input.rrna} > {output}"
 
@@ -235,7 +289,7 @@ rule fastqc:
     params:
         output_dir = lambda wildcards: "results/{eid}/fastqc/".format(eid=wildcards.eid)
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         "fastqc -t {threads} -f fastq -o {params.output_dir} {input}"
 
@@ -246,18 +300,18 @@ rule megahit_assembly:
     output:
         "results/{eid}/assembly/{sample}/{sample}.contigs.fa"
     params:
-        memory = config['assembly']['memory'],
-        min_count = config['assembly']['minimum_count'],
-        k_min = config['assembly']['kmer_min'],
-        k_max = config['assembly']['kmer_max'],
-        k_step = config['assembly']['kmer_step'],
-        merge_level = config['assembly']['merge_level'],
-        prune_level = config['assembly']['prune_level'],
-        low_local_ratio = config['assembly']['low_local_ratio'],
-        min_contig_len = config['assembly']['minimum_contig_length'],
+        memory = config["assembly"]["memory"],
+        min_count = config["assembly"]["minimum_count"],
+        k_min = config["assembly"]["kmer_min"],
+        k_max = config["assembly"]["kmer_max"],
+        k_step = config["assembly"]["kmer_step"],
+        merge_level = config["assembly"]["merge_level"],
+        prune_level = config["assembly"]["prune_level"],
+        low_local_ratio = config["assembly"]["low_local_ratio"],
+        min_contig_len = config["assembly"]["minimum_contig_length"],
         outdir = lambda wildcards: "results/%s/assembly/%s" % (wildcards.eid, wildcards.sample)
     threads:
-        config["threads"]
+        config.get("threads", 1)
     log:
         "results/{eid}/assembly/{sample}/{sample}.log"
     shell:
@@ -276,7 +330,7 @@ rule length_filter:
         passing = "results/{eid}/assembly/{sample}/{sample}_length_pass.fa",
         failing = "results/{eid}/assembly/{sample}/{sample}_length_fail.fa"
     params:
-        min_contig_length = config['assembly']['filtered_contig_length']
+        min_contig_length = config["assembly"]["filtered_contig_length"]
     threads:
         1
     shell:
@@ -308,7 +362,7 @@ rule align_reads_to_assembly:
     output:
         "results/{eid}/aligned_reads/{sample}.bam"
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
                | samtools view -@ {threads} -bS - \
@@ -323,7 +377,7 @@ rule prodigal_orfs:
         nuc = "results/{eid}/annotation/orfs/{sample}_length_pass.fna",
         gff = "results/{eid}/annotation/orfs/{sample}_length_pass.gff"
     params:
-        g = config['annotation']['translation_table']
+        g = config["annotation"]["translation_table"]
     shell:
         """prodigal -i {input} -o {output.gff} -f gff -a {output.prot} -d {output.nuc} \
                -g {params.g} -p meta"""
@@ -356,9 +410,9 @@ rule counts_per_region:
         summary = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.summary.txt",
         counts = "results/{eid}/annotation/orfs/{sample}_length_pass.CDS.txt"
     params:
-        min_read_overlap = config['annotation']['minimum_overlap']
+        min_read_overlap = config["annotation"]["minimum_overlap"]
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         """verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 5 -a {input.gtf} \
@@ -372,7 +426,7 @@ rule build_dmnd_database:
     output:
         "databases/annotation/{reference}.dmnd"
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         "diamond makedb --no-auto-append --threads {threads} --in {input} --db {output}"
 
@@ -405,7 +459,7 @@ rule diamond_alignments:
         block_size = lambda wc: config["annotation"]["references"][wc.reference].get("block_size", "2"),
         index_chunks = lambda wc: config["annotation"]["references"][wc.reference].get("index_chunks", "4")
     threads:
-        config["threads"]
+        config.get("threads", 1)
     shell:
         """diamond blastp --threads {threads} --outfmt 6 --out {output} \
                --query {input.fasta} --db {input.db} --top {params.top_seqs} \
