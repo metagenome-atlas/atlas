@@ -57,72 +57,19 @@ SAMPLES = get_samples(os.path.join("data", config["eid"]), 200)
 TABLES = get_count_tables(config, "summary_counts")
 
 
-
-test-experiment
-    sample-id
-        count_tables
-        sample-id.bam
-        annotation
-            eggnog
-                sample_assignments.tsv
-                sample_hits.tsv
-            refseq
-                sample_assignments.tsv
-                sample_hits.tsv
-            sample_merged_assignments.tsv
-            orfs
-                sample_length_pass.CDS.summary.txt
-                sample_length_pass.CDS.txt
-                faa, fna, gtf, gff
-        assembly
-            sample_contigs.fa
-            sample_extended.fa
-            sample_length_fail.fa
-            sample_length_pass.fa
-            sample_length_pass.fa.amb .ann .pac .sa
-            sample.log
-            intermediate_contigs
-                junk
-            opts.txt
-        quality_control
-            join
-            decontamination
-                sample_clean.fastq.gz
-                sample_final.fastq.gz
-                sample_phiX.fastq.gz
-                sample_refstats.txt
-                sample_rRNA.fastq.gz
-            fastqc
-                sample_final_fastqc.html
-                sample_final_fastqc.zip
-            quality_filter
-                sample_filtered.fastq
-                sample_r1.fastq
-                sample_r2.fastq
-
-
-
 rule all:
     input:
-        # expand("results/{eid}/decon/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
         expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", eid=config["eid"], sample=SAMPLES, decon_dbs=list(config["contamination_filtering"]["references"].keys())),
-        # expand("results/{eid}/decon/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
         expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_refstats.txt", eid=config["eid"], sample=SAMPLES),
-        # expand("results/{eid}/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
         expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.zip", eid=config["eid"], sample=SAMPLES),
-        # expand("results/{eid}/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
         expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.html", eid=config["eid"], sample=SAMPLES),
-        # expand("results/{eid}/assembly/{sample}/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/assembly/{sample}_length_pass.fa", eid=config["eid"], sample=SAMPLES),
-        # expand("results/{eid}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/annotation/orfs/{sample}_length_pass.faa", eid=config["eid"], sample=SAMPLES),
-        # expand("results/{eid}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+        expand("results/{eid}/{sample}/assembly/{sample}_contigs.fasta", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/annotation/orfs/{sample}.faa", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/assembly/stats/prefilter_contig_stats.txt", eid=config["eid"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/assembly/stats/final_contig_stats.txt", eid=config["eid"], sample=SAMPLES),
         expand("results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-        # expand("results/{eid}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
         expand("results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv", eid=config["eid"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-        # expand("results/{eid}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
         expand("results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv", eid=config["eid"], sample=SAMPLES),
-        # expand("results/{eid}/{sample}/counts/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
         expand("results/{eid}/{sample}/count_tables/{sample}_{table}.tsv", eid=config["eid"], sample=SAMPLES, table=TABLES)
 
 
@@ -172,7 +119,7 @@ rule join_reads:
         output_dir = lambda wc: "results/%s/%s/quality_control/join/" % (wc.eid, wc.sample),
         min_overlap = config["merging"].get("minimum_overlap", "30"),
         max_overlap = config["merging"].get("maximum_overlap", "250"),
-        max_mismatch_density = config["merging"].get("maximum_mismatch_density", "0.25")
+        max_mismatch_density = config["merging"].get("maximum_mismatch_density", "0.25"),
         phred_offset = config.get("phred_offset", "33")
     log:
         "results/{eid}/{sample}/logs/{sample}_join.log"
@@ -301,7 +248,7 @@ rule megahit_assembly:
     input:
         "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
     output:
-        "results/{eid}/{sample}/assembly/{sample}.contigs.fa"
+        "results/{eid}/{sample}/assembly/{sample}_prefilter.contigs.fa"
     params:
         memory = config["assembly"].get("memory", 0.90),
         min_count = config["assembly"].get("minimum_count", 2),
@@ -320,61 +267,24 @@ rule megahit_assembly:
     shell:
         """megahit --num-cpu-threads {threads} --read {input} --continue \
                --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
-               --out-dir {params.outdir} --out-prefix {wildcards.sample} \
+               --out-dir {params.outdir} --out-prefix {wildcards.sample}_prefilter \
                --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
                --merge-level {params.merge_level} --prune-level {params.prune_level} \
                --low-local-ratio {params.low_local_ratio}"""
 
 
-# rule length_filter:
-#     input:
-#         "results/{eid}/{sample}/assembly/{sample}.contigs.fa"
-#     output:
-#         passing = "results/{eid}/assembly/{sample}_length_pass.fa",
-#         failing = "results/{eid}/assembly/{sample}_length_fail.fa"
-#     params:
-#         min_contig_length = config["assembly"]["filtered_contig_length"]
-#     threads:
-#         1
-#     shell:
-#         """python scripts/fastx.py length-filter --min-length {params.min_contig_length} \
-#                {input} {output.passing} {output.failing}"""
-#
-#
-# # rule assembly_stats:
-#
-#
-# rule build_assembly_index:
-#     input:
-#         "results/{eid}/assembly/{sample}_length_pass.fa"
-#     output:
-#         "results/{eid}/assembly/{sample}_length_pass.fa.amb",
-#         "results/{eid}/assembly/{sample}_length_pass.fa.ann",
-#         "results/{eid}/assembly/{sample}_length_pass.fa.bwt",
-#         "results/{eid}/assembly/{sample}_length_pass.fa.pac",
-#         "results/{eid}/assembly/{sample}_length_pass.fa.sa"
-#     shell:
-#         "bwa index {input}"
-#
-#
-# rule align_reads_to_assembly:
-#     input:
-#         fastq = "results/{eid}/decon/{sample}_final.fastq.gz",
-#         ref = "results/{eid}/assembly/{sample}_length_pass.fa",
-#         idx = "results/{eid}/assembly/{sample}_length_pass.fa.bwt"
-#     output:
-#         "results/{eid}/aligned_reads/{sample}.bam"
-#     threads:
-#         config.get("threads", 1)
-#     shell:
-#         """bwa mem -t {threads} -L 1,1 {input.ref} {input.fastq} \
-#                | samtools view -@ {threads} -bS - \
-#                | samtools sort -@ {threads} -T {wildcards.sample} -o {output} -O bam -"""
+rule dirty_contigs_stats:
+    input:
+        "results/{eid}/{sample}/assembly/{sample}_prefilter.contigs.fa"
+    output:
+        "results/{eid}/{sample}/assembly/stats/prefilter_contig_stats.txt"
+    shell:
+        "stats.sh in={input} format=3 > {output}"
 
 
 rule dirty_contig_coverage_stats:
     input:
-        fasta = "results/{eid}/{sample}/assembly/{sample}.contigs.fa",
+        fasta = "results/{eid}/{sample}/assembly/{sample}_prefilter.contigs.fa",
         fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
     output:
         bhist = "results/{eid}/{sample}/assembly/stats/prefilter_base_composition.txt",
@@ -387,21 +297,21 @@ rule dirty_contig_coverage_stats:
     shell:
         """bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t threads={threads} \
                bhist={output.bhist} bqhist={output.bqhist} mhist={output.mhist} \
-               gchist={output.gchist} statsfile={params.statsfile} covstats={output.covstats}"""
+               statsfile={output.statsfile} covstats={output.covstats}"""
 
 
 rule filter_by_coverage:
     input:
-        fasta = "results/{eid}/{sample}/assembly/{sample}/{sample}.contigs.fa",
+        fasta = "results/{eid}/{sample}/assembly/{sample}_prefilter.contigs.fa",
         covstats = "results/{eid}/{sample}/assembly/stats/prefilter_coverage_stats.txt"
     output:
-        fasta = "results/{eid}/{sample}/assembly/{sample}/{sample}_final_contigs.fasta",
-        removed_names = "results/{eid}/{sample}/assembly/{sample}/{sample}_discarded_contigs.txt"
+        fasta = "results/{eid}/{sample}/assembly/{sample}_contigs.fasta",
+        removed_names = "results/{eid}/{sample}/assembly/{sample}_discarded_contigs.txt"
     params:
-        minc = config["assembly"].get("minc", 5)
-        minp = config["assembly"].get("minp", 40)
-        minr = config["assembly"].get("minr", 0)
-        minl = config["assembly"].get("minl", 1)
+        minc = config["assembly"].get("minc", 5),
+        minp = config["assembly"].get("minp", 40),
+        minr = config["assembly"].get("minr", 0),
+        minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
     threads:
         1
@@ -413,25 +323,42 @@ rule filter_by_coverage:
 
 rule contig_coverage_stats:
     input:
-        fasta = "results/{eid}/{sample}/assembly/{sample}/{sample}_final_contigs.fasta",
+        fasta = "results/{eid}/{sample}/assembly/{sample}_contigs.fasta",
         fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
     output:
+        bam = "results/{eid}/{sample}/annotation/{sample}.bam",
+        bai = "results/{eid}/{sample}/annotation/{sample}.bam.bai",
         bhist = "results/{eid}/{sample}/assembly/stats/postfilter_base_composition.txt",
         bqhist = "results/{eid}/{sample}/assembly/stats/postfilter_box_quality.txt",
         mhist = "results/{eid}/{sample}/assembly/stats/postfilter_mutation_rates.txt",
+        gchist = "results/{eid}/{sample}/assembly/stats/postfilter_gc_rates.txt",
         statsfile = "results/{eid}/{sample}/assembly/stats/postfilter_mapping_stats.txt",
         covstats = "results/{eid}/{sample}/assembly/stats/postfilter_coverage_stats.txt"
     threads:
         config.get("threads", 1)
     shell:
-        """bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t threads={threads} \
-               bhist={output.bhist} bqhist={output.bqhist} mhist={output.mhist} \
-               gchist={output.gchist} statsfile={params.statsfile} covstats={output.covstats}"""
+        """bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} \
+               out=results/{wildcards.eid}/{wildcards.sample}/annotation/{wildcards.sample}.sam \
+               mappedonly=t threads={threads} bhist={output.bhist} bqhist={output.bqhist} \
+               mhist={output.mhist} gchist={output.gchist} statsfile={output.statsfile} \
+               covstats={output.covstats}
+           samtools view -@ {threads} -bSh1 "results/{wildcards.eid}/{wildcards.sample}/annotation/{wildcards.sample}.sam" \
+               | samtools sort -@ {threads} -T results/{wildcards.eid}/{wildcards.sample}/annotation/{wildcards.sample} -o {output.bam} -O bam -
+           samtools index {output.bam}"""
+
+
+rule final_contigs_stats:
+    input:
+        "results/{eid}/{sample}/assembly/{sample}_contigs.fasta"
+    output:
+        "results/{eid}/{sample}/assembly/stats/final_contig_stats.txt"
+    shell:
+        "stats.sh in={input} format=3 > {output}"
 
 
 rule prodigal_orfs:
     input:
-        "results/{eid}/{sample}/assembly/{sample}/{sample}_final_contigs.fasta"
+        "results/{eid}/{sample}/assembly/{sample}_contigs.fasta"
     output:
         prot = "results/{eid}/{sample}/annotation/orfs/{sample}.faa",
         nuc = "results/{eid}/{sample}/annotation/orfs/{sample}.fna",
