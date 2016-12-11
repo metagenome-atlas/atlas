@@ -526,7 +526,7 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
             for hsp in qgroup:
                 toks = dict(zip(BLAST6, hsp.strip().split("\t")))
                 # legacy for files mapped with incorrect reference
-                toks["sseqid"] = toks["sseqid"].partition(".")[-1]
+                # toks["sseqid"] = toks["sseqid"].partition(".")[-1]
                 if (int(toks["length"]) < min_length or
                         float(toks["pident"]) < min_identity or
                         float(toks["evalue"]) > max_evalue):
@@ -575,6 +575,7 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
                         ko_level3_name, ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
                 # legacy before database was pruned; can have hits not in metadata
                 except TypeError:
+                    logging.warning("'%s' not present in database" % hit_id)
                     pass
 
             # print for this query
