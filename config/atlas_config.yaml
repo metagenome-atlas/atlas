@@ -1,18 +1,35 @@
-# prototype stuffs
-data_type: Metagenome
+experiment: jgi-metat
+samples:
+    sample_1:
+        # interleaved example
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000000-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.GTTTCG.anqtp.hR.fastq.gz
+        # paired-end example
+        # path:
+        #    - /path/to/sample_R1.fastq
+        #    - /path/to/sample_R2.fastq
+        # 'interleaved' or 'paired-end'
+        scheme: interleaved
+        type: metatranscriptome
+        # phred: 33
+    sample_2:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000008-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.CGTACG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+
+# TODO: ability to set data type per sample
+data_type: metatranscriptome
+
 # sliding_window OR expected_error
 qual_method: sliding_window
-
-# regular stuffs
-eid: test
-# can be removed or set to '' to disable
 temporary_directory: /scratch
-phred_offset: 33
-
-
-# some tasks in the workflow are single threaded, so leaving one or two open
-# cores can improve throughput
+minimum_read_count_to_analyze: 200
+# sets threads for all methods that are not single-threaded
 threads: 23
+# shell command prefix; useful for unconventional job queue situations
+prefix: "srun --exclusive -N1 -n1 -c"
+# prefix: ""
 filtering:
     first_pass:
         # fastas to parse into kmers which are then trimmed from the sequences
@@ -48,6 +65,8 @@ filtering:
         crop: 0
         # The number of bases to remove from the start of the read; 0 disables
         headcrop: 0
+        # passing read length after quality trimming merged reads
+        minimum_passing_read_length: 51
     contamination:
         references:
             # this key ('rRNA') is required
@@ -197,7 +216,6 @@ annotation:
             top_fraction: 0.50
 
 binning:
-    threads: 12
     minimum_contig_length: 1000
     # iterations of Expectation-Maximization algorithm
     maximum_iterations: 50
