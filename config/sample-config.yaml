@@ -8,86 +8,86 @@ samples:
         scheme: interleaved
         type: metatranscriptome
         # phred: 33
-    # H1000008:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000008-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.CGTACG.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000040:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000040-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.GAGTGG.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000044:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000044-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9528.1.136365.ATCACG.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000056:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000056-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.3.130821.ACTGAT.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000060:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000060-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.3.130821.ATTCCT.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000068:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000068-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.ATCACG.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000072:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000072-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.CGATGT.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000076:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000076-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.TTAGGC.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000120:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000120-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.TGACCA.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000124:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000124-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9528.1.136365.CGATGT.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000132:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000132-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.ACAGTG.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000136:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000136-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.GCCAAT.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000180:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000180-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9528.1.136365.TTAGGC.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000188:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000188-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.CAGATC.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000192:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000192-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.ACTTGA.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
-    # H1000196:
-    #     path:
-    #         - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000196-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.GATCAG.anqtp.hR.fastq.gz
-    #     scheme: interleaved
-    #     type: metatranscriptome
+    H1000008:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000008-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.CGTACG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000040:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000040-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.GAGTGG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000044:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000044-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9528.1.136365.ATCACG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000056:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000056-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.3.130821.ACTGAT.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000060:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000060-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.3.130821.ATTCCT.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000068:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000068-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.ATCACG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000072:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000072-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.CGATGT.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000076:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000076-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.TTAGGC.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000120:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000120-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.TGACCA.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000124:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000124-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9528.1.136365.CGATGT.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000132:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000132-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.ACAGTG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000136:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000136-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.1.130807.GCCAAT.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000180:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000180-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9528.1.136365.TTAGGC.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000188:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000188-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.CAGATC.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000192:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000192-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.ACTTGA.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
+    H1000196:
+        path:
+            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000196-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.GATCAG.anqtp.hR.fastq.gz
+        scheme: interleaved
+        type: metatranscriptome
 
 # sliding_window OR expected_error
 qual_method: sliding_window
@@ -95,7 +95,7 @@ temporary_directory: /scratch
 minimum_read_count_to_analyze: 200
 threads: 23
 # shell command prefix
-prefix:
+prefix: "srun --exclusive -N1 -n1 -c"
 filtering:
     first_pass:
         # fastas to parse into kmers which are then trimmed from the sequences
