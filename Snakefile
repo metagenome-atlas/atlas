@@ -136,7 +136,7 @@ rule join_reads:
         """{SHPFXM} flash {input.r1} {input.r2} --min-overlap {params.min_overlap} \
                --max-overlap {params.max_overlap} --max-mismatch-density {params.max_mismatch_density} \
                --phred-offset {params.phred_offset} --output-prefix {wildcards.sample} \
-               --output-directory {params.output_dir} --threads {threads}"""
+               --output-directory {params.output_dir} --threads {threads} > {log}"""
 
 
 rule concatenate_joined_reads:
