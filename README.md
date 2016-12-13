@@ -1,5 +1,5 @@
 <p align="center">
-    <img src=images/logo.jpg width=300 />
+    <img src=resources/images/logo.jpg width=300 />
 </p>
 
 # ATLAS
