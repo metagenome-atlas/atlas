@@ -26,7 +26,8 @@ MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "cazy_gene_id", "cazy_taxa", "cazy_ec", "ko_id",
                  "ko_level1_name", "ko_level2_name", "ko_level3_id",
                  "ko_level3_name", "ko_gene_symbol", "ko_product",
-                 "ko_ec", "eggnog_evalue", "eggnog_bitscore"]
+                 "ko_ec", "eggnog_evalue", "eggnog_bitscore",
+                 "expazy_ec", "expazy_name"]
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 
 
@@ -415,10 +416,70 @@ class BlastHits(object):
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option("0.2.1")
+@click.version_option("0.3.0")
 @click.pass_context
 def cli(obj):
     "Methods for BLAST tabular output."
+
+
+@cli.command("expazy", short_help="process blast hits for expazy reference")
+@click.argument("tsv", type=click.Path(exists=True))
+@click.argument("namemap", type=click.Path(exists=True))
+@click.argument("output", type=click.File("w"))
+@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
+@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
+@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
+@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
+@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
+@click.option("--table-name", default="expazy", help="table name within namemap database; expected columns are listed above")
+def expazy_parsing(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
+                   max_evalue, top_fraction, max_hits, table_name):
+    """Parse BLAST hits from ExPAZy reference database.
+
+    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
+
+        \b
+        sort -k1,1 -k12,12rn tsv > sorted_tsv
+
+    Expected columns in the ExPAZy database:
+
+        \b
+        uniprot_entry
+        uniparc_entry
+        expazy_ec
+        expazy_name
+
+    For a given UniParc match, all possible ECs and ExPAZy recommended names are returned in a
+    single line separated by '|'.
+
+    """
+    import sqlite3
+    logging.info("Parsing %s" % tsv)
+
+    if top_fraction == 1:
+        top_fraction = None
+
+    print("contig", "orf", "expazy_ec", "expazy_name", "%s_evalue" % table_name,
+          "%s_bitscore" % table_name, sep="\t", file=output)
+    with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
+        cursor = conn.cursor()
+        for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
+
+            contig_name, _, orf_idx = query.rpartition("_")
+            hit_id, evalue, bitscore = get_hit_from_blast_group(qgroup, max_hits, top_fraction, min_length, min_identity, max_evalue, min_bitscore, summary_method)
+            ecs = "NA"
+            names = "NA"
+
+            # everything could have been filtered out due to user constraints
+            if hit_id:
+                cursor.execute('SELECT expazy_ec, expazy_name \
+                                FROM %s \
+                                WHERE uniparc_entry="%s"' % (table_name, hit_id))
+                ecs, names = cursor.fetchone()
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), ecs, names, bitscore, evalue, sep="\t", file=output)
+    logging.info("Complete")
 
 
 @cli.command("eggnog", short_help="process blast hits and aggregate across ORFs")
@@ -490,7 +551,7 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
         for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
 
             contig_name, _, orf_idx = query.rpartition("_")
-            hit_id = ""
+            hit_id, evalue, bitscore = get_hit_from_blast_group(qgroup, max_hits, top_fraction, min_length, min_identity, max_evalue, min_bitscore, summary_method)
             uniprot_ac = "NA"
             eggnog_ssid_b = "NA"
             eggnog_species_id = "NA"
@@ -517,44 +578,6 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
             ko_gene_symbol = "NA"
             ko_product = "NA"
             ko_ec = "NA"
-            bitscore = "NA"
-            evalue = "NA"
-            orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
-            lines = []
-
-            # iterate over blast hits per ORF
-            for hsp in qgroup:
-                toks = dict(zip(BLAST6, hsp.strip().split("\t")))
-                # legacy for files mapped with incorrect reference
-                # toks["sseqid"] = toks["sseqid"].partition(".")[-1]
-                if (int(toks["length"]) < min_length or
-                        float(toks["pident"]) < min_identity or
-                        float(toks["evalue"]) > max_evalue):
-                    continue
-                if min_bitscore and float(toks["bitscore"]) < min_bitscore:
-                    # input is sorted by decreasing bitscore
-                    break
-
-                if summary_method == "best":
-                    hit_id = toks["sseqid"]
-                    bitscore = toks["bitscore"]
-                    evalue = toks["evalue"]
-                    break
-
-                orf_hits.add(toks["sseqid"], toks["bitscore"])
-                lines.append(toks)
-
-            # summary method is majority and we have passing HSPs
-            if summary_method == "majority" and lines:
-                hit_id = orf_hits.majority()
-
-                for toks in lines:
-                    if toks["sseqid"] == hit_id:
-                        bitscore = toks["bitscore"]
-                        evalue = toks["evalue"]
-                        break
-                if bitscore == "NA":
-                    logging.critical("The majority ID was not assigned a bitscore")
 
             # everything could have been filtered out due to user constraints
             if hit_id:
@@ -746,6 +769,47 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
             contigs[contig_name][orf_idx] = (protein_function, taxonomy_id, bitscore, evalue)
 
     return contigs
+
+
+def get_hit_from_blast_group(grouped_hits, max_hits, top_fraction, min_length, min_identity, max_evalue, min_bitscore, summary_method):
+    hit_id = ""
+    bitscore = "NA"
+    evalue = "NA"
+    orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
+    lines = []
+
+    # iterate over blast hits per ORF
+    for hsp in grouped_hits:
+        toks = dict(zip(BLAST6, hsp.strip().split("\t")))
+        if (int(toks["length"]) < min_length or
+                float(toks["pident"]) < min_identity or
+                float(toks["evalue"]) > max_evalue):
+            continue
+        if min_bitscore and float(toks["bitscore"]) < min_bitscore:
+            # input is sorted by decreasing bitscore
+            break
+
+        if summary_method == "best":
+            hit_id = toks["sseqid"]
+            bitscore = toks["bitscore"]
+            evalue = toks["evalue"]
+            break
+
+        orf_hits.add(toks["sseqid"], toks["bitscore"])
+        lines.append(toks)
+
+    # summary method is majority and we have passing HSPs
+    if summary_method == "majority" and lines:
+        hit_id = orf_hits.majority()
+
+        for toks in lines:
+            if toks["sseqid"] == hit_id:
+                bitscore = toks["bitscore"]
+                evalue = toks["evalue"]
+                break
+        if bitscore == "NA":
+            logging.critical("The majority ID was not assigned a bitscore")
+    return hit_id, evalue, bitscore
 
 
 def nettleton_pvalue(items, key):
@@ -1059,34 +1123,37 @@ def read_fasta(fh):
             yield name, seq
 
 
-@cli.command("merge-tables", short_help="for a sample, merge its eggnog and refseq tables")
-@click.argument("refseq", type=click.File("r"))
-@click.argument("eggnog", type=click.File("r"))
+@cli.command("merge-tables", short_help="merge tables on 'contig' and 'orf' keys")
+@click.argument("tables", type=click.File("r"), nargs=-1)
 @click.argument("output", type=click.File("w"))
-def merge_tables(refseq, eggnog, output):
-    """Takes the output from `refseq` and `eggnog` and combines them into a single TSV table.
+def merge_tables(tables, output):
+    """Takes the output from parsers and combines them into a single TSV table.
 
     Headers are required and should contain 'contig' and 'orf' column labels.
     """
-    # input file order doesn't actually matter...
     import pandas as pd
 
     index_cols = ["contig", "orf"]
-    try:
-        ref_df = pd.read_table(refseq, index_col=index_cols)
-    except ValueError:
-        logging.critical("The expected headers ('contig', 'orf') are missing from %s" % refseq.name)
-        sys.exit(1)
-    logging.info("%d contained in %s" % (len(ref_df), refseq.name))
-    try:
-        egg_df = pd.read_table(eggnog, index_col=index_cols)
-    except ValueError:
-        logging.critical("The expected headers ('contig', 'orf') are missing from %s" % eggnog.name)
-        sys.exit(1)
-    logging.info("%d contained in %s" % (len(egg_df), eggnog.name))
-    merged = pd.merge(left=ref_df, right=egg_df, how="outer", left_index=True, right_index=True)
-    logging.info("%d total lines after merging" % len(merged))
-    merged.to_csv(output, sep="\t", na_rep="NA")
+
+    for i, table in enumerate(tables):
+        if i == 0:
+            try:
+                ref_df = pd.read_table(table, index_col=index_cols)
+                logging.info("%d lines read in %s" % (len(ref_df), table.name))
+            except ValueError:
+                logging.critical("The expected headers ('contig', 'orf') are missing from %s" % table.name)
+                sys.exit(1)
+        else:
+            try:
+                tmp_df = pd.read_table(table, index_col=index_cols)
+                logging.info("%d lines read in %s" % (len(tmp_df), table.name))
+            except ValueError:
+                logging.critical("The expected headers ('contig', 'orf') are missing from %s" % table.name)
+                sys.exit(1)
+            merged = pd.merge(left=ref_df, right=tmp_df, how="outer", left_index=True, right_index=True)
+            ref_df = merged.copy()
+    logging.info("%d total lines after merging all tables" % len(ref_df))
+    ref_df.to_csv(output, sep="\t", na_rep="NA")
 
 
 @cli.command("counts", short_help="integrate reads counts and annotations")
@@ -1195,14 +1262,20 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
                     df[tax_name] = df["taxonomy"].apply(lambda x: ";".join(x.split(";")[0:level_idx]) if isinstance(x, str) else x)
 
                 for subname, subvals in vals.items():
+                    if subname.lower() == "levels": continue
                     # remove duplicates and entries not in the expected merged header
                     subvals = [i for i in list(set(subvals)) if i in MERGED_HEADER]
-                    if subname.lower() == "levels": continue
                     table_name = "%s_%s" % (subname, tax_name)
                     logging.info("Writing %s table to %s_%s%s" % (table_name, prefix, table_name, suffix))
                     tax_vals = subvals + [tax_name, "count"]
                     # subvals.extend([tax_name, "count"])
                     tdf = df[tax_vals].copy()
+
+                    for v in subvals:
+                        # expazy has one-to-many relationships with it's mapping sequence to EC and Names
+                        if "expazy" in v:
+                            tdf = col_split(tdf, v)
+
                     tdf.dropna(how="any", thresh=2, inplace=True)
                     tdf.groupby(tax_vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
 
@@ -1214,10 +1287,41 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
             vals.append("count")
             # drops unwanted columns
             tdf = df[vals].copy()
+
+            for v in vals:
+                # expazy has one-to-many relationships with it's mapping sequence to EC and Names
+                if "expazy" in v:
+                    tdf = col_split(tdf, v)
+
             # remove rows with no metadata; allows partial metadata
             tdf.dropna(how="any", thresh=2, inplace=True)
             # aggregate counts and print
             tdf.groupby(vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, name, suffix), sep="\t")
+
+
+def col_split(df, column, sep='|'):
+    """
+    Split the values of a column and expand so the new DataFrame has one split value per row.
+
+    Args:
+        df (pandas.DataFrame)
+        column (str): column header value
+        sep (str): value with which to split
+
+    Returns:
+        pandas.DataFrame
+
+    """
+    indexes = list()
+    new_values = list()
+    df = df.dropna(subset=[column])
+    for i, presplit in enumerate(df[column].astype(str)):
+        for value in presplit.split(sep):
+            indexes.append(i)
+            new_values.append(value)
+    new_df = df.iloc[indexes, :].copy()
+    new_df[column] = new_values
+    return new_df
 
 
 if __name__ == "__main__":
