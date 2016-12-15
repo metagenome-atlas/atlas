@@ -2,12 +2,13 @@ import json
 import os
 import sys
 from glob import glob
+from snakemake.utils import report
 from subprocess import check_output
 
 
-def read_count(fastq):
+def read_count(fastq, out=None):
     total = 0
-    count_file = fastq + ".count"
+    count_file = fastq + ".count" if out is None else out
     if os.path.exists(fastq) and os.path.getsize(fastq) > 100:
         if not os.path.exists(count_file):
             if fastq.endswith("gz"):
@@ -77,7 +78,8 @@ rule all:
         expand("results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv", eid=config["experiment"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
         expand("results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv", eid=config["experiment"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
         expand("results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/count_tables/{sample}_{table}.tsv", eid=config["experiment"], sample=SAMPLES, table=TABLES)
+        expand("results/{eid}/{sample}/count_tables/{sample}_{table}.tsv", eid=config["experiment"], sample=SAMPLES, table=TABLES),
+        expand("results/{eid}/{sample}/{sample}_readme.html", eid=config["experiment"], sample=SAMPLES)
 
 
 rule quality_filter_reads:
@@ -100,6 +102,8 @@ rule quality_filter_reads:
         # read complexity filter
         minbasefrequency = config["filtering"]["first_pass"].get("min_base_frequency", 0.05),
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["path"][0] if len(config["samples"][wc.sample]["path"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["path"][0], config["samples"][wc.sample]["path"][1])
+    log:
+        "results/{eid}/{sample}/logs/{sample}_quality_filter_first_pass.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -108,7 +112,7 @@ rule quality_filter_reads:
                stats={output.stats} hdist={params.hdist} k={params.k} \
                trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
                minlength={params.minlength} minbasefrequency={params.minbasefrequency} \
-               overwrite=true"""
+               overwrite=true 2> {log}"""
 
 
 rule join_reads:
@@ -157,10 +161,12 @@ rule error_correction:
         "results/{eid}/{sample}/quality_control/join/{sample}_joined.fastq"
     output:
         "results/{eid}/{sample}/quality_control/error_correction/{sample}_corrected.fastq.gz"
+    log:
+        "results/{eid}/{sample}/logs/{sample}_error_correction.log"
     threads:
         config.get("threads", 1)
     shell:
-        "{SHPFXM} tadpole.sh in={input} out={output} mode=correct threads={threads}"
+        "{SHPFXM} tadpole.sh in={input} out={output} mode=correct threads={threads} 2> {log}"
 
 
 if config.get("qual_method") == "expected_error":
@@ -196,6 +202,15 @@ else:
                    {params.leading} {params.trailing} {params.window_size_qual} {params.minlen}"""
 
 
+rule count_second_pass:
+    input:
+        "results/{eid}/{sample}/quality_control/quality_filter/{sample}_filtered.fastq"
+    output:
+        "results/{eid}/{sample}/logs/{sample}_quality_filter_second_pass.count"
+    run:
+        read_count(input, output)
+
+
 rule decontaminate_joined:
     input:
         "results/{eid}/{sample}/quality_control/quality_filter/{sample}_filtered.fastq"
@@ -211,13 +226,15 @@ rule decontaminate_joined:
         minhits = config["filtering"]["contamination"].get("minhits", 1),
         ambiguous = config["filtering"]["contamination"].get("ambiguous", "best"),
         k = config["filtering"]["contamination"].get("k", 15)
+    log:
+        "results/{eid}/{sample}/logs/{sample}_decontaminate_joined.log"
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} bbsplit.sh {params.refs_in} in={input} outu={output.clean} \
                {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-               threads={threads} k={params.k} local=t"""
+               threads={threads} k={params.k} local=t 2> {log}"""
 
 
 if config["data_type"] == "metatranscriptome":
@@ -307,12 +324,14 @@ rule dirty_contig_coverage_stats:
         mhist = "results/{eid}/{sample}/assembly/stats/prefilter_mutation_rates.txt",
         statsfile = "results/{eid}/{sample}/assembly/stats/prefilter_mapping_stats.txt",
         covstats = "results/{eid}/{sample}/assembly/stats/prefilter_coverage_stats.txt"
+    log:
+        "results/{eid}/{sample}/dirty_contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t \
                threads={threads} bhist={output.bhist} bqhist={output.bqhist} mhist={output.mhist} \
-               statsfile={output.statsfile} covstats={output.covstats}"""
+               statsfile={output.statsfile} covstats={output.covstats} 2> {log}"""
 
 
 rule filter_by_coverage:
@@ -328,12 +347,14 @@ rule filter_by_coverage:
         minr = config["assembly"].get("minr", 0),
         minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
+    log:
+        "results/{eid}/{sample}/filter_by_coverage.log"
     threads:
         1
     shell:
         """{SHPFXS} filterbycoverage.sh in={input.fasta} cov={input.covstats} out={output.fasta} \
                outd={output.removed_names} minc={params.minc} minp={params.minp} \
-               minr={params.minr} minl={params.minl} trim={params.trim}"""
+               minr={params.minr} minl={params.minl} trim={params.trim} 2> {log}"""
 
 
 rule contig_coverage_stats:
@@ -349,6 +370,8 @@ rule contig_coverage_stats:
         gchist = "results/{eid}/{sample}/assembly/stats/postfilter_gc_rates.txt",
         statsfile = "results/{eid}/{sample}/assembly/stats/postfilter_mapping_stats.txt",
         covstats = "results/{eid}/{sample}/assembly/stats/postfilter_coverage_stats.txt"
+    log:
+        "results/{eid}/{sample}/contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -356,7 +379,7 @@ rule contig_coverage_stats:
                out=results/{wildcards.eid}/{wildcards.sample}/annotation/{wildcards.sample}.sam \
                mappedonly=t threads={threads} bhist={output.bhist} bqhist={output.bqhist} \
                mhist={output.mhist} gchist={output.gchist} statsfile={output.statsfile} \
-               covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3"""
+               covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3 2> {log}"""
 
 
 rule sam_to_bam:
@@ -434,13 +457,15 @@ rule counts_per_region:
         counts = "results/{eid}/{sample}/annotation/orfs/{sample}.CDS.txt"
     params:
         min_read_overlap = config["annotation"].get("minimum_overlap", 20)
+    log:
+        "results/{eid}/{sample}/contigs_per_region.log"
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 1 -a {input.gtf} \
                -o results/{wildcards.eid}/{wildcards.sample}/annotation/orfs/{wildcards.sample} \
-               {input.bam} > /dev/null"""
+               {input.bam} > {log}"""
 
 
 rule build_dmnd_database:
@@ -508,7 +533,7 @@ rule parse_blast:
     output:
         "results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv"
     params:
-        subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
+        # subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
         treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
         summary_method = lambda wc: config["annotation"]["references"][wc.reference].get("summary_method", "best"),
@@ -521,7 +546,7 @@ rule parse_blast:
         max_hits = lambda wc: config["annotation"]["references"][wc.reference].get("max_hits", "10"),
         top_fraction = lambda wc: config["annotation"]["references"][wc.reference].get("top_fraction", "0.50")
     shell:
-        """{SHPFXS} python scripts/blast2assignment.py {params.subcommand} \
+        """{SHPFXS} python scripts/blast2assignment.py {wildcards.reference} \
                --summary-method {params.summary_method} {params.aggregation_method} \
                {params.majority_threshold} --min-identity {params.min_identity} \
                --min-bitscore {params.min_bitscore} --min-length {params.min_length} \
@@ -544,10 +569,92 @@ rule aggregate_counts:
         merged = "results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv",
         counts = "results/{eid}/{sample}/annotation/orfs/{sample}.CDS.txt"
     output:
-        "results/{eid}/{sample}/count_tables/{sample}_{table}.tsv"
+        ["results/{eid}/{sample}/count_tables/{sample}_%s.tsv" % i for i in TABLES]
     params:
         prefix = lambda wc: "results/%s/%s/count_tables/%s" % (wc.eid, wc.sample, wc.sample),
         combos = json.dumps(config["summary_counts"])
     shell:
         """{SHPFXS} python scripts/blast2assignment.py counts {params.prefix} {input.merged} \
                {input.counts} '{params.combos}'"""
+
+
+rule sample_report:
+    input:
+        contig_stats = "results/{eid}/{sample}/assembly/stats/final_contig_stats.txt",
+        base_comp = "results/{eid}/{sample}/assembly/stats/postfilter_base_composition.txt",
+        css = "resources/report.css"
+    output:
+        html = "results/{eid}/{sample}/{sample}_readme.html"
+    shadow:
+        "shallow"
+    run:
+        import pandas as pd
+
+        # contig stats table
+        df = pd.read_csv(input.contig_stats, sep="\t")
+        contig_stats_csv = "contig_stats.csv"
+        df.to_csv(contig_stats_csv,
+                  columns=["n_contigs", "contig_bp", "ctg_N50", "ctg_N90", "ctg_max", "gc_avg"],
+                  index=False)
+
+        # read base composition across final contigs
+        df = pd.read_csv(input.base_comp, sep="\t")
+        base_composition_positions = "['%s']" % "', '".join(map(str, df["#Pos"]))
+        base_composition_a = "[%s]" % ", ".join(map(str, df["A"]))
+        base_composition_c = "[%s]" % ", ".join(map(str, df["C"]))
+        base_composition_g = "[%s]" % ", ".join(map(str, df["G"]))
+        base_composition_t = "[%s]" % ", ".join(map(str, df["T"]))
+        base_composition_n = "[%s]" % ", ".join(map(str, df["N"]))
+
+        report("""
+
+===========================================================================================
+Sample Report - Experiment: {wildcards.eid}; Sample: {wildcards.sample}
+===========================================================================================
+
+.. raw:: html
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script type="text/javascript">
+
+    $(function () {{
+        $('#read_composition').highcharts({{
+            title: {{text: 'Read Base Composition by Position'}},
+            xAxis: {{title: {{text: "Position"}}, categories: {base_composition_positions}}},
+            yAxis: {{min: 0, title: {{text: 'Fraction'}}}},
+            tooltip: {{}},
+            credits: {{enabled: false}},
+            legend: {{layout: 'vertical', align: 'right', verticalAlign: 'middle', borderWidth: 0}},
+            plotOptions: {{series: {{ marker: {{ enabled: false }} }}, column: {{pointPadding: 0.2, borderWidth: 0}}}},
+            series: [{{name: 'A', data: {base_composition_a}}},
+                     {{name: 'C', data: {base_composition_c}}},
+                     {{name: 'G', data: {base_composition_g}}},
+                     {{name: 'T', data: {base_composition_t}}},
+                     {{name: 'N', data: {base_composition_n}}}]
+            }});
+    }});
+    </script>
+
+.. contents:: Contents
+    :backlinks: none
+
+Read Summary
+------------
+
+.. raw:: html
+
+    <div id="read_composition" style="min-width: 310px; height: 500px; margin: 0 auto"></div>
+
+
+Contig Summary
+--------------
+
+.. csv-table::
+    :header-rows: 1
+    :file: {contig_stats_csv}
+
+
+               """, output.html, metadata="Author: " + config.get("author", "ATLAS"),
+               stylesheet=input.css, contig_stats=input.contig_stats)
