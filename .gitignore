@@ -1,13 +1,4 @@
-atlas_data/
-*.fastq
-*.fa
-*.bt2
-*.pyc
-output/
-*~
-bin
-databases
-results
-data
+results/
+databases/
 .snakemake
-
+logs/
