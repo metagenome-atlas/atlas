@@ -69,3 +69,12 @@ sqlite> .mode tabs
 sqlite> create table expazy (uniparc_entry text PRIMARY KEY, uniprot_entry text, expazy_ec text, expazy_name text);
 sqlite> .import expazy.map expazy
 ```
+
+# DBCAN
+
+```
+sqlite> .open dbcan.db
+sqlite> .mode tabs
+sqlite> create table dbcan (cazy_gene text PRIMARY KEY, cazy_family text, cazy_class text, cazy_ec text);
+sqlite> .import dbcan.map dbcan
+```

@@ -416,10 +416,72 @@ class BlastHits(object):
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option("0.3.0")
+@click.version_option("0.3.1")
 @click.pass_context
 def cli(obj):
     "Methods for BLAST tabular output."
+
+
+@cli.command("cazy", short_help="process blast hits for cazy (dbcan) reference")
+@click.argument("tsv", type=click.Path(exists=True))
+@click.argument("namemap", type=click.Path(exists=True))
+@click.argument("output", type=click.File("w"))
+@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
+@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
+@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
+@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
+@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
+@click.option("--table-name", default="expazy", help="table name within namemap database; expected columns are listed above")
+def cazy_parsing(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
+                 max_evalue, top_fraction, max_hits, table_name):
+    """Parse BLAST hits from CAZy reference database.
+
+    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
+
+        \b
+        sort -k1,1 -k12,12rn tsv > sorted_tsv
+
+    Expected columns in the CAZy database:
+
+        \b
+        cazy_gene
+        cazy_family
+        cazy_class
+        cazy_ec
+
+    For a given gene match, all possible ECs are returned in a single line separated by '|'.
+
+    """
+    import sqlite3
+    logging.info("Parsing %s" % tsv)
+
+    if top_fraction == 1:
+        top_fraction = None
+
+    print("contig", "orf", "cazy_gene", "cazy_family", "cazy_class", "cazy_ec",
+          "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
+    with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
+        cursor = conn.cursor()
+        for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
+
+            contig_name, _, orf_idx = query.rpartition("_")
+            hit_id, evalue, bitscore = get_hit_from_blast_group(qgroup, max_hits, top_fraction, min_length, min_identity, max_evalue, min_bitscore, summary_method)
+            cazy_gene = "NA"
+            cazy_family = "NA"
+            cazy_class = "NA"
+            cazy_ec = "NA"
+
+            # everything could have been filtered out due to user constraints
+            if hit_id:
+                cursor.execute('SELECT cazy_gene, cazy_family, cazy_class, cazy_ec \
+                                FROM %s \
+                                WHERE cazy_gene="%s"' % (table_name, hit_id))
+                cazy_gene, cazy_family, cazy_class, cazy_ec = cursor.fetchone()
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), cazy_gene, cazy_family,
+                  cazy_class, cazy_ec, evalue, bitscore, sep="\t", file=output)
+    logging.info("Complete")
 
 
 @cli.command("expazy", short_help="process blast hits for expazy reference")
@@ -478,7 +540,7 @@ def expazy_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
                                 FROM %s \
                                 WHERE uniparc_entry="%s"' % (table_name, hit_id))
                 ecs, names = cursor.fetchone()
-            print(contig_name, "%s_%s" % (contig_name, orf_idx), ecs, names, bitscore, evalue, sep="\t", file=output)
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), ecs, names, evalue, bitscore, sep="\t", file=output)
     logging.info("Complete")
 
 
@@ -516,14 +578,6 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
         cog_level1_code
         cog_level1_name
         cog_level2_name
-        cazy_id1
-        cazy_id2
-        cazy_class
-        cazy_clan
-        cazy_product
-        cazy_gene_id
-        cazy_taxa
-        cazy_ec
         ko_id
         ko_level1_name
         ko_level2_name
@@ -562,14 +616,6 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
             cog_level1_code = "NA"
             cog_level1_name = "NA"
             cog_level2_name = "NA"
-            cazy_id1 = "NA"
-            cazy_id2 = "NA"
-            cazy_class = "NA"
-            cazy_clan = "NA"
-            cazy_product = "NA"
-            cazy_gene_id = "NA"
-            cazy_taxa = "NA"
-            cazy_ec = "NA"
             ko_id = "NA"
             ko_level1_name = "NA"
             ko_level2_name = "NA"
@@ -583,19 +629,15 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
             if hit_id:
                 cursor.execute('SELECT uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, \
                                        cog_func_id, cog_id, cog_product, cog_level1_code, \
-                                       cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, \
-                                       cazy_class, cazy_clan, cazy_product, cazy_gene_id, \
-                                       cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, \
-                                       ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, \
-                                       ko_ec \
+                                       cog_level1_name, cog_level2_name, ko_id, ko_level1_name, ko_level2_name, \
+                                       ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec \
                                 FROM %s \
                                 WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
                 try:
                     uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, \
-                        cog_product, cog_level1_code, cog_level1_name, cog_level2_name, cazy_id1, \
-                        cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id, cazy_taxa, \
-                        cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id, \
-                        ko_level3_name, ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
+                        cog_product, cog_level1_code, cog_level1_name, cog_level2_name, ko_id, \
+                        ko_level1_name, ko_level2_name, ko_level3_id, ko_level3_name, \
+                        ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
                 # legacy before database was pruned; can have hits not in metadata
                 except TypeError:
                     logging.warning("'%s' not present in database" % hit_id)
@@ -604,10 +646,9 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
             # print for this query
             print(contig_name, "%s_%s" % (contig_name, orf_idx), uniprot_ac, eggnog_ssid_b,
                   eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code,
-                  cog_level1_name, cog_level2_name, cazy_id1, cazy_id2, cazy_class, cazy_clan,
-                  cazy_product, cazy_gene_id, cazy_taxa, cazy_ec, ko_id, ko_level1_name,
-                  ko_level2_name, ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec,
-                  evalue, bitscore, sep="\t", file=output)
+                  cog_level1_name, cog_level2_name, ko_id, ko_level1_name, ko_level2_name,
+                  ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec, evalue,
+                  bitscore, sep="\t", file=output)
     logging.info("Complete")
 
 
@@ -1271,10 +1312,11 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
                     # subvals.extend([tax_name, "count"])
                     tdf = df[tax_vals].copy()
 
-                    for v in subvals:
-                        # expazy has one-to-many relationships with it's mapping sequence to EC and Names
-                        if "expazy" in v:
-                            tdf = col_split(tdf, v)
+                    if "contig" not in subvals and "orf" not in subvals:
+                        for v in subvals:
+                            # expazy has one-to-many relationships with it's mapping sequence to EC and Names
+                            if "expazy" in v or "cazy_ec" in v:
+                                tdf = col_split(tdf, v)
 
                     tdf.dropna(how="any", thresh=2, inplace=True)
                     tdf.groupby(tax_vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
@@ -1288,10 +1330,11 @@ def integrate_counts(prefix, merged, counts, combinations, suffix=".tsv"):
             # drops unwanted columns
             tdf = df[vals].copy()
 
-            for v in vals:
-                # expazy has one-to-many relationships with it's mapping sequence to EC and Names
-                if "expazy" in v:
-                    tdf = col_split(tdf, v)
+            if "contig" not in vals and "orf" not in vals:
+                for v in vals:
+                    # expazy has one-to-many relationships with it's mapping sequence to EC and Names
+                    if "expazy" in v or "cazy_ec" in v:
+                        tdf = col_split(tdf, v)
 
             # remove rows with no metadata; allows partial metadata
             tdf.dropna(how="any", thresh=2, inplace=True)
