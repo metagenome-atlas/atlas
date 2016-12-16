@@ -14,17 +14,17 @@ from itertools import groupby
 def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
     """
 
-    enzyme.dat:
+    enzyme_dat:
 
         \b
         ftp://ftp.expasy.org/databases/enzyme/enzyme.dat
 
-    uniparc.map is the compressed version of was 'all' from:
+    uniparc_map is the compressed version of was 'all' from:
 
         \b
         http://www.uniprot.org/uniparc/
 
-    uniparc.fasta is:
+    uniparc_fasta is:
 
         \b
         ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/uniparc/uniparc_active.fasta.gz
@@ -80,7 +80,6 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
 
                         uniparc_mappings[uniparc_id].append([uniprot_entry, ec_id, recommended_name])
                         expazy.add(uniparc_id)
-                        # print(uniprot_entry, uniparc_id, ec_id, recommended_name, sep="\t", file=ofh)
 
     with open(out_map, "w") as ofh:
         for uniparc_id, meta in uniparc_mappings.items():
@@ -93,11 +92,11 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                 names.add(name_list[2])
             print(uniparc_id, "|".join(uniprots), "|".join(ecs), "|".join(names), sep="\t", file=ofh)
 
-    # click.echo("parsing %s" % uniparc_fasta)
-    # with gzip.open(uniparc_fasta, 'rt') as fh, open(out_fasta, "w") as ofh:
-    #     for name, seq in read_fasta(fh):
-    #         if name in expazy:
-    #             print(format_fasta_record(name, seq), file=ofh)
+    click.echo("parsing %s" % uniparc_fasta)
+    with gzip.open(uniparc_fasta, 'rt') as fh, open(out_fasta, "w") as ofh:
+        for name, seq in read_fasta(fh):
+            if name in expazy:
+                print(format_fasta_record(name, seq), file=ofh)
 
 
 def read_fasta(fh):
