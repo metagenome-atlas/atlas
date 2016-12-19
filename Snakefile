@@ -72,7 +72,7 @@ def get_assembler(config):
 # shell prefixes for multi-threaded and single-threads tasks
 SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
 SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
-SAMPLES, OMITTED = get_samples(config)
+SAMPLES, OMITTED = get_samples(config, config.get("minimum_starting_reads", 1000))
 TABLES = get_count_tables(config, "summary_counts")
 NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 31), config["preprocessing"]["normalization"].get("t", 100))
 ASSEMBLER = get_assembler(config)
