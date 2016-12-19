@@ -20,7 +20,7 @@ rule dirty_contig_coverage_stats:
         statsfile = "results/{eid}/{sample}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
         covstats = "results/{eid}/{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "results/{eid}/{sample}/dirty_contig_coverage_stats.log"
+        "results/{eid}/{sample}/logs/dirty_contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -43,7 +43,7 @@ rule filter_by_coverage:
         minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
     log:
-        "results/{eid}/{sample}/filter_by_coverage.log"
+        "results/{eid}/{sample}/logs/filter_by_coverage.log"
     threads:
         1
     shell:
@@ -66,7 +66,7 @@ rule contig_coverage_stats:
         statsfile = "results/{eid}/{sample}/%s/stats/postfilter_mapping_stats.txt" % ASSEMBLER,
         covstats = "results/{eid}/{sample}/%s/stats/postfilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "results/{eid}/{sample}/contig_coverage_stats.log"
+        "results/{eid}/{sample}/logs/contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:

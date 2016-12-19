@@ -9,7 +9,7 @@ rule counts_per_region:
     params:
         min_read_overlap = config["annotation"].get("minimum_overlap", 20)
     log:
-        "results/{eid}/{sample}/contigs_per_region.log"
+        "results/{eid}/{sample}/logs/counts_per_region.log"
     threads:
         config.get("threads", 1)
     shell:
