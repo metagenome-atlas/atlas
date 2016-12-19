@@ -64,7 +64,7 @@ merging:
 
 assembly:
     # 'spades' or 'megahit'
-    assembler: spades
+    assembler: megahit
     # fraction of the machine's total memory or bytes
     memory: 0.99
     # minimum multiplicity for filtering (k_min+1)-mers
