@@ -96,18 +96,18 @@ rule all:
         expand("results/{eid}/{sample}/{sample}_readme.html", eid=config["experiment"], sample=SAMPLES)
 
 
-include: "rules/quality_control/fastq_filter.rules"
-include: "rules/quality_control/error_correction.rules"
-include: "rules/quality_control/contig_filters.rules"
-include: "rules/quality_control/decontamination.rules"
-include: "rules/quality_control/normalization.rules"
-include: "rules/quality_control/fastqc.rules"
+include: "rules/quality_control/fastq_filter.snakefile"
+include: "rules/quality_control/error_correction.snakefile"
+include: "rules/quality_control/contig_filters.snakefile"
+include: "rules/quality_control/decontamination.snakefile"
+include: "rules/quality_control/normalization.snakefile"
+include: "rules/quality_control/fastqc.snakefile"
 if config["assembly"]["assembler"] == "spades":
-    include: "rules/assemblers/spades.rules"
+    include: "rules/assemblers/spades.snakefile"
 else:
-    include: "rules/assemblers/megahit.rules"
-include: "rules/annotation/diamond.rules"
-include: "rules/annotation/prodigal.rules"
-include: "rules/annotation/verse.rules"
-include: "rules/annotation/munging.rules"
-include: "rules/reports/sample.rules"
+    include: "rules/assemblers/megahit.snakefile"
+include: "rules/annotation/diamond.snakefile"
+include: "rules/annotation/prodigal.snakefile"
+include: "rules/annotation/verse.snakefile"
+include: "rules/annotation/munging.snakefile"
+include: "rules/reports/sample.snakefile"

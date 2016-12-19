@@ -13,7 +13,7 @@ rule counts_per_region:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} verse --multithreadDecompress -T {threads} --minReadOverlap {params.min_read_overlap} \
+        """{SHPFXM} verse -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 1 -a {input.gtf} \
                -o results/{wildcards.eid}/{wildcards.sample}/annotation/orfs/{wildcards.sample} \
                {input.bam} > {log}"""
