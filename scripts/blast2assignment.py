@@ -433,7 +433,7 @@ def cli(obj):
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
 @click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
 @click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="expazy", help="table name within namemap database; expected columns are listed above")
+@click.option("--table-name", default="dbcan", help="table name within namemap database; expected columns are listed above")
 def cazy_parsing(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
                  max_evalue, top_fraction, max_hits, table_name):
     """Parse BLAST hits from CAZy reference database.
