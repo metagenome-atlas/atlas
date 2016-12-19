@@ -83,8 +83,8 @@ rule all:
         expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", eid=config["experiment"], sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
         expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_refstats.txt", eid=config["experiment"], sample=SAMPLES),
         expand("results/{eid}/{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION, eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.zip", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_final_fastqc.html", eid=config["experiment"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", eid=config["experiment"], sample=SAMPLES),
+        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", eid=config["experiment"], sample=SAMPLES),
         expand("results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER, eid=config["experiment"], sample=SAMPLES),
         expand("results/{eid}/{sample}/annotation/orfs/{sample}.faa", eid=config["experiment"], sample=SAMPLES),
         expand("results/{eid}/{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, eid=config["experiment"], sample=SAMPLES),
@@ -96,18 +96,18 @@ rule all:
         expand("results/{eid}/{sample}/{sample}_readme.html", eid=config["experiment"], sample=SAMPLES)
 
 
-if config["assembly"]["assembler"] == "spades":
-    include: "rules/assemblers/spades.rules"
-else:
-    include: "rules/assemblers/megahit.rules"
-
 include: "rules/quality_control/fastq_filter.rules"
 include: "rules/quality_control/error_correction.rules"
 include: "rules/quality_control/contig_filters.rules"
 include: "rules/quality_control/decontamination.rules"
 include: "rules/quality_control/normalization.rules"
 include: "rules/quality_control/fastqc.rules"
+if config["assembly"]["assembler"] == "spades":
+    include: "rules/assemblers/spades.rules"
+else:
+    include: "rules/assemblers/megahit.rules"
 include: "rules/annotation/diamond.rules"
 include: "rules/annotation/prodigal.rules"
+include: "rules/annotation/verse.rules"
 include: "rules/annotation/munging.rules"
 include: "rules/reports/sample.rules"
