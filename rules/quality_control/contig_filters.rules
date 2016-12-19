@@ -12,7 +12,7 @@ rule dirty_contigs_stats:
 rule dirty_contig_coverage_stats:
     input:
         fasta = "results/{eid}/{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
-        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
+        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
         bhist = "results/{eid}/{sample}/%s/stats/prefilter_base_composition.txt" % ASSEMBLER,
         bqhist = "results/{eid}/{sample}/%s/stats/prefilter_box_quality.txt" % ASSEMBLER,
@@ -55,7 +55,7 @@ rule filter_by_coverage:
 rule contig_coverage_stats:
     input:
         fasta = "results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
-        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_final.fastq.gz"
+        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
         sam = temp("results/{eid}/{sample}/annotation/{sample}.sam"),
         # bai = "results/{eid}/{sample}/annotation/{sample}.bam.bai",
