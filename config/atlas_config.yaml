@@ -1,4 +1,3 @@
-experiment: truth_data
 samples:
     # sample ID
     shewanella:
@@ -6,9 +5,29 @@ samples:
             - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R1_140814.fastq.gz
             - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R2_140814.fastq.gz
         type: metagenome
+    cytophaga:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/200_ATTCCT_L005_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/200_ATTCCT_L005_R2_001.fastq.gz
+    flavobacterium:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/201_GAGTGG_L002_R1_140814.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/201_GAGTGG_L002_R2_140814.fastq.gz
+    xylanimonas:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/202_AGTTCC_L003_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/202_AGTTCC_L003_R2_001.fastq.gz
+    aspergillus:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/204_TAGCTT_L008_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/204_TAGCTT_L008_R2_001.fastq.gz
+    yarrowia:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/205_GGCTAC_L008_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/205_GGCTAC_L008_R2_001.fastq.gz
 
-temporary_directory: /scratch
-minimum_read_count_to_analyze: 5000
+database_directory: /pic/projects/mint/atlas/databases
+tmpdir: /scratch
 # sets threads for all methods that are not single-threaded
 threads: 23
 # shell command prefix; useful for unconventional job queue situations
@@ -16,7 +35,7 @@ threads: 23
 preprocessing:
 
     # fastas to parse into kmers which are then trimmed from the sequences
-    adapters: databases/adapters.fa
+    adapters: /pic/projects/mint/atlas/databases/adapters.fa
     # Look for shorter kmers at read tips down to this length; 0 disables
     mink: 8
     minimum_base_quality: 10
@@ -32,8 +51,8 @@ preprocessing:
     contamination:
         references:
             # this key ('rRNA') is required
-            rRNA: databases/contaminant/silva_rfam_all_rRNAs.fa
-            phiX: databases/contaminant/phiX174_virus.fa
+            rRNA: /pic/projects/mint/atlas/databases/contaminant/silva_rfam_all_rRNAs.fa
+            phiX: /pic/projects/mint/atlas/databases/contaminant/phiX174_virus.fa
         # Don't look for indels longer than this
         maxindel: 20
         # Fraction of max alignment score required to keep a site
@@ -56,11 +75,6 @@ preprocessing:
         t: 100
         # reads must have at least this many kmers over min depth to be retained
         minkmers: 8
-
-merging:
-    minimum_overlap: 30
-    maximum_overlap: 220
-    maximum_mismatch_density: 0.25
 
 assembly:
     # 'spades' or 'megahit'
@@ -205,19 +219,6 @@ annotation:
             top_seqs: 2
             index_chunks: 1
             summary_method: majority
-
-binning:
-    minimum_contig_length: 1000
-    # iterations of Expectation-Maximization algorithm
-    maximum_iterations: 50
-    # probability threshold for EM final classification
-    probability_threshold: 0.9
-    # By default MaxBin will look for 107 marker genes present in >95% of bacteria.
-    # Alternatively you can also choose 40 marker gene sets that are universal
-    # among bacteria and archaea (Wu et al., PLoS ONE 2013). This option may
-    # be better suited for environment dominated by archaea; however it tends
-    # to split genomes into more bins.
-    marker_set: 107
 
 summary_counts:
     # Possible columns table column values upon which to aggregate:
