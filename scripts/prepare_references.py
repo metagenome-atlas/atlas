@@ -1,0 +1,392 @@
+import click
+import csv
+import gzip
+import logging
+import re
+import sys
+from collections import defaultdict
+from itertools import groupby
+
+
+logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
+
+
+def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=100):
+    """Print a fasta record accounting for line wraps in the sequence.
+
+    Args:
+        name (str): name or header for fasta entry
+        seq (str): sequence
+        out_handle (Optional): open file handle in which to write or stdout
+        wrap (Optional[int]) : line width of fasta sequence; None is supported for no wrapping
+
+    """
+    print('>', name, sep='', file=out_handle)
+    if wrap:
+        for i in range(0, len(seq), wrap):
+            print(seq[i:i + wrap], file=out_handle)
+    else:
+        print(seq, file=out_handle)
+
+
+def format_fasta_record(name, seq, wrap=100):
+    """Fasta __str__ method.
+
+    Convert fasta name and sequence into wrapped fasta format.
+
+    Args:
+        name (str): name of the record
+        seq (str): sequence of the record
+        wrap (int): length of sequence per line
+
+    Yields:
+        tuple: name, sequence
+
+    >>> format_fasta_record("seq1", "ACTG")
+    ">seq1\nACTG"
+    """
+    record = ">" + name + "\n"
+    if wrap:
+        for i in range(0, len(seq), wrap):
+            record += seq[i:i+wrap] + "\n"
+    else:
+        record += seq + "\n"
+    return record.strip()
+
+
+def read_fasta(fh):
+    """Fasta iterator.
+
+    Accepts file handle of .fasta and yields name and sequence.
+
+    Args:
+        fh (file): Open file handle of .fasta file
+
+    Yields:
+        tuple: name, sequence
+
+    Example:
+        >>> import os
+        >>> from itertools import groupby
+        >>> f = open("test.fasta", 'w')
+        >>> f.write("@seq1\nACTG")
+        >>> f.close()
+        >>> f = open("test.fastq")
+        >>> for name, seq in read_fastq(f):
+                assert name == "seq1"
+                assert seq == "ACTG"
+        >>> f.close()
+        >>> os.remove("test.fasta")
+
+    """
+    for header, group in groupby(fh, lambda line: line[0] == '>'):
+        if header:
+            line = next(group)
+            name = line[1:].strip()
+        else:
+            seq = ''.join(line.strip() for line in group)
+            yield name, seq
+
+
+@click.group(context_settings=dict(help_option_names=["-h", "--help"]))
+@click.version_option("0.0.0")
+@click.pass_context
+def cli(obj):
+    "Methods to prepare databases for parsing BLAST tabular output."
+
+
+@cli.command("prepare-refseq", short_help="prepares refseq mapping files")
+@click.argument("fasta", type=click.Path(exists=True))
+@click.argument("namesdmp", type=click.Path(exists=True))
+@click.argument("nodesdmp", type=click.Path(exists=True))
+@click.argument("namemap", type=click.File("w"))
+@click.argument("tree", type=click.File("w"))
+def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
+    """Takes the RefSeq FASTA which will look like:
+
+        \b
+        >gi|507053311|ref|WP_016124266.1| two-component sensor histidine kinase [Bacillus cereus]
+        MNFNKRLIIQFIMQHVFVLVTLLIAVVAAFTYLIFLLTSTLYEPNIPDSDSFTISRYISSEDGHISLQSEVQDLIKEKND
+
+    And from NCBI's taxonomy dump, names.dmp, which starts like:
+
+        \b
+        1 | all      |                         | synonym         |
+        1 | root     |                         | scientific name |
+        2 | Bacteria | Bacteria <prokaryotes>  | scientific name |
+
+    And nodes.dmp:
+
+        \b
+        1 | 1      | no rank      |...
+        2 | 131567 | superkingdom |...
+        6 | 335928 | genus        |...
+
+    To create a TSV map (NAMEMAP) of FASTA entry ID to function, taxonomy name, taxonomy ID, and parent
+    taxonomy ID:
+
+        \b
+        gi|507053311|ref|WP_016124266.1|<tab>two-component sensor histidine kinase<tab>Bacillus cereus
+
+    As well as TREE:
+
+        \b
+        Bacillus cereus<tab>1396<tab>86661<tab>species
+
+    """
+
+    # most names, for translating reference fasta from tax name to tax id
+    name_to_tax = {}
+    tax_to_name = {}
+    # for best names, for translating nodes.dmp tax id to tax name
+    tax_to_scientific_name = {}
+
+    logging.info("Reading in %s" % namesdmp)
+    with open(namesdmp) as dmp:
+        for tax_id, group in groupby(dmp, key=lambda x: [i.strip() for i in x.strip().split("|")][0]):
+            scientific_name = ""
+            synonym = ""
+            for line in group:
+                toks = [x.strip() for x in line.strip().split("|")]
+                if toks[-2] == "scientific name":
+                    tax_to_scientific_name[toks[0]] = toks[1]
+                elif toks[-2] == "misspelling":
+                    name_to_tax[toks[1]] = toks[0]
+                    continue
+                elif toks[-2] == "synonym":
+                    synonym = toks[1]
+                else:
+                    if synonym:
+                        tax_to_name[toks[0]] = synonym
+                    else:
+                        tax_to_name[toks[0]] = toks[1]
+                name_to_tax[toks[1]] = toks[0]
+
+    logging.info("Iterating over %s" % fasta)
+    with open(fasta) as fa:
+        for name, seq in read_fasta(fa):
+            name_parts = name.partition(" ")
+            # biotin--[acetyl-CoA-carboxylase] synthetase [Aeromonas allosaccharophila]
+            function = name_parts[2].rpartition("[")[0].strip()
+            taxonomy_name = name_parts[2].rpartition("[")[2].strip("]")
+            # phosphoribosyltransferase [[Haemophilus] parasuis]
+            if "[[" in name_parts[2]:
+                taxonomy_name = "[%s" % taxonomy_name
+            # https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?lvl=0&id=1737424
+            if taxonomy_name == "Blautia sp. GD8":
+                taxonomy_name = "Blautia sp. GD9"
+            try:
+                taxonomy_id = name_to_tax[taxonomy_name]
+            except KeyError:
+                taxonomy_name = taxonomy_name.replace("]", "").replace("[", "")
+                taxonomy_id = name_to_tax[taxonomy_name]
+
+            print(name_parts[0], function, taxonomy_id, sep="\t", file=namemap)
+
+    logging.info("Reading in %s" % nodesdmp)
+    with open(nodesdmp) as dmp:
+        for line in dmp:
+            toks = [x.strip() for x in line.strip().split("|")]
+            try:
+                taxonomy_name = tax_to_scientific_name[toks[0]]
+            except KeyError:
+                taxonomy_name = tax_to_name[toks[0]]
+            print(toks[0], taxonomy_name, toks[1], toks[2], sep="\t", file=tree)
+
+    logging.info("Process complete")
+
+
+@cli.command("prepare-eggnog", short_help="prepares eggnog mapping and reference files")
+@click.argument("fasta", type=click.File("r"))
+@click.argument("namemap", type=click.Path(exists=True))
+@click.argument("outputfasta", type=click.File("w"))
+@click.argument("outputmap", type=click.Path())
+def prepare_eggnog_reference(fasta, namemap, outputfasta, outputmap):
+    names = set()
+    # IDs for which we have uniprot AC
+    with open(namemap, "r", encoding="ISO-8859-1") as nm:
+        reader = csv.reader(nm, delimiter="\t")
+        # skip the header
+        next(reader)
+        for toks in reader:
+            names.add(toks[1])
+    logging.info("Total names in %s: %d" % (namemap, len(names)))
+    # IDs for which we have sequences
+    fasta_names = set()
+    fasta_counter = 0
+    for name, seq in read_fasta(fasta):
+        fasta_counter += 1
+        name = name.partition(".")[-1]
+        # we were unable to translate this to meaningful metadata
+        if not name in names: continue
+        # save the entry
+        fasta_names.add(name)
+        # print this nonredundant fasta
+        print_fasta_record(name, seq, outputfasta)
+    logging.info("Total unique matching fasta entries: %d (from %d entries)" % (len(fasta_names), fasta_counter))
+    # the union of IDs
+    with open(namemap, "r", encoding="ISO-8859-1") as nm, open(outputmap, "w") as ofh:
+        reader = csv.reader(nm, delimiter="\t")
+        logging.info("Finding union of name map and fasta")
+        for toks in reader:
+            if toks[1] in fasta_names:
+                print(*toks, sep="\t", file=ofh)
+
+
+@cli.command("prepare-cazy", short_help="prepares cazy (dbcan) reference")
+@click.argument("faminfo", click.Path(exists=True))
+@click.argument("cazydb_fasta", click.Path(exists=True))
+@click.argument("out_map")
+@click.argument("out_fasta")
+def prepare_cazy(faminfo, cazydb_fasta, out_map, out_fasta):
+    """
+
+    faminfo:
+
+        \b
+        http://csbl.bmb.uga.edu/dbCAN/download/FamInfo.txt
+
+    cazydb_fasta is:
+
+        \b
+        http://csbl.bmb.uga.edu/dbCAN/download/CAZyDB.07152016.fa
+
+    """
+    expazy = set()
+    uniprot_to_uniparc = {}
+
+    click.echo("parsing %s" % faminfo)
+    fam_info = {}
+    with open(faminfo) as fh:
+        next(fh)
+        for line in fh:
+            toks = line.strip().split("\t")
+            if "Unclassified" in toks[0]:
+                toks[0] = toks[0].replace("Unclassified-", "")
+            if toks[0] in fam_info:
+                print(line)
+                sys.exit("Non-unique family present in Family Info")
+            # unsure how useful cazy_activities is here as it includes everything across all families
+            fam_info[toks[0]] = toks[2]
+
+    click.echo("parsing %s" % cazydb_fasta)
+    cazy_fasta_map = {}
+    with open(cazydb_fasta) as fh:
+        for name, seq in read_fasta(fh):
+            name_parts = name.split("|", 2)
+            cazy_fasta_map[name_parts[0]] = {"seq":seq, "ecs":"" if len(name_parts) == 2 else name_parts[2], "cazy_family": name_parts[1]}
+
+    with open(out_map, "w") as omap, open(out_fasta, "w") as ofa:
+        for name, meta in cazy_fasta_map.items():
+            # removes masked sequences
+            if meta["seq"].islower(): continue
+            print(format_fasta_record(name, meta["seq"]), file=ofa)
+            # cazy_gene, cazy_family, cazy_class, cazy_ecs
+
+            if not meta["cazy_family"] in fam_info:
+                cazy_class = re.findall(r"([A-Z]+)", meta["cazy_family"])[0]
+                if not cazy_class:
+                    cazy_class = "NA"
+            else:
+                cazy_class = fam_info[meta["cazy_family"]]
+
+            print(name, meta["cazy_family"], cazy_class, meta["ecs"], sep="\t", file=omap)
+
+
+@cli.command("prepare-ec", short_help="prepares EC reference from expazy")
+@click.argument("enzyme_dat", click.Path(exists=True))
+@click.argument("uniparc_map", click.Path(exists=True))
+@click.argument("uniparc_fasta", click.Path(exists=True))
+@click.argument("out_map")
+@click.argument("out_fasta")
+def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
+    """
+
+    enzyme_dat:
+
+        \b
+        ftp://ftp.expasy.org/databases/enzyme/enzyme.dat
+
+    uniparc_map is the compressed version of was 'all' from:
+
+        \b
+        http://www.uniprot.org/uniparc/
+
+    uniparc_fasta is:
+
+        \b
+        ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/uniparc/uniparc_active.fasta.gz
+
+    """
+    expazy = set()
+    uniprot_to_uniparc = {}
+
+    click.echo("parsing %s" % uniparc_map)
+    with gzip.open(uniparc_map, 'rt') as fh:
+        # Entry    Organisms    UniProtKB    First seen    Last seen    Length
+        next(fh)
+        for line in fh:
+            toks = line.strip().split("\t")
+            for uniprot_entry in toks[2].split(";"):
+                uniprot_entry = uniprot_entry.strip()
+
+                if not uniprot_entry or "obsolete" in uniprot_entry: continue
+                if uniprot_entry in uniprot_to_uniparc:
+                    print("wtf", uniprot_entry, line)
+                    sys.exit(1)
+
+                uniprot_to_uniparc[uniprot_entry] = toks[0]
+
+    click.echo("parsing %s" % enzyme_dat)
+    uniparc_mappings = defaultdict(list)
+    with open(enzyme_dat) as fh:
+        for key, group in groupby(fh, key=lambda x: x.startswith("//")):
+            if not key:
+                uniprot_entries = []
+                recommended_name = "NA"
+                ec_id = "NA"
+
+                for line in group:
+                    toks = line.strip().partition("   ")
+
+                    if line.startswith("ID"):
+                        ec_id = toks[2]
+
+                    if line.startswith("DE"):
+                        recommended_name = toks[2].strip(".")
+
+                    if line.startswith("DR"):
+                        for entry_and_name in toks[2].split(";"):
+                            uniprot_entry = entry_and_name.split(",")[0].strip()
+
+                            if uniprot_entry:
+                                uniprot_entries.append(uniprot_entry)
+
+                if ec_id and uniprot_entries:
+                    for uniprot_entry in uniprot_entries:
+                        uniparc_id = uniprot_to_uniparc[uniprot_entry]
+
+                        uniparc_mappings[uniparc_id].append([uniprot_entry, ec_id, recommended_name])
+                        expazy.add(uniparc_id)
+
+    with open(out_map, "w") as ofh:
+        for uniparc_id, meta in uniparc_mappings.items():
+            uniprots = set()
+            ecs = set()
+            names = set()
+            for name_list in meta:
+                uniprots.add(name_list[0])
+                ecs.add(name_list[1])
+                names.add(name_list[2])
+            print(uniparc_id, "|".join(uniprots), "|".join(ecs), "|".join(names), sep="\t", file=ofh)
+
+    click.echo("parsing %s" % uniparc_fasta)
+    with gzip.open(uniparc_fasta, 'rt') as fh, open(out_fasta, "w") as ofh:
+        for name, seq in read_fasta(fh):
+            name = name.partition(" ")[0]
+            if name in expazy:
+                print(format_fasta_record(name, seq), file=ofh)
+
+
+if __name__ == "__main__":
+    cli()
