@@ -21,13 +21,12 @@ MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id",
                  "uniprot_id", "cog_func_id", "cog_id", "cog_product",
                  "cog_level1_code", "cog_level1_name",
-                 "cog_level2_name", "cazy_id1", "cazy_id2",
-                 "cazy_class", "cazy_clan", "cazy_product",
-                 "cazy_gene_id", "cazy_taxa", "cazy_ec", "ko_id",
+                 "cog_level2_name", "ko_id",
                  "ko_level1_name", "ko_level2_name", "ko_level3_id",
                  "ko_level3_name", "ko_gene_symbol", "ko_product",
                  "ko_ec", "eggnog_evalue", "eggnog_bitscore",
-                 "expazy_ec", "expazy_name"]
+                 "expazy_ec", "expazy_name", "cazy_gene", "cazy_family",
+                 "cazy_class", "cazy_ec"]
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 
 
@@ -596,10 +595,10 @@ def eggnog_parsing(tsv, namemap, output, summary_method, min_identity, min_bitsc
 
     print("contig", "orf", "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id", "uniprot_id",
           "cog_func_id", "cog_id", "cog_product", "cog_level1_code", "cog_level1_name",
-          "cog_level2_name", "cazy_id1", "cazy_id2", "cazy_class", "cazy_clan", "cazy_product",
-          "cazy_gene_id", "cazy_taxa", "cazy_ec", "ko_id", "ko_level1_name", "ko_level2_name",
+          "cog_level2_name", "ko_id", "ko_level1_name", "ko_level2_name",
           "ko_level3_id", "ko_level3_name", "ko_gene_symbol", "ko_product", "ko_ec",
           "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
+
     with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
         cursor = conn.cursor()
         for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
