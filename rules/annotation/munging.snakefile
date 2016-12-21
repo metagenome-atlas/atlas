@@ -1,28 +1,104 @@
+import json
+import os
+from itertools import groupby
+
+
+def read_fasta(fh):
+    """Fasta iterator.
+
+    Accepts file handle of .fasta and yields name and sequence.
+
+    Args:
+        fh (file): Open file handle of .fasta file
+
+    Yields:
+        tuple: name, sequence
+
+    >>> import os
+    >>> from itertools import groupby
+    >>> f = open("test.fasta", 'w')
+    >>> f.write("@seq1\nACTG")
+    >>> f.close()
+    >>> f = open("test.fastq")
+    >>> for name, seq in read_fastq(f):
+            assert name == "seq1"
+            assert seq == "ACTG"
+    >>> f.close()
+    >>> os.remove("test.fasta")
+    """
+    for header, group in groupby(fh, lambda line: line[0] == '>'):
+        if header:
+            line = next(group)
+            name = line[1:].strip()
+        else:
+            seq = ''.join(line.strip() for line in group)
+            yield name, seq
+
+
+def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=80):
+    """Print a fasta record accounting for line wraps in the sequence.
+
+    Args:
+        name (str): name or header for fasta entry
+        seq (str): sequence
+        out_handle (Optional): open file handle in which to write or stdout
+        wrap (Optional[int]) : line width of fasta sequence; None is supported for no wrapping
+
+    """
+    print('>', name, sep='', file=out_handle)
+    if wrap:
+        for i in range(0, len(seq), wrap):
+            print(seq[i:i + wrap], file=out_handle)
+    else:
+        print(seq, file=out_handle)
+
+
+def split_fasta(fasta, chunk_size=250000):
+    fasta = os.path.expanduser(fasta)
+    root, ext = os.path.splitext(fasta)
+
+    file_idx = 0
+    with open(fasta) as f:
+        for i, (name, seq) in enumerate(read_fasta(f)):
+            if i % chunk_size == 0:
+                if i == 0:
+                    ofh = open("%s_%d%s" % (root, file_idx, ext), "w")
+                    print_fasta_record(name, seq, out_handle=ofh)
+                else:
+                    ofh.close()
+                    file_idx += 1
+                    ofh = open("%s_%d%s" % (root, file_idx, ext), "w")
+                    print_fasta_record(name, seq, out_handle=ofh)
+            else:
+                print_fasta_record(name, seq, out_handle=ofh)
+    ofh.close()
+
+
 rule split:
     input:
-        "results/{eid}/{sample}/annotation/orfs/{sample}.faa"
+        "{sample}/annotation/orfs/{sample}.faa"
     output:
-        temp(dynamic("results/{eid}/{sample}/annotation/orfs/{sample}_{n}.faa"))
+        temp(dynamic("{sample}/annotation/orfs/{sample}_{n}.faa"))
     params:
         chunk_size = config["annotation"].get("chunk_size", "250000")
-    shell:
-        "{SHPFXS} python scripts/fastx.py split-fasta --chunk-size {params.chunk_size} {input}"
+    run:
+        split_fasta(input, chunk_size=params.chunk_size)
 
 
 rule merge_alignments:
     input:
-        dynamic("results/{eid}/{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        dynamic("{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     output:
-        "results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv"
+        "{sample}/annotation/{reference}/{sample}_hits.tsv"
     shell:
         "{SHPFXS} cat {input} | sort -k1,1 -k12,12rn > {output}"
 
 
 rule parse_blast:
     input:
-        "results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv"
+        "{sample}/annotation/{reference}/{sample}_hits.tsv"
     output:
-        "results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv"
+        "{sample}/annotation/{reference}/{sample}_assignments.tsv"
     params:
         # subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
@@ -48,21 +124,21 @@ rule parse_blast:
 
 rule merge_blast:
     input:
-        ["results/{eid}/{sample}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
+        ["{sample}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
     output:
-        "results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv"
+        "{sample}/annotation/{sample}_merged_assignments.tsv"
     shell:
         "{SHPFXS} python scripts/blast2assignment.py merge-tables {input} {output}"
 
 
 rule aggregate_counts:
     input:
-        merged = "results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv",
-        counts = "results/{eid}/{sample}/annotation/orfs/{sample}.CDS.txt"
+        merged = "{sample}/annotation/{sample}_merged_assignments.tsv",
+        counts = "{sample}/annotation/orfs/{sample}.CDS.txt"
     output:
-        ["results/{eid}/{sample}/count_tables/{sample}_%s.tsv" % i for i in TABLES]
+        ["{sample}/count_tables/{sample}_%s.tsv" % i for i in TABLES]
     params:
-        prefix = lambda wc: "results/%s/%s/count_tables/%s" % (wc.eid, wc.sample, wc.sample),
+        prefix = lambda wc: "{sample}/count_tables/{sample}".format(sample=wc.sample),
         combos = json.dumps(config["summary_counts"])
     shell:
         """{SHPFXS} python scripts/blast2assignment.py counts {params.prefix} {input.merged} \

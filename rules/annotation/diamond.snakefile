@@ -2,7 +2,7 @@ rule build_dmnd_database:
     input:
         lambda wc: config["annotation"]["references"][wc.reference]["fasta"]
     output:
-        "databases/annotation/{reference}.dmnd"
+        "%s/{reference}.dmnd" % config.get("database_directory")
     threads:
         config.get("threads", 1)
     shell:
@@ -11,12 +11,12 @@ rule build_dmnd_database:
 
 rule diamond_alignments:
     input:
-        fasta = "results/{eid}/{sample}/annotation/orfs/{sample}_{n}.faa",
-        db = "databases/annotation/{reference}.dmnd"
+        fasta = "{sample}/annotation/orfs/{sample}_{n}.faa",
+        db = "%s/{reference}.dmnd" % config.get("database_directory")
     output:
-        temp("results/{eid}/{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        temp("{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:
-        tmpdir = "--tmpdir %s" % config.get("temporary_directory", "") if config.get("temporary_directory", "") else "",
+        tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = lambda wc: config["annotation"]["references"][wc.reference].get("top_seqs", "5"),
         e_value = lambda wc: config["annotation"]["references"][wc.reference].get("e_value", "0.000001"),
         min_identity = lambda wc: config["annotation"]["references"][wc.reference].get("min_identity", "50"),

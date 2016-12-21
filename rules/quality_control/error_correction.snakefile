@@ -1,10 +1,10 @@
 rule error_correction:
     input:
-        "results/{eid}/{sample}/quality_control/quality_filter/{sample}_pe.fastq.gz"
+        "{sample}/quality_control/quality_filter/{sample}_pe.fastq.gz"
     output:
-        "results/{eid}/{sample}/quality_control/error_correction/{sample}_pe.fastq.gz"
+        "{sample}/quality_control/error_correction/{sample}_pe.fastq.gz"
     log:
-        "results/{eid}/{sample}/logs/{sample}_error_correction.log"
+        "{sample}/logs/{sample}_error_correction.log"
     threads:
         config.get("threads", 1)
     shell:

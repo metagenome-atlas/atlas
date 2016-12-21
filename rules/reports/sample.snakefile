@@ -1,15 +1,17 @@
+from snakemake.utils import report
+
+
 rule sample_report:
     input:
-        contig_stats = "results/{eid}/{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER,
-        base_comp = "results/{eid}/{sample}/%s/stats/postfilter_base_composition.txt" % ASSEMBLER,
-        css = "resources/report.css"
+        contig_stats = "{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER,
+        base_comp = "{sample}/%s/stats/postfilter_base_composition.txt" % ASSEMBLER,
+        css = os.path.join(workflow.basedir, "resources", "report.css")
     output:
-        html = "results/{eid}/{sample}/{sample}_readme.html"
+        html = "{sample}/{sample}_readme.html"
     shadow:
         "shallow"
     run:
         import pandas as pd
-
         # contig stats table
         df = pd.read_csv(input.contig_stats, sep="\t")
         contig_stats_csv = "contig_stats.csv"

@@ -1,8 +1,8 @@
 rule megahit:
     input:
-        "results/{eid}/{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
+        "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
     output:
-        temp("results/{eid}/{sample}/%s/{sample}_prefilter.contigs.fa" % ASSEMBLER)
+        temp("{sample}/%s/{sample}_prefilter.contigs.fa" % ASSEMBLER)
     params:
         memory = config["assembly"].get("memory", 0.90),
         min_count = config["assembly"].get("minimum_count", 2),
@@ -13,9 +13,9 @@ rule megahit:
         prune_level = config["assembly"].get("prune_level", 2),
         low_local_ratio = config["assembly"].get("low_local_ratio", 0.2),
         min_contig_len = config["assembly"].get("minimum_contig_length", 200),
-        outdir = lambda wc: "results/%s/%s/%s" % (wc.eid, wc.sample, ASSEMBLER)
+        outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
     log:
-        "results/{eid}/{sample}/%s/{sample}.log" % ASSEMBLER
+        "{sample}/%s/{sample}.log" % ASSEMBLER
     threads:
         config.get("threads", 1)
     shell:
@@ -29,8 +29,8 @@ rule megahit:
 
 rule rename_megahit_output:
     input:
-        "results/{eid}/{sample}/%s/{sample}_prefilter.contigs.fa" % ASSEMBLER
+        "{sample}/%s/{sample}_prefilter.contigs.fa" % ASSEMBLER
     output:
-        "results/{eid}/{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
+        "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
     shell:
         "{SHPFXM} cp {input} {output}"

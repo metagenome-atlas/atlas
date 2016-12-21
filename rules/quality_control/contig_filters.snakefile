@@ -1,8 +1,8 @@
 rule dirty_contigs_stats:
     input:
-        "results/{eid}/{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
+        "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
     output:
-        "results/{eid}/{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER
+        "{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER
     threads:
         1
     shell:
@@ -11,16 +11,16 @@ rule dirty_contigs_stats:
 
 rule dirty_contig_coverage_stats:
     input:
-        fasta = "results/{eid}/{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
-        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
+        fasta = "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
+        fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        bhist = "results/{eid}/{sample}/%s/stats/prefilter_base_composition.txt" % ASSEMBLER,
-        bqhist = "results/{eid}/{sample}/%s/stats/prefilter_box_quality.txt" % ASSEMBLER,
-        mhist = "results/{eid}/{sample}/%s/stats/prefilter_mutation_rates.txt" % ASSEMBLER,
-        statsfile = "results/{eid}/{sample}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
-        covstats = "results/{eid}/{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
+        bhist = "{sample}/%s/stats/prefilter_base_composition.txt" % ASSEMBLER,
+        bqhist = "{sample}/%s/stats/prefilter_box_quality.txt" % ASSEMBLER,
+        mhist = "{sample}/%s/stats/prefilter_mutation_rates.txt" % ASSEMBLER,
+        statsfile = "{sample}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
+        covstats = "{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "results/{eid}/{sample}/logs/dirty_contig_coverage_stats.log"
+        "{sample}/logs/dirty_contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -31,11 +31,11 @@ rule dirty_contig_coverage_stats:
 
 rule filter_by_coverage:
     input:
-        fasta = "results/{eid}/{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
-        covstats = "results/{eid}/{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
+        fasta = "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
+        covstats = "{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
     output:
-        fasta = "results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
-        removed_names = "results/{eid}/{sample}/%s/{sample}_discarded_contigs.txt" % ASSEMBLER
+        fasta = "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
+        removed_names = "{sample}/%s/{sample}_discarded_contigs.txt" % ASSEMBLER
     params:
         minc = config["assembly"].get("minc", 5),
         minp = config["assembly"].get("minp", 40),
@@ -43,7 +43,7 @@ rule filter_by_coverage:
         minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
     log:
-        "results/{eid}/{sample}/logs/filter_by_coverage.log"
+        "{sample}/logs/filter_by_coverage.log"
     threads:
         1
     shell:
@@ -54,24 +54,24 @@ rule filter_by_coverage:
 
 rule contig_coverage_stats:
     input:
-        fasta = "results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
-        fastq = "results/{eid}/{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
+        fasta = "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
+        fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        sam = temp("results/{eid}/{sample}/annotation/{sample}.sam"),
-        # bai = "results/{eid}/{sample}/annotation/{sample}.bam.bai",
-        bhist = "results/{eid}/{sample}/%s/stats/postfilter_base_composition.txt" % ASSEMBLER,
-        bqhist = "results/{eid}/{sample}/%s/stats/postfilter_box_quality.txt" % ASSEMBLER,
-        mhist = "results/{eid}/{sample}/%s/stats/postfilter_mutation_rates.txt" % ASSEMBLER,
-        gchist = "results/{eid}/{sample}/%s/stats/postfilter_gc_rates.txt" % ASSEMBLER,
-        statsfile = "results/{eid}/{sample}/%s/stats/postfilter_mapping_stats.txt" % ASSEMBLER,
-        covstats = "results/{eid}/{sample}/%s/stats/postfilter_coverage_stats.txt" % ASSEMBLER
+        sam = temp("{sample}/annotation/{sample}.sam"),
+        # bai = "{sample}/annotation/{sample}.bam.bai",
+        bhist = "{sample}/%s/stats/postfilter_base_composition.txt" % ASSEMBLER,
+        bqhist = "{sample}/%s/stats/postfilter_box_quality.txt" % ASSEMBLER,
+        mhist = "{sample}/%s/stats/postfilter_mutation_rates.txt" % ASSEMBLER,
+        gchist = "{sample}/%s/stats/postfilter_gc_rates.txt" % ASSEMBLER,
+        statsfile = "{sample}/%s/stats/postfilter_mapping_stats.txt" % ASSEMBLER,
+        covstats = "{sample}/%s/stats/postfilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "results/{eid}/{sample}/logs/contig_coverage_stats.log"
+        "{sample}/logs/contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} trimreaddescriptions=t \
-               out=results/{wildcards.eid}/{wildcards.sample}/annotation/{wildcards.sample}.sam \
+               out={wildcards.sample}/annotation/{wildcards.sample}.sam \
                mappedonly=t threads={threads} bhist={output.bhist} bqhist={output.bqhist} \
                mhist={output.mhist} gchist={output.gchist} statsfile={output.statsfile} \
                covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3 2> {log}"""
@@ -79,29 +79,29 @@ rule contig_coverage_stats:
 
 rule sam_to_bam:
    input:
-       "results/{eid}/{sample}/annotation/{sample}.sam"
+       "{sample}/annotation/{sample}.sam"
    output:
-       "results/{eid}/{sample}/annotation/{sample}.bam"
+       "{sample}/annotation/{sample}.bam"
    threads:
        config.get("threads", 1)
    shell:
-       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} | samtools sort -@ {threads} -T results/{wildcards.eid}/{wildcards.sample}/annotation/{wildcards.sample}_tmp -o {output} -O bam -"""
+       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} | samtools sort -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
 
 
 rule create_bam_index:
    input:
-       "results/{eid}/{sample}/annotation/{sample}.bam"
+       "{sample}/annotation/{sample}.bam"
    output:
-       "results/{eid}/{sample}/annotation/{sample}.bam.bai"
+       "{sample}/annotation/{sample}.bam.bai"
    shell:
        "{SHPFXS} samtools index {input}"
 
 
 rule final_contigs_stats:
    input:
-       "results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
+       "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
    output:
-       "results/{eid}/{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER
+       "{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER
    threads:
        1
    shell:

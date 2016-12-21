@@ -1,10 +1,10 @@
 rule prodigal_orfs:
     input:
-        "results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
+        "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
     output:
-        prot = "results/{eid}/{sample}/annotation/orfs/{sample}.faa",
-        nuc = "results/{eid}/{sample}/annotation/orfs/{sample}.fna",
-        gff = "results/{eid}/{sample}/annotation/orfs/{sample}.gff"
+        prot = "{sample}/annotation/orfs/{sample}.faa",
+        nuc = "{sample}/annotation/orfs/{sample}.fna",
+        gff = "{sample}/annotation/orfs/{sample}.gff"
     params:
         g = config["annotation"].get("translation_table", "11")
     threads:
@@ -16,9 +16,9 @@ rule prodigal_orfs:
 
 rule gff_to_gtf:
     input:
-        "results/{eid}/{sample}/annotation/orfs/{sample}.gff"
+        "{sample}/annotation/orfs/{sample}.gff"
     output:
-        "results/{eid}/{sample}/annotation/orfs/{sample}.gtf"
+        "{sample}/annotation/orfs/{sample}.gtf"
     run:
         import re
         t = re.compile(r'ID=[0-9]+_([0-9]+);')
