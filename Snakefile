@@ -1,46 +1,13 @@
+"""
+combining samples into a single fastq can take place after intial qc -- all files are interleaved
+concatenate into single file; push through the remainder of the workflow
+these qc'd files are then used for counts per sample across the assembled contigs
+"""
 import json
 import os
 import sys
-from glob import glob
-from snakemake.utils import report
+import tempfile
 from subprocess import check_output
-
-
-def read_count(fastq, out=None):
-    total = 0
-    count_file = fastq + ".count" if out is None else out
-    if os.path.exists(fastq) and os.path.getsize(fastq) > 100:
-        if not os.path.exists(count_file):
-            if fastq.endswith("gz"):
-                check_output("gunzip -cd %s | awk '{n++}END{print n/4}' > %s" % (fastq, fastq + '.count'), shell=True)
-            else:
-                check_output("awk '{n++}END{print n/4}' %s > %s" % (fastq, fastq + '.count'), shell=True)
-
-        with open(count_file) as fh:
-            for line in fh:
-                total = int(line.strip())
-                break
-    return total
-
-
-def get_samples(config, coverage_cutoff=1000):
-    samples = set()
-    omitted = set()
-    for sample_id, vals in config["samples"].items():
-        count = 0
-        for fastq in vals["path"]:
-            if len(vals["path"]) == 1:
-                count = read_count(fastq) / 2
-            else:
-                count = read_count(fastq)
-            # only need a count for one of the fastqs
-            break
-        if count > coverage_cutoff:
-            samples.add(sample_id)
-        else:
-            print("Omitting %s due to low starting read count" % sample_id, file=sys.stderr)
-            omitted.add(sample_id)
-    return samples, omitted
 
 
 def get_count_tables(config, key):
@@ -69,45 +36,65 @@ def get_assembler(config):
         return "megahit_{min}_{max}_{step}".format(min=k_min, max=k_max, step=k_step)
 
 
+def get_temp_dir(config):
+    if config.get("tmpdir"):
+        return config["tmpdir"]
+    else:
+        return tempfile.gettempdir()
+
+
+def init_complete_config(config):
+    config_report = []
+    if not config.get("samples"):
+        config_report.append("'samples' is not defined")
+    if not len(config["samples"].keys()) > 0:
+        config_report.append("no samples are defined under 'samples:'")
+    # TODO
+
+
 # shell prefixes for multi-threaded and single-threads tasks
 SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
 SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
-SAMPLES, OMITTED = get_samples(config, config.get("minimum_starting_reads", 1000))
+SAMPLES = list(config["samples"].keys())
 TABLES = get_count_tables(config, "summary_counts")
 NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 31), config["preprocessing"]["normalization"].get("t", 100))
 ASSEMBLER = get_assembler(config)
+TMPDIR = get_temp_dir(config)
 
 
-rule all:
-    input:
-        expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", eid=config["experiment"], sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
-        expand("results/{eid}/{sample}/quality_control/decontamination/{sample}_refstats.txt", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION, eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER, eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/annotation/orfs/{sample}.faa", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER, eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/annotation/{reference}/{sample}_hits.tsv", eid=config["experiment"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-        expand("results/{eid}/{sample}/annotation/{reference}/{sample}_assignments.tsv", eid=config["experiment"], reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-        expand("results/{eid}/{sample}/annotation/{sample}_merged_assignments.tsv", eid=config["experiment"], sample=SAMPLES),
-        expand("results/{eid}/{sample}/count_tables/{sample}_{table}.tsv", eid=config["experiment"], sample=SAMPLES, table=TABLES),
-        expand("results/{eid}/{sample}/{sample}_readme.html", eid=config["experiment"], sample=SAMPLES)
+if config.get("workflow", "complete") == "complete":
+    init_complete_config(config)
+    rule all:
+        input:
+            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
+            expand("{sample}/quality_control/decontamination/{sample}_refstats.txt", sample=SAMPLES),
+            expand("{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION, sample=SAMPLES),
+            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
+            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
+            expand("{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/annotation/orfs/{sample}.faa", sample=SAMPLES),
+            expand("{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/annotation/{reference}/{sample}_hits.tsv", reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+            expand("{sample}/annotation/{reference}/{sample}_assignments.tsv", reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+            expand("{sample}/annotation/{sample}_merged_assignments.tsv", sample=SAMPLES),
+            expand("{sample}/count_tables/{sample}_{table}.tsv", sample=SAMPLES, table=TABLES),
+            expand("{sample}/{sample}_readme.html", sample=SAMPLES)
 
-
-include: "rules/quality_control/fastq_filter.snakefile"
-include: "rules/quality_control/error_correction.snakefile"
-include: "rules/quality_control/contig_filters.snakefile"
-include: "rules/quality_control/decontamination.snakefile"
-include: "rules/quality_control/normalization.snakefile"
-include: "rules/quality_control/fastqc.snakefile"
-if config["assembly"]["assembler"] == "spades":
-    include: "rules/assemblers/spades.snakefile"
+    include: "rules/quality_control/fastq_filter.snakefile"
+    include: "rules/quality_control/error_correction.snakefile"
+    include: "rules/quality_control/contig_filters.snakefile"
+    include: "rules/quality_control/decontamination.snakefile"
+    include: "rules/quality_control/normalization.snakefile"
+    include: "rules/quality_control/fastqc.snakefile"
+    if config["assembly"]["assembler"] == "spades":
+        include: "rules/assemblers/spades.snakefile"
+    else:
+        include: "rules/assemblers/megahit.snakefile"
+    include: "rules/annotation/diamond.snakefile"
+    include: "rules/annotation/prodigal.snakefile"
+    include: "rules/annotation/verse.snakefile"
+    include: "rules/annotation/munging.snakefile"
+    include: "rules/reports/sample.snakefile"
 else:
-    include: "rules/assemblers/megahit.snakefile"
-include: "rules/annotation/diamond.snakefile"
-include: "rules/annotation/prodigal.snakefile"
-include: "rules/annotation/verse.snakefile"
-include: "rules/annotation/munging.snakefile"
-include: "rules/reports/sample.snakefile"
+    print("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"), file=sys.stderr)
