@@ -33,10 +33,6 @@ snakemake --configfile config.yaml
 
 # Configuration
 
-## Experiment
-
-Still working on the output directory...
-
 ## Samples
 
 Samples are defined with a name, file path(s) and the type of data. A single file path is interpreted as interleaved paired-end reads, while two paths must include full paths to R1 and R2.
@@ -66,9 +62,9 @@ samples:
 
 ## Temporary Directory
 
-Some steps, like assembly, may have an optional temporary directory. If specified, the step will use this directory.
+Some steps, like assembly, may have an optional temporary directory. If specified in the configuration or as an environmental variable [TMPDIR|TEMP|TMP], the step will use this directory rather than the current working directory.
 
-**Default: None**
+**Default: the working directory**
 
 ```
 temporary_directory: /scratch
