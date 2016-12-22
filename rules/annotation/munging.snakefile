@@ -54,6 +54,7 @@ def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=80):
 
 
 def split_fasta(fasta, chunk_size=250000):
+    chunk_size = int(chunk_size)
     fasta = os.path.expanduser(fasta)
     root, ext = os.path.splitext(fasta)
 
@@ -62,12 +63,12 @@ def split_fasta(fasta, chunk_size=250000):
         for i, (name, seq) in enumerate(read_fasta(f)):
             if i % chunk_size == 0:
                 if i == 0:
-                    ofh = open("%s_%d%s" % (root, file_idx, ext), "w")
+                    ofh = open("{root}_{idx}{ext}".format(root=root, idx=file_idx, ext=ext), "w")
                     print_fasta_record(name, seq, out_handle=ofh)
                 else:
                     ofh.close()
                     file_idx += 1
-                    ofh = open("%s_%d%s" % (root, file_idx, ext), "w")
+                    ofh = open("{root}_{idx}{ext}".format(root=root, idx=file_idx, ext=ext), "w")
                     print_fasta_record(name, seq, out_handle=ofh)
             else:
                 print_fasta_record(name, seq, out_handle=ofh)
@@ -76,13 +77,13 @@ def split_fasta(fasta, chunk_size=250000):
 
 rule split:
     input:
-        "{sample}/annotation/orfs/{sample}.faa"
+        faa = "{sample}/annotation/orfs/{sample}.faa"
     output:
         temp(dynamic("{sample}/annotation/orfs/{sample}_{n}.faa"))
     params:
-        chunk_size = config["annotation"].get("chunk_size", "250000")
+        chunk_size = config["annotation"].get("chunk_size", 250000)
     run:
-        split_fasta(input, chunk_size=params.chunk_size)
+        split_fasta(input.faa, chunk_size=params.chunk_size)
 
 
 rule merge_alignments:
