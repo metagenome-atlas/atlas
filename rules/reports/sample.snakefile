@@ -31,7 +31,7 @@ rule sample_report:
         report("""
 
 ===========================================================================================
-Sample Report - Experiment: {wildcards.eid}; Sample: {wildcards.sample}
+Sample Report - Sample: {wildcards.sample}
 ===========================================================================================
 
 .. raw:: html
