@@ -93,6 +93,8 @@ rule create_bam_index:
        "{sample}/annotation/{sample}.bam"
    output:
        "{sample}/annotation/{sample}.bam.bai"
+   threads:
+       1
    shell:
        "{SHPFXS} samtools index {input}"
 

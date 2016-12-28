@@ -2,7 +2,7 @@ rule build_dmnd_database:
     input:
         lambda wc: config["annotation"]["references"][wc.reference]["fasta"]
     output:
-        "%s/{reference}.dmnd" % config.get("database_directory")
+        "%s/{reference}.dmnd" % config.get("database_directory", "databases")
     threads:
         config.get("threads", 1)
     shell:
@@ -12,7 +12,7 @@ rule build_dmnd_database:
 rule diamond_alignments:
     input:
         fasta = "{sample}/annotation/orfs/{sample}_{n}.faa",
-        db = "%s/{reference}.dmnd" % config.get("database_directory")
+        db = "%s/{reference}.dmnd" % config.get("database_directory", "databases")
     output:
         temp("{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:

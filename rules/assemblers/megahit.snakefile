@@ -33,4 +33,4 @@ rule rename_megahit_output:
     output:
         "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
     shell:
-        "{SHPFXM} cp {input} {output}"
+        "{SHPFXS} cp {input} {output}"
