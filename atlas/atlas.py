@@ -1,6 +1,7 @@
 import click
 import logging
 from atlas import __version__
+from atlas.conf import make_config
 from atlas.parsers import cazy_parser, eggnog_parser, refseq_parser
 from atlas.tables import merge_tables, counts
 
@@ -229,6 +230,33 @@ def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
             cell division protein FtsQ  8
     """
     counts(prefix, merged, counts, combinations, suffix)
+
+
+@cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")
+@click.argument("config")
+@click.argument("path")
+@click.option("--data-type", default="metagenome", type=click.Choice(["metagenome", "metatranscriptome"]),
+              show_default=True, help="sample data type")
+@click.option("--database-dir", default="databases", show_default=True,
+              help="location to store formatted databases")
+@click.option("--threads", default=None, help="number of threads to use per multi-threaded job")
+@click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]), help="contig assembler")
+def run_make_config(config, path, data_type, database_dir, threads, assembler):
+    """Write the file `config` and complete the sample names and paths for all FASTQ files in
+    `path`.
+
+    `path` is traversed recursively and adds any file with '.fastq' or '.fq' extension with the
+    file name as the sample ID. Any single-end (non-interleaved) FASTQs under `path` will cause
+    errors if left in the configuration file.
+    """
+    make_config(config, path, data_type, database_dir, threads, assembler)
+
+
+@cli.command("assemble")
+@click.argument("config", click.Path(exists=True))
+
+def run_assemble():
+    assemble()
 
 
 if __name__ == "__main__":

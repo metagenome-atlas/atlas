@@ -106,28 +106,54 @@ And `threads` is appended to the prefix when the workflow is executed.
 
 ## Preprocessing of Reads
 
-This starts the preprocessing subsection of the configuration file. All settings will be indented from "preprocessing":
+This starts the preprocessing subsection of the configuration file. All settings will be indented from "preprocessing" and indentation levels matter.
 
 ```
 preprocessing:
-    adapters: databases/adapters.fa
-
+    adapters: /databases/adapters.fa
+    minimum_base_quality: 10
+    min_base_frequency: 0.05
+    contamination:
+        references:
+            rRNA:
+        k: 12
+        ambiguous: best
+    normalization:
+        k: 21
+        t: 100
 ```
 
 ### Adapters
 
-FASTA file paths for adapter sequences to be trimmed from the sequence ends.
+FASTA file paths for adapter sequences to be trimmed from the sequence ends. It is best practice to use full file paths to reference files.
 
 We provide the adapter reference FASTA included in `bbmap`.
 
+**Default: databases/adapters.fa.gz**
 
-### mink
+### Quality Trimming (`minimum_base_quality`)
 
-### minimum_base_quality
+Trim regions with an average quality below this threshold. Higher is more stringent.
 
-### allowable_kmer_mismatches
+**Default: 10**
 
-### reference_kmer_match_length
+### Adapter Trimming at Read Tips (`mink`)
+
+Allow shorter kmer matches down to `mink` at the read ends. 0 disables.
+
+**Default: 8**
+
+### Allowable Mismatches in Adapter Hits (`allowable_kmer_mismatches`)
+
+Maximum number of substitutions between the target adapter kmer and the query sequence kmer. Lower is more stringent.
+
+**Default: 1**
+
+### Kmer Length (`reference_kmer_match_length`)
+
+Kmer length used for finding contaminants. Contaminant matches shorter than this length will not be found.
+
+**Default: 27**
 
 ### minimum_passing_read_length
 

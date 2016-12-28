@@ -25,6 +25,11 @@ samples:
         path:
             - /pic/projects/mint/genomic_truth_sets/205_GGCTAC_L008_R1_001.fastq.gz
             - /pic/projects/mint/genomic_truth_sets/205_GGCTAC_L008_R2_001.fastq.gz
+    coassemblies:
+        test-coa:
+            - shewanella
+            - cytophaga
+            - flavobacterium
 
 database_directory: /pic/projects/mint/atlas/databases
 tmpdir: /scratch
