@@ -101,7 +101,6 @@ rule parse_blast:
     output:
         "{sample}/annotation/{reference}/{sample}_assignments.tsv"
     params:
-        # subcommand = lambda wc: "refseq" if "refseq" in wc.reference else "eggnog",
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
         treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
         summary_method = lambda wc: config["annotation"]["references"][wc.reference].get("summary_method", "best"),
@@ -114,7 +113,7 @@ rule parse_blast:
         max_hits = lambda wc: config["annotation"]["references"][wc.reference].get("max_hits", "10"),
         top_fraction = lambda wc: config["annotation"]["references"][wc.reference].get("top_fraction", "0.50")
     shell:
-        """{SHPFXS} python scripts/blast2assignment.py {wildcards.reference} \
+        """{SHPFXS} atlas {wildcards.reference} \
                --summary-method {params.summary_method} {params.aggregation_method} \
                {params.majority_threshold} --min-identity {params.min_identity} \
                --min-bitscore {params.min_bitscore} --min-length {params.min_length} \
@@ -129,7 +128,7 @@ rule merge_blast:
     output:
         "{sample}/annotation/{sample}_merged_assignments.tsv"
     shell:
-        "{SHPFXS} python scripts/blast2assignment.py merge-tables {input} {output}"
+        "{SHPFXS} atlas merge-tables {input} {output}"
 
 
 rule aggregate_counts:
@@ -142,5 +141,5 @@ rule aggregate_counts:
         prefix = lambda wc: "{sample}/count_tables/{sample}".format(sample=wc.sample),
         combos = json.dumps(config["summary_counts"])
     shell:
-        """{SHPFXS} python scripts/blast2assignment.py counts {params.prefix} {input.merged} \
+        """{SHPFXS} atlas counts {params.prefix} {input.merged} \
                {input.counts} '{params.combos}'"""
