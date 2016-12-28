@@ -1,77 +1,58 @@
-experiment: jgi-metat
 samples:
-    sample_1:
-        # interleaved example
+    # sample ID
+    shewanella:
         path:
-            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000000-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.GTTTCG.anqtp.hR.fastq.gz
-        # paired-end example
-        # path:
-        #    - /path/to/sample_R1.fastq
-        #    - /path/to/sample_R2.fastq
-        # 'interleaved' or 'paired-end'
-        scheme: interleaved
-        type: metatranscriptome
-        # phred: 33
-    sample_2:
+            - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R1_140814.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R2_140814.fastq.gz
+        type: metagenome
+    cytophaga:
         path:
-            - /pic/projects/mint/hofmockel/data/jgi/Hofmockel_1000008-3_ISU_MetaT/Metatranscriptome_Filtered_Data/9371.2.130814.CGTACG.anqtp.hR.fastq.gz
-        scheme: interleaved
-        type: metatranscriptome
+            - /pic/projects/mint/genomic_truth_sets/200_ATTCCT_L005_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/200_ATTCCT_L005_R2_001.fastq.gz
+    flavobacterium:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/201_GAGTGG_L002_R1_140814.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/201_GAGTGG_L002_R2_140814.fastq.gz
+    xylanimonas:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/202_AGTTCC_L003_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/202_AGTTCC_L003_R2_001.fastq.gz
+    aspergillus:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/204_TAGCTT_L008_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/204_TAGCTT_L008_R2_001.fastq.gz
+    yarrowia:
+        path:
+            - /pic/projects/mint/genomic_truth_sets/205_GGCTAC_L008_R1_001.fastq.gz
+            - /pic/projects/mint/genomic_truth_sets/205_GGCTAC_L008_R2_001.fastq.gz
 
-# TODO: ability to set data type per sample
-data_type: metatranscriptome
-
-# sliding_window OR expected_error
-qual_method: sliding_window
-temporary_directory: /scratch
-minimum_read_count_to_analyze: 200
+database_directory: /pic/projects/mint/atlas/databases
+tmpdir: /scratch
 # sets threads for all methods that are not single-threaded
 threads: 23
 # shell command prefix; useful for unconventional job queue situations
-prefix: "srun --exclusive -N1 -n1 -c"
-# prefix: ""
-filtering:
-    first_pass:
-        # fastas to parse into kmers which are then trimmed from the sequences
-        adapters: ref/adapters.fa.gz
-        # Look for shorter kmers at read tips down to this length; 0 disables
-        mink: 8
-        minimum_base_quality: 10
-        # kmer mismatches allowed during adapter trim process
-        allowable_kmer_mismatches: 1
-        # length of kmer to search against sequences
-        reference_kmer_match_length: 31
-        # passing single-end read length, prior to merging
-        minimum_passing_read_length: 51
-        # Discard reads with a minimum base frequency below this
-        min_base_frequency: 0.05
-    second_pass:
-        ## Optional VSEARCH MAX EE filter
-        # after merging; the allowable limit of erroneous bases; accepts fractions as well
-        maximum_expected_error: 5
-        # maximum number of N's for FASTQ filter
-        maxns: 5
-        ## TRIMMOMATIC quality trimming/filtering
-        adapters: ref/adapters.fa.gz
-        # adapter mismatch, palindrome clip threshold, and simple clip threshold (the values are nonsensical), e.g. 2:30:10
-        adapter_clip: "2:30:10"
-        # Cut bases off the start of a read, if below this quality
-        leading: 15
-        # Cut bases off the end of a read, if below this quality
-        trailing: 15
-        # specifies the number of bases to average across and required quality, e.g. 4:15
-        window_size_quality: "8:25"
-        # The number of bases to keep, from the start of the read; 0 disables
-        crop: 0
-        # The number of bases to remove from the start of the read; 0 disables
-        headcrop: 0
-        # passing read length after quality trimming merged reads
-        minimum_passing_read_length: 51
+# prefix: "srun --exclusive -N1 -n1 -c"
+preprocessing:
+
+    # fastas to parse into kmers which are then trimmed from the sequences
+    adapters: /pic/projects/mint/atlas/databases/adapters.fa
+    # Look for shorter kmers at read tips down to this length; 0 disables
+    mink: 8
+    minimum_base_quality: 10
+    # kmer mismatches allowed during adapter trim process
+    allowable_kmer_mismatches: 1
+    # length of kmer to search against sequences
+    reference_kmer_match_length: 31
+    # passing single-end read length, prior to merging
+    minimum_passing_read_length: 51
+    # Discard reads with a minimum base frequency below this
+    min_base_frequency: 0.05
+
     contamination:
         references:
             # this key ('rRNA') is required
-            rRNA: databases/contaminant/silva_rfam_all_rRNAs.fa
-            phiX: databases/contaminant/phiX174_virus.fa
+            rRNA: /pic/projects/mint/atlas/databases/contaminant/silva_rfam_all_rRNAs.fa
+            phiX: /pic/projects/mint/atlas/databases/contaminant/phiX174_virus.fa
         # Don't look for indels longer than this
         maxindel: 20
         # Fraction of max alignment score required to keep a site
@@ -87,12 +68,17 @@ filtering:
         #   all     (retain all top-scoring sites)
         ambiguous: best
 
-merging:
-    minimum_overlap: 30
-    maximum_overlap: 220
-    maximum_mismatch_density: 0.25
+    normalization:
+        # kmer length
+        k: 19
+        # target normalization depth
+        t: 100
+        # reads must have at least this many kmers over min depth to be retained
+        minkmers: 8
 
 assembly:
+    # 'spades' or 'megahit'
+    assembler: megahit
     # fraction of the machine's total memory or bytes
     memory: 0.99
     # minimum multiplicity for filtering (k_min+1)-mers
@@ -112,6 +98,8 @@ assembly:
     # minimum length of contigs to output from the assembler; can be filtered
     # downstream using minl
     minimum_contig_length: 200
+    # comma-separated list of k-mer sizes (must be odd and less than 128)
+    spades_k: auto
     # Discard contigs with lower average coverage.
     minc: 5
     # Discard contigs with a lower percent covered bases.
@@ -132,7 +120,6 @@ annotation:
     minimum_overlap: 20
 
     references:
-        # arbitrary name for each reference
         eggnog:
             # non-tree based reference requires namemap database and fasta
             namemap: /pic/projects/mint/atlas_databases/functional/eggnog/eggnog4_nonredundant.db
@@ -214,28 +201,43 @@ annotation:
             # drastically alter ORF LCA assignments if too high without further limits
             max_hits: 10
             top_fraction: 0.50
-
-binning:
-    minimum_contig_length: 1000
-    # iterations of Expectation-Maximization algorithm
-    maximum_iterations: 50
-    # probability threshold for EM final classification
-    probability_threshold: 0.9
-    # By default MaxBin will look for 107 marker genes present in >95% of bacteria.
-    # Alternatively you can also choose 40 marker gene sets that are universal
-    # among bacteria and archaea (Wu et al., PLoS ONE 2013). This option may
-    # be better suited for environment dominated by archaea; however it tends
-    # to split genomes into more bins.
-    marker_set: 107
+        expazy:
+            namemap: /pic/projects/mint/atlas_databases/functional/expazy/expazy.db
+            fasta: /pic/projects/mint/atlas_databases/functional/expazy/expazy.fasta
+            chunk_size: 500000
+            # 'fast' or 'sensitive'
+            run_mode: fast
+            top_seqs: 2
+            index_chunks: 1
+            summary_method: majority
+        cazy:
+            namemap: /pic/projects/mint/atlas_databases/functional/dbcan/dbcan.db
+            fasta: /pic/projects/mint/atlas_databases/functional/dbcan/dbcan.fasta
+            chunk_size: 500000
+            # 'fast' or 'sensitive'
+            run_mode: fast
+            top_seqs: 2
+            index_chunks: 1
+            summary_method: majority
 
 summary_counts:
     # Possible columns table column values upon which to aggregate:
-        # contig, orf, taxonomy, orf_taxonomy, refseq_product, uniprot_ac
-        # eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id,
+        # contig, orf
+
+        # from refseq:
+        # taxonomy, orf_taxonomy, refseq_product
+
+        # from eggnog:
+        # uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id,
         # cog_product, cog_level1_code, cog_level1_name, cog_level2_name,
-        # cazy_id1, cazy_id2, cazy_class, cazy_clan, cazy_product, cazy_gene_id,
-        # cazy_taxa, cazy_ec, ko_id, ko_level1_name, ko_level2_name, ko_level3_id,
+        # ko_id, ko_level1_name, ko_level2_name, ko_level3_id,
         # ko_level3_name, ko_gene_symbol, ko_product, ko_ec
+
+        # from expazy:
+        # expazy_name, expazy_ec
+
+        # from cazy (dbcan):
+        # cazy_gene, cazy_family, cazy_class, cazy_ec
 
     # this is a special case to allow for taxon level specification
     taxonomy:
@@ -253,9 +255,13 @@ summary_counts:
             - ko_ec
         COG:
             - cog_id
-        CAZY:
-            - cazy_id1
+        CAZy_EC:
             - cazy_ec
+        CAZy_family:
+            - cazy_family
+        ExPAZy:
+            - expazy_name
+            - expazy_ec
     KO:
         - ko_id
         - ko_gene_symbol
@@ -267,19 +273,14 @@ summary_counts:
         - ko_level2_name
     KO_lvl3:
         - ko_level3_name
-    EC:
-        - ko_ec
+    CAZY_EC:
+        - cazy_ec
     COG:
         - cog_id
         - cog_product
     COG_lvl1:
         - cog_level1_name
         - cog_level2_name
-    Uniprot:
-        - uniprot_ac
-        - cazy_id1
-        - cazy_class
-        - cazy_product
-        - cazy_ec
-        - cazy_gene_id
-        - cazy_taxa
+    ExPAZy:
+        - expazy_name
+        - expazy_ec

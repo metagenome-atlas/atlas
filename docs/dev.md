@@ -60,3 +60,21 @@ sqlite> .mode tabs
 sqlite> create table eggnog (uniprot_ac text, eggnog_ssid_b text PRIMARY KEY, eggnog_species_id text, uniprot_id text, cog_func_id text, cog_id text, cog_product text, cog_level1_code text, cog_level1_name text, cog_level2_name text, cazy_id1 text, cazy_id2 text, cazy_class text, cazy_clan text, cazy_product text, cazy_gene_id text, cazy_taxa text, cazy_ec text, ko_id text, ko_level1_name text, ko_level2_name text, ko_level3_id text, ko_level3_name text, ko_gene_symbol text, ko_product text, ko_ec text);
 sqlite> .import eggnog4_nonredundant.map eggnog
 ```
+
+# EXPAZY
+
+```
+sqlite> .open expazy.db
+sqlite> .mode tabs
+sqlite> create table expazy (uniparc_entry text PRIMARY KEY, uniprot_entry text, expazy_ec text, expazy_name text);
+sqlite> .import expazy.map expazy
+```
+
+# DBCAN
+
+```
+sqlite> .open dbcan.db
+sqlite> .mode tabs
+sqlite> create table dbcan (cazy_gene text PRIMARY KEY, cazy_family text, cazy_class text, cazy_ec text);
+sqlite> .import dbcan.map dbcan
+```
