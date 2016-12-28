@@ -44,6 +44,7 @@ def get_temp_dir(config):
 
 
 def init_complete_config(config):
+    """This can be moved to CLI"""
     config_report = []
     if not config.get("samples"):
         config_report.append("'samples' is not defined")
@@ -52,13 +53,47 @@ def init_complete_config(config):
     # TODO
 
 
+def coassemblies():
+    if "coassemblies" in config["samples"]:
+        coassembled_samples = list(config["samples"]["coassemblies"].keys())
+        for cs in coassembled_samples:
+            for s in config["samples"]["coassemblies"].keys():
+                if s not in config["samples"]:
+                    print("Coassembly %s includes an undefined sample [%s]" % (cs, s))
+                    sys.exit(1)
+
+
+# rule build_coassembly_fastq:
+#     input:
+#         lambda wc: ["{sample}/quality_control/decontamination/{sample}_pe.fastq.gz".format(sample=s) for s in config["samples"]["coassemblies"][wc.coassembly]]
+#     output:
+#         "{coassembly}/reads/{coassembly}_nonorm_pe.fastq.gz"
+#     threads:
+#         1
+#     shell:
+#         "cat {input} > {output}"
+
+
+# rule normalize_coassembly_fastq:
+#     "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
+#
+# "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
+#
+#     coassemblies:
+#         test-coa:
+#             - shewanella
+#             - cytophaga
+#             - flavobacterium
+
+
+
 # shell prefixes for multi-threaded and single-threads tasks
 SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
 SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
 SAMPLES = list(config["samples"].keys())
 TABLES = get_count_tables(config, "summary_counts")
 NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 31), config["preprocessing"]["normalization"].get("t", 100))
-ASSEMBLER = get_assembler(config)
+ASSEMBLER = get_assembler(config) + "_" + NORMALIZATION
 TMPDIR = get_temp_dir(config)
 
 
@@ -80,6 +115,8 @@ if config.get("workflow", "complete") == "complete":
             expand("{sample}/annotation/{sample}_merged_assignments.tsv", sample=SAMPLES),
             expand("{sample}/count_tables/{sample}_{table}.tsv", sample=SAMPLES, table=TABLES),
             expand("{sample}/{sample}_readme.html", sample=SAMPLES)
+
+            # coassemblies()
 
     include: "rules/quality_control/fastq_filter.snakefile"
     include: "rules/quality_control/error_correction.snakefile"
