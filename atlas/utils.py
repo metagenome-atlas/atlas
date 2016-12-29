@@ -16,6 +16,8 @@ def validate_assembly_config(config):
             logging.critical("no samples are defined under 'samples' in %s" % config)
             valid = False
         for sample, meta in c["samples"].items():
+            if sample == "coassemblies":
+                continue
             if not "path" in meta:
                 logging.critical("'path' is not set for sample %s" % sample)
                 valid = False
@@ -50,22 +52,71 @@ def validate_assembly_config(config):
             if not os.path.exists(f):
                 logging.critical("contamination reference file [%s] does not exist for %s" % (f, ref))
                 valid = False
+        if not "normalization" in c["preprocessing"]:
+            logging.critical("'normalization' is not defined in %s" % config)
+            valid = False
     except KeyError:
         pass
 
-    if not "normalization" in c:
-        logging.critical("'normalization' is not defined in %s" % config)
-        valid = False
     if not "assembly" in c:
         logging.critical("'assembly' is not defined in %s" % config)
         valid = False
     try:
-        if not c["assembly"]["assembler"] == "megahit" or not c["assembly"]["assembler"] == "spades"
+        if not c["assembly"]["assembler"] == "megahit" and not c["assembly"]["assembler"] == "spades":
             logging.critical("'assembler' entry [%s] is not a supported assembler" % c["assembly"]["assembler"])
             valid = False
     except KeyError:
         pass
 
+    if not "annotation" in c:
+        logging.critical("'annotation' is not defined in %s" % config)
+        valid = False
+    try:
+        if not "references" in c["annotation"]:
+            logging.critical("'references' is not defined in %s" % config)
+            valid = False
+        # TODO: decide which if any of these are required
+        if not "eggnog" in c["annotation"]["references"]:
+            logging.critical("'eggnog' is not defined as an annotation reference")
+            valid = False
+        if not "refseq" in c["annotation"]["references"]:
+            logging.critical("'refseq' is not defined as an annotation reference")
+            valid = False
+        if not "cazy" in c["annotation"]["references"]:
+            logging.critical("'cazy' is not defined as an annotation reference")
+            valid = False
+        if not "expazy" in c["annotation"]["references"]:
+            logging.critical("'expazy' is not defined as an annotation reference")
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["eggnog"]["namemap"]):
+            logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["namemap"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["eggnog"]["fasta"]):
+            logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["fasta"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["refseq"]["namemap"]):
+            logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["namemap"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["refseq"]["tree"]):
+            logging.critical("tree reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["tree"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["refseq"]["fasta"]):
+            logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["fasta"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["cazy"]["namemap"]):
+            logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["namemap"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["cazy"]["fasta"]):
+            logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["fasta"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["expazy"]["namemap"]):
+            logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["expazy"]["namemap"])
+            valid = False
+        if not os.path.exists(c["annotation"]["references"]["expazy"]["fasta"]):
+            logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["expazy"]["fasta"])
+            valid = False
+    except KeyError:
+        pass
 
     return valid
 
