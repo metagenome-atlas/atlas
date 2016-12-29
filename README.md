@@ -155,35 +155,64 @@ Kmer length used for finding contaminants. Contaminant matches shorter than this
 
 **Default: 27**
 
-### minimum_passing_read_length
+### Read Length Threshold (`minimum_passing_read_length`)
 
-### min_base_frequency
+This is applied after quality and adapter trimming have been applied to the sequence.
 
-### contamination
+**Default: 51**
 
-#### maxindel
+### Complexity Filter (`min_base_frequency`)
 
-#### minratio
+Require this fraction of each nucleotide per sequence to eliminate low complexity reads.
 
-#### minhits
+**Default: 0.05**
 
-#### ambiguous        
+### Contamination Parameters
 
-#### k
+#### Maximum Insertion/Deletion (`maxindel`)
 
-#### references
+Have `bbsplit.sh` stop searching for possible mappings with indels longer than this. Lower is faster.
 
-##### rRNA
+**Default: 20**
 
-##### Additional
+#### (`minratio`)
 
-### normalization
+#### (`minhits`)
 
-#### k
+#### (`ambiguous`)
 
-#### t
+#### (`k`)
 
-#### minkmers
+#### Reference Sequences
+
+##### Ribosomal RNA (`rRNA`)
+
+This reference FASTA is required though you can provide an alternate to the provided rRNA reference.
+
+##### Additional References
+
+Any number of additional contamination reference sequences can be used. The key is the name that will be integrated into the file name and provide the path to the file such that:
+
+```
+preprocessing:
+    contamination:
+        references:
+            rRNA: /refs/rrna.fasta
+            human: /refs/human.fasta
+            cat: /refs/cat.fasta
+```
+
+### Normalization Parameters
+
+#### Kmer Length (`k`)
+
+#### Target Coverage (`t`)
+
+#### Minimum Passing Kmers (`minkmers`)
+
+Reads must have at least this many kmers over the minimum depth to be retained.
+
+**Default: 8**
 
 assembly:
     # 'spades' or 'megahit'
