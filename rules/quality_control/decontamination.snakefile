@@ -22,7 +22,7 @@ rule decontamination:
         minratio = config["preprocessing"]["contamination"].get("minratio", 0.65),
         minhits = config["preprocessing"]["contamination"].get("minhits", 1),
         ambiguous = config["preprocessing"]["contamination"].get("ambiguous", "best"),
-        k = config["preprocessing"]["contamination"].get("k", 15)
+        k = config["preprocessing"]["contamination"].get("k", 13)
     log:
         "{sample}/logs/{sample}_decontamination.log"
     threads:
