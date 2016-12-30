@@ -70,16 +70,6 @@ Some steps, like assembly, may have an optional temporary directory. If specifie
 temporary_directory: /scratch
 ```
 
-## Starting Read Count Filter
-
-If you don't prescreen your input sequences, some may have exceptionally low coverage. This is intended to omit those samples.
-
-**Default: 1000**
-
-```
-minimum_starting_reads: 1000
-```
-
 ## Threads
 
 Most steps of the workflow are utilizing applications that can thread or otherwise use multiple cores. Leaving this one below the max, in cases where many samples are being analyzed, may be optimal as single-threaded jobs will be processed more efficiently.
@@ -115,7 +105,7 @@ preprocessing:
     min_base_frequency: 0.05
     contamination:
         references:
-            rRNA:
+            rRNA: /refs/rrna.fasta
         k: 12
         ambiguous: best
     normalization:
@@ -129,59 +119,147 @@ FASTA file paths for adapter sequences to be trimmed from the sequence ends. It 
 
 We provide the adapter reference FASTA included in `bbmap`.
 
-**Default: databases/adapters.fa.gz**
+```
+preprocessing:
+    adapters: /databases/adapters.fa
+```
 
-### Quality Trimming (`minimum_base_quality`)
+### Quality Trimming
 
 Trim regions with an average quality below this threshold. Higher is more stringent.
 
 **Default: 10**
 
-### Adapter Trimming at Read Tips (`mink`)
+```
+preprocessing:
+    minimum_base_quality: 10
+```
+
+### Adapter Trimming at Read Tips
 
 Allow shorter kmer matches down to `mink` at the read ends. 0 disables.
 
 **Default: 8**
 
-### Allowable Mismatches in Adapter Hits (`allowable_kmer_mismatches`)
+```
+preprocessing:
+    mink: 8
+```
+
+### Allowable Mismatches in Adapter Hits
 
 Maximum number of substitutions between the target adapter kmer and the query sequence kmer. Lower is more stringent.
 
 **Default: 1**
 
-### Kmer Length (`reference_kmer_match_length`)
+```
+preprocessing:
+    allowable_kmer_mismatches: 1
+```
+
+### Kmer Length
 
 Kmer length used for finding contaminants. Contaminant matches shorter than this length will not be found.
 
 **Default: 27**
 
-### Read Length Threshold (`minimum_passing_read_length`)
+```
+preprocessing:
+    reference_kmer_match_length: 27
+```
+
+### Read Length Threshold
 
 This is applied after quality and adapter trimming have been applied to the sequence.
 
 **Default: 51**
 
-### Complexity Filter (`min_base_frequency`)
+```
+preprocessing:
+    minimum_passing_read_length: 51
+```
+
+### Complexity Filter
 
 Require this fraction of each nucleotide per sequence to eliminate low complexity reads.
 
 **Default: 0.05**
 
+```
+preprocessing:
+    min_base_frequency: 0.05
+```
+
 ### Contamination Parameters
 
-#### Maximum Insertion/Deletion (`maxindel`)
+Contamination reference sequences in the form of nucleotide FASTA files can be provided and filtered from the reads using the following parameters. These still fall within the 'preprocessing' section of the configuration.
+
+#### Maximum Insertion/Deletion
 
 Have `bbsplit.sh` stop searching for possible mappings with indels longer than this. Lower is faster.
 
 **Default: 20**
 
-#### (`minratio`)
+```
+preprocessing:
+    contamination:
+        maxindel: 20
+```
 
-#### (`minhits`)
+#### Required Mapped Read Fraction
 
-#### (`ambiguous`)
+Of the possible maximum alignment score, force at least this fraction per mapping.
 
-#### (`k`)
+**Default: 0.65**
+
+```
+preprocessing:
+    contamination:
+        minratio: 0.65
+```
+
+#### Minimum Seed Hits
+
+Minimum number of seed hits required for candidate sites.
+
+**Default: 1**
+
+```
+preprocessing:
+    contamination:
+        minhits: 1
+```
+
+#### Ambiguous Mappings
+
+The method for which we will deal with reads that map to multiple contamination reference sequences. Possible values include:
+
+| Value  | Definition                            |
+|--------|---------------------------------------|
+| best   | Use the first best site.              |
+| toss   | Consider the read unmapped.           |
+| random | Select one top-scoring site randomly. |
+| all    | Retain all top-scoring sites.         |
+
+**Default: best**
+
+```
+preprocessing:
+    contamination:
+        ambiguous: best
+```
+
+#### Mapping Kmer Length
+
+Mapping kmer length in the range of 8 to 15. Shorter will be more sensitive and slower.
+
+**Default: 13**
+
+```
+preprocessing:
+    contamination:
+        k: 13
+```
 
 #### Reference Sequences
 
