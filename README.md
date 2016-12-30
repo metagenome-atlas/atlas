@@ -263,9 +263,18 @@ preprocessing:
 
 #### Reference Sequences
 
+Reference FASTA files are defined under 'contamination'.
+
 ##### Ribosomal RNA (`rRNA`)
 
 This reference FASTA is required though you can provide an alternate to the provided rRNA reference.
+
+```
+preprocessing:
+    contamination:
+        references:
+            rRNA: /refs/rrna.fasta
+```
 
 ##### Additional References
 
@@ -282,15 +291,44 @@ preprocessing:
 
 ### Normalization Parameters
 
-#### Kmer Length (`k`)
+To improve assemblies, coverage is normalized across kmers to a target depth.
 
-#### Target Coverage (`t`)
+#### Kmer Length
 
-#### Minimum Passing Kmers (`minkmers`)
+Kmer length over which we calculated coverage.
+
+**Default: 21**
+
+```
+preprocessing:
+    normalization:
+        k: 21
+```
+
+#### Target Coverage
+
+The normalized target coverage across kmers.
+
+**Default: 100**
+
+```
+preprocessing:
+    normalization:
+        t: 100
+```
+
+#### Minimum Passing Kmers
 
 Reads must have at least this many kmers over the minimum depth to be retained.
 
 **Default: 8**
+
+```
+preprocessing:
+    normalization:
+        minkmers: 8
+```
+
 
 assembly:
     # 'spades' or 'megahit'
