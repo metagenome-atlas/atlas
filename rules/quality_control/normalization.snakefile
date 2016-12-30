@@ -4,7 +4,7 @@ rule normalization:
     output:
         "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
     params:
-        k = config["preprocessing"]["normalization"].get("k", 31),
+        k = config["preprocessing"]["normalization"].get("k", 21),
         t = config["preprocessing"]["normalization"].get("t", 100),
         minkmers = config["preprocessing"]["normalization"].get("minkmers", 15)
     log:
