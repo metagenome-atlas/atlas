@@ -329,31 +329,54 @@ preprocessing:
         minkmers: 8
 ```
 
+## Assembly Parameters
 
-assembly:
+### Assembler
     # 'spades' or 'megahit'
     assembler: megahit
+    
+### Memory
     # fraction of the machine's total memory or bytes
     memory: 0.99
+
+### min count
     # minimum multiplicity for filtering (k_min+1)-mers
     minimum_count: 2
+    
+### kmer start
     # minimum kmer size (<= 255), must be odd number
     kmer_min: 21
+    
+### kmer stop
     # maximum kmer size (<= 255), must be odd number
     kmer_max: 121
+    
+### kmer step
     # increment of kmer size of each iteration (<= 28), must be even number
     kmer_step: 20
+    
+### merge levels
     # merge complex bubbles of length <= l*kmer_size and similarity >= s
     merge_level: 20,0.98
+    
+### prune level
     # strength of low depth pruning (0-3)
     prune_level: 2
+
+### low local coverage
     # ratio threshold to define low local coverage contigs
     low_local_ratio: 0.2
+    
+### Minimum Contig Length for `megahit`
     # minimum length of contigs to output from the assembler; can be filtered
     # downstream using minl
     minimum_contig_length: 200
+
+### `SPAdes` Kmer Sizes
     # comma-separated list of k-mer sizes (must be odd and less than 128)
     spades_k: auto
+
+### Average Coverage Threshold
     # Discard contigs with lower average coverage.
     minc: 5
     # Discard contigs with a lower percent covered bases.
