@@ -1,0 +1,15 @@
+name: atlas_env
+channels:
+    - bioconda
+dependencies:
+    - bbmap
+    - click
+    - diamond
+    - megahit
+    - pandas
+    - prodigal
+    - pyyaml
+    - samtools
+    - snakemake
+    - spades
+    - verse
