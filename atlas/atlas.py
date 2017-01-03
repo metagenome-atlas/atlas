@@ -1,6 +1,7 @@
 import click
 import logging
 import multiprocessing
+import os
 from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import cazy_parser, eggnog_parser, refseq_parser
