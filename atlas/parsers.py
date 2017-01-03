@@ -2,7 +2,7 @@ import contextlib
 import gzip
 import logging
 import sqlite3
-from atlas.blast import BlastHits, Node, Tree
+from atlas.blast import BlastHits, Node, Tree, parse_blast_results_with_tree
 from itertools import groupby
 
 
