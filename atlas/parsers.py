@@ -2,13 +2,10 @@ import contextlib
 import gzip
 import logging
 import sqlite3
+from atlas import BLAST6
 from atlas.blast import BlastHits, Node, Tree, parse_blast_results_with_tree
+from atlas.utils import gzopen
 from itertools import groupby
-
-
-BLAST6 = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart",
-          "qend", "sstart", "send", "evalue", "bitscore"]
-gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
 
 
 def cazy_parser(tsv, namemap, output, summary_method='best', min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001, top_fraction=1, max_hits=10, table_name="cazy"):

@@ -5,6 +5,9 @@ from math import log, erfc, sqrt
 from snakemake.io import load_configfile
 
 
+gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
+
+
 def validate_assembly_config(config):
     c = load_configfile(config)
     valid = True

@@ -1,6 +1,8 @@
 import bisect
+import contextlib
 import logging
-from atlas import TAX_LEVELS
+from atlas import BLAST6, TAX_LEVELS
+from atlas.utils import gzopen
 from collections import Counter, defaultdict, deque, OrderedDict
 
 
