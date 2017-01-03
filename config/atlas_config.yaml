@@ -31,7 +31,6 @@ samples:
             - cytophaga
             - flavobacterium
 
-database_directory: /pic/projects/mint/atlas/databases
 tmpdir: /scratch
 # sets threads for all methods that are not single-threaded
 threads: 23
@@ -40,7 +39,7 @@ threads: 23
 preprocessing:
 
     # fastas to parse into kmers which are then trimmed from the sequences
-    adapters: /pic/projects/mint/atlas/databases/adapters.fa
+    adapters: /pic/projects/mint/atlas_databases/adapters.fa
     # Look for shorter kmers at read tips down to this length; 0 disables
     mink: 8
     minimum_base_quality: 10
@@ -56,8 +55,8 @@ preprocessing:
     contamination:
         references:
             # this key ('rRNA') is required
-            rRNA: /pic/projects/mint/atlas/databases/contaminant/silva_rfam_all_rRNAs.fa
-            phiX: /pic/projects/mint/atlas/databases/contaminant/phiX174_virus.fa
+            rRNA: /pic/projects/mint/atlas_databases/silva_rfam_all_rRNAs.fa
+            phiX: /pic/projects/mint/atlas_databases/phiX174_virus.fa
         # Don't look for indels longer than this
         maxindel: 20
         # Fraction of max alignment score required to keep a site
@@ -127,8 +126,8 @@ annotation:
     references:
         eggnog:
             # non-tree based reference requires namemap database and fasta
-            namemap: /pic/projects/mint/atlas_databases/functional/eggnog/eggnog4_nonredundant.db
-            fasta: /pic/projects/mint/atlas_databases/functional/eggnog/eggnog4_nonredundant.fasta
+            namemap: /pic/projects/mint/atlas_databases/eggnog.db
+            dmnd: /pic/projects/mint/atlas_databases/eggnog.dmnd
             # number of entries per FASTA to be aligned with DIAMOND
             chunk_size: 250000
             # 'fast' or 'sensitive'
@@ -172,10 +171,10 @@ annotation:
             # minimum allowable BLAST alignment bitscore; 0 effectively disables
             min_bitscore: 0
         refseq:
-            # tree based reference requires namemap database, tree, and fasta
-            namemap: /pic/projects/mint/atlas_databases/functional/refseq/refseq78.complete.nonredundant_protein.faa.db
-            tree: /pic/projects/mint/atlas_databases/functional/refseq/refseq78.complete.nonredundant_protein.faa.tree
-            fasta: /pic/projects/mint/atlas_databases/functional/refseq/refseq78.complete.nonredundant_protein.faa
+            # tree based reference requires namemap database, tree, and diamond formatted fasta
+            namemap: /pic/projects/mint/atlas_databases/refseq.db
+            tree: /pic/projects/mint/atlas_databases/refseq.tree
+            dmnd: /pic/projects/mint/atlas_databases/refseq.dmnd
             # number of entries per FASTA to be aligned with DIAMOND
             chunk_size: 250000
             run_mode: fast
@@ -207,8 +206,8 @@ annotation:
             max_hits: 10
             top_fraction: 0.50
         expazy:
-            namemap: /pic/projects/mint/atlas_databases/functional/expazy/expazy.db
-            fasta: /pic/projects/mint/atlas_databases/functional/expazy/expazy.fasta
+            namemap: /pic/projects/mint/atlas_databases/expazy.db
+            dmnd: /pic/projects/mint/atlas_databases/expazy.dmnd
             chunk_size: 500000
             # 'fast' or 'sensitive'
             run_mode: fast
@@ -216,8 +215,8 @@ annotation:
             index_chunks: 1
             summary_method: majority
         cazy:
-            namemap: /pic/projects/mint/atlas_databases/functional/dbcan/dbcan.db
-            fasta: /pic/projects/mint/atlas_databases/functional/dbcan/dbcan.fasta
+            namemap: /pic/projects/mint/atlas_databases/cazy.db
+            fasta: /pic/projects/mint/atlas_databases/cazy.dmnd
             chunk_size: 500000
             # 'fast' or 'sensitive'
             run_mode: fast
