@@ -4,7 +4,7 @@ import multiprocessing
 import os
 from atlas import __version__
 from atlas.conf import make_config
-from atlas.parsers import cazy_parser, eggnog_parser, refseq_parser
+from atlas.parsers import cazy_parser, eggnog_parser, expazy_parser, refseq_parser
 from atlas.tables import merge_tables, counts
 from atlas.workflows import assemble
 
