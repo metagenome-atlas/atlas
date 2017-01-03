@@ -216,7 +216,7 @@ annotation:
             summary_method: majority
         cazy:
             namemap: /pic/projects/mint/atlas_databases/cazy.db
-            fasta: /pic/projects/mint/atlas_databases/cazy.dmnd
+            dmnd: /pic/projects/mint/atlas_databases/cazy.dmnd
             chunk_size: 500000
             # 'fast' or 'sensitive'
             run_mode: fast
