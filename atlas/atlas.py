@@ -1,9 +1,11 @@
 import click
 import logging
+import multiprocessing
 from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import cazy_parser, eggnog_parser, refseq_parser
 from atlas.tables import merge_tables, counts
+from atlas.workflows import assemble
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
@@ -252,11 +254,12 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
-@cli.command("assemble")
+@cli.command("assemble", short_help="assembly workflow")
 @click.argument("config", click.Path(exists=True))
-
-def run_assemble():
-    assemble()
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+def run_assemble(config, jobs, out_dir):
+    assemble(config, jobs, out_dir)
 
 
 if __name__ == "__main__":
