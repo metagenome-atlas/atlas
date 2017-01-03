@@ -3,7 +3,7 @@ import gzip
 import logging
 import sqlite3
 from atlas import BLAST6
-from atlas.blast import BlastHits, Node, Tree, parse_blast_results_with_tree, process_orfs_with_tree
+from atlas.blast import BlastHits, Node, Tree, parse_blast_results_with_tree, process_orfs_with_tree, get_hit_from_blast_group
 from atlas.utils import gzopen
 from itertools import groupby
 
