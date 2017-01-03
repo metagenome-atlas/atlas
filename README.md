@@ -332,61 +332,181 @@ preprocessing:
 ## Assembly Parameters
 
 ### Assembler
-    # 'spades' or 'megahit'
+
+The supported assemblers are 'spades' and 'megahit'.
+    
+**Default: megahit**
+
+```
+assembly:
     assembler: megahit
-    
+```
+
 ### Memory
-    # fraction of the machine's total memory or bytes
+
+For `megahit`, set the fraction of the machine's total memory if you need to limit its footprint.
+
+**Default: 0.99**
+
+```
+assembly:
     memory: 0.99
+```
 
-### min count
-    # minimum multiplicity for filtering (k_min+1)-mers
+### Minimum Multiplicity
+
+Affects `megahit`; set the minimum multiplicity for filtering.
+
+**Default: 2**
+
+```
+assembly:
     minimum_count: 2
-    
-### kmer start
-    # minimum kmer size (<= 255), must be odd number
-    kmer_min: 21
-    
-### kmer stop
-    # maximum kmer size (<= 255), must be odd number
-    kmer_max: 121
-    
-### kmer step
-    # increment of kmer size of each iteration (<= 28), must be even number
-    kmer_step: 20
-    
-### merge levels
-    # merge complex bubbles of length <= l*kmer_size and similarity >= s
-    merge_level: 20,0.98
-    
-### prune level
-    # strength of low depth pruning (0-3)
-    prune_level: 2
+```
 
-### low local coverage
-    # ratio threshold to define low local coverage contigs
+### Minimum Kmer Length
+
+This is `megahit` minimum kmer size (<= 255) and must be odd.
+
+**Default: 21**
+
+```
+assembly:
+    kmer_min: 21
+```
+    
+### Maximum Kmer Length
+
+This is `megahit` maximum kmer size (<=255) and must be odd.
+
+**Default: 121**
+
+```
+assembly:
+    kmer_max: 121
+```
+    
+### Kmer Step
+
+Sets the kmer step for `megahit` kmer assembly lengths.
+
+**Default: 20**
+
+```
+assembly:
+    kmer_step: 20
+```
+
+### `megahit` Merge Levels
+
+Merge complex bubbles of length <= l*kmer_size and similarity >= s.
+
+**Default: 20,0.98**
+
+```
+assembly:
+    merge_level: 20,0.98
+```
+    
+### `megahit` Prune Level
+
+Strength of low depth pruning (0-3).
+
+**Default: 2**
+
+```
+assembly:
+    prune_level: 2
+```
+
+### `megahit` Low Local Coverage
+
+Ratio threshold to define low local coverage contigs.
+
+**Default: 0.2**
+
+```
+assembly:
     low_local_ratio: 0.2
+```
     
 ### Minimum Contig Length for `megahit`
-    # minimum length of contigs to output from the assembler; can be filtered
-    # downstream using minl
+
+Minimum length of contigs to output from the assembler; can be filtered downstream using `minl`.
+    
+**Default: 200**
+
+```
+assembly:
     minimum_contig_length: 200
+```
 
 ### `SPAdes` Kmer Sizes
-    # comma-separated list of k-mer sizes (must be odd and less than 128)
-    spades_k: auto
 
-### Average Coverage Threshold
-    # Discard contigs with lower average coverage.
+Comma-separated list of k-mer sizes (must be odd and less than 128).
+
+**Default: auto**
+
+```
+assembly:
+    spades_k: auto
+```
+
+### Contig Average Coverage Threshold
+
+Discard contigs with low read support after mapping quality filtered reads back to contig sequences. Contigs with a lower average coverage than `minc` will be removed.
+
+**Default: 5**
+
+```
+assembly:
     minc: 5
-    # Discard contigs with a lower percent covered bases.
+```
+
+### Contig Percent Coverage Bases
+
+Discard contigs with a low fraction of reads mapping back along the length of the contig.
+
+**Default: 40**
+
+```
+assembly:
     minp: 40
-    # Discard contigs with fewer mapped reads.
+```
+
+### Contig Read Mapping Filter
+
+Require at least this many reads mapped to a contig and discard contigs with fewer mapped reads.
+
+**Default: 0**
+
+```
+assembly:
     minr: 0
-    # Discard contigs shorter than this (after trimming).
-    minl: 250
-    # Trim the first and last X bases of each sequence.
+```
+
+### Contig Length Filter
+
+Post-assembly contig length filter.
+
+**Default: 1**
+
+```
+assembly:
+    minl: 200
+```
+
+### Contig Trimming
+
+Trim the first and last number of bases of each sequence.
+
+**Default: 0**
+
+```
+assembly:
     trim: 0
+```
+
 
 annotation:
     ## ORFs
