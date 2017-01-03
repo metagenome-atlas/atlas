@@ -90,7 +90,7 @@ def coassemblies():
 # shell prefixes for multi-threaded and single-threads tasks
 SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
 SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
-SAMPLES = list(config["samples"].keys())
+SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
 TABLES = get_count_tables(config, "summary_counts")
 NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21), config["preprocessing"]["normalization"].get("t", 100))
 ASSEMBLER = get_assembler(config) + "_" + NORMALIZATION
