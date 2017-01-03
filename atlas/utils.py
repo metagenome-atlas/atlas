@@ -1,6 +1,6 @@
 import logging
 import os
-from collections import Counter
+from collections import Counter, OrderedDict
 from math import log, erfc, sqrt
 from snakemake.io import load_configfile
 
