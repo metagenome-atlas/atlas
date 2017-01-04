@@ -6,13 +6,13 @@ import yaml
 from collections import OrderedDict
 
 
-ADAPTERS = "adapters.fa.gz"
+ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
-EGGNOG = "eggnog4_nonredundant"
-REFSEQ = "refseq78.complete.nonredundant_protein"
+EGGNOG = "eggnog"
+REFSEQ = "refseq"
 EXPAZY = "expazy"
-CAZY = "dbcan"
+CAZY = "cazy"
 
 
 def get_sample_files(path, data_type):
@@ -102,7 +102,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     annotation["minimum_overlap"] = 20
     eggnog = OrderedDict()
     eggnog["namemap"] = os.path.join(database_dir, "%s.db" % EGGNOG)
-    eggnog["fasta"] = os.path.join(database_dir, "%s.fasta" % EGGNOG)
+    eggnog["dmnd"] = os.path.join(database_dir, "%s.dmnd" % EGGNOG)
     eggnog["run_mode"] = "fast"
     eggnog["top_seqs"] = 5
     eggnog["summary_method"] = "best"
@@ -111,7 +111,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     refseq = OrderedDict()
     refseq["namemap"] = os.path.join(database_dir, "%s.db" % REFSEQ)
     refseq["tree"] = os.path.join(database_dir, "%s.tree" % REFSEQ)
-    refseq["fasta"] = os.path.join(database_dir, "%s.fasta" % REFSEQ)
+    refseq["dmnd"] = os.path.join(database_dir, "%s.dmnd" % REFSEQ)
     refseq["run_mode"] = "fast"
     refseq["top_seqs"] = 5
     refseq["summary_method"] = "best"
@@ -121,7 +121,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     expazy = OrderedDict()
     expazy["namemap"] = os.path.join(database_dir, "%s.db" % EXPAZY)
-    expazy["fasta"] = os.path.join(database_dir, "%s.fasta" % EXPAZY)
+    expazy["dmnd"] = os.path.join(database_dir, "%s.dmnd" % EXPAZY)
     expazy["run_mode"] = "fast"
     expazy["top_seqs"] = 2
     expazy["summary_method"] = "majority"
@@ -130,7 +130,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     cazy = OrderedDict()
     cazy["namemap"] = os.path.join(database_dir, "%s.db" % CAZY)
-    cazy["fasta"] = os.path.join(database_dir, "%s.fasta" % CAZY)
+    cazy["dmnd"] = os.path.join(database_dir, "%s.dmnd" % CAZY)
     cazy["run_mode"] = "fast"
     cazy["top_seqs"] = 2
     cazy["summary_method"] = "majority"

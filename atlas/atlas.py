@@ -6,7 +6,7 @@ from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import cazy_parser, eggnog_parser, expazy_parser, refseq_parser
 from atlas.tables import merge_tables, counts
-from atlas.workflows import assemble
+from atlas.workflows import assemble, download
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
@@ -241,7 +241,7 @@ def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
 @click.option("--data-type", default="metagenome", type=click.Choice(["metagenome", "metatranscriptome"]),
               show_default=True, help="sample data type")
 @click.option("--database-dir", default="databases", show_default=True,
-              help="location to store formatted databases")
+              help="location of formatted databases (from `atlas download`)")
 @click.option("--threads", default=None, help="number of threads to use per multi-threaded job")
 @click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]), help="contig assembler")
 def run_make_config(config, path, data_type, database_dir, threads, assembler):
@@ -261,6 +261,13 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
 def run_assemble(config, jobs, out_dir):
     assemble(config, jobs, out_dir)
+
+
+@cli.command("download", short_help="download reference files")
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.join(os.path.realpath("."), "databases"), show_default=True, help="database download directory")
+def run_download(jobs, out_dir):
+    download(jobs, out_dir)
 
 
 if __name__ == "__main__":
