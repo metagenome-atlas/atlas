@@ -5,7 +5,7 @@ import os
 from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import cazy_parser, eggnog_parser, expazy_parser, refseq_parser
-from atlas.tables import merge_tables, counts
+from atlas.tables import merge_tables, count_tables
 from atlas.workflows import assemble, download
 
 
@@ -232,7 +232,7 @@ def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
             beta-galactosidase          267
             cell division protein FtsQ  8
     """
-    counts(prefix, merged, counts, combinations, suffix)
+    count_tables(prefix, merged, counts, combinations, suffix)
 
 
 @cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")

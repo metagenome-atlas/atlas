@@ -71,7 +71,7 @@ def col_split(df, column, sep='|'):
     return new_df
 
 
-def counts(prefix, merged, counts, combinations, suffix=".tsv"):
+def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
     """Aggregate and integrate count data from `counts` with annotation data in `merged`. The
     merged data is the result of `merge-tables`. Count data is a TSV formatted with a header:
 
