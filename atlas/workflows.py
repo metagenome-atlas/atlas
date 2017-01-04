@@ -12,15 +12,16 @@ def get_snakefile():
     return sf
 
 
-def assemble(config, jobs, out_dir):
+def assemble(config, jobs, out_dir, dryrun=False):
     if not validate_assembly_config(config):
         sys.exit("The configuration file is invalid.")
 
     cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --configfile '{config}' "
-           "--nolock --config workflow=complete").format(snakefile=get_snakefile(),
-                                                         out_dir=out_dir,
-                                                         jobs=jobs,
-                                                         config=config)
+           "--nolock --config workflow=complete --{dryrun}").format(snakefile=get_snakefile(),
+                                                                    out_dir=out_dir,
+                                                                    jobs=jobs,
+                                                                    config=config,
+                                                                    dryrun="dryrun" if dryrun else "")
     logging.info("Executing: " + cmd)
     check_call(cmd, shell=True)
 
