@@ -14,28 +14,23 @@ def get_snakefile():
 def assemble(config, jobs, out_dir):
     if not validate_assembly_config(config):
         sys.exit("The configuration file is invalid.")
-    try:
-        cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --configfile '{config}' "
-               "--nolock --config workflow=complete").format(snakefile=get_snakefile(),
-                                                             out_dir=out_dir,
-                                                             jobs=jobs,
-                                                             config=config)
-        logging.info("Executing: " + cmd)
-        check_call(cmd, shell=True)
-    except:
-        # the error will be printed in the snakemake log
-        pass
+
+    cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --configfile '{config}' "
+           "--nolock --config workflow=complete").format(snakefile=get_snakefile(),
+                                                         out_dir=out_dir,
+                                                         jobs=jobs,
+                                                         config=config)
+    logging.info("Executing: " + cmd)
+    check_call(cmd, shell=True)
 
 
 def download(jobs, out_dir):
     out_dir = os.path.realpath(out_dir)
-    try:
-        cmd = ("snakemake -s {snakefile} -d {parent_dir} -p -j {jobs} --config "
-               "db_dir='{out_dir}' workflow=download --").format(snakefile=get_snakefile(),
-                                                                 parent_dir=os.path.dirname(out_dir),
-                                                                 jobs=jobs,
-                                                                 out_dir=out_dir)
-        logging.info("Executing: " + cmd)
-        check_call(cmd, shell=True)
-    except:
-        pass
+
+    cmd = ("snakemake -s {snakefile} -d {parent_dir} -p -j {jobs} --config "
+           "db_dir='{out_dir}' workflow=download --").format(snakefile=get_snakefile(),
+                                                             parent_dir=os.path.dirname(out_dir),
+                                                             jobs=jobs,
+                                                             out_dir=out_dir)
+    logging.info("Executing: " + cmd)
+    check_call(cmd, shell=True)
