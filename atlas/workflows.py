@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from atlas.utils import validate_assembly_config
