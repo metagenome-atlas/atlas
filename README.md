@@ -15,11 +15,13 @@ conda install -c bioconda \
     bbmap diamond fastqc megahit prodigal samtools snakemake spades verse
 ```
 
-Then, as `atlas` is still in active development:
+Or as an isolated environment using our `environment.yml` file:
 
 ```
-git clone git@github.com:????????/atlas.git
+conda env create -f environment.yml
 ```
+
+And load and unload that environment using `source activate atlas_env` and `source deactivate atlas_env`, respectively.
 
 ## Databases
 
@@ -507,6 +509,7 @@ assembly:
     trim: 0
 ```
 
+## Annotation Parameters
 
 annotation:
     ## ORFs
