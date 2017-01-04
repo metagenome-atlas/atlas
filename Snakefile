@@ -16,6 +16,7 @@ def get_count_tables(config, key):
             for level in tax_levels:
                 level = level.lower()
                 tax_name = "taxonomy_%s" % level
+                expected_tables.append("%s_%s" % (name, level))
                 for subname, subvals in vals.items():
                     if subname.lower() == "levels": continue
                     expected_tables.append("%s_%s" % (subname, tax_name))

@@ -162,12 +162,20 @@ def counts(prefix, merged, counts, combinations, suffix=".tsv"):
                     logging.warning("Skipping taxonomy level %s" % level)
                     continue
 
-                # taxonomy_phylum
+                # e.g. taxonomy_phylum
                 tax_name = "taxonomy_%s" % level
                 if not tax_name in df.columns:
                     # convert taxonomy from full lineage to specified level
                     df[tax_name] = df["taxonomy"].apply(lambda x: ";".join(x.split(";")[0:level_idx]) if isinstance(x, str) else x)
 
+                # print the taxonomy only table
+                table_name = "%s_%s" % (name, level)
+                logging.info("Writing %s table to %s_%s%s" % (table_name, prefix, table_name, suffix))
+                tdf = df[[tax_name, "count"]].copy()
+                tdf.dropna(how="any", thresh=2, inplace=True)
+                tdf.groupby([tax_name]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
+
+                # print taxonomy grouped with other values
                 for subname, subvals in vals.items():
                     if subname.lower() == "levels": continue
                     # remove duplicates and entries not in the expected merged header
@@ -180,10 +188,11 @@ def counts(prefix, merged, counts, combinations, suffix=".tsv"):
 
                     if "contig" not in subvals and "orf" not in subvals:
                         for v in subvals:
-                            # expazy has one-to-many relationships with it's mapping sequence to EC and Names
+                            # one-to-many relationships with mapping sequence (Uniprot AC) to values
                             if "expazy" in v or "cazy_ec" in v:
                                 tdf = col_split(tdf, v)
 
+                    # has to have 'count' plus one other
                     tdf.dropna(how="any", thresh=2, inplace=True)
                     tdf.groupby(tax_vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
 
