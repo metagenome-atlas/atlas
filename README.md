@@ -15,11 +15,13 @@ conda install -c bioconda \
     bbmap diamond fastqc megahit prodigal samtools snakemake spades verse
 ```
 
-Then, as `atlas` is still in active development:
+Or as an isolated environment using our `environment.yml` file:
 
 ```
-git clone git@github.com:????????/atlas.git
+conda env create -f environment.yml
 ```
+
+And load and unload that environment using `source activate atlas_env` and `source deactivate atlas_env`, respectively.
 
 ## Databases
 
@@ -70,16 +72,6 @@ Some steps, like assembly, may have an optional temporary directory. If specifie
 temporary_directory: /scratch
 ```
 
-## Starting Read Count Filter
-
-If you don't prescreen your input sequences, some may have exceptionally low coverage. This is intended to omit those samples.
-
-**Default: 1000**
-
-```
-minimum_starting_reads: 1000
-```
-
 ## Threads
 
 Most steps of the workflow are utilizing applications that can thread or otherwise use multiple cores. Leaving this one below the max, in cases where many samples are being analyzed, may be optimal as single-threaded jobs will be processed more efficiently.
@@ -106,93 +98,418 @@ And `threads` is appended to the prefix when the workflow is executed.
 
 ## Preprocessing of Reads
 
-This starts the preprocessing subsection of the configuration file. All settings will be indented from "preprocessing":
+This starts the preprocessing subsection of the configuration file. All settings will be indented from "preprocessing" and indentation levels matter.
 
 ```
 preprocessing:
-    adapters: databases/adapters.fa
-
+    adapters: /databases/adapters.fa
+    minimum_base_quality: 10
+    min_base_frequency: 0.05
+    contamination:
+        references:
+            rRNA: /refs/rrna.fasta
+        k: 12
+        ambiguous: best
+    normalization:
+        k: 21
+        t: 100
 ```
 
 ### Adapters
 
-FASTA file paths for adapter sequences to be trimmed from the sequence ends.
+FASTA file paths for adapter sequences to be trimmed from the sequence ends. It is best practice to use full file paths to reference files.
 
 We provide the adapter reference FASTA included in `bbmap`.
 
+```
+preprocessing:
+    adapters: /databases/adapters.fa
+```
 
-### mink
+### Quality Trimming
 
-### minimum_base_quality
+Trim regions with an average quality below this threshold. Higher is more stringent.
 
-### allowable_kmer_mismatches
+**Default: 10**
 
-### reference_kmer_match_length
+```
+preprocessing:
+    minimum_base_quality: 10
+```
 
-### minimum_passing_read_length
+### Adapter Trimming at Read Tips
 
-### min_base_frequency
+Allow shorter kmer matches down to `mink` at the read ends. 0 disables.
 
-### contamination
+**Default: 8**
 
-#### maxindel
+```
+preprocessing:
+    mink: 8
+```
 
-#### minratio
+### Allowable Mismatches in Adapter Hits
 
-#### minhits
+Maximum number of substitutions between the target adapter kmer and the query sequence kmer. Lower is more stringent.
 
-#### ambiguous        
+**Default: 1**
 
-#### k
+```
+preprocessing:
+    allowable_kmer_mismatches: 1
+```
 
-#### references
+### Kmer Length
 
-##### rRNA
+Kmer length used for finding contaminants. Contaminant matches shorter than this length will not be found.
 
-##### Additional
+**Default: 27**
 
-### normalization
+```
+preprocessing:
+    reference_kmer_match_length: 27
+```
 
-#### k
+### Read Length Threshold
 
-#### t
+This is applied after quality and adapter trimming have been applied to the sequence.
 
-#### minkmers
+**Default: 51**
 
+```
+preprocessing:
+    minimum_passing_read_length: 51
+```
+
+### Complexity Filter
+
+Require this fraction of each nucleotide per sequence to eliminate low complexity reads.
+
+**Default: 0.05**
+
+```
+preprocessing:
+    min_base_frequency: 0.05
+```
+
+### Contamination Parameters
+
+Contamination reference sequences in the form of nucleotide FASTA files can be provided and filtered from the reads using the following parameters. These still fall within the 'preprocessing' section of the configuration.
+
+#### Maximum Insertion/Deletion
+
+Have `bbsplit.sh` stop searching for possible mappings with indels longer than this. Lower is faster.
+
+**Default: 20**
+
+```
+preprocessing:
+    contamination:
+        maxindel: 20
+```
+
+#### Required Mapped Read Fraction
+
+Of the possible maximum alignment score, force at least this fraction per mapping.
+
+**Default: 0.65**
+
+```
+preprocessing:
+    contamination:
+        minratio: 0.65
+```
+
+#### Minimum Seed Hits
+
+Minimum number of seed hits required for candidate sites.
+
+**Default: 1**
+
+```
+preprocessing:
+    contamination:
+        minhits: 1
+```
+
+#### Ambiguous Mappings
+
+The method for which we will deal with reads that map to multiple contamination reference sequences. Possible values include:
+
+| Value  | Definition                            |
+|--------|---------------------------------------|
+| best   | Use the first best site.              |
+| toss   | Consider the read unmapped.           |
+| random | Select one top-scoring site randomly. |
+| all    | Retain all top-scoring sites.         |
+
+**Default: best**
+
+```
+preprocessing:
+    contamination:
+        ambiguous: best
+```
+
+#### Mapping Kmer Length
+
+Mapping kmer length in the range of 8 to 15. Shorter will be more sensitive and slower.
+
+**Default: 13**
+
+```
+preprocessing:
+    contamination:
+        k: 13
+```
+
+#### Reference Sequences
+
+Reference FASTA files are defined under 'contamination'.
+
+##### Ribosomal RNA (`rRNA`)
+
+This reference FASTA is required though you can provide an alternate to the provided rRNA reference.
+
+```
+preprocessing:
+    contamination:
+        references:
+            rRNA: /refs/rrna.fasta
+```
+
+##### Additional References
+
+Any number of additional contamination reference sequences can be used. The key is the name that will be integrated into the file name and provide the path to the file such that:
+
+```
+preprocessing:
+    contamination:
+        references:
+            rRNA: /refs/rrna.fasta
+            human: /refs/human.fasta
+            cat: /refs/cat.fasta
+```
+
+### Normalization Parameters
+
+To improve assemblies, coverage is normalized across kmers to a target depth.
+
+#### Kmer Length
+
+Kmer length over which we calculated coverage.
+
+**Default: 21**
+
+```
+preprocessing:
+    normalization:
+        k: 21
+```
+
+#### Target Coverage
+
+The normalized target coverage across kmers.
+
+**Default: 100**
+
+```
+preprocessing:
+    normalization:
+        t: 100
+```
+
+#### Minimum Passing Kmers
+
+Reads must have at least this many kmers over the minimum depth to be retained.
+
+**Default: 8**
+
+```
+preprocessing:
+    normalization:
+        minkmers: 8
+```
+
+## Assembly Parameters
+
+### Assembler
+
+The supported assemblers are 'spades' and 'megahit'.
+    
+**Default: megahit**
+
+```
 assembly:
-    # 'spades' or 'megahit'
     assembler: megahit
-    # fraction of the machine's total memory or bytes
+```
+
+### Memory
+
+For `megahit`, set the fraction of the machine's total memory if you need to limit its footprint.
+
+**Default: 0.99**
+
+```
+assembly:
     memory: 0.99
-    # minimum multiplicity for filtering (k_min+1)-mers
+```
+
+### Minimum Multiplicity
+
+Affects `megahit`; set the minimum multiplicity for filtering.
+
+**Default: 2**
+
+```
+assembly:
     minimum_count: 2
-    # minimum kmer size (<= 255), must be odd number
+```
+
+### Minimum Kmer Length
+
+This is `megahit` minimum kmer size (<= 255) and must be odd.
+
+**Default: 21**
+
+```
+assembly:
     kmer_min: 21
-    # maximum kmer size (<= 255), must be odd number
+```
+    
+### Maximum Kmer Length
+
+This is `megahit` maximum kmer size (<=255) and must be odd.
+
+**Default: 121**
+
+```
+assembly:
     kmer_max: 121
-    # increment of kmer size of each iteration (<= 28), must be even number
+```
+    
+### Kmer Step
+
+Sets the kmer step for `megahit` kmer assembly lengths.
+
+**Default: 20**
+
+```
+assembly:
     kmer_step: 20
-    # merge complex bubbles of length <= l*kmer_size and similarity >= s
+```
+
+### `megahit` Merge Levels
+
+Merge complex bubbles of length <= l*kmer_size and similarity >= s.
+
+**Default: 20,0.98**
+
+```
+assembly:
     merge_level: 20,0.98
-    # strength of low depth pruning (0-3)
+```
+    
+### `megahit` Prune Level
+
+Strength of low depth pruning (0-3).
+
+**Default: 2**
+
+```
+assembly:
     prune_level: 2
-    # ratio threshold to define low local coverage contigs
+```
+
+### `megahit` Low Local Coverage
+
+Ratio threshold to define low local coverage contigs.
+
+**Default: 0.2**
+
+```
+assembly:
     low_local_ratio: 0.2
-    # minimum length of contigs to output from the assembler; can be filtered
-    # downstream using minl
+```
+    
+### Minimum Contig Length for `megahit`
+
+Minimum length of contigs to output from the assembler; can be filtered downstream using `minl`.
+    
+**Default: 200**
+
+```
+assembly:
     minimum_contig_length: 200
-    # comma-separated list of k-mer sizes (must be odd and less than 128)
+```
+
+### `SPAdes` Kmer Sizes
+
+Comma-separated list of k-mer sizes (must be odd and less than 128).
+
+**Default: auto**
+
+```
+assembly:
     spades_k: auto
-    # Discard contigs with lower average coverage.
+```
+
+### Contig Average Coverage Threshold
+
+Discard contigs with low read support after mapping quality filtered reads back to contig sequences. Contigs with a lower average coverage than `minc` will be removed.
+
+**Default: 5**
+
+```
+assembly:
     minc: 5
-    # Discard contigs with a lower percent covered bases.
+```
+
+### Contig Percent Coverage Bases
+
+Discard contigs with a low fraction of reads mapping back along the length of the contig.
+
+**Default: 40**
+
+```
+assembly:
     minp: 40
-    # Discard contigs with fewer mapped reads.
+```
+
+### Contig Read Mapping Filter
+
+Require at least this many reads mapped to a contig and discard contigs with fewer mapped reads.
+
+**Default: 0**
+
+```
+assembly:
     minr: 0
-    # Discard contigs shorter than this (after trimming).
-    minl: 250
-    # Trim the first and last X bases of each sequence.
+```
+
+### Contig Length Filter
+
+Post-assembly contig length filter.
+
+**Default: 1**
+
+```
+assembly:
+    minl: 200
+```
+
+### Contig Trimming
+
+Trim the first and last number of bases of each sequence.
+
+**Default: 0**
+
+```
+assembly:
     trim: 0
+```
+
+## Annotation Parameters
 
 annotation:
     ## ORFs

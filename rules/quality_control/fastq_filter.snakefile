@@ -11,7 +11,7 @@ rule quality_filter_reads:
         mink = config["preprocessing"].get("mink", 8),
         trimq = config["preprocessing"].get("minimum_base_quality", 10),
         hdist = config["preprocessing"].get("allowable_kmer_mismatches", 1),
-        k = config["preprocessing"].get("reference_kmer_match_length", 31),
+        k = config["preprocessing"].get("reference_kmer_match_length", 27),
         qtrim = config["preprocessing"].get("qtrim", "rl"),
         minlength = config["preprocessing"].get("minimum_passing_read_length", 51),
         minbasefrequency = config["preprocessing"].get("min_base_frequency", 0.05),

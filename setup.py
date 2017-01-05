@@ -25,7 +25,9 @@ setup(
     long_description='',
     packages=['atlas'],
     install_requires=[
-        '',
+        'click',
+        'pandas',
+        'pyyaml',
     ],
     entry_points={
           'console_scripts': [

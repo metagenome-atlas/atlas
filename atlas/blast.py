@@ -1,7 +1,11 @@
 import bisect
+import contextlib
 import logging
-from atlas import TAX_LEVELS
+import sqlite3
+from atlas import BLAST6, TAX_LEVELS
+from atlas.utils import gzopen, index_of_list_items, nettleton_pvalue
 from collections import Counter, defaultdict, deque, OrderedDict
+from itertools import groupby
 
 
 class Node(object):
@@ -498,12 +502,8 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
 
             # summary method is majority and we have passing HSPs
             if not summary_method == "best" and lines:
-                print(summary_method)
                 if summary_method == "majority":
-                    print(orf_hits.names)
                     taxonomy_id = orf_hits.majority()
-                    print(taxonomy_id)
-                    print(lines)
                     for toks in lines:
                         if toks["current_taxonomy"] == taxonomy_id:
                             bitscore = toks["bitscore"]

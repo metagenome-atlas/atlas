@@ -3,11 +3,9 @@ combining samples into a single fastq can take place after intial qc -- all file
 concatenate into single file; push through the remainder of the workflow
 these qc'd files are then used for counts per sample across the assembled contigs
 """
-import json
 import os
 import sys
 import tempfile
-from subprocess import check_output
 
 
 def get_count_tables(config, key):
@@ -18,6 +16,7 @@ def get_count_tables(config, key):
             for level in tax_levels:
                 level = level.lower()
                 tax_name = "taxonomy_%s" % level
+                expected_tables.append("%s_%s" % (name, level))
                 for subname, subvals in vals.items():
                     if subname.lower() == "levels": continue
                     expected_tables.append("%s_%s" % (subname, tax_name))
@@ -41,16 +40,6 @@ def get_temp_dir(config):
         return config["tmpdir"]
     else:
         return tempfile.gettempdir()
-
-
-def init_complete_config(config):
-    """This can be moved to CLI"""
-    config_report = []
-    if not config.get("samples"):
-        config_report.append("'samples' is not defined")
-    if not len(config["samples"].keys()) > 0:
-        config_report.append("no samples are defined under 'samples:'")
-    # TODO
 
 
 def coassemblies():
@@ -87,18 +76,16 @@ def coassemblies():
 
 
 
-# shell prefixes for multi-threaded and single-threads tasks
-SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
-SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
-SAMPLES = list(config["samples"].keys())
-TABLES = get_count_tables(config, "summary_counts")
-NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 31), config["preprocessing"]["normalization"].get("t", 100))
-ASSEMBLER = get_assembler(config) + "_" + NORMALIZATION
-TMPDIR = get_temp_dir(config)
-
-
 if config.get("workflow", "complete") == "complete":
-    init_complete_config(config)
+
+    SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
+    SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
+    SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
+    TABLES = get_count_tables(config, "summary_counts")
+    NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21), config["preprocessing"]["normalization"].get("t", 100))
+    ASSEMBLER = get_assembler(config) + "_" + NORMALIZATION
+    TMPDIR = get_temp_dir(config)
+
     rule all:
         input:
             expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
@@ -133,5 +120,18 @@ if config.get("workflow", "complete") == "complete":
     include: "rules/annotation/verse.snakefile"
     include: "rules/annotation/munging.snakefile"
     include: "rules/reports/sample.snakefile"
+
+elif config.get("workflow") == "download":
+
+    FILES = ["silva_rfam_all_rRNAs.fa", "adapters.fa", "phiX174_virus.fa",
+             "refseq.db", "refseq.dmnd", "refseq.tree", "cazy.db", "cazy.dmnd",
+             "eggnog.db", "eggnog.dmnd", "expazy.db", "expazy.dmnd"]
+    OUTDIR = os.path.realpath(config["db_dir"])
+
+    rule all:
+        input:
+            expand("{dir}/{filename}", dir=OUTDIR, filename=FILES)
+    include: "rules/initialization/download.snakefile"
+
 else:
     print("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"), file=sys.stderr)

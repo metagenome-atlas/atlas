@@ -1,8 +1,12 @@
 import click
 import logging
+import multiprocessing
+import os
 from atlas import __version__
-from atlas.parsers import cazy_parser, eggnog_parser, refseq_parser
-from atlas.tables import merge_tables, counts
+from atlas.conf import make_config
+from atlas.parsers import cazy_parser, eggnog_parser, expazy_parser, refseq_parser
+from atlas.tables import merge_tables, count_tables
+from atlas.workflows import assemble, download
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
@@ -228,7 +232,43 @@ def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
             beta-galactosidase          267
             cell division protein FtsQ  8
     """
-    counts(prefix, merged, counts, combinations, suffix)
+    count_tables(prefix, merged, counts, combinations, suffix)
+
+
+@cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")
+@click.argument("config")
+@click.argument("path")
+@click.option("--data-type", default="metagenome", type=click.Choice(["metagenome", "metatranscriptome"]),
+              show_default=True, help="sample data type")
+@click.option("--database-dir", default="databases", show_default=True,
+              help="location of formatted databases (from `atlas download`)")
+@click.option("--threads", default=None, help="number of threads to use per multi-threaded job")
+@click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]), help="contig assembler")
+def run_make_config(config, path, data_type, database_dir, threads, assembler):
+    """Write the file `config` and complete the sample names and paths for all FASTQ files in
+    `path`.
+
+    `path` is traversed recursively and adds any file with '.fastq' or '.fq' extension with the
+    file name as the sample ID. Any single-end (non-interleaved) FASTQs under `path` will cause
+    errors if left in the configuration file.
+    """
+    make_config(config, path, data_type, database_dir, threads, assembler)
+
+
+@cli.command("assemble", short_help="assembly workflow")
+@click.argument("config", click.Path(exists=True))
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+def run_assemble(config, jobs, out_dir, dryrun):
+    assemble(config, jobs, out_dir, dryrun)
+
+
+@cli.command("download", short_help="download reference files")
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.join(os.path.realpath("."), "databases"), show_default=True, help="database download directory")
+def run_download(jobs, out_dir):
+    download(jobs, out_dir)
 
 
 if __name__ == "__main__":
