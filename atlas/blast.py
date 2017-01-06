@@ -536,7 +536,8 @@ def validate_lineage(lineage):
     levels = ["k" if tax_level == "superkingdom" else tax_level[0] for tax_level in TAX_LEVELS]
     valid_lineage = []
     for idx in levels:
-        valid_lineage.append("%s__%s" % (idx, lineage.get(idx, "?")))
+        # removes commas in tax names because you never know...
+        valid_lineage.append("%s__%s" % (idx, lineage.get(idx, "?").replace(",", "")))
     return ",".join(valid_lineage)
 
 

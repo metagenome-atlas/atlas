@@ -166,7 +166,7 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
                 tax_name = "taxonomy_%s" % level
                 if not tax_name in df.columns:
                     # convert taxonomy from full lineage to specified level
-                    df[tax_name] = df["taxonomy"].apply(lambda x: ";".join(x.split(";")[0:level_idx]) if isinstance(x, str) else x)
+                    df[tax_name] = df["taxonomy"].apply(lambda x: ",".join(x.split(",")[0:level_idx]) if isinstance(x, str) else x)
 
                 # print the taxonomy only table
                 table_name = "%s_%s" % (name, level)
