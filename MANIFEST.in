@@ -1,0 +1,16 @@
+include atlas/Snakefile
+include atlas/rules/annotation/diamond.snakefile
+include atlas/rules/annotation/munging.snakefile
+include atlas/rules/annotation/prodigal.snakefile
+include atlas/rules/annotation/verse.snakefile
+include atlas/rules/assemblers/megahit.snakefile
+include atlas/rules/assemblers/spades.snakefile
+include atlas/rules/coassembly/coassemble.snakefile
+include atlas/rules/initialization/download.snakefile
+include atlas/rules/quality_control/contig_filters.snakefile
+include atlas/rules/quality_control/decontamination.snakefile
+include atlas/rules/quality_control/error_correction.snakefile
+include atlas/rules/quality_control/fastq_filter.snakefile
+include atlas/rules/quality_control/fastqc.snakefile
+include atlas/rules/quality_control/normalization.snakefile
+include atlas/rules/reports/sample.snakefile
