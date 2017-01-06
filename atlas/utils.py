@@ -1,9 +1,7 @@
 import logging
 import os
-import re
 import sys
 from collections import Counter, OrderedDict
-from itertools import groupby
 from math import log, erfc, sqrt
 from snakemake.io import load_configfile
 
@@ -208,87 +206,3 @@ def nettleton_pvalue(items, key):
             t = 2 * (item_counts[key] * log((2 * item_counts[key] / \
                                                          (max_count + item_counts[key]))))
         return erfc(sqrt(t / 2))
-
-
-def gff_to_gtf(gff_in, gtf_out):
-    t = re.compile(r'ID=[0-9]+_([0-9]+);')
-    with open(gtf_out, "w") as fh, open(gff_in) as gff:
-        for line in gff:
-            if line.startswith("#"): continue
-            toks = line.strip().split("\t")
-            orf = t.findall(toks[-1])[0]
-            gene_id = toks[0] + "_" + orf
-            toks[-1] = 'gene_id "%s"; %s' % (gene_id, toks[-1])
-            print(*toks, sep="\t", file=fh)
-
-
-def read_fasta(fh):
-    """Fasta iterator.
-
-    Accepts file handle of .fasta and yields name and sequence.
-
-    Args:
-        fh (file): Open file handle of .fasta file
-
-    Yields:
-        tuple: name, sequence
-
-    >>> import os
-    >>> from itertools import groupby
-    >>> f = open("test.fasta", 'w')
-    >>> f.write("@seq1\nACTG")
-    >>> f.close()
-    >>> f = open("test.fastq")
-    >>> for name, seq in read_fastq(f):
-            assert name == "seq1"
-            assert seq == "ACTG"
-    >>> f.close()
-    >>> os.remove("test.fasta")
-    """
-    for header, group in groupby(fh, lambda line: line[0] == '>'):
-        if header:
-            line = next(group)
-            name = line[1:].strip()
-        else:
-            seq = ''.join(line.strip() for line in group)
-            yield name, seq
-
-
-def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=80):
-    """Print a fasta record accounting for line wraps in the sequence.
-
-    Args:
-        name (str): name or header for fasta entry
-        seq (str): sequence
-        out_handle (Optional): open file handle in which to write or stdout
-        wrap (Optional[int]) : line width of fasta sequence; None is supported for no wrapping
-
-    """
-    print('>', name, sep='', file=out_handle)
-    if wrap:
-        for i in range(0, len(seq), wrap):
-            print(seq[i:i + wrap], file=out_handle)
-    else:
-        print(seq, file=out_handle)
-
-
-def split_fasta(fasta, chunk_size=250000):
-    chunk_size = int(chunk_size)
-    fasta = os.path.expanduser(fasta)
-    root, ext = os.path.splitext(fasta)
-
-    file_idx = 0
-    with open(fasta) as f:
-        for i, (name, seq) in enumerate(read_fasta(f)):
-            if i % chunk_size == 0:
-                if i == 0:
-                    ofh = open("{root}_{idx}{ext}".format(root=root, idx=file_idx, ext=ext), "w")
-                    print_fasta_record(name, seq, out_handle=ofh)
-                else:
-                    ofh.close()
-                    file_idx += 1
-                    ofh = open("{root}_{idx}{ext}".format(root=root, idx=file_idx, ext=ext), "w")
-                    print_fasta_record(name, seq, out_handle=ofh)
-            else:
-                print_fasta_record(name, seq, out_handle=ofh)
-    ofh.close()

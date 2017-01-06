@@ -2,7 +2,10 @@ import click
 import logging
 import multiprocessing
 import os
-from atlas import __version__
+try:
+    from atlas import __version__
+except ImportError:
+    __version__ = "unknown"
 from atlas.conf import make_config
 from atlas.parsers import cazy_parser, eggnog_parser, expazy_parser, refseq_parser
 from atlas.tables import merge_tables, count_tables
@@ -258,7 +261,7 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
 @cli.command("assemble", short_help="assembly workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
-@click.option("-o", "--out-dir", default=os.path.join(os.path.realpath("."), "atlas_results"), show_default=True, help="results output directory")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
 def run_assemble(config, jobs, out_dir, dryrun):
     assemble(config, jobs, out_dir, dryrun)

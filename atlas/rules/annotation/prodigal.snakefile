@@ -1,4 +1,16 @@
-from atlas.utils import gff_to_gtf
+import re
+
+
+def gff_to_gtf(gff_in, gtf_out):
+    t = re.compile(r'ID=[0-9]+_([0-9]+);')
+    with open(gtf_out, "w") as fh, open(gff_in) as gff:
+        for line in gff:
+            if line.startswith("#"): continue
+            toks = line.strip().split("\t")
+            orf = t.findall(toks[-1])[0]
+            gene_id = toks[0] + "_" + orf
+            toks[-1] = 'gene_id "%s"; %s' % (gene_id, toks[-1])
+            print(*toks, sep="\t", file=fh)
 
 
 rule prodigal_orfs:
