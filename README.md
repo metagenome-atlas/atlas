@@ -23,14 +23,28 @@ conda env create -f environment.yml
 
 And load and unload that environment using `source activate atlas_env` and `source deactivate atlas_env`, respectively.
 
+Then within that environment and from within the 'atlas' folder:
+
+```
+python setup.py install
+```
+
 ## Databases
 
 To download the databases and their respective metadata databases...
 
+```
+atlas download -o /databases
+```
+
 # Usage
 
 ```
-snakemake --configfile config.yaml
+atlas make-config
+```
+
+```
+atlas assemble config.yaml
 ```
 
 # Configuration
@@ -336,7 +350,7 @@ preprocessing:
 ### Assembler
 
 The supported assemblers are 'spades' and 'megahit'.
-    
+
 **Default: megahit**
 
 ```
@@ -376,7 +390,7 @@ This is `megahit` minimum kmer size (<= 255) and must be odd.
 assembly:
     kmer_min: 21
 ```
-    
+
 ### Maximum Kmer Length
 
 This is `megahit` maximum kmer size (<=255) and must be odd.
@@ -387,7 +401,7 @@ This is `megahit` maximum kmer size (<=255) and must be odd.
 assembly:
     kmer_max: 121
 ```
-    
+
 ### Kmer Step
 
 Sets the kmer step for `megahit` kmer assembly lengths.
@@ -409,7 +423,7 @@ Merge complex bubbles of length <= l*kmer_size and similarity >= s.
 assembly:
     merge_level: 20,0.98
 ```
-    
+
 ### `megahit` Prune Level
 
 Strength of low depth pruning (0-3).
@@ -431,11 +445,11 @@ Ratio threshold to define low local coverage contigs.
 assembly:
     low_local_ratio: 0.2
 ```
-    
+
 ### Minimum Contig Length for `megahit`
 
 Minimum length of contigs to output from the assembler; can be filtered downstream using `minl`.
-    
+
 **Default: 200**
 
 ```
