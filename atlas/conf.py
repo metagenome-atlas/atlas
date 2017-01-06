@@ -56,7 +56,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     # conf["prefix"]
 
     preprocessing = OrderedDict()
-    preprocessing["adapters"] = os.path.join(os.path.dirname(os.path.abspath(__file__)).strip("atlas"), database_dir, ADAPTERS)
+    preprocessing["adapters"] = os.path.join(database_dir, ADAPTERS)
 
     preprocessing["mink"] = 8
     preprocessing["minimum_base_quality"] = 10

@@ -6,7 +6,7 @@ from subprocess import check_call
 
 
 def get_snakefile():
-    sf = os.path.join(os.path.dirname(os.path.join(os.path.dirname(os.path.abspath(__file__)))), "Snakefile")
+    sf = os.path.join(os.path.abspath(__file__), "Snakefile")
     if not os.path.exists(sf):
         sys.exit("Unable to locate the Snakemake workflow file; tried %s" % sf)
     return sf
