@@ -1,3 +1,6 @@
+from atlas.utils import gff_to_gtf
+
+
 rule prodigal_orfs:
     input:
         "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
@@ -20,13 +23,4 @@ rule gff_to_gtf:
     output:
         "{sample}/annotation/orfs/{sample}.gtf"
     run:
-        import re
-        t = re.compile(r'ID=[0-9]+_([0-9]+);')
-        with open(output[0], "w") as fh, open(input[0]) as gff:
-            for line in gff:
-                if line.startswith("#"): continue
-                toks = line.strip().split("\t")
-                orf = t.findall(toks[-1])[0]
-                gene_id = toks[0] + "_" + orf
-                toks[-1] = 'gene_id "%s"; %s' % (gene_id, toks[-1])
-                print(*toks, sep="\t", file=fh)
+        gff_to_gtf(input[0], output[0])
