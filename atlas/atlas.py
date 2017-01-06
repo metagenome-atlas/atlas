@@ -256,7 +256,7 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
 
 
 @cli.command("assemble", short_help="assembly workflow")
-@click.argument("config", click.Path(exists=True))
+@click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
