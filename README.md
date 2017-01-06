@@ -1,6 +1,3 @@
-<p align="center">
-    <img src=resources/images/logo.jpg width=300 />
-</p>
 
 # ATLAS
 
