@@ -527,6 +527,19 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
     return contigs
 
 
+def validate_lineage(lineage):
+    """
+    >>> lineage = {"p":"Basidiomycota","c":"Tremellomycetes","o":"Tremellales","g":"Cryptococcus"}
+    >>> validate_lineage(lineage)
+    'k__?,p__Basidiomycota,c__Tremellomycetes,o__Tremellales,f__?,g__Cryptococcus,s__?'
+    """
+    levels = ["k" if tax_level == "superkingdom" else tax_level[0] for tax_level in TAX_LEVELS]
+    valid_lineage = []
+    for idx in levels:
+        valid_lineage.append("%s__%s" % (idx, lineage.get(idx, "?")))
+    return ",".join(valid_lineage)
+
+
 def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold=0.51, table_name="refseq"):
     """Processing the already classified ORFs through secondary contig classification.
 
@@ -553,13 +566,13 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
         else:
             contig_taxonomy = BlastHits(taxonomies).majority()
             error_function = nettleton_pvalue(taxonomies, contig_taxonomy)
-        lineage = []
+        lineage = {}
         for item in tree.taxonomic_lineage(contig_taxonomy):
             node = tree.tree[item]
             if node.tax_level in TAX_LEVELS:
-
-                lineage.append("%s__%s" % ("k" if node.tax_level == "superkingdom" else node.tax_level[0], node.taxonomy))
-        lineage = ";".join(lineage)
+                # does not account for "no rank" and some other cases of "unclassified"
+                lineage["k" if node.tax_level == "superkingdom" else node.tax_level[0]] = node.taxonomy
+        lineage = validate_lineage(lineage)
 
         for idx in sorted(orfs.keys()):
             orf_function, orf_tax_id, bitscore, evalue = orfs[idx]
