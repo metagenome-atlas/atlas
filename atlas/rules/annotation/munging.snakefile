@@ -78,9 +78,9 @@ def split_fasta(fasta, chunk_size=250000):
 
 rule split:
     input:
-        faa = "{sample}/annotation/orfs/{sample}.faa"
+        faa = "{sample}/%s/annotation/orfs/{sample}.faa" % ASSEMBLER
     output:
-        temp(dynamic("{sample}/annotation/orfs/{sample}_{n}.faa"))
+        temp(dynamic("{sample}/%s/annotation/orfs/{sample}_{n}.faa" % ASSEMBLER))
     params:
         chunk_size = config["annotation"].get("chunk_size", 250000)
     run:
@@ -89,18 +89,18 @@ rule split:
 
 rule merge_alignments:
     input:
-        dynamic("{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        dynamic("{sample}/%s/annotation/{reference}/{sample}_intermediate_{n}.aln" % ASSEMBLER)
     output:
-        "{sample}/annotation/{reference}/{sample}_hits.tsv"
+        "{sample}/%s/annotation/{reference}/{sample}_hits.tsv" % ASSEMBLER
     shell:
         "{SHPFXS} cat {input} | sort -k1,1 -k12,12rn > {output}"
 
 
 rule parse_blast:
     input:
-        "{sample}/annotation/{reference}/{sample}_hits.tsv"
+        "{sample}/%s/annotation/{reference}/{sample}_hits.tsv" % ASSEMBLER
     output:
-        "{sample}/annotation/{reference}/{sample}_assignments.tsv"
+        "{sample}/%s/annotation/{reference}/{sample}_assignments.tsv" % ASSEMBLER
     params:
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
         treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
@@ -125,21 +125,21 @@ rule parse_blast:
 
 rule merge_blast:
     input:
-        ["{sample}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
+        ["{sample}/%s/annotation/%s/{sample}_assignments.tsv" % (ASSEMBLER, i) for i in list(config["annotation"]["references"].keys())]
     output:
-        "{sample}/annotation/{sample}_merged_assignments.tsv"
+        "{sample}/%s/annotation/{sample}_merged_assignments.tsv" % ASSEMBLER
     shell:
         "{SHPFXS} atlas merge-tables {input} {output}"
 
 
 rule aggregate_counts:
     input:
-        merged = "{sample}/annotation/{sample}_merged_assignments.tsv",
-        counts = "{sample}/annotation/orfs/{sample}.CDS.txt"
+        merged = "{sample}/%s/annotation/{sample}_merged_assignments.tsv" % ASSEMBLER,
+        counts = "{sample}/%s/annotation/orfs/{sample}.CDS.txt" % ASSEMBLER
     output:
-        ["{sample}/count_tables/{sample}_%s.tsv" % i for i in TABLES]
+        ["{sample}/%s/count_tables/{sample}_%s.tsv" % (ASSEMBLER, i) for i in TABLES]
     params:
-        prefix = lambda wc: "{sample}/count_tables/{sample}".format(sample=wc.sample),
+        prefix = lambda wc: "{sample}/{assembler}/count_tables/{sample}".format(assembler=ASSEMBLER, sample=wc.sample),
         combos = json.dumps(config["summary_counts"])
     shell:
         """{SHPFXS} atlas counts {params.prefix} {input.merged} \

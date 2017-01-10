@@ -94,13 +94,13 @@ if config.get("workflow", "complete") == "complete":
             expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
             expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
             expand("{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/annotation/orfs/{sample}.faa", sample=SAMPLES),
+            expand("{sample}/%s/annotation/orfs/{sample}.faa" % ASSEMBLER, sample=SAMPLES),
             expand("{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
             expand("{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/annotation/{reference}/{sample}_hits.tsv", reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-            expand("{sample}/annotation/{reference}/{sample}_assignments.tsv", reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-            expand("{sample}/annotation/{sample}_merged_assignments.tsv", sample=SAMPLES),
-            expand("{sample}/count_tables/{sample}_{table}.tsv", sample=SAMPLES, table=TABLES),
+            expand("{sample}/%s/annotation/{reference}/{sample}_hits.tsv" % ASSEMBLER, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+            expand("{sample}/%s/annotation/{reference}/{sample}_assignments.tsv" % ASSEMBLER, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+            expand("{sample}/%s/annotation/{sample}_merged_assignments.tsv" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/count_tables/{sample}_{table}.tsv" % ASSEMBLER, sample=SAMPLES, table=TABLES),
             expand("{sample}/{sample}_readme.html", sample=SAMPLES)
 
             # coassemblies()

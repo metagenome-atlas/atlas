@@ -20,7 +20,7 @@ rule dirty_contig_coverage_stats:
         statsfile = "{sample}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
         covstats = "{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "{sample}/logs/dirty_contig_coverage_stats.log"
+        "{sample}/%s/logs/dirty_contig_coverage_stats.log" % ASSEMBLER
     threads:
         config.get("threads", 1)
     shell:
@@ -43,7 +43,7 @@ rule filter_by_coverage:
         minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
     log:
-        "{sample}/logs/filter_by_coverage.log"
+        "{sample}/%s/logs/filter_by_coverage.log" % ASSEMBLER
     threads:
         1
     shell:
@@ -57,7 +57,7 @@ rule contig_coverage_stats:
         fasta = "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
         fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        sam = temp("{sample}/annotation/{sample}.sam"),
+        sam = temp("{sample}/%s/annotation/{sample}.sam" % ASSEMBLER),
         # bai = "{sample}/annotation/{sample}.bam.bai",
         bhist = "{sample}/%s/stats/postfilter_base_composition.txt" % ASSEMBLER,
         bqhist = "{sample}/%s/stats/postfilter_box_quality.txt" % ASSEMBLER,
@@ -66,12 +66,12 @@ rule contig_coverage_stats:
         statsfile = "{sample}/%s/stats/postfilter_mapping_stats.txt" % ASSEMBLER,
         covstats = "{sample}/%s/stats/postfilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "{sample}/logs/contig_coverage_stats.log"
+        "{sample}/%s/logs/contig_coverage_stats.log" % ASSEMBLER
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} trimreaddescriptions=t \
-               out={wildcards.sample}/annotation/{wildcards.sample}.sam \
+               out={wildcards.sample}/{ASSEMBLER}/annotation/{wildcards.sample}.sam \
                mappedonly=t threads={threads} bhist={output.bhist} bqhist={output.bqhist} \
                mhist={output.mhist} gchist={output.gchist} statsfile={output.statsfile} \
                covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3 2> {log}"""
@@ -79,9 +79,9 @@ rule contig_coverage_stats:
 
 rule sam_to_bam:
    input:
-       "{sample}/annotation/{sample}.sam"
+       "{sample}/%s/annotation/{sample}.sam" % ASSEMBLER
    output:
-       "{sample}/annotation/{sample}.bam"
+       "{sample}/%s/annotation/{sample}.bam" % ASSEMBLER
    threads:
        config.get("threads", 1)
    shell:
@@ -90,9 +90,9 @@ rule sam_to_bam:
 
 rule create_bam_index:
    input:
-       "{sample}/annotation/{sample}.bam"
+       "{sample}/%s/annotation/{sample}.bam" % ASSEMBLER
    output:
-       "{sample}/annotation/{sample}.bam.bai"
+       "{sample}/%s/annotation/{sample}.bam.bai" % ASSEMBLER
    threads:
        1
    shell:
