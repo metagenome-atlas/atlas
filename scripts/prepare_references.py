@@ -388,5 +388,111 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                 print(format_fasta_record(name, seq), file=ofh)
 
 
+@cli.command("prepare-cog", short_help="prepares COG mapping files")
+@click.argument("fasta", type=click.Path(exists=True))
+@click.argument("namemap", type=click.Path(exists=True))
+@click.argument("funcdef", type=click.Path(exists=True))
+@click.argument("namedef", type=click.Path(exists=True))
+@click.argument("out_fasta", type=click.File("w"))
+@click.argument("out_map", type=click.File("w"))
+def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_map):
+    """
+    COG data downloaded from: ftp://ftp.ncbi.nih.gov/pub/COG/COG2014/data
+
+    fasta: prot2003-2014.fa.gz
+
+    namemap: cog2003-2014.csv
+
+        \b
+        158333741,Acaryochloris_marina_MBIC11017_uid58167,158333741,432,1,432,COG0001,0,
+        158339504,Acaryochloris_marina_MBIC11017_uid58167,158339504,491,1,491,COG0001,0,
+        379012832,Acetobacterium_woodii_DSM_1030_uid88073,379012832,430,1,430,COG0001,0,
+
+    funcdef: fun2003-2014.tab
+
+        \b
+        # Code    Name
+        J         Translation, ribosomal structure and biogenesis
+        A         RNA processing and modification
+
+    namedef: cognames2003-2014.tab
+
+        \b
+        # COG    func    name
+        COG0001  H       Glutamate-1-semialdehyde aminotransferase
+        COG0002  E       N-acetyl-gamma-glutamylphosphate reductase
+
+    """
+
+    class_to_description = {}
+    with open(funcdef) as fh:
+        next(fh)
+        for line in fh:
+            toks = line.strip().split("\t")
+            assert(len(toks) == 2)
+            assert(toks[0] not in class_to_description)
+            class_to_description[toks[0]] = toks[1]
+
+    cog_to_name = {}
+    with open(namedef, encoding="ISO-8859-1") as fh:
+        next(fh)
+        for line in fh:
+            toks = line.strip().split("\t")
+            assert(len(toks) == 3)
+            assert(toks[0] not in cog_to_name)
+            cog_to_name[toks[0]] = {"function":toks[1], "name":toks[2]}
+
+    kept_proteins = set()
+    cog_map = defaultdict(dict)
+    with open(namemap) as fh:
+        for line in fh:
+            # 158333741,Acaryochloris_marina_MBIC11017_uid58167,158333741,432,1,432,COG0001,0,
+            toks = line.strip().split(",")
+
+            protein_id = toks[0]
+            domain_start = int(toks[4])
+            domain_stop = int(toks[5])
+            cog_id = toks[6]
+            try:
+                cog_functional_class = cog_to_name[cog_id]["function"]
+                cog_annotation = cog_to_name[cog_id]["name"]
+            except KeyError:
+                # we're only keeping current definitions
+                # ftp://ftp.ncbi.nih.gov/pub/COG/COG2014/static/lists/listCOGs.html
+                continue
+
+            cog_functional_class_description = "; ".join([class_to_description[i] for i in cog_functional_class])
+            kept_proteins.add(protein_id)
+
+            # update existing COG start and stop
+            if protein_id in cog_map and cog_id in cog_map[protein_id]:
+                if domain_start < cog_map[protein_id][cog_id]["domain_start"]:
+                    cog_map[protein_id][cog_id]["domain_start"] = domain_start
+                if domain_stop > cog_map[protein_id][cog_id]["domain_stop"]:
+                    cog_map[protein_id][cog_id]["domain_stop"] = domain_stop
+            else:
+                cog_map[protein_id][cog_id] = {"cog_functional_class":cog_functional_class,
+                                               "cog_annotation":cog_annotation,
+                                               "domain_start":domain_start,
+                                               "domain_stop":domain_stop,
+                                               "cog_functional_class_description":cog_functional_class_description}
+
+    for protein_id, cog_ids in cog_map.items():
+        for cog_id, cog_data in cog_ids.items():
+            print(protein_id, cog_id, cog_data["cog_functional_class"], cog_data["cog_annotation"],
+                  cog_data["cog_functional_class_description"], cog_data["domain_start"],
+                  cog_data["domain_stop"], sep="\t", file=out_map)
+
+    filtered = 0
+    with gzip.open(fasta, mode="rt") as fh:
+        for name, seq in read_fasta(fh):
+            protein_id = name.split("|")[1]
+            if protein_id in kept_proteins:
+                print_fasta_record(protein_id, seq, out_fasta)
+            else:
+                filtered += 1
+    logging.info("Processing complete. %d sequences were removed from the FASTA" % filtered)
+
+
 if __name__ == "__main__":
     cli()
