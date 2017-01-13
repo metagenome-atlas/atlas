@@ -9,10 +9,12 @@ from collections import OrderedDict
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
-EGGNOG = "eggnog"
-REFSEQ = "refseq"
-EXPAZY = "expazy"
+
 CAZY = "cazy"
+COG = "cog"
+EGGNOG = "eggnog"
+EXPAZY = "expazy"
+REFSEQ = "refseq"
 
 
 def get_sample_files(path, data_type):
@@ -37,6 +39,12 @@ def get_sample_files(path, data_type):
                     if not r2_path == fq_path:
                         seen.add(r2_path)
                         fastq_paths.append(r2_path)
+
+                if "_R2" in fname or "_r2" in fname:
+                    r1_path = os.path.join(dir_name, fname.replace("_R2", "_R1").replace("_r2", "_r1"))
+                    if not r1_path == fq_path:
+                        seen.add(r1_path)
+                        fastq_paths.insert(0, r1_path)
 
                 samples[sample_id] = {'path': fastq_paths, 'type': data_type}
     return samples
@@ -136,6 +144,15 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     cazy["summary_method"] = "majority"
     cazy["index_chunks"] = 1
     annotation["cazy"] = cazy
+
+    cog = OrderedDict()
+    cog["namemap"] = os.path.join(database_dir, "%s.db", COG)
+    cog["dmnd"] = os.path.join(database_dir, "%s.dmnd" % COG)
+    cog["run_mode"] = "fast"
+    cog["top_seqs"] = 2
+    cog["summary_method"] = "majority"
+    cog["index_chunks"] = 1
+    annotation["cog"] = cog
 
     conf["annotation"] = annotation
 
