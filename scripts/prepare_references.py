@@ -442,7 +442,6 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
             assert(toks[0] not in cog_to_name)
             cog_to_name[toks[0]] = {"function":toks[1], "name":toks[2]}
 
-    kept_proteins = set()
     cog_map = defaultdict(dict)
     with open(namemap) as fh:
         for line in fh:
@@ -462,10 +461,10 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
                 continue
 
             cog_functional_class_description = "; ".join([class_to_description[i] for i in cog_functional_class])
-            kept_proteins.add(protein_id)
 
             # update existing COG start and stop
             if protein_id in cog_map and cog_id in cog_map[protein_id]:
+
                 if domain_start < cog_map[protein_id][cog_id]["domain_start"]:
                     cog_map[protein_id][cog_id]["domain_start"] = domain_start
                 if domain_stop > cog_map[protein_id][cog_id]["domain_stop"]:
@@ -477,21 +476,18 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
                                                "domain_stop":domain_stop,
                                                "cog_functional_class_description":cog_functional_class_description}
 
-    for protein_id, cog_ids in cog_map.items():
-        for cog_id, cog_data in cog_ids.items():
-            print(protein_id, cog_id, cog_data["cog_functional_class"], cog_data["cog_annotation"],
-                  cog_data["cog_functional_class_description"], cog_data["domain_start"],
-                  cog_data["domain_stop"], sep="\t", file=out_map)
-
-    filtered = 0
     with gzip.open(fasta, mode="rt") as fh:
         for name, seq in read_fasta(fh):
             protein_id = name.split("|")[1]
-            if protein_id in kept_proteins:
-                print_fasta_record(protein_id, seq, out_fasta)
-            else:
-                filtered += 1
-    logging.info("Processing complete. %d sequences were removed from the FASTA" % filtered)
+            if protein_id in cog_map:
+                for i, (cog_id, cog_data) in enumerate(cog_map[protein_id].items()):
+                    cog_seq = seq[cog_data["domain_start"] - 1:cog_data["domain_stop"]]
+                    # print the fasta entry for a cog sequence
+                    print_fasta_record("%s_%d" % (protein_id, i), cog_seq, out_fasta)
+                    # print the metadata for a cog; unique primary key is first column
+                    print("%s_%d" % (protein_id, i), protein_id, cog_id,
+                          cog_data["cog_functional_class"], cog_data["cog_annotation"],
+                          cog_data["cog_functional_class_description"], sep="\t", file=out_map)
 
 
 if __name__ == "__main__":
