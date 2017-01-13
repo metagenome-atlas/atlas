@@ -93,6 +93,9 @@ def validate_assembly_config(config):
         if not "cazy" in c["annotation"]["references"]:
             logging.critical("'cazy' is not defined as an annotation reference")
             valid = False
+        if not "cog" in c["annotation"]["references"]:
+            logging.critical("'cog' is not defined as an annotation reference")
+            valid = False
         if not "expazy" in c["annotation"]["references"]:
             logging.critical("'expazy' is not defined as an annotation reference")
             valid = False

@@ -2,12 +2,9 @@ import click
 import logging
 import multiprocessing
 import os
-try:
-    from atlas import __version__
-except ImportError:
-    __version__ = "unknown"
+from atlas import __version__
 from atlas.conf import make_config
-from atlas.parsers import cazy_parser, eggnog_parser, expazy_parser, refseq_parser
+from atlas.parsers import cazy_parser, cog_parser, eggnog_parser, expazy_parser, refseq_parser
 from atlas.tables import merge_tables, count_tables
 from atlas.workflows import assemble, download
 
@@ -54,6 +51,39 @@ def run_cazy_parser(tsv, namemap, output, summary_method, min_identity, min_bits
 
     """
     cazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
+
+
+@cli.command("cog", short_help="process blast hits for COG reference")
+@click.argument("tsv", type=click.Path(exists=True))
+@click.argument("namemap", type=click.Path(exists=True))
+@click.argument("output", type=click.File("w", atomic=True))
+@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
+@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
+@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
+@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
+@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
+@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
+@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
+@click.option("--table-name", default="cog", help="table name within namemap database; expected columns are listed above")
+def run_cog_parser(tsv, namemap, output, summary_method='best', min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001, top_fraction=1, max_hits=10, table_name="cog"):
+    """Parse BLAST hits from COG reference database.
+
+    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
+
+        \b
+        sort -k1,1 -k12,12rn tsv > sorted_tsv
+
+    Expected columns in the COG database:
+
+        \b
+        cog_protein_key (unique and matches sequence name in reference fasta)
+        cog_protein_id
+        cog_id
+        cog_functional_class
+        cog_annotation
+        cog_functional_class_description
+    """
+    cog_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
 
 
 @cli.command("eggnog", short_help="process blast hits for eggnog reference")

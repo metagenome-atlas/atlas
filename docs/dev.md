@@ -78,3 +78,12 @@ sqlite> .mode tabs
 sqlite> create table dbcan (cazy_gene text PRIMARY KEY, cazy_family text, cazy_class text, cazy_ec text);
 sqlite> .import dbcan.map dbcan
 ```
+
+# COG
+
+```
+sqlite> .open cog.db
+sqlite> create table cog (cog_protein_key text PRIMARY KEY, cog_protein_id text, cog_id text, cog_functional_class text, cog_annotation text, cog_functional_class_description text);
+sqlite> .mode tabs
+sqlite> .import cog.map cog
+```

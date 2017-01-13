@@ -223,6 +223,15 @@ annotation:
             top_seqs: 2
             index_chunks: 1
             summary_method: majority
+        cog:
+            namemap: /pic/projects/mint/atlas_databases/cog.db
+            dmnd: /pic/projects/mint/atlas_databases/cog.dmnd
+            chunk_size: 500000
+            # 'fast' or 'sensitive'
+            run_mode: fast
+            top_seqs: 2
+            index_chunks: 1
+            summary_method: majority
 
 summary_counts:
     # Possible columns table column values upon which to aggregate:
@@ -232,8 +241,7 @@ summary_counts:
         # taxonomy, orf_taxonomy, refseq_product
 
         # from eggnog:
-        # uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id,
-        # cog_product, cog_level1_code, cog_level1_name, cog_level2_name,
+        # uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id,
         # ko_id, ko_level1_name, ko_level2_name, ko_level3_id,
         # ko_level3_name, ko_gene_symbol, ko_product, ko_ec
 
@@ -242,6 +250,10 @@ summary_counts:
 
         # from cazy (dbcan):
         # cazy_gene, cazy_family, cazy_class, cazy_ec
+
+        # from cog
+        # cog_protein_id, cog_id, cog_functional_class, cog_annotation
+        # cog_functional_class_description
 
     # this is a special case to allow for taxon level specification
     taxonomy:
@@ -259,6 +271,8 @@ summary_counts:
             - ko_ec
         COG:
             - cog_id
+            - cog_functional_class
+            - cog_annotation
         CAZy_EC:
             - cazy_ec
         CAZy_family:
@@ -266,6 +280,8 @@ summary_counts:
         ExPAZy:
             - expazy_name
             - expazy_ec
+        RefSeq:
+            - refseq_product
     KO:
         - ko_id
         - ko_gene_symbol
@@ -281,10 +297,10 @@ summary_counts:
         - cazy_ec
     COG:
         - cog_id
-        - cog_product
-    COG_lvl1:
-        - cog_level1_name
-        - cog_level2_name
+        - cog_functional_class
+        - cog_annotation
     ExPAZy:
         - expazy_name
         - expazy_ec
+    RefSeq:
+        - refseq_product

@@ -8,6 +8,75 @@ from atlas.utils import gzopen
 from itertools import groupby
 
 
+def cog_parser(tsv, namemap, output, summary_method='best', min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001, top_fraction=1, max_hits=10, table_name="cog"):
+    """Parse BLAST hits from COG reference database.
+
+    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
+
+        \b
+        sort -k1,1 -k12,12rn tsv > sorted_tsv
+
+    Expected columns in the COG database:
+
+        \b
+        cog_protein_key (unique and matches sequence name in reference fasta)
+        cog_protein_id
+        cog_id
+        cog_functional_class
+        cog_annotation
+        cog_functional_class_description
+
+    Args:
+        tsv (str): blast hits file path in default tabular format
+        namemap (str): sqlite database file path
+        output (str): :py:class:`click.File` in write mode
+        summary_method (str): either 'majority' or 'best'; summary method for annotating ORFs; when majority and there is no majority, best is used
+        min_identity (int): minimum allowable percent ID of BLAST hit
+        min_bitscore (int): minimum allowable bitscore of BLAST hit; 0 disables
+        min_length (int): minimum allowable BLAST alignment length
+        max_evalue (float): maximum allowable e-value of BLAST hit
+        top_fraction (float): filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore
+        max_hits (int): maximum number of BLAST hits to consider when summarizing ORFs as a majority
+        table_name (str): table name within namemap database; expected columns are listed above
+
+    """
+    logging.info("Parsing %s" % tsv)
+
+    if top_fraction == 1:
+        top_fraction = None
+
+    print("contig", "orf", "cog_protein_id", "cog_id", "cog_functional_class", "cog_annotation",
+          "cog_functional_class_description", "%s_evalue" % table_name, "%s_bitscore" % table_name,
+          sep="\t", file=output)
+    with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
+        cursor = conn.cursor()
+        for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
+
+            contig_name, _, orf_idx = query.rpartition("_")
+            hit_id, evalue, bitscore = get_hit_from_blast_group(qgroup, max_hits, top_fraction,
+                                                                min_length, min_identity,
+                                                                max_evalue, min_bitscore,
+                                                                summary_method)
+            cog_protein_id = "NA"
+            cog_id = "NA"
+            cog_functional_class = "NA"
+            cog_annotation = "NA"
+            cog_functional_class_description = "NA"
+
+            # everything could have been filtered out due to user constraints
+            if hit_id:
+                cursor.execute('SELECT cog_protein_id, cog_id, cog_functional_class, \
+                                       cog_annotation, cog_functional_class_description \
+                                FROM %s \
+                                WHERE cog_protein_key="%s"' % (table_name, hit_id))
+                cog_protein_id, cog_id, cog_functional_class, cog_annotation, \
+                    cog_functional_class_description = cursor.fetchone()
+            print(contig_name, "%s_%s" % (contig_name, orf_idx), cog_protein_id, cog_id,
+                  cog_functional_class, cog_annotation, cog_functional_class_description,
+                  evalue, bitscore, sep="\t", file=output)
+    logging.info("Complete")
+
+
 def cazy_parser(tsv, namemap, output, summary_method='best', min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001, top_fraction=1, max_hits=10, table_name="cazy"):
     """Parse BLAST hits from CAZy reference database.
 
@@ -84,12 +153,6 @@ def eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
         eggnog_ssid_b
         eggnog_species_id
         uniprot_id
-        cog_func_id
-        cog_id
-        cog_product
-        cog_level1_code
-        cog_level1_name
-        cog_level2_name
         ko_id
         ko_level1_name
         ko_level2_name
@@ -119,10 +182,9 @@ def eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
         top_fraction = None
 
     print("contig", "orf", "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id", "uniprot_id",
-          "cog_func_id", "cog_id", "cog_product", "cog_level1_code", "cog_level1_name",
-          "cog_level2_name", "ko_id", "ko_level1_name", "ko_level2_name",
-          "ko_level3_id", "ko_level3_name", "ko_gene_symbol", "ko_product", "ko_ec",
-          "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
+          "ko_id", "ko_level1_name", "ko_level2_name", "ko_level3_id", "ko_level3_name",
+          "ko_gene_symbol", "ko_product", "ko_ec", "%s_evalue" % table_name,
+          "%s_bitscore" % table_name, sep="\t", file=output)
 
     with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
         cursor = conn.cursor()
@@ -134,12 +196,6 @@ def eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
             eggnog_ssid_b = "NA"
             eggnog_species_id = "NA"
             uniprot_id = "NA"
-            cog_func_id = "NA"
-            cog_id = "NA"
-            cog_product = "NA"
-            cog_level1_code = "NA"
-            cog_level1_name = "NA"
-            cog_level2_name = "NA"
             ko_id = "NA"
             ko_level1_name = "NA"
             ko_level2_name = "NA"
@@ -152,14 +208,12 @@ def eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
             # everything could have been filtered out due to user constraints
             if hit_id:
                 cursor.execute('SELECT uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, \
-                                       cog_func_id, cog_id, cog_product, cog_level1_code, \
-                                       cog_level1_name, cog_level2_name, ko_id, ko_level1_name, ko_level2_name, \
+                                       ko_id, ko_level1_name, ko_level2_name, \
                                        ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec \
                                 FROM %s \
                                 WHERE eggnog_ssid_b="%s"' % (table_name, hit_id))
                 try:
-                    uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id, \
-                        cog_product, cog_level1_code, cog_level1_name, cog_level2_name, ko_id, \
+                    uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, ko_id, \
                         ko_level1_name, ko_level2_name, ko_level3_id, ko_level3_name, \
                         ko_gene_symbol, ko_product, ko_ec = cursor.fetchone()
                 # legacy before database was pruned; can have hits not in metadata
@@ -169,8 +223,7 @@ def eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
 
             # print for this query
             print(contig_name, "%s_%s" % (contig_name, orf_idx), uniprot_ac, eggnog_ssid_b,
-                  eggnog_species_id, uniprot_id, cog_func_id, cog_id, cog_product, cog_level1_code,
-                  cog_level1_name, cog_level2_name, ko_id, ko_level1_name, ko_level2_name,
+                  eggnog_species_id, uniprot_id, ko_id, ko_level1_name, ko_level2_name,
                   ko_level3_id, ko_level3_name, ko_gene_symbol, ko_product, ko_ec, evalue,
                   bitscore, sep="\t", file=output)
     logging.info("Complete")
