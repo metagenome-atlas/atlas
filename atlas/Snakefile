@@ -45,35 +45,32 @@ def get_temp_dir(config):
 def coassemblies():
     if "coassemblies" in config["samples"]:
         coassembled_samples = list(config["samples"]["coassemblies"].keys())
-        for cs in coassembled_samples:
-            for s in config["samples"]["coassemblies"].keys():
+
+        for coassembly, samples in config["samples"]["coassemblies"].items():
+            for s in samples:
                 if s not in config["samples"]:
-                    print("Coassembly %s includes an undefined sample [%s]" % (cs, s))
+                    print("Coassembly %s includes an undefined sample [%s]" % (coassembly, s))
                     sys.exit(1)
 
-
-# rule build_coassembly_fastq:
-#     input:
-#         lambda wc: ["{sample}/quality_control/decontamination/{sample}_pe.fastq.gz".format(sample=s) for s in config["samples"]["coassemblies"][wc.coassembly]]
-#     output:
-#         "{coassembly}/reads/{coassembly}_nonorm_pe.fastq.gz"
-#     threads:
-#         1
-#     shell:
-#         "cat {input} > {output}"
+        return list(config["samples"]["coassemblies"].keys())
+    return False
 
 
-# rule normalize_coassembly_fastq:
-#     "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
-#
-# "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
-#
-#     coassemblies:
-#         test-coa:
-#             - shewanella
-#             - cytophaga
-#             - flavobacterium
+def coassembly_alignments(config, assembler):
+    bams = []
+    for coassembly, samples in config["samples"]["coassemblies"].items():
+        for s in samples:
+            bams.append("coassemblies/{coassembly}/{assembler}/annotation/{sample}.bam".format(coassembly=coassembly, assembler=assembler, sample=s))
+    return bams
 
+
+def coassembly_count_tables(config, tables, assembler):
+    expected_tables = []
+    for coassembly, samples in config["samples"]["coassemblies"].items():
+        for s in samples:
+            for t in tables:
+                expected_tables.append("coassemblies/{coassembly}/{assembler}/count_tables/{sample}/{sample}_{table}.tsv".format(coassembly=coassembly, assembler=assembler, sample=s, table=t))
+    return expected_tables
 
 
 if config.get("workflow", "complete") == "complete":
@@ -103,7 +100,67 @@ if config.get("workflow", "complete") == "complete":
             expand("{sample}/%s/count_tables/{sample}_{table}.tsv" % ASSEMBLER, sample=SAMPLES, table=TABLES),
             expand("{sample}/{sample}_readme.html", sample=SAMPLES)
 
-            # coassemblies()
+    include: "rules/quality_control/fastq_filter.snakefile"
+    include: "rules/quality_control/error_correction.snakefile"
+    include: "rules/quality_control/contig_filters.snakefile"
+    include: "rules/quality_control/decontamination.snakefile"
+    include: "rules/quality_control/normalization.snakefile"
+    include: "rules/quality_control/fastqc.snakefile"
+    if config["assembly"]["assembler"] == "spades":
+        include: "rules/assemblers/spades.snakefile"
+    else:
+        include: "rules/assemblers/megahit.snakefile"
+    include: "rules/annotation/diamond.snakefile"
+    include: "rules/annotation/prodigal.snakefile"
+    include: "rules/annotation/verse.snakefile"
+    include: "rules/annotation/munging.snakefile"
+    include: "rules/reports/sample.snakefile"
+
+elif config.get("workflow") == "coassemble":
+
+    SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
+    SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
+
+    TABLES = get_count_tables(config, "summary_counts")
+    NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21), config["preprocessing"]["normalization"].get("t", 100))
+    ASSEMBLER = get_assembler(config) + "_" + NORMALIZATION
+    TMPDIR = get_temp_dir(config)
+    COASSEMBLIES = coassemblies()
+
+
+    SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
+
+    wildcard_constraints:
+        sample = "\w+"
+
+
+    rule all:
+        input:
+            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
+            expand("{sample}/quality_control/decontamination/{sample}_refstats.txt", sample=SAMPLES),
+            expand("{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION, sample=SAMPLES),
+            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
+            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
+            expand("{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/annotation/orfs/{sample}.faa" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/annotation/{reference}/{sample}_hits.tsv" % ASSEMBLER, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+            expand("{sample}/%s/annotation/{reference}/{sample}_assignments.tsv" % ASSEMBLER, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
+            expand("{sample}/%s/annotation/{sample}_merged_assignments.tsv" % ASSEMBLER, sample=SAMPLES),
+            expand("{sample}/%s/count_tables/{sample}_{table}.tsv" % ASSEMBLER, sample=SAMPLES, table=TABLES),
+            expand("{sample}/{sample}_readme.html", sample=SAMPLES),
+            expand("coassemblies/{coassembly}/all_decontamination_reads/{coassembly}_pe.fastq.gz", coassembly=COASSEMBLIES),
+            expand("coassemblies/{coassembly}/all_normalized_reads/{coassembly}_pe.fastq.gz", coassembly=COASSEMBLIES),
+            expand("coassemblies/{coassembly}/quality_control/%s/{coassembly}_pe.fastq.gz" % NORMALIZATION, coassembly=COASSEMBLIES),
+            expand("coassemblies/{coassembly}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, coassembly=COASSEMBLIES),
+            expand("coassemblies/{coassembly}/%s/stats/final_contig_stats.txt" % ASSEMBLER, coassembly=COASSEMBLIES),
+            expand("coassemblies/{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER, coassembly=COASSEMBLIES),
+
+            coassembly_alignments(config, ASSEMBLER)
+
+            # coassemblies/all-metat/quality_control/decontamination/all-metat_pe.fastq.gz
+            # coassembly_count_tables(config, TABLES, ASSEMBLER)
 
     include: "rules/quality_control/fastq_filter.snakefile"
     include: "rules/quality_control/error_correction.snakefile"
@@ -121,11 +178,16 @@ if config.get("workflow", "complete") == "complete":
     include: "rules/annotation/munging.snakefile"
     include: "rules/reports/sample.snakefile"
 
+
+    include: "rules/coassembly/coassemble.snakefile"
+
+
 elif config.get("workflow") == "download":
 
     FILES = ["silva_rfam_all_rRNAs.fa", "adapters.fa", "phiX174_virus.fa",
              "refseq.db", "refseq.dmnd", "refseq.tree", "cazy.db", "cazy.dmnd",
-             "eggnog.db", "eggnog.dmnd", "expazy.db", "expazy.dmnd"]
+             "cog.db", "cog.dmnd", "eggnog.db", "eggnog.dmnd", "expazy.db",
+             "expazy.dmnd"]
     OUTDIR = os.path.realpath(config["db_dir"])
 
     rule all:

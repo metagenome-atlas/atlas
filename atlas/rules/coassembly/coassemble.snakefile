@@ -194,7 +194,7 @@ rule coassembly_prefilter_stats:
     input:
         "coassemblies/{coassembly}/%s/{coassembly}_prefilter_contigs.fasta" % ASSEMBLER
     output:
-        "{coassembly}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER
+        "coassemblies/{coassembly}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER
     threads:
         1
     shell:
@@ -203,16 +203,16 @@ rule coassembly_prefilter_stats:
 
 rule coassembly_prefilter_contig_coverage:
     input:
-        fasta = "{coassembly}/%s/{coassembly}_prefilter_contigs.fasta" % ASSEMBLER,
-        fastq = "{coassembly}/quality_control/decontamination/{coassembly}_pe.fastq.gz"
+        fasta = "coassemblies/{coassembly}/%s/{coassembly}_prefilter_contigs.fasta" % ASSEMBLER,
+        fastq = "coassemblies/{coassembly}/all_decontamination_reads/{coassembly}_pe.fastq.gz"
     output:
-        bhist = "{coassembly}/%s/stats/prefilter_base_composition.txt" % ASSEMBLER,
-        bqhist = "{coassembly}/%s/stats/prefilter_box_quality.txt" % ASSEMBLER,
-        mhist = "{coassembly}/%s/stats/prefilter_mutation_rates.txt" % ASSEMBLER,
-        statsfile = "{coassembly}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
-        covstats = "{coassembly}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
+        bhist = "coassemblies/{coassembly}/%s/stats/prefilter_base_composition.txt" % ASSEMBLER,
+        bqhist = "coassemblies/{coassembly}/%s/stats/prefilter_box_quality.txt" % ASSEMBLER,
+        mhist = "coassemblies/{coassembly}/%s/stats/prefilter_mutation_rates.txt" % ASSEMBLER,
+        statsfile = "coassemblies/{coassembly}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
+        covstats = "coassemblies/{coassembly}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
     log:
-        "{coassembly}/logs/dirty_contig_coverage_stats.log"
+        "coassemblies/{coassembly}/logs/dirty_contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -223,11 +223,11 @@ rule coassembly_prefilter_contig_coverage:
 
 rule coassembly_contig_filter:
     input:
-        fasta = "{coassembly}/%s/{coassembly}_prefilter_contigs.fasta" % ASSEMBLER,
-        covstats = "{coassembly}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
+        fasta = "coassemblies/{coassembly}/%s/{coassembly}_prefilter_contigs.fasta" % ASSEMBLER,
+        covstats = "coassemblies/{coassembly}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
     output:
-        fasta = "{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER,
-        removed_names = "{coassembly}/%s/{coassembly}_discarded_contigs.txt" % ASSEMBLER
+        fasta = "coassemblies/{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER,
+        removed_names = "coassemblies/{coassembly}/%s/{coassembly}_discarded_contigs.txt" % ASSEMBLER
     params:
         minc = config["assembly"].get("minc", 5),
         minp = config["assembly"].get("minp", 40),
@@ -235,7 +235,7 @@ rule coassembly_contig_filter:
         minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
     log:
-        "{coassembly}/logs/filter_by_coverage.log"
+        "coassemblies/{coassembly}/%s/logs/filter_by_coverage.log" % ASSEMBLER
     threads:
         1
     shell:
@@ -246,9 +246,9 @@ rule coassembly_contig_filter:
 
 rule coassembly_postfilter_stats:
    input:
-       "{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER
+       "coassemblies/{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER
    output:
-       "{coassembly}/%s/stats/final_contig_stats.txt" % ASSEMBLER
+       "coassemblies/{coassembly}/%s/stats/final_contig_stats.txt" % ASSEMBLER
    threads:
        1
    shell:
@@ -257,13 +257,13 @@ rule coassembly_postfilter_stats:
 
 rule coassembly_sample_mapping:
     input:
-        fasta = "{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER,
-        # this may need to be a function
+        fasta = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_contigs.fasta",
+        # verify samples
         fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        sam = temp("coassemblies/{coassembly}/annotation/{sample}.sam"),
+        sam = temp("coassemblies/{coassembly}/{ASSEMBLER}/annotation/{sample}.sam"),
     log:
-        "coassemblies/{coassembly}/logs/{sample}_mapping_stats.log"
+        "coassemblies/{coassembly}/{ASSEMBLER}/logs/{sample}_mapping_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -274,9 +274,9 @@ rule coassembly_sample_mapping:
 
 rule coassembly_sam_to_bam:
    input:
-       "coassemblies/{coassembly}/annotation/{sample}.sam"
+       "coassemblies/{coassembly}/%s/annotation/{sample}.sam" % ASSEMBLER
    output:
-       "coassemblies/{coassembly}/annotation/{sample}.bam"
+       "coassemblies/{coassembly}/%s/annotation/{sample}.bam" % ASSEMBLER
    threads:
        config.get("threads", 1)
    shell:
@@ -285,9 +285,9 @@ rule coassembly_sam_to_bam:
 
 rule coassembly_index_bam:
    input:
-       "{sample}/annotation/{sample}.bam"
+       "coassemblies/{coassembly}/%s/annotation/{sample}.bam" % ASSEMBLER
    output:
-       "{sample}/annotation/{sample}.bam.bai"
+       "coassemblies/{coassembly}/%s/annotation/{sample}.bam.bai" % ASSEMBLER
    threads:
        1
    shell:
@@ -296,11 +296,11 @@ rule coassembly_index_bam:
 
 rule coassembly_prodigal:
     input:
-        "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
+        "coassemblies/{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER
     output:
-        prot = "{sample}/annotation/orfs/{sample}.faa",
-        nuc = "{sample}/annotation/orfs/{sample}.fna",
-        gff = "{sample}/annotation/orfs/{sample}.gff"
+        prot = "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.faa" % ASSEMBLER,
+        nuc = "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.fna" % ASSEMBLER,
+        gff = "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.gff" % ASSEMBLER
     params:
         g = config["annotation"].get("translation_table", "11")
     threads:
@@ -312,39 +312,39 @@ rule coassembly_prodigal:
 
 rule coassembly_gff_to_gtf:
     input:
-        "{sample}/annotation/orfs/{sample}.gff"
+        "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.gff" % ASSEMBLER
     output:
-        "{sample}/annotation/orfs/{sample}.gtf"
+        "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.gtf" % ASSEMBLER
     run:
         gff_to_gtf(input[0], output[0])
 
 
 rule coassembly_counts_per_region:
     input:
-        gtf = "{sample}/annotation/orfs/{sample}.gtf",
-        bam = "{sample}/annotation/{sample}.bam",
-        bai = "{sample}/annotation/{sample}.bam.bai"
+        gtf = "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.gtf" % ASSEMBLER,
+        bam = "coassemblies/{coassembly}/%s/annotation/{sample}.bam" % ASSEMBLER,
+        bai = "coassemblies/{coassembly}/%s/annotation/{sample}.bam.bai" % ASSEMBLER
     output:
-        summary = "{sample}/annotation/orfs/{sample}.CDS.summary.txt",
-        counts = "{sample}/annotation/orfs/{sample}.CDS.txt"
+        summary = "coassemblies/{coassembly}/%s/annotation/orfs/{sample}.CDS.summary.txt" % ASSEMBLER,
+        counts = "coassemblies/{coassembly}/%s/annotation/orfs/{sample}.CDS.txt" % ASSEMBLER
     params:
         min_read_overlap = config["annotation"].get("minimum_overlap", 20)
     log:
-        "{sample}/logs/counts_per_region.log"
+        "coassemblies/{coassembly}/%s/logs/counts_per_region.log" % ASSEMBLER
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} verse -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 1 -a {input.gtf} \
-               -o {wildcards.sample}/annotation/orfs/{wildcards.sample} \
+               -o coassemblies/{wildcards.coassembly}/{ASSEMBLER}/annotation/orfs/{wildcards.sample} \
                {input.bam} > {log}"""
 
 
 rule coassembly_split_orfs:
     input:
-        faa = "{sample}/annotation/orfs/{sample}.faa"
+        faa = "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}.faa" % ASSEMBLER
     output:
-        temp(dynamic("{sample}/annotation/orfs/{sample}_{n}.faa"))
+        temp(dynamic("coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}_{n}.faa" % ASSEMBLER))
     params:
         chunk_size = config["annotation"].get("chunk_size", 250000)
     run:
@@ -353,10 +353,10 @@ rule coassembly_split_orfs:
 
 rule coassembly_diamond_alignments:
     input:
-        fasta = "{sample}/annotation/orfs/{sample}_{n}.faa",
+        fasta = "coassemblies/{coassembly}/%s/annotation/orfs/{coassembly}_{n}.faa" % ASSEMBLER,
         db = lambda wc: config["annotation"]["references"][wc.reference]["dmnd"]
     output:
-        temp("{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        temp("coassemblies/{coassembly}/%s/annotation/{reference}/{coassembly}_intermediate_{n}.aln" % ASSEMBLER)
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = lambda wc: config["annotation"]["references"][wc.reference].get("top_seqs", "5"),
@@ -379,20 +379,20 @@ rule coassembly_diamond_alignments:
                --index-chunks {params.index_chunks}"""
 
 
-rule merge_alignments:
+rule coassembly_merge_alignments:
     input:
-        dynamic("{sample}/annotation/{reference}/{sample}_intermediate_{n}.aln")
+        dynamic("coassemblies/{coassembly}/%s/annotation/{reference}/{coassembly}_intermediate_{n}.aln" % ASSEMBLER)
     output:
-        "{sample}/annotation/{reference}/{sample}_hits.tsv"
+        "coassemblies/{coassembly}/%s/annotation/{reference}/{coassembly}_hits.tsv" % ASSEMBLER
     shell:
         "{SHPFXS} cat {input} | sort -k1,1 -k12,12rn > {output}"
 
 
-rule parse_blast:
+rule coassembly_parse_blast:
     input:
-        "{sample}/annotation/{reference}/{sample}_hits.tsv"
+        "coassemblies/{coassembly}/%s/annotation/{reference}/{coassembly}_hits.tsv" % ASSEMBLER
     output:
-        "{sample}/annotation/{reference}/{sample}_assignments.tsv"
+        "coassemblies/{coassembly}/%s/annotation/{reference}/{coassembly}_assignments.tsv" % ASSEMBLER
     params:
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
         treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
@@ -415,23 +415,23 @@ rule parse_blast:
                {output}"""
 
 
-rule merge_blast:
+rule coassembly_merge_blast:
     input:
-        ["{sample}/annotation/%s/{sample}_assignments.tsv" % i for i in list(config["annotation"]["references"].keys())]
+        ["coassemblies/{coassembly}/%s/annotation/%s/{coassembly}_assignments.tsv" % (ASSEMBLER, i) for i in list(config["annotation"]["references"].keys())]
     output:
-        "{sample}/annotation/{sample}_merged_assignments.tsv"
+        "coassemblies/{coassembly}/%s/annotation/{coassembly}_merged_assignments.tsv" % ASSEMBLER
     shell:
         "{SHPFXS} atlas merge-tables {input} {output}"
 
 
-rule aggregate_counts:
+rule coassembly_aggregate_counts:
     input:
-        merged = "{sample}/annotation/{sample}_merged_assignments.tsv",
-        counts = "{sample}/annotation/orfs/{sample}.CDS.txt"
+        merged = "coassemblies/{coassembly}/%s/annotation/{coassembly}_merged_assignments.tsv" % ASSEMBLER,
+        counts = "coassemblies/{coassembly}/%s/annotation/orfs/{sample}.CDS.txt" % ASSEMBLER
     output:
-        ["{sample}/count_tables/{sample}_%s.tsv" % i for i in TABLES]
+        ["coassemblies/{coasembly}/%s/count_tables/{sample}/{sample}_%s.tsv" % (ASSEMBLER, i) for i in TABLES]
     params:
-        prefix = lambda wc: "{sample}/count_tables/{sample}".format(sample=wc.sample),
+        prefix = lambda wc: "coassemblies/{coassembly}/{assembler}/count_tables/{sample}/{sample}".format(coassembly=wc.coassembly, assembler=ASSEMBLER, sample=wc.sample),
         combos = json.dumps(config["summary_counts"])
     shell:
         """{SHPFXS} atlas counts {params.prefix} {input.merged} \
