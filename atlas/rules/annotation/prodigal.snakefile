@@ -15,11 +15,11 @@ def gff_to_gtf(gff_in, gtf_out):
 
 rule prodigal_orfs:
     input:
-        "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/{sample}_contigs.fasta"
     output:
-        prot = "{sample}/%s/annotation/orfs/{sample}.faa" % ASSEMBLER,
-        nuc = "{sample}/%s/annotation/orfs/{sample}.fna" % ASSEMBLER,
-        gff = "{sample}/%s/annotation/orfs/{sample}.gff" % ASSEMBLER
+        prot = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.faa",
+        nuc = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.fna",
+        gff = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.gff"
     params:
         g = config["annotation"].get("translation_table", "11")
     threads:
@@ -31,8 +31,8 @@ rule prodigal_orfs:
 
 rule gff_to_gtf:
     input:
-        "{sample}/%s/annotation/orfs/{sample}.gff" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.gff"
     output:
-        "{sample}/%s/annotation/orfs/{sample}.gtf" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.gtf"
     run:
         gff_to_gtf(input[0], output[0])

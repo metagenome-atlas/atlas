@@ -1,14 +1,14 @@
 rule spades:
     input:
-        "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
+        "{sample}/quality_control/{NORMALIZATION}/{sample}_pe.fastq.gz"
     output:
-        temp("{sample}/%s/contigs.fasta" % ASSEMBLER)
+        temp("{sample}/{ASSEMBLER}/contigs.fasta")
     params:
         # memory = config["assembly"].get("memory", 0.90)
         k = config["assembly"].get("spades_k", "auto"),
         outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
     log:
-        "{sample}/%s/spades.log" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/spades.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -17,8 +17,8 @@ rule spades:
 
 rule rename_spades_output:
     input:
-        "{sample}/%s/contigs.fasta" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/contigs.fasta"
     output:
-        "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/{sample}_prefilter_contigs.fasta"
     shell:
         "{SHPFXS} cp {input} {output}"

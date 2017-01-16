@@ -11,10 +11,10 @@
 
 rule diamond_alignments:
     input:
-        fasta = "{sample}/%s/annotation/orfs/{sample}_{n}.faa" % ASSEMBLER,
+        fasta = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}_{n}.faa",
         db = lambda wc: config["annotation"]["references"][wc.reference]["dmnd"]
     output:
-        temp("{sample}/%s/annotation/{reference}/{sample}_intermediate_{n}.aln" % ASSEMBLER)
+        temp("{sample}/{ASSEMBLER}/annotation/{reference}/{sample}_intermediate_{n}.aln")
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = lambda wc: config["annotation"]["references"][wc.reference].get("top_seqs", "5"),

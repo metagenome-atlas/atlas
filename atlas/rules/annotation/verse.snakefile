@@ -1,15 +1,15 @@
 rule counts_per_region:
     input:
-        gtf = "{sample}/%s/annotation/orfs/{sample}.gtf" % ASSEMBLER,
-        bam = "{sample}/%s/annotation/{sample}.bam" % ASSEMBLER,
-        bai = "{sample}/%s/annotation/{sample}.bam.bai" % ASSEMBLER
+        gtf = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.gtf" % ASSEMBLER,
+        bam = "{sample}/{ASSEMBLER}/annotation/{sample}.bam" % ASSEMBLER,
+        bai = "{sample}/{ASSEMBLER}/annotation/{sample}.bam.bai" % ASSEMBLER
     output:
-        summary = "{sample}/%s/annotation/orfs/{sample}.CDS.summary.txt" % ASSEMBLER,
-        counts = "{sample}/%s/annotation/orfs/{sample}.CDS.txt" % ASSEMBLER
+        summary = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.summary.txt",
+        counts = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.txt"
     params:
         min_read_overlap = config["annotation"].get("minimum_overlap", 20)
     log:
-        "{sample}/%s/logs/counts_per_region.log" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/logs/counts_per_region.log"
     threads:
         config.get("threads", 1)
     shell:

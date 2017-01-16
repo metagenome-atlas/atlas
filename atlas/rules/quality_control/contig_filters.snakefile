@@ -1,8 +1,8 @@
 rule dirty_contigs_stats:
     input:
-        "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/{sample}_prefilter_contigs.fasta"
     output:
-        "{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/stats/prefilter_contig_stats.txt"
     threads:
         1
     shell:
@@ -11,16 +11,16 @@ rule dirty_contigs_stats:
 
 rule dirty_contig_coverage_stats:
     input:
-        fasta = "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
+        fasta = "{sample}/{ASSEMBLER}/{sample}_prefilter_contigs.fasta",
         fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        bhist = "{sample}/%s/stats/prefilter_base_composition.txt" % ASSEMBLER,
-        bqhist = "{sample}/%s/stats/prefilter_box_quality.txt" % ASSEMBLER,
-        mhist = "{sample}/%s/stats/prefilter_mutation_rates.txt" % ASSEMBLER,
-        statsfile = "{sample}/%s/stats/prefilter_mapping_stats.txt" % ASSEMBLER,
-        covstats = "{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
+        bhist = "{sample}/{ASSEMBLER}/stats/prefilter_base_composition.txt",
+        bqhist = "{sample}/{ASSEMBLER}/stats/prefilter_box_quality.txt",
+        mhist = "{sample}/{ASSEMBLER}/stats/prefilter_mutation_rates.txt",
+        statsfile = "{sample}/{ASSEMBLER}/stats/prefilter_mapping_stats.txt",
+        covstats = "{sample}/{ASSEMBLER}/stats/prefilter_coverage_stats.txt"
     log:
-        "{sample}/%s/logs/dirty_contig_coverage_stats.log" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/logs/dirty_contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -31,11 +31,11 @@ rule dirty_contig_coverage_stats:
 
 rule filter_by_coverage:
     input:
-        fasta = "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER,
-        covstats = "{sample}/%s/stats/prefilter_coverage_stats.txt" % ASSEMBLER
+        fasta = "{sample}/{ASSEMBLER}/{sample}_prefilter_contigs.fasta",
+        covstats = "{sample}/{ASSEMBLER}/stats/prefilter_coverage_stats.txt"
     output:
-        fasta = "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
-        removed_names = "{sample}/%s/{sample}_discarded_contigs.txt" % ASSEMBLER
+        fasta = "{sample}/{ASSEMBLER}/{sample}_contigs.fasta",
+        removed_names = "{sample}/{ASSEMBLER}/{sample}_discarded_contigs.txt"
     params:
         minc = config["assembly"].get("minc", 5),
         minp = config["assembly"].get("minp", 40),
@@ -43,7 +43,7 @@ rule filter_by_coverage:
         minl = config["assembly"].get("minl", 1),
         trim = config["assembly"].get("trim", 0)
     log:
-        "{sample}/%s/logs/filter_by_coverage.log" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/logs/filter_by_coverage.log"
     threads:
         1
     shell:
@@ -54,19 +54,18 @@ rule filter_by_coverage:
 
 rule contig_coverage_stats:
     input:
-        fasta = "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER,
+        fasta = "{sample}/{ASSEMBLER}/{sample}_contigs.fasta",
         fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        sam = temp("{sample}/%s/annotation/{sample}.sam" % ASSEMBLER),
-        # bai = "{sample}/annotation/{sample}.bam.bai",
-        bhist = "{sample}/%s/stats/postfilter_base_composition.txt" % ASSEMBLER,
-        bqhist = "{sample}/%s/stats/postfilter_box_quality.txt" % ASSEMBLER,
-        mhist = "{sample}/%s/stats/postfilter_mutation_rates.txt" % ASSEMBLER,
-        gchist = "{sample}/%s/stats/postfilter_gc_rates.txt" % ASSEMBLER,
-        statsfile = "{sample}/%s/stats/postfilter_mapping_stats.txt" % ASSEMBLER,
-        covstats = "{sample}/%s/stats/postfilter_coverage_stats.txt" % ASSEMBLER
+        sam = temp("{sample}/{ASSEMBLER}/annotation/{sample}.sam"),
+        bhist = "{sample}/{ASSEMBLER}/stats/postfilter_base_composition.txt",
+        bqhist = "{sample}/{ASSEMBLER}/stats/postfilter_box_quality.txt",
+        mhist = "{sample}/{ASSEMBLER}/stats/postfilter_mutation_rates.txt",
+        gchist = "{sample}/{ASSEMBLER}/stats/postfilter_gc_rates.txt",
+        statsfile = "{sample}/{ASSEMBLER}/stats/postfilter_mapping_stats.txt",
+        covstats = "{sample}/{ASSEMBLER}/stats/postfilter_coverage_stats.txt"
     log:
-        "{sample}/%s/logs/contig_coverage_stats.log" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/logs/contig_coverage_stats.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -79,9 +78,9 @@ rule contig_coverage_stats:
 
 rule sam_to_bam:
    input:
-       "{sample}/%s/annotation/{sample}.sam" % ASSEMBLER
+       "{sample}/{ASSEMBLER}/annotation/{sample}.sam"
    output:
-       "{sample}/%s/annotation/{sample}.bam" % ASSEMBLER
+       "{sample}/{ASSEMBLER}/annotation/{sample}.bam"
    threads:
        config.get("threads", 1)
    shell:
@@ -90,9 +89,9 @@ rule sam_to_bam:
 
 rule create_bam_index:
    input:
-       "{sample}/%s/annotation/{sample}.bam" % ASSEMBLER
+       "{sample}/{ASSEMBLER}/annotation/{sample}.bam"
    output:
-       "{sample}/%s/annotation/{sample}.bam.bai" % ASSEMBLER
+       "{sample}/{ASSEMBLER}/annotation/{sample}.bam.bai"
    threads:
        1
    shell:
@@ -101,9 +100,9 @@ rule create_bam_index:
 
 rule final_contigs_stats:
    input:
-       "{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER
+       "{sample}/{ASSEMBLER}/{sample}_contigs.fasta"
    output:
-       "{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER
+       "{sample}/{ASSEMBLER}/stats/final_contig_stats.txt"
    threads:
        1
    shell:

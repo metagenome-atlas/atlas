@@ -1,8 +1,8 @@
 rule megahit:
     input:
-        "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
+        "{sample}/quality_control/{NORMALIZATION}/{sample}_pe.fastq.gz"
     output:
-        temp("{sample}/%s/{sample}_prefilter.contigs.fa" % ASSEMBLER)
+        temp("{sample}/{ASSEMBLER}/{sample}_prefilter.contigs.fa")
     params:
         memory = config["assembly"].get("memory", 0.90),
         min_count = config["assembly"].get("minimum_count", 2),
@@ -15,7 +15,7 @@ rule megahit:
         min_contig_len = config["assembly"].get("minimum_contig_length", 200),
         outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
     log:
-        "{sample}/%s/{sample}.log" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/{sample}.log"
     threads:
         config.get("threads", 1)
     shell:
@@ -29,8 +29,8 @@ rule megahit:
 
 rule rename_megahit_output:
     input:
-        "{sample}/%s/{sample}_prefilter.contigs.fa" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/{sample}_prefilter.contigs.fa"
     output:
-        "{sample}/%s/{sample}_prefilter_contigs.fasta" % ASSEMBLER
+        "{sample}/{ASSEMBLER}/{sample}_prefilter_contigs.fasta"
     shell:
         "{SHPFXS} cp {input} {output}"

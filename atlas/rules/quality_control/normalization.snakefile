@@ -2,13 +2,13 @@ rule normalization:
     input:
         "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
+        "{sample}/quality_control/{NORMALIZATION}/{sample}_pe.fastq.gz"
     params:
         k = config["preprocessing"]["normalization"].get("k", 21),
         t = config["preprocessing"]["normalization"].get("t", 100),
         minkmers = config["preprocessing"]["normalization"].get("minkmers", 15)
     log:
-        "{sample}/logs/{sample}_%s.log" % NORMALIZATION
+        "{sample}/logs/{sample}_{NORMALIZATION}.log"
     threads:
         config.get("threads", 1)
     shell:
