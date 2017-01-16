@@ -157,10 +157,10 @@ elif config.get("workflow") == "coassemble":
             expand("coassemblies/{coassembly}/%s/stats/final_contig_stats.txt" % ASSEMBLER, coassembly=COASSEMBLIES),
             expand("coassemblies/{coassembly}/%s/{coassembly}_contigs.fasta" % ASSEMBLER, coassembly=COASSEMBLIES),
 
-            coassembly_alignments(config, ASSEMBLER)
+            coassembly_alignments(config, ASSEMBLER),
 
             # coassemblies/all-metat/quality_control/decontamination/all-metat_pe.fastq.gz
-            # coassembly_count_tables(config, TABLES, ASSEMBLER)
+            coassembly_count_tables(config, TABLES, ASSEMBLER)
 
     include: "rules/quality_control/fastq_filter.snakefile"
     include: "rules/quality_control/error_correction.snakefile"

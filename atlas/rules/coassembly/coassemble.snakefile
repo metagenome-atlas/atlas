@@ -426,10 +426,10 @@ rule coassembly_merge_blast:
 
 rule coassembly_aggregate_counts:
     input:
-        merged = "coassemblies/{coassembly}/%s/annotation/{coassembly}_merged_assignments.tsv" % ASSEMBLER,
-        counts = "coassemblies/{coassembly}/%s/annotation/orfs/{sample}.CDS.txt" % ASSEMBLER
+        merged = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/{coassembly}_merged_assignments.tsv",
+        counts = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.txt"
     output:
-        ["coassemblies/{coasembly}/%s/count_tables/{sample}/{sample}_%s.tsv" % (ASSEMBLER, i) for i in TABLES]
+        ["coassemblies/{coassembly}/{ASSEMBLER}/count_tables/{sample}/{sample}_%s.tsv" % i for i in TABLES]
     params:
         prefix = lambda wc: "coassemblies/{coassembly}/{assembler}/count_tables/{sample}/{sample}".format(coassembly=wc.coassembly, assembler=ASSEMBLER, sample=wc.sample),
         combos = json.dumps(config["summary_counts"])
