@@ -275,8 +275,10 @@ def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
               show_default=True, help="sample data type")
 @click.option("--database-dir", default="databases", show_default=True,
               help="location of formatted databases (from `atlas download`)")
-@click.option("--threads", default=None, help="number of threads to use per multi-threaded job")
-@click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]), help="contig assembler")
+@click.option("--threads", default=None, type=int,
+              help="number of threads to use per multi-threaded job")
+@click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]),
+              show_default=True, help="contig assembler")
 def run_make_config(config, path, data_type, database_dir, threads, assembler):
     """Write the file `config` and complete the sample names and paths for all FASTQ files in
     `path`.
