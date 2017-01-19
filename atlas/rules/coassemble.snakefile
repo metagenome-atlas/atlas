@@ -100,7 +100,7 @@ rule combine_decontaminated_reads:
 
 rule combine_normalized_reads:
     input:
-        lambda wc: ["{sample}/quality_control/{NORMALIZATION}/{sample}_pe.fastq.gz".format(sample=sample) for sample in config["samples"]["coassemblies"][wc.coassembly]]
+        lambda wc: ["%s/quality_control/{NORMALIZATION}/%s_pe.fastq.gz" % (i, i) for i in config["samples"]["coassemblies"][wc.coassembly]]
     output:
         "coassemblies/{coassembly}/all_normalized_reads/{coassembly}_pe.fastq.gz"
     shell:
@@ -128,7 +128,7 @@ rule normalize_combined_reads:
 if config.get("assembler", "megahit") == "megahit":
     rule coassembly_megahit:
         input:
-            "coassemblies/{coassembly}/quality_control/{NORMALIZATION}/{coassembly}_pe.fastq.gz"
+            "coassemblies/{coassembly}/quality_control/%s/{coassembly}_pe.fastq.gz" % NORMALIZATION
         output:
             temp("coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_prefilter.contigs.fa")
         params:
