@@ -203,7 +203,7 @@ rule coassembly_prefilter_stats:
 
 rule coassembly_prefilter_contig_coverage:
     input:
-        fasta = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_prefilter_contigs.fasta"
+        fasta = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_prefilter_contigs.fasta",
         fastq = "coassemblies/{coassembly}/all_decontamination_reads/{coassembly}_pe.fastq.gz"
     output:
         bhist = "coassemblies/{coassembly}/{ASSEMBLER}/stats/prefilter_base_composition.txt",

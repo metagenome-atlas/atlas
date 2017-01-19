@@ -177,8 +177,6 @@ elif config.get("workflow") == "coassemble":
     include: "rules/annotation/verse.snakefile"
     include: "rules/annotation/munging.snakefile"
     include: "rules/reports/sample.snakefile"
-
-
     include: "rules/coassembly/coassemble.snakefile"
 
 
