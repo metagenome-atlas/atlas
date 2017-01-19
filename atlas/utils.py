@@ -21,10 +21,10 @@ def validate_assembly_config(config):
             valid = False
         for sample, meta in c["samples"].items():
             if sample == "coassemblies":
-                for coassembly, file_list in sample["coassemblies"].items():
-                    for sample in file_list:
-                        if sample not in c["samples"]:
-                            logging.critical("Sample %s under coassembly %s is not a defined sample in the configuration" % (sample, coassembly))
+                for coassembly, file_list in meta["coassemblies"].items():
+                    for co_sample in file_list:
+                        if co_sample not in c["samples"]:
+                            logging.critical("Sample %s under coassembly %s is not a defined sample in the configuration" % (co_sample, coassembly))
                             valid = False
             if not "path" in meta:
                 logging.critical("'path' is not set for sample %s" % sample)
