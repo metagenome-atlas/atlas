@@ -26,8 +26,7 @@ def get_count_tables(config, key):
 
 
 def get_assembler(config):
-    norm = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21),
-                                      config["preprocessing"]["normalization"].get("t", 100)))
+    norm = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21), config["preprocessing"]["normalization"].get("t", 100))
     if config["assembly"]["assembler"] == "spades":
         return "spades_{k}_{norm}".format(k=config["assembly"].get("spades_k", "auto").replace(",", "_"), norm=norm)
     else:
@@ -76,55 +75,13 @@ def coassembly_count_tables(config, tables, assembler):
 
 
 if config.get("workflow", "complete") == "complete":
-
     SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
     SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
-    SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
+
     TABLES = get_count_tables(config, "summary_counts")
+    TMPDIR = get_temp_dir(config)
     NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21), config["preprocessing"]["normalization"].get("t", 100))
-    ASSEMBLER = get_assembler(config) + "_" + NORMALIZATION
-    TMPDIR = get_temp_dir(config)
-
-    rule all:
-        input:
-            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
-            expand("{sample}/quality_control/decontamination/{sample}_refstats.txt", sample=SAMPLES),
-            expand("{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION, sample=SAMPLES),
-            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
-            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
-            expand("{sample}/%s/{sample}_contigs.fasta" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/%s/annotation/orfs/{sample}.faa" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/%s/stats/prefilter_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/%s/stats/final_contig_stats.txt" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/%s/annotation/{reference}/{sample}_hits.tsv" % ASSEMBLER, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-            expand("{sample}/%s/annotation/{reference}/{sample}_assignments.tsv" % ASSEMBLER, reference=list(config["annotation"]["references"].keys()), sample=SAMPLES),
-            expand("{sample}/%s/annotation/{sample}_merged_assignments.tsv" % ASSEMBLER, sample=SAMPLES),
-            expand("{sample}/%s/count_tables/{sample}_{table}.tsv" % ASSEMBLER, sample=SAMPLES, table=TABLES),
-            expand("{sample}/{sample}_readme.html", sample=SAMPLES)
-
-    include: "rules/quality_control/fastq_filter.snakefile"
-    include: "rules/quality_control/error_correction.snakefile"
-    include: "rules/quality_control/contig_filters.snakefile"
-    include: "rules/quality_control/decontamination.snakefile"
-    include: "rules/quality_control/normalization.snakefile"
-    include: "rules/quality_control/fastqc.snakefile"
-    if config["assembly"]["assembler"] == "spades":
-        include: "rules/assemblers/spades.snakefile"
-    else:
-        include: "rules/assemblers/megahit.snakefile"
-    include: "rules/annotation/diamond.snakefile"
-    include: "rules/annotation/prodigal.snakefile"
-    include: "rules/annotation/verse.snakefile"
-    include: "rules/annotation/munging.snakefile"
-    include: "rules/reports/sample.snakefile"
-
-elif config.get("workflow") == "coassemble":
-
-    SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
-    SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
-
-    TABLES = get_count_tables(config, "summary_counts")
-    TMPDIR = get_temp_dir(config)
+    ASSEMBLER = get_assembler(config)
     COASSEMBLIES = coassemblies()
 
     SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
@@ -134,39 +91,29 @@ elif config.get("workflow") == "coassemble":
 
     rule all:
         input:
-            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz",
-                       sample=SAMPLES,
-                       decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
+            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz", sample=SAMPLES, decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
             expand("{sample}/quality_control/decontamination/{sample}_refstats.txt", sample=SAMPLES),
-            expand("{sample}/quality_control/{normalization}/{sample}_pe.fastq.gz",
-                       sample=SAMPLES,
-                       normalization="normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21),
-                                                                config["preprocessing"]["normalization"].get("t", 100))),
-            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
-            expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
-            expand("{sample}/{assembler}/{sample}_contigs.fasta", sample=SAMPLES, assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/annotation/orfs/{sample}.faa", sample=SAMPLES, assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/stats/prefilter_contig_stats.txt", sample=SAMPLES, assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/stats/final_contig_stats.txt",
-                       sample=SAMPLES,
-                       assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/annotation/{reference}/{sample}_hits.tsv",
-                       reference=list(config["annotation"]["references"].keys()),
-                       sample=SAMPLES,
-                       assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/annotation/{reference}/{sample}_assignments.tsv", reference=list(config["annotation"]["references"].keys()), sample=SAMPLES, assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/annotation/{sample}_merged_assignments.tsv", sample=SAMPLES, assembler=get_assembler(config)),
-            expand("{sample}/{assembler}/count_tables/{sample}_{table}.tsv", sample=SAMPLES, assembler=get_assembler(config), table=TABLES),
+            expand("{sample}/quality_control/quality_filter/{sample}_pe.fastq.gz", sample=SAMPLES),
+            expand("{sample}/quality_control/quality_filter/{sample}_se.fastq.gz", sample=SAMPLES),
+            expand("{sample}/logs/{sample}_quality_filtering_stats.txt", sample=SAMPLES),
+            expand("{sample}/quality_control/{normalization}/{sample}_pe.fastq.gz", sample=SAMPLES, normalization=NORMALIZATION),
+            # expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
+            # expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
+            expand("{sample}/{assembler}/{sample}_contigs.fasta", sample=SAMPLES, assembler=ASSEMBLER),
+            expand("{sample}/{assembler}/annotation/orfs/{sample}.faa", sample=SAMPLES, assembler=ASSEMBLER),
+            expand("{sample}/{assembler}/stats/prefilter_contig_stats.txt", sample=SAMPLES, assembler=ASSEMBLER),
+            expand("{sample}/{assembler}/stats/final_contig_stats.txt", sample=SAMPLES, assembler=ASSEMBLER),
+            expand("{sample}/{assembler}/annotation/{reference}/{sample}_hits.tsv", sample=SAMPLES, assembler=ASSEMBLER, reference=list(config["annotation"]["references"].keys())),
+            expand("{sample}/{assembler}/annotation/{reference}/{sample}_assignments.tsv", sample=SAMPLES, assembler=ASSEMBLER, reference=list(config["annotation"]["references"].keys())),
+            expand("{sample}/{assembler}/annotation/{sample}_merged_assignments.tsv", sample=SAMPLES, assembler=ASSEMBLER),
+            expand("{sample}/{assembler}/count_tables/{sample}_{table}.tsv", sample=SAMPLES, assembler=ASSEMBLER, table=TABLES),
             expand("{sample}/{sample}_readme.html", sample=SAMPLES),
             expand("coassemblies/{coassembly}/all_decontamination_reads/{coassembly}_pe.fastq.gz", coassembly=COASSEMBLIES),
             expand("coassemblies/{coassembly}/all_normalized_reads/{coassembly}_pe.fastq.gz", coassembly=COASSEMBLIES),
-            expand("coassemblies/{coassembly}/quality_control/{normalization}/{coassembly}_pe.fastq.gz",
-                       coassembly=COASSEMBLIES, normalization="normalization_k%d_t%d" %
-                                                                  (config["preprocessing"]["normalization"].get("k", 21),
-                                                                   config["preprocessing"]["normalization"].get("t", 100))),
-            expand("coassemblies/{coassembly}/{assembler}/stats/prefilter_contig_stats.txt", coassembly=COASSEMBLIES, assembler=get_assembler(config)),
-            expand("coassemblies/{coassembly}/{assembler}/stats/final_contig_stats.txt", coassembly=COASSEMBLIES, assembler=get_assembler(config)),
-            expand("coassemblies/{coassembly}/{assembler}/{coassembly}_contigs.fasta", coassembly=COASSEMBLIES, assembler=get_assembler(config)),
+            expand("coassemblies/{coassembly}/quality_control/{normalization}/{coassembly}_pe.fastq.gz", coassembly=COASSEMBLIES, normalization=NORMALIZATION),
+            expand("coassemblies/{coassembly}/{assembler}/stats/prefilter_contig_stats.txt", coassembly=COASSEMBLIES, assembler=ASSEMBLER),
+            expand("coassemblies/{coassembly}/{assembler}/stats/final_contig_stats.txt", coassembly=COASSEMBLIES, assembler=ASSEMBLER),
+            expand("coassemblies/{coassembly}/{assembler}/{coassembly}_contigs.fasta", coassembly=COASSEMBLIES, assembler=ASSEMBLER),
             coassembly_alignments(config, get_assembler(config)),
             coassembly_count_tables(config, TABLES, get_assembler(config))
 
