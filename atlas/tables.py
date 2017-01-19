@@ -8,14 +8,13 @@ from atlas import TAX_LEVELS
 MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "refseq_product", "refseq_evalue", "refseq_bitscore",
                  "uniprot_ac", "eggnog_ssid_b", "eggnog_species_id",
-                 "uniprot_id", "cog_func_id", "cog_id", "cog_product",
-                 "cog_level1_code", "cog_level1_name",
-                 "cog_level2_name", "ko_id",
-                 "ko_level1_name", "ko_level2_name", "ko_level3_id",
-                 "ko_level3_name", "ko_gene_symbol", "ko_product",
-                 "ko_ec", "eggnog_evalue", "eggnog_bitscore",
+                 "uniprot_id", "ko_id", "ko_level1_name", "ko_level2_name",
+                 "ko_level3_id", "ko_level3_name", "ko_gene_symbol",
+                 "ko_product", "ko_ec", "eggnog_evalue", "eggnog_bitscore",
                  "expazy_ec", "expazy_name", "cazy_gene", "cazy_family",
-                 "cazy_class", "cazy_ec"]
+                 "cazy_class", "cazy_ec", "cog_protein_id", "cog_id",
+                 "cog_functional_class", "cog_annotation",
+                 "cog_functional_class_description"]
 
 
 def merge_tables(tables, output):
