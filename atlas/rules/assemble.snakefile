@@ -99,12 +99,11 @@ def split_fasta(fasta, chunk_size=250000):
     ofh.close()
 
 
-
 rule quality_filter_reads:
     input:
         lambda wc: config["samples"][wc.sample]["path"]
     output:
-        pe = "{sample}/quality_control/quality_filter/{sample}_pe.fastq.gz",
+        pe = "{sample,^(?!.*coassemblies).*$}/quality_control/quality_filter/{sample}_pe.fastq.gz",
         se = "{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     params:
@@ -186,23 +185,24 @@ rule normalization:
     input:
         "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
-        "{sample}/quality_control/{normalization}/{sample}_pe.fastq.gz"
+        "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
     params:
         k = config["preprocessing"]["normalization"].get("k", 21),
         t = config["preprocessing"]["normalization"].get("t", 100),
         minkmers = config["preprocessing"]["normalization"].get("minkmers", 15)
     log:
-        "{sample}/logs/{sample}_{normalization}.log"
+        "{sample}/logs/{sample}_%s.log" % NORMALIZATION
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} bbnorm.sh in={input} out={output} k={params.k} t={params.t} \
                minkmers={params.minkmers} prefilter=t threads={threads} 2> {log}"""
 
+
 if config.get("assembler", "megahit") == "megahit":
     rule megahit:
         input:
-            "{sample}/quality_control/{normalization}/{sample}_pe.fastq.gz"
+            "{sample}/quality_control/%s/{sample}_pe.fastq.gz" % NORMALIZATION
         output:
             temp("{sample}/{assembler}/{sample}_prefilter.contigs.fa")
         params:
