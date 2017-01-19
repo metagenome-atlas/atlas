@@ -1,8 +1,8 @@
 rule counts_per_region:
     input:
-        gtf = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.gtf" % ASSEMBLER,
-        bam = "{sample}/{ASSEMBLER}/annotation/{sample}.bam" % ASSEMBLER,
-        bai = "{sample}/{ASSEMBLER}/annotation/{sample}.bam.bai" % ASSEMBLER
+        gtf = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.gtf",
+        bam = "{sample}/{ASSEMBLER}/annotation/{sample}.bam",
+        bai = "{sample}/{ASSEMBLER}/annotation/{sample}.bam.bai"
     output:
         summary = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.summary.txt",
         counts = "{sample}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.txt"
