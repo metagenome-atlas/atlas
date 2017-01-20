@@ -29,6 +29,8 @@ def get_sample_files(path, data_type):
                 if ".fq" in sample_id:
                     sample_id = fname.partition(".fq")[0]
 
+                sample_id = sample_id.replace("_R1", "").replace("_r1", "").replace("_R2", "").replace("_r2", "")
+
                 fq_path = os.path.join(dir_name, fname)
                 fastq_paths = [fq_path]
 
@@ -46,6 +48,9 @@ def get_sample_files(path, data_type):
                         seen.add(r1_path)
                         fastq_paths.insert(0, r1_path)
 
+                if sample_id in samples:
+                    logging.warn("Duplicate sample %s was found after renaming; skipping..." % sample_id)
+                    continue
                 samples[sample_id] = {'path': fastq_paths, 'type': data_type}
     return samples
 
