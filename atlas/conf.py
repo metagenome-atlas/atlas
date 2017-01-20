@@ -54,9 +54,11 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     """Write the file `config` and complete the sample names and paths for all files in `path`."""
     represent_dict_order = lambda self, data:  self.represent_mapping('tag:yaml.org,2002:map', data.items())
     yaml.add_representer(OrderedDict, represent_dict_order)
+    path = os.path.realpath(path)
 
     conf = OrderedDict()
     samples = get_sample_files(path, data_type)
+    logging.info("Found %d samples under %s" % (len(samples), path))
     conf["samples"] = samples
     conf["tmpdir"] = tempfile.gettempdir()
     conf["database_directory"] = database_dir
@@ -157,8 +159,17 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["annotation"] = annotation
 
     summary_counts = OrderedDict()
-    summary_counts["taxonomy"] = {"levels":["phylum", "class", "species"], "CAZy_Family":["cazy_family"], "ExPAZy":["expazy_name", "expazy_ec"]}
+
+    summary_counts["taxonomy"] = {"levels":["phylum", "class", "order", "species"],
+                                  "CAZy_Family":["cazy_family"],
+                                  "ExPAZy":["expazy_name", "expazy_ec"],
+                                  "RefSeq":["refseq_product"],
+                                  "COG":["cog_id", "cog_functional_class", "cog_annotation"]}
     summary_counts["KO"] = ["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"]
+    summary_counts["RefSeq"] = ["refseq_product"]
+    summary_counts["COG"] = ["cog_id", "cog_functional_class", "cog_annotation"]
+    summary_counts["ExPAZy"] = ["expazy_name", "expazy_ec"]
+    summary_counts["CAZy"] = ["cazy_family", "cazy_class"]
 
     conf["summary_counts"] = summary_counts
 
