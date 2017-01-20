@@ -100,7 +100,7 @@ rule combine_decontaminated_reads:
 
 rule combine_normalized_reads:
     input:
-        lambda wc: ["%s/quality_control/{NORMALIZATION}/%s_pe.fastq.gz" % (i, i) for i in config["samples"]["coassemblies"][wc.coassembly]]
+        lambda wc: ["%s/quality_control/%s/%s_pe.fastq.gz" % (i, NORMALIZATION, i) for i in config["samples"]["coassemblies"][wc.coassembly]]
     output:
         "coassemblies/{coassembly}/all_normalized_reads/{coassembly}_pe.fastq.gz"
     shell:
@@ -111,13 +111,13 @@ rule normalize_combined_reads:
     input:
         "coassemblies/{coassembly}/all_normalized_reads/{coassembly}_pe.fastq.gz"
     output:
-        "coassemblies/{coassembly}/quality_control/{NORMALIZATION}/{coassembly}_pe.fastq.gz"
+        "coassemblies/{coassembly}/quality_control/%s/{coassembly}_pe.fastq.gz" % NORMALIZATION
     params:
         k = config["preprocessing"]["normalization"].get("k", 21),
         t = config["preprocessing"]["normalization"].get("t", 100),
         minkmers = config["preprocessing"]["normalization"].get("minkmers", 15)
     log:
-        "coassemblies/{coassembly}/logs/{coassembly}_{NORMALIZATION}.log"
+        "coassemblies/{coassembly}/logs/{coassembly}_%s.log" % NORMALIZATION
     threads:
         config.get("threads", 1)
     shell:
@@ -166,7 +166,7 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     rule coassembly_spades:
         input:
-            "coassemblies/{coassembly}/quality_control/{NORMALIZATION}/{coassembly}_pe.fastq.gz"
+            "coassemblies/{coassembly}/quality_control/%s/{coassembly}_pe.fastq.gz" % NORMALIZATION
         output:
             temp("coassemblies/{coassembly}/{ASSEMBLER}/contigs.fasta")
         params:
