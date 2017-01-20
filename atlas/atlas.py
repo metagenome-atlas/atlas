@@ -296,7 +296,7 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
 def run_assemble(config, jobs, out_dir, dryrun):
-    assemble(config, jobs, out_dir, dryrun)
+    assemble(os.path.realpath(config), jobs, out_dir, dryrun)
 
 
 @cli.command("download", short_help="download reference files")
