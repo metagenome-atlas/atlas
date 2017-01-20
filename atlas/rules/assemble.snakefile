@@ -103,7 +103,7 @@ rule quality_filter_reads:
     input:
         lambda wc: config["samples"][wc.sample]["path"]
     output:
-        pe = "{sample,^(?!.*coassemblies).*$}/quality_control/quality_filter/{sample}_pe.fastq.gz",
+        pe = "{sample,(?:(?!coassemblies)\w)+}/quality_control/quality_filter/{sample}_pe.fastq.gz",
         se = "{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     params:
@@ -206,6 +206,7 @@ if config.get("assembler", "megahit") == "megahit":
         output:
             temp("{sample}/{assembler}/{sample}_prefilter.contigs.fa")
         params:
+            # -r/--read <se> comma-separated list of fasta/q single-end files
             memory = config["assembly"].get("memory", 0.90),
             min_count = config["assembly"].get("minimum_count", 2),
             k_min = config["assembly"].get("kmer_min", 21),
@@ -244,6 +245,7 @@ else:
         output:
             temp("{sample}/{assembler}/contigs.fasta")
         params:
+            # -s <filename> file with unpaired reads
             # memory = config["assembly"].get("memory", 0.90)
             k = config["assembly"].get("spades_k", "auto"),
             outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
@@ -336,7 +338,7 @@ rule contig_coverage_stats:
         config.get("threads", 1)
     shell:
         """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} trimreaddescriptions=t \
-               out={wildcards.sample}/{assembler}/annotation/{wildcards.sample}.sam \
+               out={wildcards.sample}/{wildcards.assembler}/annotation/{wildcards.sample}.sam \
                mappedonly=t threads={threads} bhist={output.bhist} bqhist={output.bqhist} \
                mhist={output.mhist} gchist={output.gchist} statsfile={output.statsfile} \
                covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3 2> {log}"""
@@ -417,7 +419,7 @@ rule counts_per_region:
     shell:
         """{SHPFXM} verse -T {threads} --minReadOverlap {params.min_read_overlap} \
                --singleEnd -t CDS -z 1 -a {input.gtf} \
-               -o {wildcards.sample}/{assembler}/annotation/orfs/{wildcards.sample} \
+               -o {wildcards.sample}/{wildcards.assembler}/annotation/orfs/{wildcards.sample} \
                {input.bam} > {log}"""
 
 
