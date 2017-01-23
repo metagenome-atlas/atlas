@@ -30,6 +30,7 @@ def get_sample_files(path, data_type):
                     sample_id = fname.partition(".fq")[0]
 
                 sample_id = sample_id.replace("_R1", "").replace("_r1", "").replace("_R2", "").replace("_r2", "")
+                sample_id = sample_id.replace("_", "-").replace(" ", "-")
 
                 fq_path = os.path.join(dir_name, fname)
                 fastq_paths = [fq_path]
