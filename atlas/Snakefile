@@ -98,7 +98,7 @@ if config.get("workflow", "complete") == "complete":
     SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
 
     wildcard_constraints:
-        sample = "\w+"
+        sample = "[\w-]+"
 
     if COASSEMBLIES:
 
