@@ -103,7 +103,7 @@ rule quality_filter_reads:
     input:
         lambda wc: config["samples"][wc.sample]["path"]
     output:
-        pe = "{sample,(?:(?!coassemblies)\w)+}/quality_control/quality_filter/{sample}_pe.fastq.gz",
+        pe = "{sample,(?:(?!coassemblies)[\w-]+)+}/quality_control/quality_filter/{sample}_pe.fastq.gz",
         se = "{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     params:
