@@ -26,6 +26,10 @@ def validate_assembly_config(config):
                         if co_sample not in c["samples"]:
                             logging.critical("Sample %s under coassembly %s is not a defined sample in the configuration" % (co_sample, coassembly))
                             valid = False
+            # common/known bad characters
+            if " " in sample or "_" in sample:
+                logging.critical("The sample ID for %s contains invalid characters; use words or words separated by dashes only")
+                valid = False
             if not "path" in meta:
                 logging.critical("'path' is not set for sample %s" % sample)
                 valid = False
