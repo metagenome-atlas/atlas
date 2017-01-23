@@ -5,6 +5,7 @@ samples:
             - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R1_140814.fastq.gz
             - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R2_140814.fastq.gz
         type: metagenome
+        paired: true
     cytophaga:
         path:
             - /pic/projects/mint/genomic_truth_sets/200_ATTCCT_L005_R1_001.fastq.gz

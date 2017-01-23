@@ -206,7 +206,7 @@ if config.get("assembler", "megahit") == "megahit":
         output:
             temp("{sample}/{assembler}/{sample}_prefilter.contigs.fa")
         params:
-            # -r/--read <se> comma-separated list of fasta/q single-end files
+            read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--reads",
             memory = config["assembly"].get("memory", 0.90),
             min_count = config["assembly"].get("minimum_count", 2),
             k_min = config["assembly"].get("kmer_min", 21),
@@ -222,7 +222,7 @@ if config.get("assembler", "megahit") == "megahit":
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} megahit --num-cpu-threads {threads} --12 {input} --continue \
+            """{SHPFXM} megahit --num-cpu-threads {threads} {params.read_flag} {input} --continue \
                    --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
                    --out-dir {params.outdir} --out-prefix {wildcards.sample}_prefilter \
                    --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
@@ -245,8 +245,8 @@ else:
         output:
             temp("{sample}/{assembler}/contigs.fasta")
         params:
-            # -s <filename> file with unpaired reads
             # memory = config["assembly"].get("memory", 0.90)
+            read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
             k = config["assembly"].get("spades_k", "auto"),
             outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
         log:
@@ -254,7 +254,7 @@ else:
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta --12 {input}"""
+            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta {params.read_flag} {input}"""
 
 
     rule rename_spades_output:
