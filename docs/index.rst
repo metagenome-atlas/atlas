@@ -2,12 +2,22 @@ ATLAS
 =====
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+    :maxdepth: 2
+    :caption: Setup
 
-   install
-   getting_started
-   configuration
+    setup/install
+    setup/getting_started
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Configuration
+
+    configuration/example_configuration
+    configuration/samples
+    configuration/threads
+    configuration/preprocessing
+    configuration/assembly
+    configuration/advanced
 
 
 Indices and tables
