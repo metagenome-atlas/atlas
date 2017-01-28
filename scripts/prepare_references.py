@@ -322,7 +322,7 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
     uniprot_to_uniparc = {}
 
     click.echo("parsing %s" % uniparc_map)
-    with gzip.open(uniparc_map, 'rt') as fh:
+    with gzip.open(uniparc_map, "rt") as fh:
         # Entry    Organisms    UniProtKB    First seen    Last seen    Length
         next(fh)
         for line in fh:
@@ -353,7 +353,14 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                         ec_id = toks[2]
 
                     if line.startswith("DE"):
-                        recommended_name = toks[2].strip(".")
+                        if recommended_name == "NA":
+                            recommended_name = toks[2].strip(".")
+                        # multi-line name
+                        else:
+                            if recommended_name.endswith("-"):
+                                recommended_name += toks[2].strip(".")
+                            else:
+                                recommended_name += " " + toks[2].strip(".")
 
                     if line.startswith("DR"):
                         for entry_and_name in toks[2].split(";"):
@@ -363,6 +370,7 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                                 uniprot_entries.append(uniprot_entry)
 
                 if ec_id and uniprot_entries:
+
                     for uniprot_entry in uniprot_entries:
                         uniparc_id = uniprot_to_uniparc[uniprot_entry]
 
@@ -371,13 +379,18 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
 
     with open(out_map, "w") as ofh:
         for uniparc_id, meta in uniparc_mappings.items():
-            uniprots = set()
-            ecs = set()
-            names = set()
+            uniprots = []
+            ecs = []
+            names = []
             for name_list in meta:
-                uniprots.add(name_list[0])
-                ecs.add(name_list[1])
-                names.add(name_list[2])
+                if name_list[0] not in uniprots:
+                    uniprots.append(name_list[0])
+
+                if name_list[1] not in ecs:
+                    ecs.append(name_list[1])
+                    # ECs are coupled with a name
+                    names.append(name_list[2])
+
             print(uniparc_id, "|".join(uniprots), "|".join(ecs), "|".join(names), sep="\t", file=ofh)
 
     click.echo("parsing %s" % uniparc_fasta)
