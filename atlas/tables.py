@@ -45,29 +45,43 @@ def merge_tables(tables, output):
     ref_df.to_csv(output, sep="\t", na_rep="NA")
 
 
-def col_split(df, column, sep='|'):
+def col_split(df, cols, sep='|'):
     """
-    Split the values of a column and expand so the new DataFrame has one split value per row.
+    Split the values of columns and expand so the new DataFrame has one split value per row.
 
     Args:
         df (pandas.DataFrame)
-        column (str): column header value
+        cols (list): column header values
         sep (str): value with which to split
 
     Returns:
         pandas.DataFrame
 
     """
-    indexes = list()
-    new_values = list()
-    df = df.dropna(subset=[column])
-    for i, presplit in enumerate(df[column].astype(str)):
-        for value in presplit.split(sep):
-            indexes.append(i)
-            new_values.append(value)
-    new_df = df.iloc[indexes, :].copy()
-    new_df[column] = new_values
-    return new_df
+    if not cols:
+        return df
+
+    col_series = []
+    for c in cols:
+        col_series.append(df[c].str.split(sep, expand=True).stack().str.strip().reset_index(level=1, drop=True))
+    temp_df = pd.concat(col_series, axis=1, keys=cols)
+    return df.drop(cols, axis=1).join(temp_df).reset_index(drop=True)
+
+
+def get_split_cols(df, values):
+    if "contig" not in values and "orf" not in values:
+        # one-to-many relationships with mapping sequence to values
+        if "expazy" in values:
+            # these cols have to split in pairs
+            cols = []
+            if "expazy_name" in values:
+                cols.append("expazy_name")
+            if "expazy_ec" in values:
+                cols.append("expazy_ec")
+            df = col_split(df, cols)
+        if "cazy_ec" in values:
+            df = col_split(df, ["cazy_ec"])
+    return df
 
 
 def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
@@ -184,13 +198,8 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
                     tax_vals = subvals + [tax_name, "count"]
                     # subvals.extend([tax_name, "count"])
                     tdf = df[tax_vals].copy()
-
-                    if "contig" not in subvals and "orf" not in subvals:
-                        for v in subvals:
-                            # one-to-many relationships with mapping sequence (Uniprot AC) to values
-                            if "expazy" in v or "cazy_ec" in v:
-                                tdf = col_split(tdf, v)
-
+                    # handle one-to-many relationships
+                    tdf = get_split_cols(tdf, subvals)
                     # has to have 'count' plus one other
                     tdf.dropna(how="any", thresh=2, inplace=True)
                     tdf.groupby(tax_vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
@@ -203,13 +212,8 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
             vals.append("count")
             # drops unwanted columns
             tdf = df[vals].copy()
-
-            if "contig" not in vals and "orf" not in vals:
-                for v in vals:
-                    # expazy has one-to-many relationships with it's mapping sequence to EC and Names
-                    if "expazy" in v or "cazy_ec" in v:
-                        tdf = col_split(tdf, v)
-
+            # handle one-to-many relationships
+            tdf = get_split_cols(tdf, vals)
             # remove rows with no metadata; allows partial metadata
             tdf.dropna(how="any", thresh=2, inplace=True)
             # aggregate counts and print
