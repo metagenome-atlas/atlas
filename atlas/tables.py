@@ -58,20 +58,21 @@ def col_split(df, cols, sep='|'):
         pandas.DataFrame
 
     """
-    if not cols:
+    if not cols or len(df) == 0:
         return df
 
     col_series = []
     for c in cols:
+        df[c] = df[c].astype(str)
         col_series.append(df[c].str.split(sep, expand=True).stack().str.strip().reset_index(level=1, drop=True))
     temp_df = pd.concat(col_series, axis=1, keys=cols)
     return df.drop(cols, axis=1).join(temp_df).reset_index(drop=True)
 
 
 def get_split_cols(df, values):
-    if "contig" not in values and "orf" not in values:
+    if not "contig" in values and "orf" not in values:
         # one-to-many relationships with mapping sequence to values
-        if "expazy" in values:
+        if "expazy_name" in values or "expazy_ec" in values:
             # these cols have to split in pairs
             cols = []
             if "expazy_name" in values:
@@ -198,10 +199,11 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
                     tax_vals = subvals + [tax_name, "count"]
                     # subvals.extend([tax_name, "count"])
                     tdf = df[tax_vals].copy()
-                    # handle one-to-many relationships
-                    tdf = get_split_cols(tdf, subvals)
                     # has to have 'count' plus one other
                     tdf.dropna(how="any", thresh=2, inplace=True)
+                    # handle one-to-many relationships
+                    tdf = get_split_cols(tdf, subvals)
+                    # even print empty tables
                     tdf.groupby(tax_vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, table_name, suffix), sep="\t")
 
         else:
@@ -212,9 +214,9 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
             vals.append("count")
             # drops unwanted columns
             tdf = df[vals].copy()
-            # handle one-to-many relationships
-            tdf = get_split_cols(tdf, vals)
             # remove rows with no metadata; allows partial metadata
             tdf.dropna(how="any", thresh=2, inplace=True)
+            # handle one-to-many relationships
+            tdf = get_split_cols(tdf, vals)
             # aggregate counts and print
             tdf.groupby(vals[:-1]).sum().to_csv("%s_%s%s" % (prefix, name, suffix), sep="\t")
