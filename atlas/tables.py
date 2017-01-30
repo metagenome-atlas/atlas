@@ -11,7 +11,7 @@ MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "uniprot_id", "ko_id", "ko_level1_name", "ko_level2_name",
                  "ko_level3_id", "ko_level3_name", "ko_gene_symbol",
                  "ko_product", "ko_ec", "eggnog_evalue", "eggnog_bitscore",
-                 "expazy_ec", "expazy_name", "cazy_gene", "cazy_family",
+                 "enzyme_ec", "enzyme_name", "cazy_gene", "cazy_family",
                  "cazy_class", "cazy_ec", "cog_protein_id", "cog_id",
                  "cog_functional_class", "cog_annotation",
                  "cog_functional_class_description"]
@@ -72,13 +72,13 @@ def col_split(df, cols, sep='|'):
 def get_split_cols(df, values):
     if not "contig" in values and "orf" not in values:
         # one-to-many relationships with mapping sequence to values
-        if "expazy_name" in values or "expazy_ec" in values:
+        if "enzyme_name" in values or "enzyme_ec" in values:
             # these cols have to split in pairs
             cols = []
-            if "expazy_name" in values:
-                cols.append("expazy_name")
-            if "expazy_ec" in values:
-                cols.append("expazy_ec")
+            if "enzyme_name" in values:
+                cols.append("enzyme_name")
+            if "enzyme_ec" in values:
+                cols.append("enzyme_ec")
             df = col_split(df, cols)
         if "cazy_ec" in values:
             df = col_split(df, ["cazy_ec"])

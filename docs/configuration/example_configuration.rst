@@ -138,9 +138,9 @@ Lines starting with '#' are treated as comments::
                 min_length: 60
                 max_hits: 10
                 top_fraction: 0.50
-            expazy:
-                namemap: /pic/projects/mint/atlas_databases/expazy.db
-                dmnd: /pic/projects/mint/atlas_databases/expazy.dmnd
+            enzyme:
+                namemap: /pic/projects/mint/atlas_databases/enzyme.db
+                dmnd: /pic/projects/mint/atlas_databases/enzyme.dmnd
             cazy:
                 namemap: /pic/projects/mint/atlas_databases/cazy.db
                 dmnd: /pic/projects/mint/atlas_databases/cazy.dmnd
@@ -163,9 +163,9 @@ Lines starting with '#' are treated as comments::
                 - cazy_ec
             CAZy_family:
                 - cazy_family
-            ExPAZy:
-                - expazy_name
-                - expazy_ec
+            ENZYME:
+                - enzyme_name
+                - enzyme_ec
             RefSeq:
                 - refseq_product
         CAZY_EC:
@@ -174,8 +174,8 @@ Lines starting with '#' are treated as comments::
             - cog_id
             - cog_functional_class
             - cog_annotation
-        ExPAZy:
-            - expazy_name
-            - expazy_ec
+        ENZYME:
+            - enzyme_name
+            - enzyme_ec
         RefSeq:
             - refseq_product

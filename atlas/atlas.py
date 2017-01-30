@@ -4,7 +4,7 @@ import multiprocessing
 import os
 from atlas import __version__
 from atlas.conf import make_config
-from atlas.parsers import cazy_parser, cog_parser, eggnog_parser, expazy_parser, refseq_parser
+from atlas.parsers import cazy_parser, cog_parser, eggnog_parser, enzyme_parser, refseq_parser
 from atlas.tables import merge_tables, count_tables
 from atlas.workflows import assemble, download
 
@@ -132,7 +132,7 @@ def run_eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bi
     eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
 
 
-@cli.command("expazy", short_help="process blast hits for expazy reference")
+@cli.command("enzyme", short_help="process blast hits for ENZYME reference")
 @click.argument("tsv", type=click.Path(exists=True))
 @click.argument("namemap", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
@@ -143,28 +143,28 @@ def run_eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bi
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
 @click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
 @click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="expazy", help="table name within namemap database; expected columns are listed above")
-def run_expazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name):
-    """Parse BLAST hits from ExPAZy reference database.
+@click.option("--table-name", default="enzyme", help="table name within namemap database; expected columns are listed above")
+def run_enzyme_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name):
+    """Parse BLAST hits from ENZYME reference database.
 
     The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
 
         \b
         sort -k1,1 -k12,12rn tsv > sorted_tsv
 
-    Expected columns in the ExPAZy database:
+    Expected columns in the ENZYME database:
 
         \b
         uniprot_entry
         uniparc_entry
-        expazy_ec
-        expazy_name
+        enzyme_ec
+        enzyme_name
 
-    For a given UniParc match, all possible ECs and ExPAZy recommended names are returned in a
+    For a given UniParc match, all possible ECs and ENZYME recommended names are returned in a
     single line separated by '|'.
 
     """
-    expazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
+    enzyme_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
 
 
 @cli.command("refseq", short_help="enables tree based LCA and LCA star methods")

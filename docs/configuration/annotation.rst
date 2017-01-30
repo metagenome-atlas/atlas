@@ -3,10 +3,55 @@ Annotation
 
 Any column later specified in summary tables requires that its reference be
 specified. For instance, specifying taxonomic breakdowns across EC will require
-RefSeq for the taxonomic assignments and ExPAZy for the EC data.
+RefSeq for the taxonomic assignments and ENZYME for the EC data.
 
 Minimal working configuration:
 
+featureCounts Mode:
+
+-z 0   featureCounts(default): Quantify by overlapping and voting.
+           If the read pair overlaps multiple genes, it will assign the read pair
+           to the gene that is overlapped by both reads.
+
+           Please refer to the SUBREAD users guide for more information.
+           This mode is developed by Drs. Yang Liao, Gordon K Smyth and Wei Shi.
+           http://bioinf.wehi.edu.au/featureCounts.
+
+
+HTseq Modes:
+
+-z 1   HTSeq-Union: Quantify by overlapping.
+           If the read (or read pair) overlaps multiple genes, it will be set
+           ambiguous. Only reads that overlap one gene will be assigned.
+
+-z 2   HTSeq-Intersection_strict: Quantify by overlapping and intersection.
+           This mode requires the assigned gene to cover every base of the read.
+           If more than one such genes exist,  the read is set ambiguous.
+
+-z 3   HTSeq-Intersection_nonempty: Quantify by overlapping and intersection.
+           This mode does NOT require the assigned gene to cover every base of
+           the read, but the gene must cover all sections of the read that overlap
+           genes. If more than one such genes exist, the read is set ambiguous.
+
+           Please refer to the HTSeq documentation for more information.
+           HTSeq is developed by Dr. Simon Anders at EMBL Heidelberg.
+           http://www-huber.embl.de/HTSeq/doc/count.html#count.
+           The actual implementation of the HTseq scheme is different in VERSE.
+
+
+VERSE Modes:
+
+-z 4   Union_strict: A combination of HTSeq-Union and HTSeq-Intersection_strict.
+           This mode requires every base of the read to overlap one and only one gene.
+           This mode is the most conservative.
+
+-z 5   Cover_length: Quantify by overlapping length comparison.
+           After getting a list of overlapping genes, VERSE will calculate the
+           overlapping length of each gene and assign the read to the most covered
+           gene. One can use --minDifAmbiguous to set the minimum allowed coverage
+           difference between the most covered gene and the gene with the second
+           highest coverage. If the difference is not large enough the read will
+           be set ambiguous.
 
 annotation:
     ## ORFs
@@ -15,6 +60,7 @@ annotation:
     # when counting reads aligning to ORFs, require at least this many bp
     # overlapping the ORF
     minimum_overlap: 20
+    verse_mode: 5
 
     references:
         eggnog:
@@ -98,9 +144,9 @@ annotation:
             # drastically alter ORF LCA assignments if too high without further limits
             max_hits: 10
             top_fraction: 0.50
-        expazy:
-            namemap: /pic/projects/mint/atlas_databases/functional/expazy/expazy.db
-            fasta: /pic/projects/mint/atlas_databases/functional/expazy/expazy.fasta
+        enzyme:
+            namemap: /pic/projects/mint/atlas_databases/functional/enzyme/enzyme.db
+            fasta: /pic/projects/mint/atlas_databases/functional/enzyme/enzyme.fasta
             chunk_size: 500000
             # 'fast' or 'sensitive'
             run_mode: fast

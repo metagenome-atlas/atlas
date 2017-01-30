@@ -13,7 +13,7 @@ PHIX = "phiX174_virus.fa"
 CAZY = "cazy"
 COG = "cog"
 EGGNOG = "eggnog"
-EXPAZY = "expazy"
+ENZYME = "enzyme"
 REFSEQ = "refseq"
 
 
@@ -135,14 +135,14 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     refseq["majority_threshold"] = 0.51
     annotation["refseq"] = refseq
 
-    expazy = OrderedDict()
-    expazy["namemap"] = os.path.join(database_dir, "%s.db" % EXPAZY)
-    expazy["dmnd"] = os.path.join(database_dir, "%s.dmnd" % EXPAZY)
-    expazy["run_mode"] = "fast"
-    expazy["top_seqs"] = 2
-    expazy["summary_method"] = "majority"
-    expazy["index_chunks"] = 1
-    annotation["expazy"] = expazy
+    enzyme = OrderedDict()
+    enzyme["namemap"] = os.path.join(database_dir, "%s.db" % ENZYME)
+    enzyme["dmnd"] = os.path.join(database_dir, "%s.dmnd" % ENZYME)
+    enzyme["run_mode"] = "fast"
+    enzyme["top_seqs"] = 2
+    enzyme["summary_method"] = "majority"
+    enzyme["index_chunks"] = 1
+    annotation["enzyme"] = enzyme
 
     cazy = OrderedDict()
     cazy["namemap"] = os.path.join(database_dir, "%s.db" % CAZY)
@@ -168,13 +168,13 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     summary_counts["taxonomy"] = {"levels":["phylum", "class", "order", "species"],
                                   "CAZy_Family":["cazy_family"],
-                                  "ExPAZy":["expazy_name", "expazy_ec"],
+                                  "ENZYME":["enzyme_name", "enzyme_ec"],
                                   "RefSeq":["refseq_product"],
                                   "COG":["cog_id", "cog_functional_class", "cog_annotation"]}
     summary_counts["KO"] = ["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"]
     summary_counts["RefSeq"] = ["refseq_product"]
     summary_counts["COG"] = ["cog_id", "cog_functional_class", "cog_annotation"]
-    summary_counts["ExPAZy"] = ["expazy_name", "expazy_ec"]
+    summary_counts["ENZYME"] = ["enzyme_name", "enzyme_ec"]
     summary_counts["CAZy"] = ["cazy_family", "cazy_class"]
 
     conf["summary_counts"] = summary_counts

@@ -14,8 +14,8 @@ summary_counts:
         # ko_id, ko_level1_name, ko_level2_name, ko_level3_id,
         # ko_level3_name, ko_gene_symbol, ko_product, ko_ec
 
-        # from expazy:
-        # expazy_name, expazy_ec
+        # from ENZYME:
+        # enzyme_name, enzyme_ec
 
         # from cazy (dbcan):
         # cazy_gene, cazy_family, cazy_class, cazy_ec
@@ -40,9 +40,9 @@ summary_counts:
             - cazy_ec
         CAZy_family:
             - cazy_family
-        ExPAZy:
-            - expazy_name
-            - expazy_ec
+        ENZYME:
+            - enzyme_name
+            - enzyme_ec
     KO:
         - ko_id
         - ko_gene_symbol
@@ -62,9 +62,9 @@ summary_counts:
     COG_lvl1:
         - cog_level1_name
         - cog_level2_name
-    ExPAZy:
-        - expazy_name
-        - expazy_ec
+    ENZYME:
+        - enzyme_name
+        - enzyme_ec
 
 
 # Output

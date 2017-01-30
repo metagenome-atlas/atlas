@@ -222,7 +222,7 @@ elif config.get("workflow") == "download":
 
     FILES = ["silva_rfam_all_rRNAs.fa", "adapters.fa", "phiX174_virus.fa", "refseq.db",
              "refseq.dmnd", "refseq.tree", "cazy.db", "cazy.dmnd", "cog.db", "cog.dmnd",
-             "eggnog.db", "eggnog.dmnd", "expazy.db", "expazy.dmnd"]
+             "eggnog.db", "eggnog.dmnd", "enzyme.db", "enzyme.dmnd"]
 
     rule all:
         input:

@@ -229,24 +229,24 @@ def eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
     logging.info("Complete")
 
 
-def expazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
+def enzyme_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length,
                    max_evalue, top_fraction, max_hits, table_name):
-    """Parse BLAST hits from ExPAZy reference database.
+    """Parse BLAST hits from ENZYME reference database.
 
     The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
 
         \b
         sort -k1,1 -k12,12rn tsv > sorted_tsv
 
-    Expected columns in the ExPAZy database:
+    Expected columns in the ENZYME database:
 
         \b
         uniprot_entry
         uniparc_entry
-        expazy_ec
-        expazy_name
+        enzyme_ec
+        enzyme_name
 
-    For a given UniParc match, all possible ECs and ExPAZy recommended names are returned in a
+    For a given UniParc match, all possible ECs and ENZYME recommended names are returned in a
     single line separated by '|'.
 
     Args:
@@ -268,7 +268,7 @@ def expazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
     if top_fraction == 1:
         top_fraction = None
 
-    print("contig", "orf", "expazy_ec", "expazy_name", "%s_evalue" % table_name,
+    print("contig", "orf", "enzyme_ec", "enzyme_name", "%s_evalue" % table_name,
           "%s_bitscore" % table_name, sep="\t", file=output)
     with contextlib.closing(sqlite3.connect(namemap)) as conn, gzopen(tsv) as blast_tab_fh:
         cursor = conn.cursor()
@@ -281,7 +281,7 @@ def expazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitsco
 
             # everything could have been filtered out due to user constraints
             if hit_id:
-                cursor.execute('SELECT expazy_ec, expazy_name \
+                cursor.execute('SELECT enzyme_ec, enzyme_name \
                                 FROM %s \
                                 WHERE uniparc_entry="%s"' % (table_name, hit_id))
                 ecs, names = cursor.fetchone()

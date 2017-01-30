@@ -411,14 +411,15 @@ rule counts_per_region:
         summary = "{sample}/{assembler}/annotation/orfs/{sample}.CDS.summary.txt",
         counts = "{sample}/{assembler}/annotation/orfs/{sample}.CDS.txt"
     params:
-        min_read_overlap = config["annotation"].get("minimum_overlap", 20)
+        min_read_overlap = config["annotation"].get("minimum_overlap", 20),
+        verse_mode = config["annotation"].get("verse_mode", 5)
     log:
         "{sample}/{assembler}/logs/counts_per_region.log"
     threads:
         config.get("threads", 1)
     shell:
         """{SHPFXM} verse -T {threads} --minReadOverlap {params.min_read_overlap} \
-               --singleEnd -t CDS -z 1 -a {input.gtf} \
+               --singleEnd -t CDS -z {params.verse_mode} -a {input.gtf} \
                -o {wildcards.sample}/{wildcards.assembler}/annotation/orfs/{wildcards.sample} \
                {input.bam} > {log}"""
 

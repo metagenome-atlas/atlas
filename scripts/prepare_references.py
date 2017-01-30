@@ -252,9 +252,6 @@ def prepare_cazy(faminfo, cazydb_fasta, out_map, out_fasta):
         http://csbl.bmb.uga.edu/dbCAN/download/CAZyDB.07152016.fa
 
     """
-    expazy = set()
-    uniprot_to_uniparc = {}
-
     click.echo("parsing %s" % faminfo)
     fam_info = {}
     with open(faminfo) as fh:
@@ -293,13 +290,13 @@ def prepare_cazy(faminfo, cazydb_fasta, out_map, out_fasta):
             print(name, meta["cazy_family"], cazy_class, meta["ecs"], sep="\t", file=omap)
 
 
-@cli.command("prepare-ec", short_help="prepares EC reference from expazy")
+@cli.command("prepare-enzyme", short_help="prepares EC reference from ENZYME")
 @click.argument("enzyme_dat", click.Path(exists=True))
 @click.argument("uniparc_map", click.Path(exists=True))
 @click.argument("uniparc_fasta", click.Path(exists=True))
 @click.argument("out_map")
 @click.argument("out_fasta")
-def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
+def prepare_enzyme(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
     """
 
     enzyme_dat:
@@ -318,7 +315,7 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
         ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/uniparc/uniparc_active.fasta.gz
 
     """
-    expazy = set()
+    enzyme = set()
     uniprot_to_uniparc = {}
 
     click.echo("parsing %s" % uniparc_map)
@@ -375,7 +372,7 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                         uniparc_id = uniprot_to_uniparc[uniprot_entry]
 
                         uniparc_mappings[uniparc_id].append([uniprot_entry, ec_id, recommended_name])
-                        expazy.add(uniparc_id)
+                        enzyme.add(uniparc_id)
 
     with open(out_map, "w") as ofh:
         for uniparc_id, meta in uniparc_mappings.items():
@@ -397,7 +394,7 @@ def prepare_ec(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
     with gzip.open(uniparc_fasta, 'rt') as fh, open(out_fasta, "w") as ofh:
         for name, seq in read_fasta(fh):
             name = name.partition(" ")[0]
-            if name in expazy:
+            if name in enzyme:
                 print(format_fasta_record(name, seq), file=ofh)
 
 

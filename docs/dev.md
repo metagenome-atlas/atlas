@@ -61,13 +61,13 @@ sqlite> create table eggnog (uniprot_ac text, eggnog_ssid_b text PRIMARY KEY, eg
 sqlite> .import eggnog4_nonredundant.map eggnog
 ```
 
-# EXPAZY
+# ENZYME
 
 ```
-sqlite> .open expazy.db
+sqlite> .open enzyme.db
 sqlite> .mode tabs
-sqlite> create table expazy (uniparc_entry text PRIMARY KEY, uniprot_entry text, expazy_ec text, expazy_name text);
-sqlite> .import expazy.map expazy
+sqlite> create table enzyme (uniparc_entry text PRIMARY KEY, uniprot_entry text, enzyme_ec text, enzyme_name text);
+sqlite> .import enzyme.map enzyme
 ```
 
 # DBCAN
