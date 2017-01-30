@@ -329,7 +329,7 @@ def prepare_enzyme(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
 
                 if not uniprot_entry or "obsolete" in uniprot_entry: continue
                 if uniprot_entry in uniprot_to_uniparc:
-                    print("wtf", uniprot_entry, line)
+                    print("Uniprot Entry", uniprot_entry, "is not unique", "\nLINE:", line)
                     sys.exit(1)
 
                 uniprot_to_uniparc[uniprot_entry] = toks[0]
