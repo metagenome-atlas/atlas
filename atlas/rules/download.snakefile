@@ -25,7 +25,7 @@ def touch(fname, times=None):
 
 rule transfer_files:
     output:
-        "%s/{filename}" % OUTDIR
+        "%s/{filename}" % config["db_dir"]
     run:
         shell("curl 'ftp://{USERNAME}:{PASSWORD}@ftp.pnl.gov/outgoing/atlas/{wildcards.filename}' -s > {output}")
         shell("curl 'ftp://{USERNAME}:{PASSWORD}@ftp.pnl.gov/outgoing/atlas/{wildcards.filename}.md5' -s > {output}.md5")
@@ -39,4 +39,4 @@ rule transfer_files:
 
 onsuccess:
     print(("All databases have downloaded and validated successfully.\nWhen generating your "
-           "configuration file, use '--database-dir %s'") % OUTDIR)
+           "configuration file, use '--database-dir %s'") % config["db_dir"])

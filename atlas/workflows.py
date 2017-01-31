@@ -29,10 +29,11 @@ def assemble(config, jobs, out_dir, dryrun=False):
 def download(jobs, out_dir):
     out_dir = os.path.realpath(out_dir)
 
-    cmd = ("snakemake -s {snakefile} -d {parent_dir} -p -j {jobs} --config "
-           "db_dir='{out_dir}' workflow=download --").format(snakefile=get_snakefile(),
+    cmd = ("snakemake -s {snakefile} -d {parent_dir} -p -j {jobs} --nolock --rerun-incomplete "
+           "--config db_dir='{out_dir}' workflow=download --").format(snakefile=get_snakefile(),
                                                              parent_dir=os.path.dirname(out_dir),
                                                              jobs=jobs,
                                                              out_dir=out_dir)
+
     logging.info("Executing: " + cmd)
     check_call(cmd, shell=True)
