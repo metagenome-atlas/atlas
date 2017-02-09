@@ -5,6 +5,7 @@ dependencies:
     - bbmap
     - click
     - diamond
+    - maxbin2
     - megahit
     - pandas
     - prodigal
