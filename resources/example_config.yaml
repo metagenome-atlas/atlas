@@ -34,9 +34,11 @@ samples:
 
 tmpdir: /scratch
 # sets threads for all methods that are not single-threaded
-threads: 23
+threads: 24
 # shell command prefix; useful for unconventional job queue situations
-# prefix: "srun --exclusive -N1 -n1 -c"
+# variables can be replaced from any top-level key in the configuration, e.g.
+# __threads__ is replaced with threads defined above
+# prefix: "srun --exclusive -N1 -n1 -c__threads__"
 preprocessing:
 
     # fastas to parse into kmers which are then trimmed from the sequences
@@ -123,7 +125,9 @@ annotation:
     # when counting reads aligning to ORFs, require at least this many bp
     # overlapping the ORF
     minimum_overlap: 20
-
+    maxbin_max_iteration: 50
+    maxbin_min_contig_length: 500
+    maxbin_prob_threshold: 0.9
     references:
         eggnog:
             # non-tree based reference requires namemap database and fasta
