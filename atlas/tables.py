@@ -15,7 +15,8 @@ MERGED_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                  "cazy_class", "cazy_ec", "cog_protein_id", "cog_id",
                  "cog_functional_class", "cog_annotation",
                  "cog_functional_class_description"]
-
+# minus the sam/bam file name which is the last column
+COUNTS_HEADER = ["Geneid", "Chr", "Start", "End", "Strand", "Length"]
 
 def merge_tables(tables, output):
     """Takes the output from parsers and combines them into a single TSV table.
@@ -90,10 +91,10 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
     merged data is the result of `merge-tables`. Count data is a TSV formatted with a header:
 
         \b
-        gene  count
-        orf1  10
-        orf2  7
-        orf3  9
+        Geneid Chr Start  End Strand Length /path/example.bam
+        orf1     1     1  500      +    500                50
+        orf2     1   601  900      +    300               300
+        orf3     1  1201 1500      +    300               200
 
     `combinations` are specified as a JSON string with key to values pairs, e.g.:
 
@@ -144,9 +145,11 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
 
     def _merge_counts_annotations(count_file, merged_file):
         """Reads input files, creates temporary dataframes, and performs the merge."""
-        count_df = _get_valid_dataframe(count_file, ["gene", "count"], sep="\t")
+        count_df = _get_valid_dataframe(count_file, COUNTS_HEADER, sep="\t")
+        # rename the sample file path to "count"
+        count_df.rename(columns={count_df.columns[:-1]:"count"}, inplace=True)
         merged_df = _get_valid_dataframe(merged_file, MERGED_HEADER, sep="\t")
-        df = pd.merge(left=count_df, right=merged_df, how="left", left_on="gene", right_on="orf")
+        df = pd.merge(left=count_df, right=merged_df, how="left", left_on=COUNTS_HEADER[0], right_on=MERGED_HEADER[1])
         return df
 
     try:
