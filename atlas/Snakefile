@@ -4,6 +4,7 @@ concatenate into single file; push through the remainder of the workflow
 these qc'd files are then used for counts per sample across the assembled contigs
 """
 import os
+import re
 import sys
 import tempfile
 
@@ -66,9 +67,10 @@ def coassembly_alignments(config, assembler):
     bams = []
     for coassembly, samples in config["samples"]["coassemblies"].items():
         for s in samples:
-            bams.append("coassemblies/{coassembly}/{assembler}/annotation/{sample}.bam".format(coassembly=coassembly,
-                                                                                               assembler=assembler,
-                                                                                               sample=s))
+            bams.append(("coassemblies/{coassembly}/{assembler}/annotation"
+                         "/{sample}.bam").format(coassembly=coassembly,
+                                                 assembler=assembler,
+                                                 sample=s))
     return bams
 
 
@@ -77,16 +79,32 @@ def coassembly_count_tables(config, tables, assembler):
     for coassembly, samples in config["samples"]["coassemblies"].items():
         for s in samples:
             for t in tables:
-                expected_tables.append("coassemblies/{coassembly}/{assembler}/count_tables/{sample}/{sample}_{table}.tsv".format(coassembly=coassembly,
-                                                                                                                                 assembler=assembler,
-                                                                                                                                 sample=s,
-                                                                                                                                 table=t))
+                expected_tables.append(("coassemblies/{coassembly}/{assembler}/count_tables"
+                                        "/{sample}/{sample}_{table}.tsv").format(coassembly=coassembly,
+                                                                                 assembler=assembler,
+                                                                                 sample=s,
+                                                                                 table=t))
     return expected_tables
 
 
+def get_shell_prefix(config, override={}):
+    pfx = config.get("prefix")
+    if not pfx:
+        return ""
+
+    keys = re.findall(r"__(\w+)__", pfx)
+    for k in keys:
+        if k in override:
+            v = override[k]
+        else:
+            v = config.get(k, "")
+        pfx = pfx.replace("__{key}__".format(key=k), str(v))
+    return pfx
+
+
 if config.get("workflow", "complete") == "complete":
-    SHPFXM = config.get("prefix") + str(config.get("threads")) if config.get("prefix") else ""
-    SHPFXS = config.get("prefix") + "1" if config.get("prefix") else ""
+    SHPFXM = get_shell_prefix(config)
+    SHPFXS = get_shell_prefix(config, {"threads":"1"})
 
     TABLES = get_count_tables(config, "summary_counts")
     TMPDIR = get_temp_dir(config)
@@ -131,6 +149,9 @@ if config.get("workflow", "complete") == "complete":
                 expand("{sample}/{assembler}/stats/final_contig_stats.txt",
                     sample=SAMPLES,
                     assembler=ASSEMBLER),
+                expand("{sample}/{assembler}/genomic_bins/{sample}.summary",
+                    sample=SAMPLES,
+                    assembler=ASSEMBLER),
                 expand("{sample}/{assembler}/annotation/{reference}/{sample}_hits.tsv",
                     sample=SAMPLES,
                     assembler=ASSEMBLER,
@@ -162,6 +183,9 @@ if config.get("workflow", "complete") == "complete":
                     coassembly=COASSEMBLIES,
                     assembler=ASSEMBLER),
                 expand("coassemblies/{coassembly}/{assembler}/{coassembly}_contigs.fasta",
+                    coassembly=COASSEMBLIES,
+                    assembler=ASSEMBLER),
+                expand("coassemblies/{coassembly}/{assembler}/genomic_bins/{coassembly}.summary",
                     coassembly=COASSEMBLIES,
                     assembler=ASSEMBLER),
                 coassembly_alignments(config, get_assembler(config)),
@@ -197,6 +221,9 @@ if config.get("workflow", "complete") == "complete":
                     sample=SAMPLES,
                     assembler=ASSEMBLER),
                 expand("{sample}/{assembler}/stats/final_contig_stats.txt",
+                    sample=SAMPLES,
+                    assembler=ASSEMBLER),
+                expand("{sample}/{assembler}/genomic_bins/{sample}.summary",
                     sample=SAMPLES,
                     assembler=ASSEMBLER),
                 expand("{sample}/{assembler}/annotation/{reference}/{sample}_hits.tsv",

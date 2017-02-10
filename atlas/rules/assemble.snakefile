@@ -27,6 +27,15 @@ def gff_to_gtf(gff_in, gtf_out):
             print(*toks, sep="\t", file=fh)
 
 
+def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
+    with open(tsv_in) as fi, open(tsv_out, "w") as fo:
+        # header
+        next(fi)
+        for line in fi:
+            toks = line.strip().split("\t")
+            print(toks[0], toks[1], file=fo)
+
+
 def read_fasta(fh):
     """Fasta iterator.
 
@@ -145,6 +154,7 @@ rule error_correction:
 
 
 rule decontamination:
+    # verify implications of no disk index when using very large reference
     input:
         "{sample}/quality_control/error_correction/{sample}_pe.fastq.gz"
     output:
@@ -164,7 +174,7 @@ rule decontamination:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbsplit.sh {params.refs_in} in={input} outu={output.clean} \
+        """{SHPFXM} bbsplit.sh nodisk=t {params.refs_in} in={input} outu={output.clean} \
                {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
                threads={threads} k={params.k} local=t 2> {log}"""
@@ -303,7 +313,7 @@ rule filter_by_coverage:
         covstats = "{sample}/{assembler}/stats/prefilter_coverage_stats.txt"
     output:
         fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
-        removed_names = "{sample}/{assembler}/{sample}_discarded_contigs.txt"
+        removed_names = "{sample}/{assembler}/{sample}_discarded_contigs.fasta"
     params:
         minc = config["assembly"].get("minc", 5),
         minp = config["assembly"].get("minp", 40),
@@ -341,7 +351,40 @@ rule contig_coverage_stats:
                out={wildcards.sample}/{wildcards.assembler}/annotation/{wildcards.sample}.sam \
                mappedonly=t threads={threads} bhist={output.bhist} bqhist={output.bqhist} \
                mhist={output.mhist} gchist={output.gchist} statsfile={output.statsfile} \
-               covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3 2> {log}"""
+               covstats={output.covstats} mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=all \
+               secondary=t ssao=t maxsites=10 2> {log}"""
+
+
+rule make_maxbin_abundance_file:
+    input:
+        "{sample}/{assembler}/stats/postfilter_coverage_stats.txt"
+    output:
+        "{sample}/{assembler}/genomic_bins/{sample}_contig_coverage.tsv"
+    run:
+        bb_cov_stats_to_maxbin(input[0], output[0])
+
+
+rule run_maxbin:
+    input:
+        fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
+        abundance = "{sample}/{assembler}/genomic_bins/{sample}_contig_coverage.tsv"
+    output:
+        # fastas will need to be dynamic if we do something with them at a later time
+        summary = "{sample}/{assembler}/genomic_bins/{sample}.summary",
+        marker = "{sample}/{assembler}/genomic_bins/{sample}.marker"
+    params:
+        mi = config["annotation"].get("maxbin_max_iteration", 50),
+        mcl = config["annotation"].get("maxbin_min_contig_length", 500),
+        pt = config["annotation"].get("maxbin_prob_threshold", 0.9)
+    log:
+        "{sample}/{assembler}/logs/maxbin2.log"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """{SHPFXM} run_MaxBin.pl -contig {input.fasta} -abund {input.abundance} \
+            -out {wildcards.sample}/{wildcards.assembler}/genomic_bins/{wildcards.sample} \
+            -min_contig_length {params.mcl} -thread {threads} -prob_threshold {params.pt} \
+            -max_iteration {params.mi} > {log}"""
 
 
 rule sam_to_bam:
@@ -352,7 +395,8 @@ rule sam_to_bam:
    threads:
        config.get("threads", 1)
    shell:
-       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} | samtools sort -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
+              | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
 
 
 rule create_bam_index:
@@ -408,20 +452,20 @@ rule counts_per_region:
         bam = "{sample}/{assembler}/annotation/{sample}.bam",
         bai = "{sample}/{assembler}/annotation/{sample}.bam.bai"
     output:
-        summary = "{sample}/{assembler}/annotation/orfs/{sample}.CDS.summary.txt",
-        counts = "{sample}/{assembler}/annotation/orfs/{sample}.CDS.txt"
+        summary = "{sample}/{assembler}/annotation/orfs/{sample}_counts.summary",
+        counts = "{sample}/{assembler}/annotation/orfs/{sample}_counts.txt"
     params:
-        min_read_overlap = config["annotation"].get("minimum_overlap", 20),
-        verse_mode = config["annotation"].get("verse_mode", 5)
+        min_read_overlap = config["annotation"].get("minimum_overlap", 1),
+        paired_mode = lambda wc: "-p" if config["samples"][wc.sample].get("paired", True) else "",
+        multi_mapping = "-M" if config["annotation"].get("multi_mapping", False) else "",
+        primary_only = "--primary" if config["annotation"].get("primary_only", False) else ""
     log:
         "{sample}/{assembler}/logs/counts_per_region.log"
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} verse -T {threads} --minReadOverlap {params.min_read_overlap} \
-               --singleEnd -t CDS -z {params.verse_mode} -a {input.gtf} \
-               -o {wildcards.sample}/{wildcards.assembler}/annotation/orfs/{wildcards.sample} \
-               {input.bam} > {log}"""
+        """{SHPFXM} featureCounts {params.paired_mode} -T {threads} {params.multi_mapping} -t CDS \
+               -g gene_id -a {input.gtf} -o {output.counts} {input.bam} > {log}"""
 
 
 rule split:

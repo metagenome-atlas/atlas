@@ -1,7 +1,9 @@
 import json
+import pandas as pd
 import os
 import re
 import sys
+from collections import defaultdict
 from itertools import groupby
 
 
@@ -15,6 +17,20 @@ def gff_to_gtf(gff_in, gtf_out):
             gene_id = toks[0] + "_" + orf
             toks[-1] = 'gene_id "%s"; %s' % (gene_id, toks[-1])
             print(*toks, sep="\t", file=fh)
+
+
+def coassembly_bb_cov_stats_to_maxbin(tsvs_in, tsv_out):
+    vals = defaultdict(float)
+    for tsv in tsvs_in:
+        with open(tsv) as fh:
+            next(fh)
+            # cols: #ID,Avg_fold,Length,Ref_GC,Covered_percent,Covered_bases,Plus_reads,Minus_reads,Read_GC,Median_fold,Std_Dev
+            for line in fh:
+                toks = line.strip().split("\t")
+                vals[toks[0]] += float(toks[1])
+    with open(tsv_out, "w") as fh:
+        for name, fold in vals.items():
+            print(name, fold, sep="\t", file=fh)
 
 
 def read_fasta(fh):
@@ -227,7 +243,7 @@ rule coassembly_contig_filter:
         covstats = "coassemblies/{coassembly}/{ASSEMBLER}/stats/prefilter_coverage_stats.txt"
     output:
         fasta = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_contigs.fasta",
-        removed_names = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_discarded_contigs.txt"
+        removed_names = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_discarded_contigs.fasta"
     params:
         minc = config["assembly"].get("minc", 5),
         minp = config["assembly"].get("minp", 40),
@@ -258,10 +274,10 @@ rule coassembly_postfilter_stats:
 rule coassembly_sample_mapping:
     input:
         fasta = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_contigs.fasta",
-        # verify samples
         fastq = "{sample}/quality_control/decontamination/{sample}_pe.fastq.gz"
     output:
         sam = temp("coassemblies/{coassembly}/{ASSEMBLER}/annotation/{sample}.sam"),
+        covstats = "coassemblies/{coassembly}/{ASSEMBLER}/stats/{sample}_postfilter_coverage_stats.txt"
     log:
         "coassemblies/{coassembly}/{ASSEMBLER}/logs/{sample}_mapping_stats.log"
     threads:
@@ -269,7 +285,39 @@ rule coassembly_sample_mapping:
     shell:
         """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} trimreaddescriptions=t \
                out={output.sam} mappedonly=t threads={threads} mdtag=t xstag=fs nmtag=t sam=1.3 \
+               local=t ambiguous=all secondary=t ssao=t maxsites=10 covstats={output.covstats} \
                2> {log}"""
+
+
+rule coassembly_make_maxbin_abundance_file:
+    input:
+        lambda wc: expand("coassemblies/{coassembly}/{ASSEMBLER}/stats/{sample}_postfilter_coverage_stats.txt", coassembly=wc.coassembly, ASSEMBLER=ASSEMBLER, sample=config["samples"]["coassemblies"].get(wc.coassembly))
+    output:
+        "coassemblies/{coassembly}/{ASSEMBLER}/genomic_bins/{coassembly}_contig_coverage.tsv"
+    run:
+        coassembly_bb_cov_stats_to_maxbin(input, output[0])
+
+
+rule coassembly_run_maxbin:
+    input:
+        fasta = "coassemblies/{coassembly}/{ASSEMBLER}/{coassembly}_contigs.fasta",
+        abundance = "coassemblies/{coassembly}/{ASSEMBLER}/genomic_bins/{coassembly}_contig_coverage.tsv"
+    output:
+        summary = "coassemblies/{coassembly}/{ASSEMBLER}/genomic_bins/{coassembly}.summary",
+        marker = "coassemblies/{coassembly}/{ASSEMBLER}/genomic_bins/{coassembly}.marker"
+    params:
+        mi = config["annotation"].get("maxbin_max_iteration", 50),
+        mcl = config["annotation"].get("maxbin_min_contig_length", 500),
+        pt = config["annotation"].get("maxbin_prob_threshold", 0.9)
+    log:
+        "coassemblies/{coassembly}/{ASSEMBLER}/logs/maxbin2.log"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """{SHPFXM} run_MaxBin.pl -contig {input.fasta} -abund {input.abundance} \
+            -out coassemblies/{wildcards.coassembly}/{ASSEMBLER}/genomic_bins/{wildcards.coassembly} \
+            -min_contig_length {params.mcl} -thread {threads} -prob_threshold {params.pt} \
+            -max_iteration {params.mi} > {log}"""
 
 
 rule coassembly_sam_to_bam:
@@ -280,7 +328,9 @@ rule coassembly_sam_to_bam:
    threads:
        config.get("threads", 1)
    shell:
-       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} | samtools sort -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} | \
+              samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} \
+                  -O bam -"""
 
 
 rule coassembly_index_bam:
@@ -327,19 +377,20 @@ rule coassembly_counts_per_region:
         bam = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/{sample}.bam",
         bai = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/{sample}.bam.bai"
     output:
-        summary = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.summary.txt",
-        counts = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.txt"
+        summary = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}_counts.summary",
+        counts = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}_counts.txt"
     params:
-        min_read_overlap = config["annotation"].get("minimum_overlap", 20)
+        min_read_overlap = config["annotation"].get("minimum_overlap", 1),
+        paired_mode = lambda wc: "-p" if config["samples"][wc.sample].get("paired", True) else "",
+        multi_mapping = "-M" if config["annotation"].get("multi_mapping", False) else "",
+        primary_only = "--primary" if config["annotation"].get("primary_only", False) else ""
     log:
         "coassemblies/{coassembly}/{ASSEMBLER}/logs/counts_per_region.log"
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} verse -T {threads} --minReadOverlap {params.min_read_overlap} \
-               --singleEnd -t CDS -z 1 -a {input.gtf} \
-               -o coassemblies/{wildcards.coassembly}/{ASSEMBLER}/annotation/orfs/{wildcards.sample} \
-               {input.bam} > {log}"""
+        """{SHPFXM} featureCounts {params.paired_mode} -T {threads} {params.multi_mapping} -t CDS \
+               -g gene_id -a {input.gtf} -o {output.counts} {input.bam} > {log}"""
 
 
 rule coassembly_split_orfs:
