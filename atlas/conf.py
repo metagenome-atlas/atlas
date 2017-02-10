@@ -116,13 +116,15 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     annotation = OrderedDict()
     # annotation["translation_table"]
     annotation["minimum_overlap"] = 20
+
+    annotation_references = OrderedDict()
     eggnog = OrderedDict()
     eggnog["namemap"] = os.path.join(database_dir, "%s.db" % EGGNOG)
     eggnog["dmnd"] = os.path.join(database_dir, "%s.dmnd" % EGGNOG)
     eggnog["run_mode"] = "fast"
     eggnog["top_seqs"] = 5
     eggnog["summary_method"] = "best"
-    annotation["eggnog"] = eggnog
+    annotation_references["eggnog"] = eggnog
 
     refseq = OrderedDict()
     refseq["namemap"] = os.path.join(database_dir, "%s.db" % REFSEQ)
@@ -133,7 +135,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     refseq["summary_method"] = "best"
     refseq["aggregation_method"] = "lca-majority"
     refseq["majority_threshold"] = 0.51
-    annotation["refseq"] = refseq
+    annotation_references["refseq"] = refseq
 
     enzyme = OrderedDict()
     enzyme["namemap"] = os.path.join(database_dir, "%s.db" % ENZYME)
@@ -142,7 +144,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     enzyme["top_seqs"] = 2
     enzyme["summary_method"] = "majority"
     enzyme["index_chunks"] = 1
-    annotation["enzyme"] = enzyme
+    annotation_references["enzyme"] = enzyme
 
     cazy = OrderedDict()
     cazy["namemap"] = os.path.join(database_dir, "%s.db" % CAZY)
@@ -151,7 +153,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     cazy["top_seqs"] = 2
     cazy["summary_method"] = "majority"
     cazy["index_chunks"] = 1
-    annotation["cazy"] = cazy
+    annotation_references["cazy"] = cazy
 
     cog = OrderedDict()
     cog["namemap"] = os.path.join(database_dir, "%s.db" % COG)
@@ -160,8 +162,9 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     cog["top_seqs"] = 2
     cog["summary_method"] = "majority"
     cog["index_chunks"] = 1
-    annotation["cog"] = cog
+    annotation_references["cog"] = cog
 
+    annotation["references"] = annotation_references
     conf["annotation"] = annotation
 
     summary_counts = OrderedDict()
