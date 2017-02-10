@@ -154,7 +154,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     annotation["cazy"] = cazy
 
     cog = OrderedDict()
-    cog["namemap"] = os.path.join(database_dir, "%s.db", COG)
+    cog["namemap"] = os.path.join(database_dir, "%s.db" % COG)
     cog["dmnd"] = os.path.join(database_dir, "%s.dmnd" % COG)
     cog["run_mode"] = "fast"
     cog["top_seqs"] = 2
