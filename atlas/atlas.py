@@ -290,20 +290,22 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
-@cli.command("assemble", short_help="assembly workflow")
+@cli.command("assemble", context_settings=dict(ignore_unknown_options=True), short_help="assembly workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
-def run_assemble(config, jobs, out_dir, dryrun):
-    assemble(os.path.realpath(config), jobs, out_dir, dryrun)
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_assemble(config, jobs, out_dir, dryrun, snakemake_args):
+    assemble(os.path.realpath(config), jobs, out_dir, dryrun, snakemake_args)
 
 
-@cli.command("download", short_help="download reference files")
+@cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.join(os.path.realpath("."), "databases"), show_default=True, help="database download directory")
-def run_download(jobs, out_dir):
-    download(jobs, out_dir)
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_download(jobs, out_dir, snakemake_args):
+    download(jobs, out_dir, snakemake_args)
 
 
 if __name__ == "__main__":
