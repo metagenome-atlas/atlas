@@ -480,7 +480,7 @@ rule coassembly_merge_blast:
 rule coassembly_aggregate_counts:
     input:
         merged = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/{coassembly}_merged_assignments.tsv",
-        counts = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}.CDS.txt"
+        counts = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}_counts.txt"
     output:
         ["coassemblies/{coassembly}/{ASSEMBLER}/count_tables/{sample}/{sample}_%s.tsv" % i for i in TABLES]
     params:

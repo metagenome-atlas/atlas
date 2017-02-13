@@ -555,7 +555,7 @@ rule merge_blast:
 rule aggregate_counts:
     input:
         merged = "{sample}/{assembler}/annotation/{sample}_merged_assignments.tsv",
-        counts = "{sample}/{assembler}/annotation/orfs/{sample}.CDS.txt"
+        counts = "{sample}/{assembler}/annotation/orfs/{sample}_counts.txt"
     output:
         ["{sample}/{assembler}/count_tables/{sample}_%s.tsv" % i for i in TABLES]
     params:
