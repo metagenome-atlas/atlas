@@ -452,7 +452,7 @@ rule counts_per_region:
         bam = "{sample}/{assembler}/annotation/{sample}.bam",
         bai = "{sample}/{assembler}/annotation/{sample}.bam.bai"
     output:
-        summary = "{sample}/{assembler}/annotation/orfs/{sample}_counts.summary",
+        summary = "{sample}/{assembler}/annotation/orfs/{sample}_counts.txt.summary",
         counts = "{sample}/{assembler}/annotation/orfs/{sample}_counts.txt"
     params:
         min_read_overlap = config["annotation"].get("minimum_overlap", 1),
@@ -465,7 +465,7 @@ rule counts_per_region:
         config.get("threads", 1)
     shell:
         """{SHPFXM} featureCounts {params.paired_mode} -T {threads} {params.multi_mapping} -t CDS \
-               -g gene_id -a {input.gtf} -o {output.counts} {input.bam} > {log}"""
+               -g gene_id -a {input.gtf} -o {output.counts} {input.bam} 2> {log}"""
 
 
 rule split:

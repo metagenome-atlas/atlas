@@ -377,7 +377,7 @@ rule coassembly_counts_per_region:
         bam = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/{sample}.bam",
         bai = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/{sample}.bam.bai"
     output:
-        summary = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}_counts.summary",
+        summary = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}_counts.txt.summary",
         counts = "coassemblies/{coassembly}/{ASSEMBLER}/annotation/orfs/{sample}_counts.txt"
     params:
         min_read_overlap = config["annotation"].get("minimum_overlap", 1),
@@ -390,7 +390,7 @@ rule coassembly_counts_per_region:
         config.get("threads", 1)
     shell:
         """{SHPFXM} featureCounts {params.paired_mode} -T {threads} {params.multi_mapping} -t CDS \
-               -g gene_id -a {input.gtf} -o {output.counts} {input.bam} > {log}"""
+               -g gene_id -a {input.gtf} -o {output.counts} {input.bam} 2> {log}"""
 
 
 rule coassembly_split_orfs:
