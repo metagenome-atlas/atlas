@@ -1,67 +1,80 @@
 Annotation
 ==========
 
-Any column later specified in summary tables requires that its reference be
-specified. For instance, specifying taxonomic breakdowns across EC will require
-RefSeq for the taxonomic assignments and ENZYME for the EC data.
+Translation Table
+-----------------
 
-Minimal working configuration:
-
-featureCounts Mode:
-
--z 0   featureCounts(default): Quantify by overlapping and voting.
-           If the read pair overlaps multiple genes, it will assign the read pair
-           to the gene that is overlapped by both reads.
-
-           Please refer to the SUBREAD users guide for more information.
-           This mode is developed by Drs. Yang Liao, Gordon K Smyth and Wei Shi.
-           http://bioinf.wehi.edu.au/featureCounts.
+By default, translation table 11 is used to find open reading frames among
+passing contig sequences. Other codes are available at
+https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi.
 
 
-HTseq Modes:
+Minimum Overlap
+---------------
 
--z 1   HTSeq-Union: Quantify by overlapping.
-           If the read (or read pair) overlaps multiple genes, it will be set
-           ambiguous. Only reads that overlap one gene will be assigned.
+When counting reads overlapping coding sequence, require this much read
+overlap.
 
--z 2   HTSeq-Intersection_strict: Quantify by overlapping and intersection.
-           This mode requires the assigned gene to cover every base of the read.
-           If more than one such genes exist,  the read is set ambiguous.
+**Default: 1**
 
--z 3   HTSeq-Intersection_nonempty: Quantify by overlapping and intersection.
-           This mode does NOT require the assigned gene to cover every base of
-           the read, but the gene must cover all sections of the read that overlap
-           genes. If more than one such genes exist, the read is set ambiguous.
+::
 
-           Please refer to the HTSeq documentation for more information.
-           HTSeq is developed by Dr. Simon Anders at EMBL Heidelberg.
-           http://www-huber.embl.de/HTSeq/doc/count.html#count.
-           The actual implementation of the HTseq scheme is different in VERSE.
+    annotation:
+        minimum_overlap: 1
 
 
-VERSE Modes:
+Restricting Counts
+------------------
 
--z 4   Union_strict: A combination of HTSeq-Union and HTSeq-Intersection_strict.
-           This mode requires every base of the read to overlap one and only one gene.
-           This mode is the most conservative.
+Counts can be restricted to primary alignments only using ``primary_only`` in
+addition to being able to control behavior associated with multi-mapped reads.
+As the alignment stage does allow up to 10 possible hits per sequence, one may
+want to restrict their counts using ``multi_mapping``.
 
--z 5   Cover_length: Quantify by overlapping length comparison.
-           After getting a list of overlapping genes, VERSE will calculate the
-           overlapping length of each gene and assign the read to the most covered
-           gene. One can use --minDifAmbiguous to set the minimum allowed coverage
-           difference between the most covered gene and the gene with the second
-           highest coverage. If the difference is not large enough the read will
-           be set ambiguous.
+Defaults are reflected in the example::
+
+::
+
+    annotation:
+        primary_only: false
+        multi_mapping: true
+
+
+``MaxBin`` Options
+------------------
+
+Used to set iterations, minimum contig length to be considered, and the
+probability threshold for EM final classification.
+
+::
+
+    annotation:
+        maxbin_max_iteration: 50
+        maxbin_min_contig_length: 500
+        maxbin_prob_threshold: 0.9
+
+
+
+References
+----------
+
+Any combination of these annotation tables works, but each provides data that
+can later be subset downstream. Any column later specified in summary tables
+requires that its reference be specified. For instance, specifying taxonomic
+breakdowns across EC will require RefSeq for the taxonomic assignments and
+ENZYME for the most specific EC data.
+
+For each reference, one can specify options that are sent to DIAMOND and others
+that are used when selecting the best annotation hit or performing an LCA.
+
+
+
+EggNOG version 4.5
+``````````````````
+
+
 
 annotation:
-    ## ORFs
-    # https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi
-    translation_table: 11
-    # when counting reads aligning to ORFs, require at least this many bp
-    # overlapping the ORF
-    minimum_overlap: 20
-    verse_mode: 5
-
     references:
         eggnog:
             # non-tree based reference requires namemap database and fasta
