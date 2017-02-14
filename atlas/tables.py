@@ -145,7 +145,7 @@ def count_tables(prefix, merged, counts, combinations, suffix=".tsv"):
 
     def _merge_counts_annotations(count_file, merged_file):
         """Reads input files, creates temporary dataframes, and performs the merge."""
-        count_df = _get_valid_dataframe(count_file, COUNTS_HEADER, sep="\t")
+        count_df = _get_valid_dataframe(count_file, COUNTS_HEADER, sep="\t", comment="#")
         # rename the sample file path to "count"
         count_df.rename(columns={count_df.columns[:-1]:"count"}, inplace=True)
         merged_df = _get_valid_dataframe(merged_file, MERGED_HEADER, sep="\t")
