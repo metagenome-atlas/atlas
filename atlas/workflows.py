@@ -16,8 +16,9 @@ def assemble(config, jobs, out_dir, dryrun, snakemake_args):
     if not validate_assembly_config(config):
         sys.exit("The configuration file is invalid.")
 
-    cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --configfile '{config}' "
-           "--nolock --config workflow=complete {args} --{dryrun}").format(snakefile=get_snakefile(),
+    cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
+           "--configfile '{config}' --nolock "
+           "--config workflow=complete {args} --{dryrun}").format(snakefile=get_snakefile(),
                                                                     out_dir=out_dir,
                                                                     jobs=jobs,
                                                                     config=config,
