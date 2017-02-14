@@ -14,3 +14,5 @@ dependencies:
     - snakemake
     - spades
     - verse
+
+# python 3.5 with pandas, sqlite3
