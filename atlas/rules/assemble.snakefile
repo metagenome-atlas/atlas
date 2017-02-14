@@ -33,7 +33,7 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
         next(fi)
         for line in fi:
             toks = line.strip().split("\t")
-            print(toks[0], toks[1], file=fo)
+            print(toks[0], toks[1], sep="\t", file=fo)
 
 
 def read_fasta(fh):
