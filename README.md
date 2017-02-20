@@ -1,4 +1,4 @@
-# ATLAS
+# ATLAS (Automatic Tool for Local Assembly Structures)
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
