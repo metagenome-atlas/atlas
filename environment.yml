@@ -1,11 +1,13 @@
 name: atlas_env
 channels:
     - bioconda
+    - brwnj
 dependencies:
+    - python=3.5
     - bbmap
     - click
     - diamond
-    - maxbin2
+    - brwnj::maxbin2
     - megahit
     - pandas
     - prodigal
@@ -14,5 +16,3 @@ dependencies:
     - snakemake
     - spades
     - verse
-
-# python 3.5 with pandas, sqlite3
