@@ -1,5 +1,7 @@
 # ATLAS
 
+[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
+
 # Install
 
 All dependencies are installed via [conda](https://www.continuum.io/downloads) using the [bioconda](https://github.com/bioconda/bioconda-recipes) channel.
