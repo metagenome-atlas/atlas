@@ -115,6 +115,11 @@ atlas assemble config.yaml
 By default, this will write results into our current working directory across
 the total number of CPU cores available.
 
+## Citing ATLAS
+
+Richard Allen White III, Joseph Brown, Sean Colby, Christopher C. Overall, Joon-Yong Lee, Jeremy Zucker, Kurt R. Glaesemann, Christer Jansson, Janet K Jansson. ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data. PeerJ Preprints.
+
+Richard Allen White III, Joseph Brown, Sean Colby, Christopher C. Overall, Joon-Yong Lee, Jeremy Zucker, Kurt R. Glaesemann, Christer Jansson, Janet K Jansson. ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data. Bioinfomatics. Submitted.
 
 # Disclaimer
 
