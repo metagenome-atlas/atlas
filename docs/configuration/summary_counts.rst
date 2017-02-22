@@ -1,70 +1,62 @@
 Summary Counts
 ==============
 
-summary_counts:
-    # Possible columns table column values upon which to aggregate:
-        # contig, orf
+ATLAS will generate a single annotation table with all annotation metadata
+and counts per open reading frame. ``summary_counts`` is configurable to
+map count data across the annotation metadata in various ways.
 
-        # from refseq:
-        # taxonomy, orf_taxonomy, refseq_product
+To summarize ENZYME ECs across species, you will have needed to use RefSeq and
+ENZYME databases then use::
 
-        # from eggnog:
-        # uniprot_ac, eggnog_ssid_b, eggnog_species_id, uniprot_id, cog_func_id, cog_id,
-        # cog_product, cog_level1_code, cog_level1_name, cog_level2_name,
-        # ko_id, ko_level1_name, ko_level2_name, ko_level3_id,
-        # ko_level3_name, ko_gene_symbol, ko_product, ko_ec
+    summary_counts:
+        taxonomy:
+            levels:
+                - species
+            ENZYME:
+                - enzyme_name
+                - enzyme_ec
 
-        # from ENZYME:
-        # enzyme_name, enzyme_ec
+Taxonomic levels include:
 
-        # from cazy (dbcan):
-        # cazy_gene, cazy_family, cazy_class, cazy_ec
+    + kingdom
+    + domain
+    + phylum
+    + class
+    + order
+    + family
+    + genus
+    + species
 
-    # this is a special case to allow for taxon level specification
-    taxonomy:
-        # limit taxonomy in classification to the depth specified
-        # possible values: kingdom, domain, phylum, class, order, family, genus, species
-        # all levels if omitted
-        levels:
-            - phylum
-            - class
-            - order
-            - species
-        # tables to generate at these taxonomic levels
-        KO:
-            - ko_id
-            - ko_ec
+Another example is when you do not need taxonomy and just want to see a
+breakdown across CAZy classes::
+
+    summary_counts:
+        CAZy_Families:
+            - cazy_family
+            - cazy_class
+
+Multiple tables can be specified for taxonomic levels and for non-taxonomic
+annotations::
+
+    summary_counts:
+        taxonomy:
+            levels:
+                - phylum
+                - class
+                - order
+                - species
+            COG:
+                - cog_id
+            CAZy_family:
+                - cazy_family
+            ENZYME:
+                - enzyme_name
+                - enzyme_ec
+        CAZY_EC:
+            - cazy_ec
         COG:
             - cog_id
-        CAZy_EC:
-            - cazy_ec
-        CAZy_family:
-            - cazy_family
+            - cog_product
         ENZYME:
             - enzyme_name
             - enzyme_ec
-    KO:
-        - ko_id
-        - ko_gene_symbol
-        - ko_product
-        - ko_ec
-    KO_lvl1:
-        - ko_level1_name
-    KO_lvl2:
-        - ko_level2_name
-    KO_lvl3:
-        - ko_level3_name
-    CAZY_EC:
-        - cazy_ec
-    COG:
-        - cog_id
-        - cog_product
-    COG_lvl1:
-        - cog_level1_name
-        - cog_level2_name
-    ENZYME:
-        - enzyme_name
-        - enzyme_ec
-
-
-# Output
