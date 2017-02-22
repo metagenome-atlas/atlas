@@ -450,7 +450,7 @@ rule coassembly_parse_blast:
         namemap = lambda wc: config["annotation"]["references"][wc.reference]["namemap"],
         treefile = lambda wc: config["annotation"]["references"][wc.reference].get("tree", ""),
         summary_method = lambda wc: config["annotation"]["references"][wc.reference].get("summary_method", "best"),
-        aggregation_method = lambda wc: "--aggregation-method %s" % config["annotation"]["references"][wc.reference].get("aggregation_method", "") if "refseq" in wc.reference else "",
+        aggregation_method = lambda wc: "--aggregation-method %s" % config["annotation"]["references"][wc.reference].get("aggregation_method", "lca-majority") if "refseq" in wc.reference else "",
         majority_threshold = lambda wc: "--majority-threshold %f" % config["annotation"]["references"][wc.reference].get("majority_threshold", 0.51) if "refseq" in wc.reference else "",
         min_identity = lambda wc: config["annotation"]["references"][wc.reference].get("min_identity", "50"),
         min_bitscore = lambda wc: config["annotation"]["references"][wc.reference].get("min_bitscore", "0"),
