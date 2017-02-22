@@ -1,5 +1,5 @@
-Configuration
-=============
+Summary Counts
+==============
 
 summary_counts:
     # Possible columns table column values upon which to aggregate:

@@ -115,7 +115,7 @@ Merge complex bubbles of length <= l*kmer_size and similarity >= s.
 
 
 ``MEGAHIT``: Prune Level
-----------------------
+------------------------
 
 Strength of low depth pruning (0-3).
 

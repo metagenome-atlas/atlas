@@ -18,6 +18,8 @@ ATLAS
     configuration/preprocessing
     configuration/assembly
     configuration/advanced
+    configuration/annotation
+    configuration/summary_counts
 
 
 Indices and tables
