@@ -1,6 +1,6 @@
 # ATLAS (Automatic Tool for Local Assembly Structures)
 
-[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
+[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304) [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
 
 # Install
 
