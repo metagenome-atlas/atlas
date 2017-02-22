@@ -17,9 +17,9 @@ ATLAS
     configuration/threads
     configuration/preprocessing
     configuration/assembly
-    configuration/advanced
     configuration/annotation
     configuration/summary_counts
+    configuration/advanced
 
 
 Indices and tables
