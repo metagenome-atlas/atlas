@@ -31,13 +31,7 @@ In this case, 'my-data' is a directory containing .fastq files similar to::
     ├── Sample-2_R1.fastq.gz
     └── Sample-2_R2.fastq.gz
 
-Paired-end, single-end (currently with some caveats), and interleaved paired-end
-FASTQs are supported.
-
-.. important::
-    Single-end currently works, but parameters to assemblers still need to be
-    altered such that they are not input as interleaved paired-end.
-
+Paired-end, single-end, and interleaved paired-end FASTQs are supported.
 
 Assembly
 --------
