@@ -7,7 +7,7 @@ The workflow and some dependencies require Python 3.5.
 To install::
 
     conda install -c bioconda \
-        bbmap diamond fastqc megahit prodigal samtools snakemake spades verse
+        bbmap diamond fastqc megahit prodigal samtools snakemake spades subread
 
 
 Or as an isolated environment using our `environment.yml` file::
