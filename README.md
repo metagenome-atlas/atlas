@@ -4,6 +4,10 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304) [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
 
+# Detailed Manual
+
+https://pnnl-atlas.readthedocs.io
+
 # Install
 
 All dependencies are installed via [conda](https://www.continuum.io/downloads) using the [bioconda](https://github.com/bioconda/bioconda-recipes) channel.
