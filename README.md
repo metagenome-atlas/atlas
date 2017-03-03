@@ -122,7 +122,7 @@ the total number of CPU cores available.
 
 # Citing ATLAS
 
-If you are publishing results obtained using MerCat, please cite:
+If you are publishing results obtained using ATLAS, please cite:
 
 Richard Allen White III, Joseph Brown, Sean Colby, Christopher C. Overall, Joon-Yong Lee, Jeremy Zucker, Kurt R. Glaesemann, Christer Jansson, Janet K Jansson. ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data. PeerJ Preprints 5:e2843v1 https://doi.org/10.7287/peerj.preprints.2843v1.
 
