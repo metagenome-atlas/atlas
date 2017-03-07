@@ -3,6 +3,9 @@ from os.path import dirname, join
 from setuptools import setup
 
 
+long_description = open('README.rst').read()
+
+
 def get_version(relpath):
   """Read version info from a file without importing it"""
   for line in io.open(join(dirname(__file__), relpath), encoding="cp437"):
@@ -15,14 +18,14 @@ def get_version(relpath):
 
 
 setup(
-    name='atlas',
+    name='pnnl-atlas',
     version=get_version("atlas/__init__.py"),
     url='https://github.com/pnnl/atlas',
     license='MIT',
     author='Joe Brown',
     author_email='joe.brown@pnnl.gov',
-    description='',
-    long_description='',
+    description='ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.',
+    long_description=long_description,
     packages=['atlas'],
     package_data={'': ['atlas/Snakefile',
                        'atlas/rules/assemble.snakefile',
@@ -34,6 +37,7 @@ setup(
         'click',
         'pandas',
         'pyyaml',
+        'snakemake',
     ],
     entry_points={
           'console_scripts': [
