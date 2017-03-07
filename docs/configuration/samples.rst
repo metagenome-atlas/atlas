@@ -39,3 +39,22 @@ single-end sequence data, specify 'paired' as ``false``::
                 - /data/sample-1_pe.fastq.gz
             type: metagenome
             paired: false
+
+
+Defining Coassemblies
+---------------------
+
+To assemble multiple samples into one assembly we need to define
+``coassemblies`` in the ``samples`` section of the configuration::
+
+    samples:
+        sample-1:
+            path:
+                - /data/sample-1_pe.fastq.gz
+        sample-2:
+            path:
+                - /data/sample-2_pe.fastq.gz
+        coassemblies:
+            new-sample-name:
+                - sample-1
+                - sample-2
