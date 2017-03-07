@@ -4,27 +4,30 @@ Install
 All dependencies are installed via conda_ using the bioconda_ channel.
 The workflow and some dependencies require Python 3.5.
 
-To install::
+Using `conda`
+-------------
 
-    conda install -c bioconda \
-        bbmap diamond fastqc megahit prodigal samtools snakemake spades subread
+Add the required channels to ensure dependencies can be downloaded::
+
+    conda config --add channels conda-forge
+    conda config --add channels defaults
+    conda config --add channels r
+    conda config --add channels bioconda
 
 
-Or as an isolated environment using our `environment.yml` file::
+For more information related to bioconda, see: https://bioconda.github.io/
 
-    conda env create -f environment.yml
+Installing dependencies::
+
+    conda install python=3.5 bbmap click diamond \
+        maxbin2 megahit pandas prodigal pyyaml \
+        samtools snakemake spades subread
 
 
-And load and unload that environment using ``source activate atlas_env``
-and ``source deactivate atlas_env``, respectively.
+And install ATLAS::
 
-In the future we plan to push ``atlas`` to Bioconda and PyPI, but currently
-to install you will need to download or clone ``atlas``.
+    pip install pnnl-atlas
 
-Then within that environment and from within the 'atlas' folder::
-
-    cd atlas
-    python setup.py install
 
 Following install, ``atlas`` should be executable::
 
@@ -42,6 +45,18 @@ Following install, ``atlas`` should be executable::
       download      download reference files
       make-config   prepopulate a configuration file with samples and defaults
 
+
+Creating an Environment
+-----------------------
+
+Not necessary, but this can isolate ATLAS dependencies in a separate work
+environment. Either clone the repository or download the file, then::
+
+    conda env create -f environment.yml
+
+
+And load and unload that environment using ``source activate atlas_env``
+and ``source deactivate atlas_env``, respectively.
 
 .. _bioconda: https://github.com/bioconda/bioconda-recipes
 .. _conda: https://www.continuum.io/downloads

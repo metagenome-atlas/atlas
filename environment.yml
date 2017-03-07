@@ -1,13 +1,15 @@
 name: atlas_env
 channels:
     - bioconda
-    - brwnj
+    - r
+    - defaults
+    - conda-forge
 dependencies:
     - python=3.5
     - bbmap
     - click
     - diamond
-    - brwnj::maxbin2
+    - maxbin2
     - megahit
     - pandas
     - prodigal
@@ -15,4 +17,6 @@ dependencies:
     - samtools
     - snakemake
     - spades
-    - verse
+    - subread
+    - pip:
+        - pnnl-atlas

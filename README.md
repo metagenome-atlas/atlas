@@ -1,11 +1,12 @@
 # ATLAS (Automatic Tool for Local Assembly Structures)
 
-![GitHub Logo](ATLAS_final_image.png)
+[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
-# Detailed Manual
+![workflow](resources/images/atlas_workflow.png)
 
-[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304) [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
+# Documentation
 
+[![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
 
 # Install
 
@@ -14,38 +15,29 @@ The workflow and some dependencies require Python 3.5.
 
 ## Using `conda`
 
-To install:
+Add the required channels to ensure dependencies can be downloaded:
 
 ```
-conda install -c bioconda \
-    bbmap diamond fastqc megahit prodigal \
+conda config --add channels conda-forge
+conda config --add channels defaults
+conda config --add channels r
+conda config --add channels bioconda
+```
+
+For more information related to bioconda, see: https://bioconda.github.io/
+
+Installing dependencies:
+
+```
+conda install python=3.5 bbmap click diamond \
+    maxbin2 megahit pandas prodigal pyyaml \
     samtools snakemake spades subread
 ```
 
-Maxbin2 and MEGAHIT for macOS are not current in the bioconda channel. For those dependencies, we've made them available to install as:
+And install ATLAS:
 
 ```
-conda install -c brwnj maxbin2
-```
-
-## Creating an Environment
-
-Not necessary, but this can isolate ATLAS dependencies in a separate work
-environment. Using `environment.yml`:
-
-```
-conda env create -f environment.yml
-```
-
-And load and unload that environment using `source activate atlas_env`
-and `source deactivate atlas_env`, respectively.
-
-## Finishing the Install
-
-Finally, from within the 'atlas' source folder:
-
-```
-python setup.py install
+pip install pnnl-atlas
 ```
 
 Following install, `atlas` should be executable:
@@ -66,7 +58,18 @@ Commands:
   make-config   prepopulate a configuration file with samples and defaults
 ```
 
-ATLAS will soon be pushed to the Anaconda Cloud for easier install.
+
+## Creating an Environment
+
+Not necessary, but this can isolate ATLAS dependencies in a separate work
+environment. Either clone the repository or download the file, then:
+
+```
+conda env create -f environment.yml
+```
+
+And load and unload that environment using `source activate atlas_env`
+and `source deactivate atlas_env`, respectively.
 
 
 # Getting Started
