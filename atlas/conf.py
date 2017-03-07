@@ -67,7 +67,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     logging.info("Found %d samples under %s" % (len(samples), path))
     conf["samples"] = samples
     conf["tmpdir"] = tempfile.gettempdir()
-    conf["database_directory"] = database_dir
+    # conf["database_directory"] = database_dir
     conf["threads"] = multiprocessing.cpu_count() if not threads else threads
     # conf["prefix"]
 
