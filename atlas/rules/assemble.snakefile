@@ -216,7 +216,7 @@ if config.get("assembler", "megahit") == "megahit":
         output:
             temp("{sample}/{assembler}/{sample}_prefilter.contigs.fa")
         params:
-            read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--reads",
+            read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--read",
             memory = config["assembly"].get("memory", 0.90),
             min_count = config["assembly"].get("minimum_count", 2),
             k_min = config["assembly"].get("kmer_min", 21),
