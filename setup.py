@@ -33,12 +33,8 @@ setup(
                        'atlas/rules/reports/sample.snakefile',
                        ]},
     include_package_data=True,
-    install_requires=[
-        'click',
-        'pandas',
-        'pyyaml',
-        'snakemake',
-    ],
+    # install via conda: click, pandas, pyyaml, snakemake
+    install_requires=[],
     entry_points={
           'console_scripts': [
               'atlas = atlas.atlas:cli'
