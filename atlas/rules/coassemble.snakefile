@@ -83,7 +83,7 @@ def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=80):
         print(seq, file=out_handle)
 
 
-def split_fasta(fasta, chunk_size=250000):
+def coassemble_split_fasta(fasta, chunk_size=250000):
     chunk_size = int(chunk_size)
     fasta = os.path.expanduser(fasta)
     root, ext = os.path.splitext(fasta)
@@ -401,7 +401,7 @@ rule coassembly_split_orfs:
     params:
         chunk_size = config["annotation"].get("chunk_size", 250000)
     run:
-        split_fasta(input.faa, chunk_size=params.chunk_size)
+        coassemble_split_fasta(input.faa, chunk_size=params.chunk_size)
 
 
 rule coassembly_diamond_alignments:
