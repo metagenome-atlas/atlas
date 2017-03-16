@@ -226,7 +226,7 @@ if config.get("assembler", "megahit") == "megahit":
             prune_level = config["assembly"].get("prune_level", 2),
             low_local_ratio = config["assembly"].get("low_local_ratio", 0.2),
             min_contig_len = config["assembly"].get("minimum_contig_length", 200),
-            outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=wc.assembler)
+            outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
         log:
             "{sample}/{assembler}/{sample}.log"
         threads:
