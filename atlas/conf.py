@@ -60,7 +60,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     """Write the file `config` and complete the sample names and paths for all files in `path`."""
     represent_dict_order = lambda self, data:  self.represent_mapping('tag:yaml.org,2002:map', data.items())
     yaml.add_representer(OrderedDict, represent_dict_order)
-    path = os.path.realpath(path)
+    path = os.path.realpath(os.path.expanduser(path))
 
     conf = OrderedDict()
     samples = get_sample_files(path, data_type)

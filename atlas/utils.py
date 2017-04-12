@@ -96,7 +96,7 @@ def validate_assembly_config(config):
                 logging.critical("tree reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["tree"])
                 valid = False
             if not os.path.exists(c["annotation"]["references"]["refseq"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["fasta"])
+                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["dmnd"])
                 valid = False
 
         if "cazy" in c["annotation"]["references"]:
@@ -104,7 +104,7 @@ def validate_assembly_config(config):
                 logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["namemap"])
                 valid = False
             if not os.path.exists(c["annotation"]["references"]["cazy"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["fasta"])
+                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["dmnd"])
                 valid = False
 
         if "cog" in c["annotation"]["references"]:
@@ -112,7 +112,7 @@ def validate_assembly_config(config):
                 logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["namemap"])
                 valid = False
             if not os.path.exists(c["annotation"]["references"]["cog"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["fasta"])
+                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["dmnd"])
                 valid = False
 
         if "enzyme" in c["annotation"]["references"]:
@@ -120,7 +120,7 @@ def validate_assembly_config(config):
                 logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["namemap"])
                 valid = False
             if not os.path.exists(c["annotation"]["references"]["enzyme"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["fasta"])
+                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["dmnd"])
                 valid = False
 
         if "eggnog" in c["annotation"]["references"]:
@@ -128,7 +128,7 @@ def validate_assembly_config(config):
                 logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["namemap"])
                 valid = False
             if not os.path.exists(c["annotation"]["references"]["eggnog"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["fasta"])
+                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["dmnd"])
                 valid = False
 
     except KeyError:
