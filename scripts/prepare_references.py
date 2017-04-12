@@ -95,6 +95,136 @@ def cli(obj):
     "Methods to prepare databases for parsing BLAST tabular output."
 
 
+@cli.command("prepare-metacyc", short_help="prepares metacyc mapping files")
+@click.argument("fasta", type=click.Path(exists=True))
+@click.argument("seqids", type=click.Path(exists=True))
+@click.argument("reactions", type=click.Path(exists=True))
+@click.argument("pathwaylinks", type=click.Path(exists=True))
+@click.argument("outmap", type=click.Path())
+@click.argument("outfasta", type=click.Path())
+def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, outmap, outfasta):
+    """
+    # via uniprot
+    fasta uniref100.fasta.gz
+    # via metacyc
+    seqids 20.5/data/uniprot-seq-ids.dat
+    reactions 20.5/data/reactions.data
+    pathwaylinks 20.5/data/pathway-links.dat
+    """
+
+    logging.info("Parsing sequence IDs from %s" % seqids)
+    seqids_obj = ""
+    with open(seqids) as fh:
+        for line in fh:
+            if line.startswith(";;"): continue
+            if not line.strip(): continue
+            seqids_obj += " " + line.strip() if line.strip().startswith('"') else line.strip()
+
+    # strip the first and last parentheses
+    seqids_str = seqids_obj[1:-1]
+
+    # fix the parentheses within entries
+    for reg in re.findall(r'\|(.*?)\|', seqids_obj[1:-1]):
+        # remove parenthesis between pipes
+        seqids_str = seqids_str.replace(reg, reg.replace("(", "").replace(")", ""))
+    seqids_str = seqids_str.replace("|", "")
+
+    logging.info("Parsing pathway links from %s" % pathwaylinks)
+    # read in pathway links
+    pathway_links = {}
+    with open(pathwaylinks) as fh:
+        for line in fh:
+            # deal with header lines
+            if line.startswith("#"): continue
+            toks = line.strip().split("\t")
+            pathway_str = toks[1]
+            # formaldehyde oxidation V (H<sub>4</sub>MPT pathway)
+            # superpathway of anthocyanin biosynthesis (from delphinidin 3-<i>O</i>-glucoside)
+            for http_format in re.findall(r'(\<.*?\>)', toks[1]):
+                pathway_str = pathway_str.replace(http_format, "")
+            # ignores synonyms in toks[2:]
+            pathway_links[toks[0]] = pathway_str
+
+    logging.info("Parsing reactions of %s" % reactions)
+    # read in reactions for multiple ECs and pathways
+    reaction_links = {}
+    with open(reactions, "r", encoding="ISO-8859-1") as fh:
+        pathways = []
+        ec_numbers = []
+        for line in fh:
+            if "UNIQUE-ID" in line:
+                name = line.strip().partition(" - ")[-1]
+            if "EC-NUMBER" in line:
+                ec_numbers.append(line.strip().partition(" - ")[-1].replace("EC-", ""))
+            if "IN-PATHWAY" in line:
+                pathways.append(line.strip().partition(" - ")[-1])
+            if line.startswith("//"):
+                # store current record
+                if not name:
+                    sys.exit("{ec_numbers}; {pathways}".format(**locals()))
+                pathway_names = []
+                for pathway in pathways:
+                    try:
+                        pathway_names.append(pathway_links[pathway])
+                    except KeyError:
+                        # some pathways do not have a description
+                        pass
+                reaction_links[name] = {"ec": ec_numbers, "pathways": pathways, "pathway_names": pathway_names}
+                name = ""
+                ec_numbers = []
+                pathways = []
+
+    logging.info("Annotating UniProt IDs across maps")
+    uniprot_to_reactions = defaultdict(set)
+    uniprot_to_ecs = defaultdict(set)
+    uniprot_to_pathways = defaultdict(set)
+
+    for metacyc_entry in re.findall(r'\((.*?)\)', seqids_str):
+        # space delimited string
+        toks = [t.replace('"', "") for t in metacyc_entry.split()]
+
+        for uid in toks[2:]:
+            uniprot_to_reactions[uid].add(toks[0])
+            try:
+                for ec_id in reaction_links[toks[0]]["ec"]:
+                    uniprot_to_ecs[uid].add(ec_id)
+                for pathway_id in reaction_links[toks[0]]["pathways"]:
+                    uniprot_to_pathways[uid].add(pathway_id)
+            except KeyError:
+                # reaction that has uniprot seqs, but lacks further documentation in reactions.dat
+                # using inline EC number
+                uniprot_to_ecs[uid].add(toks[1])
+                uniprot_to_pathways[uid].add("")
+
+    # print metacyc map file
+    with open(outmap, "w") as fo:
+        for uid in uniprot_to_reactions.keys():
+            pathway_descriptions = set()
+            for pathway_id in uniprot_to_pathways[uid]:
+                try:
+                    pathway_descriptions.add(pathway_links[pathway_id])
+                except KeyError:
+                    # pathway is defined in reactions.dat, but not in present in pathway-links.dat
+                    pass
+
+            print(uid, "|".join(uniprot_to_reactions[uid]), "|".join(uniprot_to_ecs[uid]),
+                  "|".join(uniprot_to_pathways[uid]), "|".join(pathway_descriptions), sep="\t",
+                  file=fo)
+
+    logging.info("%d unique UniProt entries in the map" % len(uniprot_to_reactions))
+
+    logging.info("Grabbing reference sequences from %s" % fasta)
+    # >UniRef100_Q6GZX4 Putative transcription factor 001R n=2 Tax=Frog virus 3 TaxID=10493 RepID=001R_FRG3G
+    counter = 0
+    with gzip.open(fasta, "rt") as fh, open(outfasta, "w") as fo:
+        for i, (name, seq) in enumerate(read_fasta(fh)):
+            uniprot_id = name.partition(" ")[0].partition("_")[-1]
+            if uniprot_id in uniprot_to_reactions:
+                counter += 1
+                print_fasta_record(uniprot_id, seq, fo)
+        logging.info("%d unique sequences in the reference fasta out of %d input" % (counter, i))
+
+
 @cli.command("prepare-refseq", short_help="prepares refseq mapping files")
 @click.argument("fasta", type=click.Path(exists=True))
 @click.argument("namesdmp", type=click.Path(exists=True))
