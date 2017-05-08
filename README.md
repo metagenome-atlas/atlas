@@ -2,8 +2,6 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
-![workflow](resources/images/atlas_workflow.png)
-
 # Documentation
 
 [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
@@ -129,7 +127,9 @@ If you are publishing results obtained using ATLAS, please cite:
 
 Richard Allen White III, Joseph Brown, Sean Colby, Christopher C. Overall, Joon-Yong Lee, Jeremy Zucker, Kurt R. Glaesemann, Christer Jansson, Janet K Jansson. ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data. PeerJ Preprints 5:e2843v1 https://doi.org/10.7287/peerj.preprints.2843v1.
 
-Richard Allen White III, Joseph Brown, Sean Colby, Christopher C. Overall, Joon-Yong Lee, Jeremy Zucker, Kurt R. Glaesemann, Christer Jansson, Janet K Jansson. ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data. Bioinformatics. Submitted.
+# License
+
+BSD-3.
 
 # Disclaimer
 
