@@ -1,5 +1,4 @@
 include atlas/Snakefile
 include atlas/rules/assemble.snakefile
-include atlas/rules/coassemble.snakefile
+include atlas/rules/annotate.snakefile
 include atlas/rules/download.snakefile
-include atlas/rules/reports/sample.snakefile
