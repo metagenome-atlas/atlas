@@ -46,6 +46,18 @@ def get_shell_prefix(config, override={}):
     return pfx
 
 
+def update_config_file_paths(config):
+    for sample in config["samples"]:
+        try:
+            # convert string into list
+            if isinstance(config["samples"][sample]["fastq"], str):
+                config["samples"][sample]["fastq"] = [config["samples"][sample]["fastq"]]
+        # fastq is not required for annotation alone
+        except KeyError:
+            continue
+    return config
+
+
 if config.get("workflow", "complete") == "complete":
     SHPFXM = get_shell_prefix(config)
     SHPFXS = get_shell_prefix(config, {"threads":"1"})
