@@ -190,7 +190,7 @@ rule align_reads_to_renamed_contigs:
     benchmark:
         "benchmarks/bbmap_alignment/{sample}.txt"
     params:
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["path"]) == 1 else "f",
+        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
         maxsites = config.get("maximum_counted_map_sites", 10)
     log:
