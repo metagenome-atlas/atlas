@@ -4,17 +4,12 @@ import os
 import tempfile
 import yaml
 from collections import OrderedDict
+from snakemake.io import load_configfile
 
 
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
-
-CAZY = "cazy"
-COG = "cog"
-EGGNOG = "eggnog"
-ENZYME = "enzyme"
-REFSEQ = "refseq"
 
 
 def get_sample_files(path, data_type):
@@ -52,7 +47,7 @@ def get_sample_files(path, data_type):
                 if sample_id in samples:
                     logging.warn("Duplicate sample %s was found after renaming; skipping..." % sample_id)
                     continue
-                samples[sample_id] = {'path': fastq_paths, 'type': data_type}
+                samples[sample_id] = {'fastq': fastq_paths, 'type': data_type}
     return samples
 
 
@@ -118,13 +113,6 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     annotation["minimum_overlap"] = 20
 
     annotation_references = OrderedDict()
-    eggnog = OrderedDict()
-    eggnog["namemap"] = os.path.join(database_dir, "%s.db" % EGGNOG)
-    eggnog["dmnd"] = os.path.join(database_dir, "%s.dmnd" % EGGNOG)
-    eggnog["run_mode"] = "fast"
-    eggnog["top_seqs"] = 5
-    eggnog["summary_method"] = "best"
-    annotation_references["eggnog"] = eggnog
 
     refseq = OrderedDict()
     refseq["namemap"] = os.path.join(database_dir, "%s.db" % REFSEQ)
@@ -137,50 +125,8 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     refseq["majority_threshold"] = 0.51
     annotation_references["refseq"] = refseq
 
-    enzyme = OrderedDict()
-    enzyme["namemap"] = os.path.join(database_dir, "%s.db" % ENZYME)
-    enzyme["dmnd"] = os.path.join(database_dir, "%s.dmnd" % ENZYME)
-    enzyme["run_mode"] = "fast"
-    enzyme["top_seqs"] = 2
-    enzyme["summary_method"] = "majority"
-    enzyme["index_chunks"] = 1
-    annotation_references["enzyme"] = enzyme
-
-    cazy = OrderedDict()
-    cazy["namemap"] = os.path.join(database_dir, "%s.db" % CAZY)
-    cazy["dmnd"] = os.path.join(database_dir, "%s.dmnd" % CAZY)
-    cazy["run_mode"] = "fast"
-    cazy["top_seqs"] = 2
-    cazy["summary_method"] = "majority"
-    cazy["index_chunks"] = 1
-    annotation_references["cazy"] = cazy
-
-    cog = OrderedDict()
-    cog["namemap"] = os.path.join(database_dir, "%s.db" % COG)
-    cog["dmnd"] = os.path.join(database_dir, "%s.dmnd" % COG)
-    cog["run_mode"] = "fast"
-    cog["top_seqs"] = 2
-    cog["summary_method"] = "majority"
-    cog["index_chunks"] = 1
-    annotation_references["cog"] = cog
-
     annotation["references"] = annotation_references
     conf["annotation"] = annotation
-
-    summary_counts = OrderedDict()
-
-    summary_counts["taxonomy"] = {"levels":["phylum", "class", "order", "species"],
-                                  "CAZy_Family":["cazy_family"],
-                                  "ENZYME":["enzyme_name", "enzyme_ec"],
-                                  "RefSeq":["refseq_product"],
-                                  "COG":["cog_id", "cog_functional_class", "cog_annotation"]}
-    summary_counts["KO"] = ["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"]
-    summary_counts["RefSeq"] = ["refseq_product"]
-    summary_counts["COG"] = ["cog_id", "cog_functional_class", "cog_annotation"]
-    summary_counts["ENZYME"] = ["enzyme_name", "enzyme_ec"]
-    summary_counts["CAZy"] = ["cazy_family", "cazy_class"]
-
-    conf["summary_counts"] = summary_counts
 
     with open(config, "w") as f:
         print(yaml.dump(conf, default_flow_style=False), file=f)
