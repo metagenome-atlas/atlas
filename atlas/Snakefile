@@ -59,6 +59,7 @@ def update_config_file_paths(config):
 
 
 if config.get("workflow", "complete") == "complete":
+    config = update_config_file_paths(config)
     SHPFXM = get_shell_prefix(config)
     SHPFXS = get_shell_prefix(config, {"threads":"1"})
 
@@ -68,7 +69,7 @@ if config.get("workflow", "complete") == "complete":
                                                config["preprocessing"]["normalization"].get("t", 100))
     ASSEMBLER = get_assembler(config)
 
-    SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
+    SAMPLES = [i for i in config["samples"].keys()]
 
     wildcard_constraints:
         sample = "[\w-]+"
@@ -109,6 +110,7 @@ elif config.get("workflow") == "download":
     include: "rules/download.snakefile"
 
 elif config.get("workflow") == "annotate":
+    config = update_config_file_paths(config)
     SAMPLES = list(config["samples"].keys())
     TMPDIR = get_temp_dir(config)
     SHPFXM = get_shell_prefix(config)
