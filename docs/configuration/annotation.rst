@@ -226,6 +226,52 @@ Version is COG2014 via COG_.
                 dmnd: /path/to/cog.dmnd
 
 
+metacyc
+```````
+
+Provides metacyc reference based on version 20.5. Reactions, EC, pathway,
+and pathway descriptions (long form name of pathway) are available and should
+be considered independent of one another as metacyc does not provide 1:1
+mapping of all identifiers -- not all reactions have an EC; not all proteins
+are assigned an EC; not all reactions are in a pathway; not all pathways have
+a long name.
+
++-----------------+------------------------------------------------------------------------------+
+| Value           | Definition                                                                   |
++=================+==============================================================================+
+| metacyc_uniprot | UniProt or UniRef cluster ID of protein sequence                             |
++-----------------+------------------------------------------------------------------------------+
+| metacyc_rxn     | Metacyc reaction ID; can have many-to-one relationship with sequence ID      |
++-----------------+------------------------------------------------------------------------------+
+| metacyc_ec      | Metacyc assigned EC which can differ from ENZYME and may include partial ECs |
++-----------------+------------------------------------------------------------------------------+
+| metacyc_pwy     | Metacyc pathway; not all reactions are placed in pathways                    |
++-----------------+------------------------------------------------------------------------------+
+| metacyc_pwydesc | Metacyc pathway name; not all pathway IDs are assigned a name                |
++-----------------+------------------------------------------------------------------------------+
+
+Recommended usage for Metacyc would be to create separate tables for each
+value, e.g.::
+
+    summary_counts:
+        taxonomy:
+            levels:
+                - phylum
+                - class
+                - order
+                - species
+            metacyc-ec:
+                - metacyc_ec
+            metacyc-pwy:
+                - metacyc_pwy
+        metacyc-ec:
+            - metacyc_ec
+        metacyc-pwydesc:
+            - metacyc_pwydesc
+
+The Metacyc reference requires a namemap and DIAMOND reference.
+
+
 Reference Options
 -----------------
 

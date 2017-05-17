@@ -9,6 +9,28 @@ from snakemake.io import load_configfile
 gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
 
 
+def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+    """https://stackoverflow.com/questions/1158076/implement-touch-using-python"""
+    flags = os.O_CREAT | os.O_APPEND
+    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
+            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
+
+
+def config_file_exists(config, ref_name, file_key):
+    retv = True
+    try:
+        if not os.path.exists(config["annotation"]["references"][ref_name][file_key]):
+            logging.critical("%s reference file [%s] does not exist" % (file_key,
+                config["annotation"]["references"][ref_name][file_key]))
+            retv = False
+    except KeyError:
+        logging.critical("%s is defined in your configuration, but is missing the complete definition of annotation: references: %s: %s" % (ref_name, ref_name, file_key))
+        retv = False
+        pass
+    return retv
+
+
 def validate_assembly_config(config):
     c = load_configfile(config)
     valid = True
@@ -83,54 +105,42 @@ def validate_assembly_config(config):
     if not "annotation" in c:
         logging.critical("'annotation' is not defined in %s" % config)
         valid = False
-    try:
-        if not "references" in c["annotation"]:
-            logging.critical("'references' is not defined in %s" % config)
-            valid = False
 
+    if not "references" in c.get("annotation"):
+        logging.critical("'references' is not defined in %s" % config)
+        valid = False
+
+    try:
         if "refseq" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["refseq"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["refseq"]["tree"]):
-                logging.critical("tree reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["tree"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["refseq"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["dmnd"])
+            if not config_file_exists(c, "refseq", "namemap") \
+                or not config_file_exists(c, "refseq", "dmnd") \
+                or not config_file_exists(c, "refseq", "tree"):
                 valid = False
 
         if "cazy" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["cazy"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["cazy"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["dmnd"])
+            if not config_file_exists(c, "cazy", "namemap") \
+                or not config_file_exists(c, "cazy", "dmnd"):
                 valid = False
 
         if "cog" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["cog"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["cog"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["dmnd"])
+            if not config_file_exists(c, "cog", "namemap") \
+                or not config_file_exists(c, "cog", "dmnd"):
                 valid = False
 
         if "enzyme" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["enzyme"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["enzyme"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["dmnd"])
+            if not config_file_exists(c, "enzyme", "namemap") \
+                or not config_file_exists(c, "enzyme", "dmnd"):
                 valid = False
 
         if "eggnog" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["eggnog"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["eggnog"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["dmnd"])
+            if not config_file_exists(c, "eggnog", "namemap") \
+                or not config_file_exists(c, "eggnog", "dmnd"):
                 valid = False
 
+        if "metacyc" in c["annotation"]["references"]:
+            if not config_file_exists(c, "metacyc", "namemap") \
+                or not config_file_exists(c, "metacyc", "dmnd"):
+                valid = False
     except KeyError:
         valid = False
         pass

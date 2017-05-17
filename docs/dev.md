@@ -87,3 +87,14 @@ sqlite> create table cog (cog_protein_key text PRIMARY KEY, cog_protein_id text,
 sqlite> .mode tabs
 sqlite> .import cog.map cog
 ```
+
+
+# metacyc
+
+```
+sqlite> .open metacyc.20.5.db
+sqlite> create table metacyc (metacyc_uniprot text PRIMARY KEY, metacyc_rxn txt, metacyc_ec text, metacyc_pwy text, metacyc_pwydesc text);
+sqlite> .mode tabs
+sqlite> .import metacyc.20.5.map metacyc
+sqlite> .exit
+```

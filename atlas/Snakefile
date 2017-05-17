@@ -1,45 +1,19 @@
-"""
-combining samples into a single fastq can take place after intial qc -- all files are interleaved
-concatenate into single file; push through the remainder of the workflow
-these qc'd files are then used for counts per sample across the assembled contigs
-"""
 import os
 import re
 import sys
 import tempfile
 
 
-def get_count_tables(config, key):
-    expected_tables = []
-    for name, vals in config[key].items():
-        if name.lower() == "taxonomy":
-            tax_levels = vals.get("levels", ["species"])
-            for level in tax_levels:
-                level = level.lower()
-                tax_name = "taxonomy_%s" % level
-                expected_tables.append("%s_%s" % (name, level))
-                for subname, subvals in vals.items():
-                    if subname.lower() == "levels": continue
-                    expected_tables.append("%s_%s" % (subname, tax_name))
-        else:
-            expected_tables.append(name)
-    return expected_tables
-
-
 def get_assembler(config):
-    norm = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21),
-                                      config["preprocessing"]["normalization"].get("t", 100))
-    if config["assembly"]["assembler"] == "spades":
-        return "spades_{k}_{norm}".format(k=config["assembly"].get("spades_k", "auto").replace(",", "_"),
-                                          norm=norm)
+    norm = "normalization_k%d_t%d" % (config.get("normalization_kmer_length", 21),
+                                      config.get("normalization_target_depth", 100))
+    if config.get("assembler") == "spades":
+        return "spades_{k}_{norm}".format(k=config.get("spades_k", "auto").replace(",", "_"), norm=norm)
     else:
-        k_min = config["assembly"].get("kmer_min", 21)
-        k_max = config["assembly"].get("kmer_max", 121)
-        k_step = config["assembly"].get("kmer_step", 20)
-        return "megahit_{min}_{max}_{step}_{norm}".format(min=k_min,
-                                                          max=k_max,
-                                                          step=k_step,
-                                                          norm=norm)
+        k_min = config.get("megahit_k_min", 21)
+        k_max = config.get("megahit_k_max", 121)
+        k_step = config.get("megahit_k_step", 20)
+        return "megahit_{min}_{max}_{step}_{norm}".format(min=k_min, max=k_max, step=k_step, norm=norm)
 
 
 def get_temp_dir(config):
@@ -49,42 +23,12 @@ def get_temp_dir(config):
         return tempfile.gettempdir()
 
 
-def coassemblies():
-    if "coassemblies" in config["samples"]:
-        coassembled_samples = list(config["samples"]["coassemblies"].keys())
-
-        for coassembly, samples in config["samples"]["coassemblies"].items():
-            for s in samples:
-                if s not in config["samples"]:
-                    print("Coassembly %s includes an undefined sample [%s]" % (coassembly, s))
-                    sys.exit(1)
-
-        return list(config["samples"]["coassemblies"].keys())
-    return False
-
-
-def coassembly_alignments(config, assembler):
-    bams = []
-    for coassembly, samples in config["samples"]["coassemblies"].items():
-        for s in samples:
-            bams.append(("coassemblies/{coassembly}/{assembler}/annotation"
-                         "/{sample}.bam").format(coassembly=coassembly,
-                                                 assembler=assembler,
-                                                 sample=s))
-    return bams
-
-
-def coassembly_count_tables(config, tables, assembler):
-    expected_tables = []
-    for coassembly, samples in config["samples"]["coassemblies"].items():
-        for s in samples:
-            for t in tables:
-                expected_tables.append(("coassemblies/{coassembly}/{assembler}/count_tables"
-                                        "/{sample}/{sample}_{table}.tsv").format(coassembly=coassembly,
-                                                                                 assembler=assembler,
-                                                                                 sample=s,
-                                                                                 table=t))
-    return expected_tables
+def bin_summary_files(do_binning, samples, assembler):
+    if do_binning:
+        return expand("{sample}/{assembler}/genomic_bins/{sample}.summary", sample=samples, assembler=assembler)
+    else:
+        # the user has opted out of performing binning
+        return ""
 
 
 def get_shell_prefix(config, override={}):
@@ -106,155 +50,64 @@ if config.get("workflow", "complete") == "complete":
     SHPFXM = get_shell_prefix(config)
     SHPFXS = get_shell_prefix(config, {"threads":"1"})
 
-    TABLES = get_count_tables(config, "summary_counts")
+    # TABLES = get_count_tables(config, "summary_counts")
     TMPDIR = get_temp_dir(config)
     NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21),
                                                config["preprocessing"]["normalization"].get("t", 100))
     ASSEMBLER = get_assembler(config)
-    COASSEMBLIES = coassemblies()
 
     SAMPLES = [i for i in config["samples"].keys() if not i == "coassemblies"]
 
     wildcard_constraints:
         sample = "[\w-]+"
 
-    if COASSEMBLIES:
-
-        rule all:
-            input:
-                expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz",
-                    sample=SAMPLES,
-                    decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
-                expand("{sample}/quality_control/decontamination/{sample}_refstats.txt",
-                    sample=SAMPLES),
-                expand("{sample}/quality_control/quality_filter/{sample}_pe.fastq.gz",
-                    sample=SAMPLES),
-                expand("{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
-                    sample=SAMPLES),
-                expand("{sample}/logs/{sample}_quality_filtering_stats.txt", sample=SAMPLES),
-                expand("{sample}/quality_control/{normalization}/{sample}_pe.fastq.gz",
-                    sample=SAMPLES,
-                    normalization=NORMALIZATION),
-                # expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
-                # expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
-                expand("{sample}/{assembler}/{sample}_contigs.fasta",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/annotation/orfs/{sample}.faa",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/stats/prefilter_contig_stats.txt",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/stats/final_contig_stats.txt",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/genomic_bins/{sample}.summary",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/annotation/{reference}/{sample}_hits.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER,
-                    reference=list(config["annotation"]["references"].keys())),
-                expand("{sample}/{assembler}/annotation/{reference}/{sample}_assignments.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER,
-                    reference=list(config["annotation"]["references"].keys())),
-                expand("{sample}/{assembler}/annotation/{sample}_merged_assignments.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/count_tables/{sample}_{table}.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER,
-                    table=TABLES),
-                # expand("{sample}/{sample}_readme.html", sample=SAMPLES),
-                # Coassembly output
-                expand("coassemblies/{coassembly}/all_decontamination_reads/{coassembly}_pe.fastq.gz",
-                    coassembly=COASSEMBLIES),
-                expand("coassemblies/{coassembly}/all_normalized_reads/{coassembly}_pe.fastq.gz",
-                    coassembly=COASSEMBLIES),
-                expand("coassemblies/{coassembly}/quality_control/{normalization}/{coassembly}_pe.fastq.gz",
-                    coassembly=COASSEMBLIES,
-                    normalization=NORMALIZATION),
-                expand("coassemblies/{coassembly}/{assembler}/stats/prefilter_contig_stats.txt",
-                    coassembly=COASSEMBLIES,
-                    assembler=ASSEMBLER),
-                expand("coassemblies/{coassembly}/{assembler}/stats/final_contig_stats.txt",
-                    coassembly=COASSEMBLIES,
-                    assembler=ASSEMBLER),
-                expand("coassemblies/{coassembly}/{assembler}/{coassembly}_contigs.fasta",
-                    coassembly=COASSEMBLIES,
-                    assembler=ASSEMBLER),
-                expand("coassemblies/{coassembly}/{assembler}/genomic_bins/{coassembly}.summary",
-                    coassembly=COASSEMBLIES,
-                    assembler=ASSEMBLER),
-                coassembly_alignments(config, get_assembler(config)),
-                coassembly_count_tables(config, TABLES, get_assembler(config))
-
-        include: "rules/coassemble.snakefile"
-    else:
-        rule all:
-            input:
-                expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz",
-                    sample=SAMPLES,
-                    decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
-                expand("{sample}/quality_control/decontamination/{sample}_refstats.txt",
-                    sample=SAMPLES),
-                expand("{sample}/quality_control/quality_filter/{sample}_pe.fastq.gz",
-                    sample=SAMPLES),
-                expand("{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
-                    sample=SAMPLES),
-                expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
-                    sample=SAMPLES),
-                expand("{sample}/quality_control/{normalization}/{sample}_pe.fastq.gz",
-                    sample=SAMPLES,
-                    normalization=NORMALIZATION),
-                # expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.zip", sample=SAMPLES),
-                # expand("{sample}/quality_control/fastqc/{sample}_pe_fastqc.html", sample=SAMPLES),
-                expand("{sample}/{assembler}/{sample}_contigs.fasta",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/annotation/orfs/{sample}.faa",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/stats/prefilter_contig_stats.txt",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/stats/final_contig_stats.txt",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/genomic_bins/{sample}.summary",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/annotation/{reference}/{sample}_hits.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER,
-                    reference=list(config["annotation"]["references"].keys())),
-                expand("{sample}/{assembler}/annotation/{reference}/{sample}_assignments.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER,
-                    reference=list(config["annotation"]["references"].keys())),
-                expand("{sample}/{assembler}/annotation/{sample}_merged_assignments.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER),
-                expand("{sample}/{assembler}/count_tables/{sample}_{table}.tsv",
-                    sample=SAMPLES,
-                    assembler=ASSEMBLER,
-                    table=TABLES)
-                # expand("{sample}/{sample}_readme.html", sample=SAMPLES)
+    rule all:
+        input:
+            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz",
+                sample=SAMPLES,
+                decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
+            expand("{sample}/quality_control/decontamination/{sample}_refstats.txt",
+                sample=SAMPLES),
+            expand("{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
+                sample=SAMPLES),
+            expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
+                sample=SAMPLES),
+            expand("{sample}/{assembler}/contig_stats/prefilter_contig_stats.txt",
+                sample=SAMPLES,
+                assembler=ASSEMBLER),
+            expand("{sample}/{assembler}/contig_stats/final_contig_stats.txt",
+                sample=SAMPLES,
+                assembler=ASSEMBLER),
+            bin_summary_files(config.get("perform_genome_binning", True), SAMPLES, ASSEMBLER),
+            expand("{sample}/{assembler}/functional_annotation/{sample}_annotations.txt",
+                sample=SAMPLES,
+                assembler=ASSEMBLER)
 
     include: "rules/assemble.snakefile"
 
 elif config.get("workflow") == "download":
 
     FILES = ["silva_rfam_all_rRNAs.fa", "adapters.fa", "phiX174_virus.fa", "refseq.db",
-             "refseq.dmnd", "refseq.tree", "cazy.db", "cazy.dmnd", "cog.db", "cog.dmnd",
-             "eggnog.db", "eggnog.dmnd", "enzyme.db", "enzyme.dmnd"]
+             "refseq.dmnd", "refseq.tree"]
 
     rule all:
         input:
             expand("{dir}/{filename}", dir=os.path.realpath(config["db_dir"]), filename=FILES)
+
     include: "rules/download.snakefile"
+
+elif config.get("workflow") == "annotate":
+    SAMPLES = list(config["samples"].keys())
+    TMPDIR = get_temp_dir(config)
+    SHPFXM = get_shell_prefix(config)
+    SHPFXS = get_shell_prefix(config, {"threads":"1"})
+
+    rule all:
+        input:
+            expand("{sample}_annotations.txt", sample=SAMPLES),
+            expand("{sample}/contig_stats.txt", sample=SAMPLES)
+
+    include: "rules/annotate.snakefile"
 
 else:
     print("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"),
