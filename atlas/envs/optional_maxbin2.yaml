@@ -1,7 +1,0 @@
-channels:
-    - bioconda
-    - r
-    - defaults
-    - conda-forge
-dependencies:
-    - maxbin2

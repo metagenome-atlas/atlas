@@ -10,16 +10,22 @@ ATLAS
 
 .. toctree::
     :maxdepth: 2
-    :caption: Configuration
+    :caption: Assembly Protocol
 
-    configuration/example_configuration
-    configuration/samples
-    configuration/threads
-    configuration/preprocessing
-    configuration/assembly
-    configuration/annotation
-    configuration/summary_counts
-    configuration/advanced
+    assembly/example_configuration
+    assembly/samples
+    assembly/threads
+    assembly/preprocessing
+    assembly/assembly
+    assembly/annotation
+    assembly/summary_counts
+    assembly/advanced
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Annotation Protocol
+
+    annotation_conf/samples
 
 
 Indices and tables
