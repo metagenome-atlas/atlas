@@ -6,7 +6,8 @@ samples:
             - /pic/projects/mint/genomic_truth_sets/203_TTAGGC_L002_R2_140814.fastq.gz
         # 'metagenome' or 'metatranscriptome' [Default: metagenome]
         type: metagenome
-        # 'true' or 'false' [Default: true]
+        # 'true' or 'false'; this is used to force interleaved when only one
+        # file path is given [Default: true]
         paired: true
     cytophaga:
         fastq:
