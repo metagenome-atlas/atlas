@@ -53,7 +53,7 @@ def get_sample_files(path, data_type):
 
 def make_config(config, path, data_type, database_dir, threads, assembler):
     """Write the file `config` and complete the sample names and paths for all files in `path`."""
-    represent_dict_order = lambda self, data:  self.represent_mapping('tag:yaml.org,2002:map', data.items())
+    represent_dict_order = lambda self, data: self.represent_mapping('tag:yaml.org,2002:map', data.items())
     yaml.add_representer(OrderedDict, represent_dict_order)
     path = os.path.realpath(os.path.expanduser(path))
 
@@ -62,71 +62,72 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     logging.info("Found %d samples under %s" % (len(samples), path))
     conf["samples"] = samples
     conf["tmpdir"] = tempfile.gettempdir()
-    # conf["database_directory"] = database_dir
     conf["threads"] = multiprocessing.cpu_count() if not threads else threads
-    # conf["prefix"]
+    conf["java_mem"] = "16g"
+    conf["preprocess_adapters"] = os.path.join(database_dir, ADAPTERS)
+    conf["preprocess_adapter_min_k"] = 8
+    conf["preprocess_minimum_base_quality"] = 10
+    conf["preprocess_allowable_kmer_mismatches"] = 1
+    conf["preprocess_reference_kmer_match_length"] = 23
+    conf["preprocess_minimum_passing_read_length"] = 51
+    conf["preprocess_minimum_base_frequency"] = 0.05
 
-    preprocessing = OrderedDict()
-    preprocessing["adapters"] = os.path.join(database_dir, ADAPTERS)
-
-    preprocessing["mink"] = 8
-    preprocessing["minimum_base_quality"] = 10
-    preprocessing["allowable_kmer_mismatches"] = 1
-    preprocessing["reference_kmer_match_length"] = 31
-    # preprocessing["qtrim"] = "rl"
-    preprocessing["minimum_passing_read_length"] = 51
-    preprocessing["min_base_frequency"] = 0.05
+    conf["perform_error_correction"] = "true"
 
     contamination = OrderedDict()
-    contamination["references"] = {"rRNA":os.path.join(database_dir, RRNA), "PhiX":os.path.join(database_dir, PHIX)}
-    contamination["maxindel"] = 20
-    contamination["minratio"] = 0.65
-    contamination["minhits"] = 1
-    contamination["ambiguous"] = "best"
-    contamination["k"] = 15
+    contamination["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
+                                               "PhiX":os.path.join(database_dir, PHIX)}
+    conf["contaminant_max_indel"] = 20
+    conf["contaminant_min_ratio"] = 0.65
+    conf["contaminant_kmer_length"] = 12
+    conf["contaminant_minimum_hits"] = 1
+    conf["contaminant_ambiguous"] = "best"
 
-    preprocessing["contamination"] = contamination
-    preprocessing["normalization"] = {"k":21, "t":100, "minkmers":8}
-    conf["preprocessing"] = preprocessing
+    conf["normalization_kmer_length"] = 19
+    conf["normalization_target_depth"] = 100
+    conf["normalization_minimum_kmers"] = 8
 
-    assembly = OrderedDict()
-    assembly["assembler"] = assembler
-    # assembly["memory"] = 0.99
-    assembly["minimum_count"] = 2
-    assembly["kmer_min"] = 21
-    assembly["kmer_max"] = 121
-    assembly["kmer_step"] = 20
-    # assembly["merge_level"] = "20,0.98"
-    # assembly["prune_level"] = 2
-    # assembly["low_local_ratio"] = 0.2
-    assembly["minimum_contig_length"] = 200
-    assembly["spades_k"] = "auto"
-    assembly["minc"] = 5
-    assembly["minp"] = 40
-    assembly["minr"] = 0
-    assembly["minl"] = 250
-    assembly["trim"] = 0
-    conf["assembly"] = assembly
+    conf["assembler"] = "megahit"
+    conf["megahit_memory"] = 0.99
+    conf["megahit_min_count"] = 2
+    conf["megahit_k_min"] = 21
+    conf["megahit_k_max"] = 121
+    conf["megahit_k_step"] = 20
+    conf["megahit_merge_level"] = "20,0.98"
+    conf["megahit_prune_level"] = 2
+    conf["megahit_low_local_ratio"] = 0.2
+    conf["minimum_contig_length"] = 200
+    conf["spades_k"] = "auto"
+    conf["minimum_average_coverage"] = 5
+    conf["minimum_percent_covered_bases"] = 40
+    conf["minimum_mapped_reads"] = 0
+    conf["contig_trim_bp"] = 0
 
-    annotation = OrderedDict()
-    # annotation["translation_table"]
-    annotation["minimum_overlap"] = 20
+    conf["translation_table"] = 11
+    conf["minimum_region_overlap"] = 1
+    conf["primary_only"] = "false"
+    conf["count_multi_mapped_reads"] = "true"
+    conf["maximum_counted_map_sites"] = 10
+    conf["perform_genome_binning"] = "true"
+    conf["maxbin_max_iteration"] = 50
+    conf["maxbin_min_contig_length"] = 500
+    conf["maxbin_prob_threshold"] = 0.9
 
-    annotation_references = OrderedDict()
-
-    refseq = OrderedDict()
-    refseq["namemap"] = os.path.join(database_dir, "%s.db" % REFSEQ)
-    refseq["tree"] = os.path.join(database_dir, "%s.tree" % REFSEQ)
-    refseq["dmnd"] = os.path.join(database_dir, "%s.dmnd" % REFSEQ)
-    refseq["run_mode"] = "fast"
-    refseq["top_seqs"] = 5
-    refseq["summary_method"] = "best"
-    refseq["aggregation_method"] = "lca-majority"
-    refseq["majority_threshold"] = 0.51
-    annotation_references["refseq"] = refseq
-
-    annotation["references"] = annotation_references
-    conf["annotation"] = annotation
+    conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
+    conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
+    conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
+    conf["diamond_run_mode"] = "fast"
+    conf["diamond_top_seqs"] = 2
+    conf["diamond_e_value"] = 0.000001
+    conf["diamond_min_identity"] = 50
+    conf["diamond_query_coverage"] = 60
+    conf["diamond_gap_open"] = 11
+    conf["diamond_gap_extend"] = 1
+    conf["diamond_block_size"] = 2
+    conf["diamond_index_chunks"] = 1
+    conf["summary_method"] = "lca"
+    conf["aggregation_method"] = "lca-majority"
+    conf["majority_threshold"] = 0.51
 
     with open(config, "w") as f:
         print(yaml.dump(conf, default_flow_style=False), file=f)

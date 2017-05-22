@@ -124,7 +124,7 @@ contig_trim_bp: 0
 translation_table: 11
 # when counting reads aligning to ORFs, require at least this many bp
 # overlapping the ORF
-minimum_overlap: 1
+minimum_region_overlap: 1
 # count primary read alignments only when getting counts across ORFs
 primary_only: false
 # allow counting of multi-mapped reads when getting counts across ORFs
