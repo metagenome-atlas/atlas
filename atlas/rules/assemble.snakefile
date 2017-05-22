@@ -4,14 +4,17 @@ import sys
 from snakemake.utils import report
 
 
-def get_handle_ribosomal_rna_input(wildcards):
+def get_ribosomal_rna_input(wildcards):
     inputs = []
     data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
-    if data_type == "metagenome":
-        return ["{sample}/quality_control/decontamination/{sample}_clean.fastq.gz".format(sample=wildcards.sample),
-                "{sample}/quality_control/decontamination/{sample}_rRNA.fastq.gz".format(sample=wildcards.sample)]
+
+    clean_reads = "{sample}/quality_control/{sample}_02_pe.fastq.gz".format(sample=wildcards.sample)
+    rrna_reads = "{sample}/quality_control/{sample}_02_rRNA.fastq.gz".format(sample=wildcards.sample)
+
+    if data_type == "metagenome" and os.path.exists(rrna_reads):
+        return [clean_reads, rrna_reads]
     else:
-        return ["{sample}/quality_control/decontamination/{sample}_clean.fastq.gz".format(sample=wildcards.sample)]
+        return [clean_reads]
 
 
 def gff_to_gtf(gff_in, gtf_out):
@@ -48,8 +51,8 @@ rule quality_filter:
     benchmark:
         "benchmarks/quality_filter/{sample}.txt"
     params:
-        lref = "lref=%s" % config.get("preprocessing_adapters") if config.get("preprocessing_adapters") else "",
-        rref = "rref=%s" % config.get("preprocessing_adapters") if config.get("preprocessing_adapters") else "",
+        lref = "lref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
+        rref = "rref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
         mink = config.get("preprocess_adapter_min_k", 8),
         trimq = config.get("preprocess_minimum_base_quality", 10),
         hdist = config.get("preprocess_allowable_kmer_mismatches", 1),
@@ -57,10 +60,12 @@ rule quality_filter:
         qtrim = config.get("qtrim", "rl"),
         minlength = config.get("preprocess_minimum_passing_read_length", 51),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", 0.05),
-        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["path"][0] if len(config["samples"][wc.sample]["path"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["path"][0], config["samples"][wc.sample]["path"][1]),
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["path"]) == 1 else "f"
+        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
+        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f"
     log:
         "{sample}/logs/{sample}_quality_filter.log"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:
@@ -82,6 +87,10 @@ if config.get("perform_error_correction", True):
             "benchmarks/error_correction/{sample}.txt"
         log:
             "{sample}/logs/{sample}_error_correction.log"
+        conda:
+            "{CONDAENV}/required_packages.yaml"
+        resources:
+            mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
         threads:
             config.get("threads", 1)
         shell:
@@ -89,7 +98,7 @@ if config.get("perform_error_correction", True):
                    ecc=t ecco=t 2> {log}"""
 
 
-# if there are no references, skip decontamination
+    # if there are no references, decontamination will be skipped
     rule decontamination:
         input:
             "{sample}/quality_control/{sample}_01_pe.fastq.gz"
@@ -101,7 +110,7 @@ if config.get("perform_error_correction", True):
             "benchmarks/decontamination/{sample}.txt"
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-            refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
+            refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
             maxindel = config.get("contaminant_max_indel", 20),
             minratio = config.get("contaminant_min_ratio", 0.65),
             minhits = config.get("contaminant_minimum_hits", 1),
@@ -110,6 +119,8 @@ if config.get("perform_error_correction", True):
             interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
         log:
             "{sample}/logs/{sample}_decontamination.log"
+        conda:
+            "{CONDAENV}/required_packages.yaml"
         threads:
             config.get("threads", 1)
         shell:
@@ -141,6 +152,8 @@ else:
             interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
         log:
             "{sample}/logs/{sample}_decontamination.log"
+        conda:
+            "{CONDAENV}/required_packages.yaml"
         threads:
             config.get("threads", 1)
         shell:
@@ -150,9 +163,9 @@ else:
                    interleaved={params.interleaved} threads={threads} k={params.k} local=t 2> {log}"""
 
 
-rule handle_ribosomal_rna:
+rule postprocess_after_decontamination:
     input:
-        get_handle_ribosomal_rna_input
+        get_ribosomal_rna_input
     output:
         "{sample}/quality_control/{sample}_03_pe.fastq.gz"
     threads:
@@ -175,6 +188,8 @@ rule normalize_coverage_across_kmers:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
     log:
         "{sample}/logs/{sample}_%s.log" % NORMALIZATION
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:
@@ -203,10 +218,10 @@ if config.get("assembler", "megahit") == "megahit":
             merge_level = config.get("megahit_merge_level", "20,0.98"),
             prune_level = config.get("megahit_prune_level", 2),
             low_local_ratio = config.get("megahit_low_local_ratio", 0.2),
-            min_contig_len = config.get("minimum_contig_length", 200),
+            min_contig_len = config.get("minimum_contig_length", 1000),
             outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
-        # log:
-        #     "{sample}/{assembler}/{sample}.log"
+        conda:
+            "{CONDAENV}/required_packages.yaml"
         threads:
             config.get("threads", 1)
         shell:
@@ -237,10 +252,12 @@ else:
         params:
             # memory = config["assembly"].get("memory", 0.90)
             read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
-            k = config["assembly"].get("spades_k", "auto"),
+            k = config.get("spades_k", "auto"),
             outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
         log:
             "{sample}/{assembler}/spades.log"
+        conda:
+            "{CONDAENV}/required_packages.yaml"
         threads:
             config.get("threads", 1)
         shell:
@@ -262,6 +279,8 @@ rule rename_contigs:
         "{sample}/{assembler}/{sample}_raw_contigs.fasta"
     output:
         "{sample}/{assembler}/{sample}_prefilter_contigs.fasta"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
@@ -271,6 +290,8 @@ rule calculate_prefiltered_contigs_stats:
         "{sample}/{assembler}/{sample}_prefilter_contigs.fasta"
     output:
         "{sample}/{assembler}/contig_stats/prefilter_contig_stats.txt"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         1
     shell:
@@ -293,6 +314,8 @@ rule calculate_prefiltered_contig_coverage_stats:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
     log:
         "{sample}/{assembler}/logs/prefiltered_contig_coverage_stats.log"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:
@@ -313,10 +336,12 @@ rule filter_by_coverage:
         minc = config.get("minimum_average_coverage", 5),
         minp = config.get("minimum_percent_covered_bases", 40),
         minr = config.get("minimum_mapped_reads", 0),
-        minl = config.get("minimum_contig_length", 200),
+        minl = config.get("minimum_contig_length", 1000),
         trim = config.get("contig_trim_bp", 0)
     log:
         "{sample}/{assembler}/logs/filter_by_coverage.log"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         1
     shell:
@@ -341,9 +366,11 @@ rule align_reads_to_filtered_contigs:
         "benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
-        maxsites = config["annotation"].get("maximum_counted_map_sites", 10)
+        maxsites = config.get("maximum_counted_map_sites", 10)
     log:
         "{sample}/{assembler}/logs/contig_coverage_stats.log"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:
@@ -376,11 +403,13 @@ if config.get("perform_genome_binning", True):
         benchmark:
             "benchmarks/maxbin2/{sample}.txt"
         params:
-            mi = config["annotation"].get("maxbin_max_iteration", 50),
-            mcl = config["annotation"].get("maxbin_min_contig_length", 500),
-            pt = config["annotation"].get("maxbin_prob_threshold", 0.9)
+            mi = config.get("maxbin_max_iteration", 50),
+            mcl = config.get("maxbin_min_contig_length", 200),
+            pt = config.get("maxbin_prob_threshold", 0.9)
         log:
             "{sample}/{assembler}/logs/maxbin2.log"
+        conda:
+            "{CONDAENV}/optional_maxbin2.yaml"
         threads:
             config.get("threads", 1)
         shell:
@@ -390,38 +419,49 @@ if config.get("perform_genome_binning", True):
                 -max_iteration {params.mi} > {log}"""
 
 
+    # rule run_checkm:
+    # rule run_ssu_search_and_assignment:
+    # rule compile_bin_tax_assignments:
+
+
 rule convert_sam_to_bam:
-   input:
-       "{sample}/{assembler}/alignments/{sample}.sam"
-   output:
-       temp("{sample}/{assembler}/alignments/{sample}.bam")
-   threads:
-       config.get("threads", 1)
-   shell:
-       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
-              | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+    input:
+        "{sample}/{assembler}/alignments/{sample}.sam"
+    output:
+        temp("{sample}/{assembler}/alignments/{sample}.bam")
+    conda:
+        "{CONDAENV}/required_packages.yaml"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
+               | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
 
 
 rule create_bam_index:
-   input:
-       "{sample}/{assembler}/alignments/{sample}.bam"
-   output:
-       temp("{sample}/{assembler}/alignments/{sample}.bam.bai")
-   threads:
-       1
-   shell:
-       "{SHPFXS} samtools index {input}"
+    input:
+        "{sample}/{assembler}/alignments/{sample}.bam"
+    output:
+        temp("{sample}/{assembler}/alignments/{sample}.bam.bai")
+    conda:
+        "{CONDAENV}/required_packages.yaml"
+    threads:
+        1
+    shell:
+        "{SHPFXS} samtools index {input}"
 
 
 rule calculate_final_contigs_stats:
-   input:
-       "{sample}/{assembler}/{sample}_contigs.fasta"
-   output:
-       "{sample}/{assembler}/contig_stats/final_contig_stats.txt"
-   threads:
-       1
-   shell:
-       "{SHPFXS} stats.sh in={input} format=3 > {output}"
+    input:
+        "{sample}/{assembler}/{sample}_contigs.fasta"
+    output:
+        "{sample}/{assembler}/contig_stats/final_contig_stats.txt"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
+    threads:
+        1
+    shell:
+        "{SHPFXS} stats.sh in={input} format=3 > {output}"
 
 
 rule run_prokka_annotation:
@@ -445,6 +485,8 @@ rule run_prokka_annotation:
     params:
         outdir = "{sample}/{assembler}/functional_annotation/prokka",
         kingdom = config.get("prokka_kingdom", "Bacteria")
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:
@@ -482,6 +524,8 @@ rule remove_pcr_duplicates:
         "benchmarks/picard_mark_duplicates/{sample}.txt"
     params:
         java_mem = config.get("java_mem", "32g")
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     resources:
         mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
     shell:
@@ -499,12 +543,14 @@ rule find_counts_per_region:
         summary = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt"
     params:
-        min_read_overlap = config["annotation"].get("minimum_overlap", 1),
+        min_read_overlap = config.get("minimum_region_overlap", 1),
         paired_mode = lambda wc: "-p" if config["samples"][wc.sample].get("paired", True) else "",
         multi_mapping = "-M" if config.get("count_multi_mapped_reads") else "",
         primary_only = "--primary" if config.get("primary_only", False) else ""
     log:
         "{sample}/{assembler}/logs/counts_per_region.log"
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:
@@ -522,16 +568,18 @@ rule run_diamond_blastp:
     benchmark:
         "benchmarks/run_diamond_blastp/{sample}.txt"
     params:
-            tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
-            top_seqs = config.get("diamond_top_seqs", 2),
-            e_value = config.get("diamond_e_value", 0.000001),
-            min_identity = config.get("diamond_min_identity", 50),
-            query_cover = config.get("diamond_query_coverage", 60),
-            gap_open = config.get("diamond_gap_open", 11),
-            gap_extend = config.get("diamond_gap_extend", 1),
-            block_size = config.get("diamond_block_size", 2),
-            index_chunks = config.get("diamond_index_chunks", 4),
-            run_mode = "--more-sensitive" if not config.get("diamond_run_mode", "") == "fast" else ""
+        tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
+        top_seqs = config.get("diamond_top_seqs", 2),
+        e_value = config.get("diamond_e_value", 0.000001),
+        min_identity = config.get("diamond_min_identity", 50),
+        query_cover = config.get("diamond_query_coverage", 60),
+        gap_open = config.get("diamond_gap_open", 11),
+        gap_extend = config.get("diamond_gap_extend", 1),
+        block_size = config.get("diamond_block_size", 2),
+        index_chunks = config.get("diamond_index_chunks", 4),
+        run_mode = "--more-sensitive" if not config.get("diamond_run_mode", "") == "fast" else ""
+    conda:
+        "{CONDAENV}/required_packages.yaml"
     threads:
         config.get("threads", 1)
     shell:

@@ -4,31 +4,58 @@ import sys
 import tempfile
 
 
+NORMALIZATION_KMER_LENGTH = 21
+NORMALIZATION_TARGET_DEPTH = 100
+
+
+def get_conda_envs_dir():
+    try:
+        import atlas
+    except ImportError:
+        sys.exit("Unable to import python package 'atlas'; install using: pip install pnnl-atlas")
+    yaml_dir = os.path.join(os.path.dirname(os.path.abspath(atlas.__file__)), "envs")
+    if not os.path.exists(yaml_dir):
+        sys.exit("Unable to locate the environmental dependencies file; tried %s" % yaml_dir)
+    return yaml_dir
+
+
 def get_assembler(config):
-    norm = "normalization_k%d_t%d" % (config.get("normalization_kmer_length", 21),
-                                      config.get("normalization_target_depth", 100))
+    norm_str = "normalization_k{length}_t{depth}".format(
+                   length=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+                   depth=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH))
     if config.get("assembler") == "spades":
-        return "spades_{k}_{norm}".format(k=config.get("spades_k", "auto").replace(",", "_"), norm=norm)
+        assembler_str = "spades_{k}".format(k=config.get("spades_k", "auto").replace(",", "_"))
     else:
         k_min = config.get("megahit_k_min", 21)
         k_max = config.get("megahit_k_max", 121)
         k_step = config.get("megahit_k_step", 20)
-        return "megahit_{min}_{max}_{step}_{norm}".format(min=k_min, max=k_max, step=k_step, norm=norm)
+        assembler_str = "megahit_{min}_{max}_{step}".format(min=k_min, max=k_max, step=k_step)
+    return "{assembler}_{norm}".format(assembler=assembler_str, norm=norm_str)
 
 
 def get_temp_dir(config):
     if config.get("tmpdir"):
-        return config["tmpdir"]
+        tmp_dir = config["tmpdir"]
     else:
-        return tempfile.gettempdir()
+        tmp_dir = tempfile.gettempdir()
+    return tmp_dir
 
 
-def bin_summary_files(do_binning, samples, assembler):
+def get_contaminant_output_files(samples, config):
+    ret_str = ""
+    if "contaminant_references" in config.keys():
+        if len(config["contaminant_references"]) > 0:
+            ret_str = expand("{sample}/quality_control/{sample}_02_{decon_dbs}.fastq.gz",
+                          sample=samples, decon_dbs=list(config["contaminant_references"].keys()))
+    return ret_str
+
+
+def get_bin_summary_files(do_binning, samples, assembler):
+    ret_str = ""
     if do_binning:
-        return expand("{sample}/{assembler}/genomic_bins/{sample}.summary", sample=samples, assembler=assembler)
-    else:
-        # the user has opted out of performing binning
-        return ""
+        ret_str = expand("{sample}/{assembler}/genomic_bins/{sample}.summary",
+                      sample=samples, assembler=assembler)
+    return ret_str
 
 
 def get_shell_prefix(config, override={}):
@@ -58,15 +85,19 @@ def update_config_file_paths(config):
     return config
 
 
+CONDAENV = get_conda_envs_dir()
+
+
 if config.get("workflow", "complete") == "complete":
     config = update_config_file_paths(config)
     SHPFXM = get_shell_prefix(config)
-    SHPFXS = get_shell_prefix(config, {"threads":"1"})
+    SHPFXS = get_shell_prefix(config, {"threads": "1"})
 
     # TABLES = get_count_tables(config, "summary_counts")
     TMPDIR = get_temp_dir(config)
-    NORMALIZATION = "normalization_k%d_t%d" % (config["preprocessing"]["normalization"].get("k", 21),
-                                               config["preprocessing"]["normalization"].get("t", 100))
+    NORMALIZATION = "normalization_k{length}_t{depth}".format(
+                        length=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+                        depth=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH))
     ASSEMBLER = get_assembler(config)
 
     SAMPLES = [i for i in config["samples"].keys()]
@@ -74,14 +105,13 @@ if config.get("workflow", "complete") == "complete":
     wildcard_constraints:
         sample = "[\w-]+"
 
+
     rule all:
         input:
-            expand("{sample}/quality_control/decontamination/{sample}_{decon_dbs}.fastq.gz",
-                sample=SAMPLES,
-                decon_dbs=list(config["preprocessing"]["contamination"]["references"].keys())),
-            expand("{sample}/quality_control/decontamination/{sample}_refstats.txt",
+            get_contaminant_output_files(SAMPLES, config),
+            expand("{sample}/quality_control/{sample}_decontamination_reference_stats.txt",
                 sample=SAMPLES),
-            expand("{sample}/quality_control/quality_filter/{sample}_se.fastq.gz",
+            expand("{sample}/quality_control/{sample}_00_se.fastq.gz",
                 sample=SAMPLES),
             expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
                 sample=SAMPLES),
@@ -91,7 +121,7 @@ if config.get("workflow", "complete") == "complete":
             expand("{sample}/{assembler}/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES,
                 assembler=ASSEMBLER),
-            bin_summary_files(config.get("perform_genome_binning", True), SAMPLES, ASSEMBLER),
+            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES, ASSEMBLER),
             expand("{sample}/{assembler}/functional_annotation/{sample}_annotations.txt",
                 sample=SAMPLES,
                 assembler=ASSEMBLER)
@@ -114,7 +144,7 @@ elif config.get("workflow") == "annotate":
     SAMPLES = list(config["samples"].keys())
     TMPDIR = get_temp_dir(config)
     SHPFXM = get_shell_prefix(config)
-    SHPFXS = get_shell_prefix(config, {"threads":"1"})
+    SHPFXS = get_shell_prefix(config, {"threads": "1"})
 
     rule all:
         input:
