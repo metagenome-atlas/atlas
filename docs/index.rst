@@ -18,7 +18,6 @@ ATLAS
     assembly/preprocessing
     assembly/assembly
     assembly/annotation
-    assembly/summary_counts
     assembly/advanced
 
 .. toctree::
