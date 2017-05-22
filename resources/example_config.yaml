@@ -38,6 +38,9 @@ java_mem: 16g
 # __threads__ is replaced with threads defined above
 # prefix: "srun --exclusive -N1 -n1 -c__threads__"
 
+#########################
+## Preprocessing Reads ##
+#########################
 
 # fastas to parse into kmers which are then trimmed from the sequences
 preprocess_adapters: /pic/projects/mint/atlas_databases/adapters.fa
@@ -47,8 +50,8 @@ preprocess_minimum_base_quality: 10
 # kmer mismatches allowed during adapter trim process
 preprocess_allowable_kmer_mismatches: 1
 # length of kmer to search against sequences
-preprocess_reference_kmer_match_length: 23
-# passing single-end read length, prior to merging
+preprocess_reference_kmer_match_length: 27
+# passing single-end read length
 preprocess_minimum_passing_read_length: 51
 # Discard reads with a minimum base frequency below this
 preprocess_minimum_base_frequency: 0.05
@@ -73,7 +76,6 @@ contaminant_minimum_hits: 1
 #   random  (select one top-scoring site randomly)
 #   all     (retain all top-scoring sites)
 contaminant_ambiguous: best
-
 
 normalization_kmer_length: 19
 normalization_target_depth: 100
