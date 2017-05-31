@@ -493,18 +493,18 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
     return contigs
 
 
-def validate_lineage(lineage):
+def validate_lineage(lineage, sep=";"):
     """
     >>> lineage = {"p":"Basidiomycota","c":"Tremellomycetes","o":"Tremellales","g":"Cryptococcus"}
     >>> validate_lineage(lineage)
-    'k__?,p__Basidiomycota,c__Tremellomycetes,o__Tremellales,f__?,g__Cryptococcus,s__?'
+    'k__?;p__Basidiomycota;c__Tremellomycetes;o__Tremellales;f__?;g__Cryptococcus;s__?'
     """
     levels = ["k" if tax_level == "superkingdom" else tax_level[0] for tax_level in TAX_LEVELS]
     valid_lineage = []
     for idx in levels:
-        # removes commas in tax names because you never know...
+        # removes commas in tax names
         valid_lineage.append("%s__%s" % (idx, lineage.get(idx, "?").replace(",", "")))
-    return ",".join(valid_lineage)
+    return sep.join(valid_lineage)
 
 
 def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold=0.51, table_name="refseq"):
