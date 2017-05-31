@@ -4,16 +4,21 @@ import sys
 import tempfile
 
 
+PREPROCESS_ADAPTER_MIN_K = 8
+PREPROCESS_MINIMUM_BASE_QUALITY = 10
+PREPROCESS_ALLOWABLE_KMER_MISMATCHES = 1
+PREPROCESS_REFERENCE_KMER_MATCH_LENGTH = 27
+QTRIM = "rl"
+PREPROCESS_MINIMUM_PASSING_READ_LENGTH = 51
+PREPROCESS_MINIMUM_BASE_FREQUENCY = 0.05
+
 NORMALIZATION_KMER_LENGTH = 21
 NORMALIZATION_TARGET_DEPTH = 100
+NORMALIZATION_MINIMUM_KMERS = 15
 
 
 def get_conda_envs_dir():
-    try:
-        import atlas
-    except ImportError:
-        sys.exit("Unable to import python package 'atlas'; install using: pip install pnnl-atlas")
-    yaml_dir = os.path.join(os.path.dirname(os.path.abspath(atlas.__file__)), "envs")
+    yaml_dir = os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "envs")
     if not os.path.exists(yaml_dir):
         sys.exit("Unable to locate the environmental dependencies file; tried %s" % yaml_dir)
     return yaml_dir
@@ -99,12 +104,12 @@ if config.get("workflow", "complete") == "complete":
                         length=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
                         depth=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH))
     ASSEMBLER = get_assembler(config)
+    CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
 
     SAMPLES = [i for i in config["samples"].keys()]
 
     wildcard_constraints:
         sample = "[\w-]+"
-
 
     rule all:
         input:
@@ -122,7 +127,7 @@ if config.get("workflow", "complete") == "complete":
                 sample=SAMPLES,
                 assembler=ASSEMBLER),
             get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES, ASSEMBLER),
-            expand("{sample}/{assembler}/functional_annotation/{sample}_annotations.txt",
+            expand("{sample}/{assembler}/{sample}_annotations.txt",
                 sample=SAMPLES,
                 assembler=ASSEMBLER)
 
@@ -145,6 +150,7 @@ elif config.get("workflow") == "annotate":
     TMPDIR = get_temp_dir(config)
     SHPFXM = get_shell_prefix(config)
     SHPFXS = get_shell_prefix(config, {"threads": "1"})
+    CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
 
     rule all:
         input:
