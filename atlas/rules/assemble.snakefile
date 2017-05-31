@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+from glob import glob
 from snakemake.utils import report
 
 
@@ -15,6 +16,15 @@ def get_ribosomal_rna_input(wildcards):
         return [clean_reads, rrna_reads]
     else:
         return [clean_reads]
+
+
+def get_quality_controlled_reads(wildcards):
+    # reads that have gone through ATLAS QC
+    fastq = "{sample}/quality_control/{sample}_03_pe.fastq.gz".format(sample=wildcards.sample)
+    # QA'd reads; the user wants to begin at assembly step
+    if config.get("workflow", "complete") == "assembly":
+        fastq = config["samples"][wildcards.sample]["fastq"]
+    return fastq
 
 
 def gff_to_gtf(gff_in, gtf_out):
@@ -49,23 +59,23 @@ rule quality_filter:
         se = "{sample}/quality_control/{sample}_00_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
-        "benchmarks/quality_filter/{sample}.txt"
+        "logs/benchmarks/quality_filter/{sample}.txt"
     params:
         lref = "lref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
         rref = "rref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
-        mink = config.get("preprocess_adapter_min_k", 8),
-        trimq = config.get("preprocess_minimum_base_quality", 10),
-        hdist = config.get("preprocess_allowable_kmer_mismatches", 1),
-        k = config.get("preprocess_reference_kmer_match_length", 27),
-        qtrim = config.get("qtrim", "rl"),
-        minlength = config.get("preprocess_minimum_passing_read_length", 51),
-        minbasefrequency = config.get("preprocess_minimum_base_frequency", 0.05),
+        mink = config.get("preprocess_adapter_min_k", PREPROCESS_ADAPTER_MIN_K),
+        trimq = config.get("preprocess_minimum_base_quality", PREPROCESS_MINIMUM_BASE_QUALITY),
+        hdist = config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
+        k = config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
+        qtrim = config.get("qtrim", QTRIM),
+        minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
+        minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f"
     log:
         "{sample}/logs/{sample}_quality_filter.log"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -84,11 +94,11 @@ if config.get("perform_error_correction", True):
         output:
             "{sample}/quality_control/{sample}_01_pe.fastq.gz"
         benchmark:
-            "benchmarks/error_correction/{sample}.txt"
+            "logs/benchmarks/error_correction/{sample}.txt"
         log:
             "{sample}/logs/{sample}_error_correction.log"
         conda:
-            "{CONDAENV}/required_packages.yaml"
+            "%s/required_packages.yaml" % CONDAENV
         resources:
             mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
         threads:
@@ -107,7 +117,7 @@ if config.get("perform_error_correction", True):
             stats = "{sample}/quality_control/{sample}_decontamination_reference_stats.txt",
             clean = temp("{sample}/quality_control/{sample}_02_pe.fastq.gz")
         benchmark:
-            "benchmarks/decontamination/{sample}.txt"
+            "logs/benchmarks/decontamination/{sample}.txt"
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
             refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
@@ -120,7 +130,7 @@ if config.get("perform_error_correction", True):
         log:
             "{sample}/logs/{sample}_decontamination.log"
         conda:
-            "{CONDAENV}/required_packages.yaml"
+            "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
@@ -140,7 +150,7 @@ else:
             stats = "{sample}/quality_control/{sample}_decontamination_reference_stats.txt",
             clean = temp("{sample}/quality_control/{sample}_02_pe.fastq.gz")
         benchmark:
-            "benchmarks/decontamination/{sample}.txt"
+            "logs/benchmarks/decontamination/{sample}.txt"
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
             refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
@@ -153,7 +163,7 @@ else:
         log:
             "{sample}/logs/{sample}_decontamination.log"
         conda:
-            "{CONDAENV}/required_packages.yaml"
+            "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
@@ -176,20 +186,21 @@ rule postprocess_after_decontamination:
 
 rule normalize_coverage_across_kmers:
     input:
-        "{sample}/quality_control/{sample}_03_pe.fastq.gz"
+        get_quality_controlled_reads
     output:
         "{sample}/quality_control/{sample}_04_%s_pe.fastq.gz" % NORMALIZATION
     benchmark:
-        "benchmarks/normalization/{sample}.txt"
+        "logs/benchmarks/normalization/{sample}.txt"
     params:
-        k = config.get("normalization_kmer_length", 21),
-        t = config.get("normalization_target_depth", 100),
-        minkmers = config.get("normalization_minimum_kmers", 15),
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
+        k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+        t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
+        minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
+        inputs = get_bbtools_input, lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
+        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f"
     log:
         "{sample}/logs/{sample}_%s.log" % NORMALIZATION
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -205,7 +216,7 @@ if config.get("assembler", "megahit") == "megahit":
         output:
             temp("{sample}/{assembler}/{sample}_prefilter.contigs.fa")
         benchmark:
-            "benchmarks/{assembler}/{sample}.txt"
+            "logs/benchmarks/{assembler}/{sample}.txt"
         shadow:
             "full"
         params:
@@ -221,7 +232,7 @@ if config.get("assembler", "megahit") == "megahit":
             min_contig_len = config.get("minimum_contig_length", 1000),
             outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
         conda:
-            "{CONDAENV}/required_packages.yaml"
+            "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
@@ -248,7 +259,7 @@ else:
         output:
             temp("{sample}/{assembler}/contigs.fasta")
         benchmark:
-            "benchmarks/{assembler}/{sample}.txt"
+            "logs/benchmarks/{assembler}/{sample}.txt"
         params:
             # memory = config["assembly"].get("memory", 0.90)
             read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
@@ -257,7 +268,7 @@ else:
         log:
             "{sample}/{assembler}/spades.log"
         conda:
-            "{CONDAENV}/required_packages.yaml"
+            "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
@@ -280,7 +291,7 @@ rule rename_contigs:
     output:
         "{sample}/{assembler}/{sample}_prefilter_contigs.fasta"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
@@ -291,7 +302,7 @@ rule calculate_prefiltered_contigs_stats:
     output:
         "{sample}/{assembler}/contig_stats/prefilter_contig_stats.txt"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         1
     shell:
@@ -301,7 +312,7 @@ rule calculate_prefiltered_contigs_stats:
 rule calculate_prefiltered_contig_coverage_stats:
     input:
         fasta = "{sample}/{assembler}/{sample}_prefilter_contigs.fasta",
-        fastq = "{sample}/quality_control/{sample}_03_pe.fastq.gz"
+        fastq = get_quality_controlled_reads
     output:
         bhist = "{sample}/{assembler}/contig_stats/prefilter_base_composition.txt",
         bqhist = "{sample}/{assembler}/contig_stats/prefilter_box_quality.txt",
@@ -309,13 +320,13 @@ rule calculate_prefiltered_contig_coverage_stats:
         statsfile = "{sample}/{assembler}/contig_stats/prefilter_mapping_stats.txt",
         covstats = "{sample}/{assembler}/contig_stats/prefilter_coverage_stats.txt"
     benchmark:
-        "benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
+        "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
     log:
         "{sample}/{assembler}/logs/prefiltered_contig_coverage_stats.log"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -341,7 +352,7 @@ rule filter_by_coverage:
     log:
         "{sample}/{assembler}/logs/filter_by_coverage.log"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         1
     shell:
@@ -353,7 +364,7 @@ rule filter_by_coverage:
 rule align_reads_to_filtered_contigs:
     input:
         fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
-        fastq = "{sample}/quality_control/{sample}_03_pe.fastq.gz"
+        fastq = get_quality_controlled_reads
     output:
         sam = temp("{sample}/{assembler}/alignments/{sample}.sam"),
         bhist = "{sample}/{assembler}/contig_stats/postfilter_base_composition.txt",
@@ -363,14 +374,14 @@ rule align_reads_to_filtered_contigs:
         statsfile = "{sample}/{assembler}/contig_stats/postfilter_mapping_stats.txt",
         covstats = "{sample}/{assembler}/contig_stats/postfilter_coverage_stats.txt"
     benchmark:
-        "benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
+        "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
         maxsites = config.get("maximum_counted_map_sites", 10)
     log:
         "{sample}/{assembler}/logs/contig_coverage_stats.log"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -401,7 +412,7 @@ if config.get("perform_genome_binning", True):
             summary = "{sample}/{assembler}/genomic_bins/{sample}.summary",
             marker = "{sample}/{assembler}/genomic_bins/{sample}.marker"
         benchmark:
-            "benchmarks/maxbin2/{sample}.txt"
+            "logs/benchmarks/maxbin2/{sample}.txt"
         params:
             mi = config.get("maxbin_max_iteration", 50),
             mcl = config.get("maxbin_min_contig_length", 200),
@@ -409,7 +420,7 @@ if config.get("perform_genome_binning", True):
         log:
             "{sample}/{assembler}/logs/maxbin2.log"
         conda:
-            "{CONDAENV}/optional_maxbin2.yaml"
+            "%s/optional_genome_binning.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
@@ -419,9 +430,91 @@ if config.get("perform_genome_binning", True):
                 -max_iteration {params.mi} > {log}"""
 
 
-    # rule run_checkm:
-    # rule run_ssu_search_and_assignment:
+    rule initialize_checkm:
+        # input:
+        output:
+            "%s/test_data/637000110.fna" % CHECKMDIR,
+            "%s/taxon_marker_sets.tsv" % CHECKMDIR,
+            "%s/selected_marker_sets.tsv" % CHECKMDIR,
+            "%s/pfam/tigrfam2pfam.tsv" % CHECKMDIR,
+            "%s/pfam/Pfam-A.hmm.dat" % CHECKMDIR,
+            "%s/img/img_metadata.tsv" % CHECKMDIR,
+            "%s/hmms_ssu/SSU_euk.hmm" % CHECKMDIR,
+            "%s/hmms_ssu/SSU_bacteria.hmm" % CHECKMDIR,
+            "%s/hmms_ssu/SSU_archaea.hmm" % CHECKMDIR,
+            "%s/hmms_ssu/createHMMs.py" % CHECKMDIR,
+            "%s/hmms/phylo.hmm.ssi" % CHECKMDIR,
+            "%s/hmms/phylo.hmm" % CHECKMDIR,
+            "%s/hmms/checkm.hmm.ssi" % CHECKMDIR,
+            "%s/hmms/checkm.hmm" % CHECKMDIR,
+            "%s/genome_tree/missing_duplicate_genes_97.tsv" % CHECKMDIR,
+            "%s/genome_tree/missing_duplicate_genes_50.tsv" % CHECKMDIR,
+            "%s/genome_tree/genome_tree.taxonomy.tsv" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_reduced.refpkg/phylo_modelJqWx6_.json" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_reduced.refpkg/genome_tree.tre" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_reduced.refpkg/genome_tree.log" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_reduced.refpkg/genome_tree.fasta" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_reduced.refpkg/CONTENTS.json" % CHECKMDIR,
+            "%s/genome_tree/genome_tree.metadata.tsv" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_full.refpkg/phylo_modelEcOyPk.json" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_full.refpkg/genome_tree.tre" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_full.refpkg/genome_tree.log" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_full.refpkg/genome_tree.fasta" % CHECKMDIR,
+            "%s/genome_tree/genome_tree_full.refpkg/CONTENTS.json" % CHECKMDIR,
+            "%s/genome_tree/genome_tree.derep.txt" % CHECKMDIR,
+            "%s/.dmanifest" % CHECKMDIR,
+            "%s/distributions/td_dist.txt" % CHECKMDIR,
+            "%s/distributions/gc_dist.txt" % CHECKMDIR,
+            "%s/distributions/cd_dist.txt" % CHECKMDIR,
+            touched_output = "logs/checkm_init.txt"
+        params:
+            database_dir = CHECKMDIR
+        conda:
+            "%s/optional_genome_binning.yaml" % CONDAENV
+        script:
+            "initialize_checkm.py"
+
+
+    rule run_checkm_lineage_wf:
+        input:
+            init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
+            bins = "{sample}/{assembler}/genomic_bins/{sample}.marker"
+        output:
+            "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv"
+        params:
+            bin_dir = "{sample}/{assembler}/genomic_bins",
+            output_dir = "{sample}/{assembler}/genomic_bins/checkm"
+        conda:
+            "%s/optional_genome_binning.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        shell:
+            """rm -r {params.output_dir} && {SHPFXM} checkm lineage_wf --file {params.output_dir}/completeness.tsv --tab_table \
+                   --quiet --extension fasta --threads {threads} {params.bin_dir} \
+                   {params.output_dir}"""
+
+
+    rule run_checkm_tree_qa:
+        input:
+            "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv"
+        output:
+            "{sample}/{assembler}/genomic_bins/checkm/taxonomy.tsv"
+        params:
+            output_dir = "{sample}/{assembler}/genomic_bins/checkm"
+        conda:
+            "%s/optional_genome_binning.yaml" % CONDAENV
+        shell:
+            """{SHPFXS} checkm tree_qa --tab_table --out_format 2 \
+                   --file {params.output_dir}/taxonomy.tsv {params.output_dir}"""
+
+
     # rule compile_bin_tax_assignments:
+    #     input:
+    #         "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv",
+    #         "{sample}/{assembler}/genomic_bins/checkm/taxonomy.tsv"
+    #     output:
+    #         "{sample}/{assembler}/genomic_bins/checkm/completeness_and_taxonomy.tsv"
+
 
 
 rule convert_sam_to_bam:
@@ -430,7 +523,7 @@ rule convert_sam_to_bam:
     output:
         temp("{sample}/{assembler}/alignments/{sample}.bam")
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -444,7 +537,7 @@ rule create_bam_index:
     output:
         temp("{sample}/{assembler}/alignments/{sample}.bam.bai")
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         1
     shell:
@@ -457,7 +550,7 @@ rule calculate_final_contigs_stats:
     output:
         "{sample}/{assembler}/contig_stats/final_contig_stats.txt"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         1
     shell:
@@ -481,12 +574,12 @@ rule run_prokka_annotation:
         tsv = "{sample}/{assembler}/functional_annotation/prokka/{sample}.tsv",
         txt = "{sample}/{assembler}/functional_annotation/prokka/{sample}.txt"
     benchmark:
-        "benchmarks/prokka/{sample}.txt"
+        "logs/benchmarks/prokka/{sample}.txt"
     params:
         outdir = "{sample}/{assembler}/functional_annotation/prokka",
         kingdom = config.get("prokka_kingdom", "Bacteria")
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -521,11 +614,11 @@ rule remove_pcr_duplicates:
         bam = "{sample}/{assembler}/alignments/{sample}_markdup.bam",
         txt = "{sample}/{assembler}/alignments/{sample}_markdup_metrics.txt"
     benchmark:
-        "benchmarks/picard_mark_duplicates/{sample}.txt"
+        "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
     params:
         java_mem = config.get("java_mem", "32g")
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     resources:
         mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
     shell:
@@ -550,7 +643,7 @@ rule find_counts_per_region:
     log:
         "{sample}/{assembler}/logs/counts_per_region.log"
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -566,7 +659,7 @@ rule run_diamond_blastp:
     output:
         "{sample}/{assembler}/functional_annotation/refseq/{sample}_hits.tsv"
     benchmark:
-        "benchmarks/run_diamond_blastp/{sample}.txt"
+        "logs/benchmarks/run_diamond_blastp/{sample}.txt"
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = config.get("diamond_top_seqs", 2),
@@ -579,7 +672,7 @@ rule run_diamond_blastp:
         index_chunks = config.get("diamond_index_chunks", 4),
         run_mode = "--more-sensitive" if not config.get("diamond_run_mode", "") == "fast" else ""
     conda:
-        "{CONDAENV}/required_packages.yaml"
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -642,15 +735,34 @@ rule parse_blastp:
                {input} {params.namemap} {params.treefile} {output}"""
 
 
-rule merge_sample_tables:
-    input:
-        prokka = "{sample}/{assembler}/functional_annotation/prokka/{sample}_plus.tsv",
-        refseq = "{sample}/{assembler}/functional_annotation/refseq/{sample}_tax_assignments.tsv",
-        counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt"
-    output:
-        "{sample}/{assembler}/functional_annotation/{sample}_annotations.txt"
-    shell:
-        "{SHPFXS} atlas merge-tables --counts {input.counts} {input.prokka} {input.refseq} {output}"
+if config.get("perform_genome_binning", True):
+    rule merge_sample_tables:
+        input:
+            prokka = "{sample}/{assembler}/functional_annotation/prokka/{sample}_plus.tsv",
+            refseq = "{sample}/{assembler}/functional_annotation/refseq/{sample}_tax_assignments.tsv",
+            counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt",
+            completeness = "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv",
+            taxonomy = "{sample}/{assembler}/genomic_bins/checkm/taxonomy.tsv"
+        output:
+            "{sample}/{assembler}/{sample}_annotations.txt"
+        params:
+            fastas = lambda wc: " --fasta ".join(glob("{sample}/{assembler}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample, assembler=wc.assembler)))
+        shell:
+            "{SHPFXS} atlas merge-tables --counts {input.counts} \
+                 --completeness {input.completeness} --taxonomy {input.taxonomy} \
+                 --fasta {params.fastas} {input.prokka} {input.refseq} {output}"
+
+
+else:
+    rule merge_sample_tables:
+        input:
+            prokka = "{sample}/{assembler}/functional_annotation/prokka/{sample}_plus.tsv",
+            refseq = "{sample}/{assembler}/functional_annotation/refseq/{sample}_tax_assignments.tsv",
+            counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt"
+        output:
+            "{sample}/{assembler}/{sample}_annotations.txt"
+        shell:
+            "{SHPFXS} atlas merge-tables --counts {input.counts} {input.prokka} {input.refseq} {output}"
 
 
 # rule assembly_report:
