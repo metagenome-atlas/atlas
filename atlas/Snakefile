@@ -4,6 +4,8 @@ import sys
 import tempfile
 
 
+# global defaults
+JAVA_MEM = "32g"
 PREPROCESS_ADAPTER_MIN_K = 8
 PREPROCESS_MINIMUM_BASE_QUALITY = 10
 PREPROCESS_ALLOWABLE_KMER_MISMATCHES = 1
@@ -12,13 +14,63 @@ QTRIM = "rl"
 PREPROCESS_MINIMUM_PASSING_READ_LENGTH = 51
 PREPROCESS_MINIMUM_BASE_FREQUENCY = 0.05
 
+CONTAMINANT_MAX_INDEL = 20
+CONTAMINANT_MIN_RATIO = 0.65
+CONTAMINANT_MINIMUM_HITS = 1
+CONTAMINANT_AMBIGUOUS = "best"
+CONTAMINANT_KMER_LENGTH = 13
+
 NORMALIZATION_KMER_LENGTH = 21
 NORMALIZATION_TARGET_DEPTH = 100
 NORMALIZATION_MINIMUM_KMERS = 15
 
+MEGAHIT_MEMORY = 0.90
+MEGAHIT_MIN_COUNT = 2
+MEGAHIT_K_MIN = 21
+MEGAHIT_K_MAX = 121
+MEGAHIT_K_STEP = 20
+MEGAHIT_MERGE_LEVEL = "20,0.98"
+MEGAHIT_PRUNE_LEVEL = 2
+MEGAHIT_LOW_LOCAL_RATIO = 0.2
+SPADES_K = "auto"
+MINIMUM_CONTIG_LENGTH = 1000
+
+MINIMUM_AVERAGE_COVERAGE = 5
+MINIMUM_PERCENT_COVERED_BASES = 40
+MINIMUM_MAPPED_READS = 0
+MINIMUM_CONTIG_LENGTH = 1000
+CONTIG_TRIM_BP = 0
+
+MINIMUM_REGION_OVERLAP = 1
+MAXIMUM_COUNTED_MAP_SITES = 10
+PROKKA_KINGDOM = "Bacteria"
+
+MAXBIN_MAX_ITERATION = 50
+MAXBIN_MIN_CONTIG_LENGTH = 200
+MAXBIN_PROB_THRESHOLD = 0.9
+
+DIAMOND_TOP_SEQS = 2
+DIAMOND_E_VALUE = 0.000001
+DIAMOND_MIN_IDENTITY = 50
+DIAMOND_QUERY_COVERAGE = 60
+DIAMOND_GAP_OPEN = 11
+DIAMOND_GAP_EXTEND = 1
+DIAMOND_BLOCK_SIZE = 2
+DIAMOND_INDEX_CHUNKS = 4
+
+SUMMARY_METHOD = "lca"
+AGGREGATION_METHOD = "lca-majority"
+MAJORITY_THRESHOLD = 0.51
+MIN_BITSCORE = 0
+MIN_LENGTH = 20
+MAX_HITS = 100
+
 
 def get_conda_envs_dir():
-    yaml_dir = os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "envs")
+    if config.get("yaml_dir"):
+        yaml_dir = config.get("yaml_dir")
+    else:
+        yaml_dir = os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "envs")
     if not os.path.exists(yaml_dir):
         sys.exit("Unable to locate the environmental dependencies file; tried %s" % yaml_dir)
     return yaml_dir
@@ -138,9 +190,16 @@ elif config.get("workflow") == "download":
     FILES = ["silva_rfam_all_rRNAs.fa", "adapters.fa", "phiX174_virus.fa", "refseq.db",
              "refseq.dmnd", "refseq.tree"]
 
+    FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
+             "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
+             "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
+             "refseq.dmnd": "d9d0a5f6704a94d574d49f51e06c007a",
+             "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
+             "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66"}
+
     rule all:
         input:
-            expand("{dir}/{filename}", dir=os.path.realpath(config["db_dir"]), filename=FILES)
+            expand("{dir}/{filename}", dir=os.path.realpath(config["db_dir"]), filename=list(FILES.keys()))
 
     include: "rules/download.snakefile"
 
