@@ -121,11 +121,11 @@ if config.get("perform_error_correction", True):
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
             refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
-            maxindel = config.get("contaminant_max_indel", 20),
-            minratio = config.get("contaminant_min_ratio", 0.65),
-            minhits = config.get("contaminant_minimum_hits", 1),
-            ambiguous = config.get("contaminant_ambiguous", "best"),
-            k = config.get("contaminant_kmer_length", 13),
+            maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
+            minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
+            minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
+            ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
+            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
             interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
         log:
             "{sample}/logs/{sample}_decontamination.log"
@@ -154,11 +154,11 @@ else:
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
             refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
-            maxindel = config.get("contaminant_max_indel", 20),
-            minratio = config.get("contaminant_min_ratio", 0.65),
-            minhits = config.get("contaminant_minimum_hits", 1),
-            ambiguous = config.get("contaminant_ambiguous", "best"),
-            k = config.get("contaminant_kmer_length", 13),
+            maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
+            minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
+            minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
+            ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
+            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
             interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
         log:
             "{sample}/logs/{sample}_decontamination.log"
@@ -195,8 +195,8 @@ rule normalize_coverage_across_kmers:
         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-        inputs = get_bbtools_input, lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f"
+        inputs = lambda wc, input: "in=%s" % input[0] if len(input) == 1 else "in=%s in2=%s" % (input[0], input[1]),
+        interleaved = lambda wc, input: "t" if config["samples"][wc.sample].get("paired", True) and len(input) == 1 else "f"
     log:
         "{sample}/logs/{sample}_%s.log" % NORMALIZATION
     conda:
@@ -221,16 +221,16 @@ if config.get("assembler", "megahit") == "megahit":
             "full"
         params:
             read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--read",
-            memory = config.get("megahit_memory", 0.90),
-            min_count = config.get("megahit_min_count", 2),
-            k_min = config.get("megahit_k_min", 21),
-            k_max = config.get("megahit_k_max", 121),
-            k_step = config.get("megahit_k_step", 20),
-            merge_level = config.get("megahit_merge_level", "20,0.98"),
-            prune_level = config.get("megahit_prune_level", 2),
-            low_local_ratio = config.get("megahit_low_local_ratio", 0.2),
-            min_contig_len = config.get("minimum_contig_length", 1000),
-            outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
+            memory = config.get("megahit_memory", MEGAHIT_MEMORY),
+            min_count = config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
+            k_min = config.get("megahit_k_min", MEGAHIT_K_MIN),
+            k_max = config.get("megahit_k_max", MEGAHIT_K_MAX),
+            k_step = config.get("megahit_k_step", MEGAHIT_K_STEP),
+            merge_level = config.get("megahit_merge_level", MEGAHIT_MERGE_LEVEL),
+            prune_level = config.get("megahit_prune_level", MEGAHIT_PRUNE_LEVEL),
+            low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
+            min_contig_len = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
+            outdir = lambda wc, output: os.path.dirname(output[0])
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -263,7 +263,7 @@ else:
         params:
             # memory = config["assembly"].get("memory", 0.90)
             read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
-            k = config.get("spades_k", "auto"),
+            k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
         log:
             "{sample}/{assembler}/spades.log"
@@ -344,11 +344,11 @@ rule filter_by_coverage:
         fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
         removed_names = "{sample}/{assembler}/{sample}_discarded_contigs.fasta"
     params:
-        minc = config.get("minimum_average_coverage", 5),
-        minp = config.get("minimum_percent_covered_bases", 40),
-        minr = config.get("minimum_mapped_reads", 0),
-        minl = config.get("minimum_contig_length", 1000),
-        trim = config.get("contig_trim_bp", 0)
+        minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
+        minp = config.get("minimum_percent_covered_bases", MINIMUM_PERCENT_COVERED_BASES),
+        minr = config.get("minimum_mapped_reads", MINIMUM_MAPPED_READS),
+        minl = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
+        trim = config.get("contig_trim_bp", CONTIG_TRIM_BP)
     log:
         "{sample}/{assembler}/logs/filter_by_coverage.log"
     conda:
@@ -377,7 +377,7 @@ rule align_reads_to_filtered_contigs:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
-        maxsites = config.get("maximum_counted_map_sites", 10)
+        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES)
     log:
         "{sample}/{assembler}/logs/contig_coverage_stats.log"
     conda:
@@ -414,9 +414,10 @@ if config.get("perform_genome_binning", True):
         benchmark:
             "logs/benchmarks/maxbin2/{sample}.txt"
         params:
-            mi = config.get("maxbin_max_iteration", 50),
-            mcl = config.get("maxbin_min_contig_length", 200),
-            pt = config.get("maxbin_prob_threshold", 0.9)
+            mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
+            mcl = config.get("maxbin_min_contig_length", MAXBIN_MIN_CONTIG_LENGTH),
+            pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
+            outdir = lambda wc, output: os.path.join(os.path.dirname(output.summary), wc.sample)
         log:
             "{sample}/{assembler}/logs/maxbin2.log"
         conda:
@@ -425,9 +426,8 @@ if config.get("perform_genome_binning", True):
             config.get("threads", 1)
         shell:
             """{SHPFXM} run_MaxBin.pl -contig {input.fasta} -abund {input.abundance} \
-                -out {wildcards.sample}/{wildcards.assembler}/genomic_bins/{wildcards.sample} \
-                -min_contig_length {params.mcl} -thread {threads} -prob_threshold {params.pt} \
-                -max_iteration {params.mi} > {log}"""
+                -out {params.outdir} -min_contig_length {params.mcl} -thread {threads} \
+                -prob_threshold {params.pt} -max_iteration {params.mi} > {log}"""
 
 
     rule initialize_checkm:
@@ -482,14 +482,15 @@ if config.get("perform_genome_binning", True):
         output:
             "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv"
         params:
-            bin_dir = "{sample}/{assembler}/genomic_bins",
-            output_dir = "{sample}/{assembler}/genomic_bins/checkm"
+            bin_dir = lambda wc, input: os.path.dirname(input.bins),
+            output_dir = lambda wc, output: os.path.dirname(output[0])
         conda:
             "%s/optional_genome_binning.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
-            """rm -r {params.output_dir} && {SHPFXM} checkm lineage_wf --file {params.output_dir}/completeness.tsv --tab_table \
+            """rm -r {params.output_dir} && \
+               {SHPFXM} checkm lineage_wf --file {params.output_dir}/completeness.tsv --tab_table \
                    --quiet --extension fasta --threads {threads} {params.bin_dir} \
                    {params.output_dir}"""
 
@@ -506,15 +507,6 @@ if config.get("perform_genome_binning", True):
         shell:
             """{SHPFXS} checkm tree_qa --tab_table --out_format 2 \
                    --file {params.output_dir}/taxonomy.tsv {params.output_dir}"""
-
-
-    # rule compile_bin_tax_assignments:
-    #     input:
-    #         "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv",
-    #         "{sample}/{assembler}/genomic_bins/checkm/taxonomy.tsv"
-    #     output:
-    #         "{sample}/{assembler}/genomic_bins/checkm/completeness_and_taxonomy.tsv"
-
 
 
 rule convert_sam_to_bam:
@@ -576,8 +568,8 @@ rule run_prokka_annotation:
     benchmark:
         "logs/benchmarks/prokka/{sample}.txt"
     params:
-        outdir = "{sample}/{assembler}/functional_annotation/prokka",
-        kingdom = config.get("prokka_kingdom", "Bacteria")
+        outdir = lambda wc, output: os.path.dirname(output.faa),
+        kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -616,7 +608,7 @@ rule remove_pcr_duplicates:
     benchmark:
         "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
     params:
-        java_mem = config.get("java_mem", "32g")
+        java_mem = config.get("java_mem", JAVA_MEM)
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
@@ -636,7 +628,7 @@ rule find_counts_per_region:
         summary = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt"
     params:
-        min_read_overlap = config.get("minimum_region_overlap", 1),
+        min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
         paired_mode = lambda wc: "-p" if config["samples"][wc.sample].get("paired", True) else "",
         multi_mapping = "-M" if config.get("count_multi_mapped_reads") else "",
         primary_only = "--primary" if config.get("primary_only", False) else ""
@@ -662,14 +654,14 @@ rule run_diamond_blastp:
         "logs/benchmarks/run_diamond_blastp/{sample}.txt"
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
-        top_seqs = config.get("diamond_top_seqs", 2),
-        e_value = config.get("diamond_e_value", 0.000001),
-        min_identity = config.get("diamond_min_identity", 50),
-        query_cover = config.get("diamond_query_coverage", 60),
-        gap_open = config.get("diamond_gap_open", 11),
-        gap_extend = config.get("diamond_gap_extend", 1),
-        block_size = config.get("diamond_block_size", 2),
-        index_chunks = config.get("diamond_index_chunks", 4),
+        top_seqs = config.get("diamond_top_seqs", DIAMOND_TOP_SEQS),
+        e_value = config.get("diamond_e_value", DIAMOND_E_VALUE),
+        min_identity = config.get("diamond_min_identity", DIAMOND_MIN_IDENTITY),
+        query_cover = config.get("diamond_query_coverage", DIAMOND_QUERY_COVERAGE),
+        gap_open = config.get("diamond_gap_open", DIAMOND_GAP_OPEN),
+        gap_extend = config.get("diamond_gap_extend", DIAMOND_GAP_EXTEND),
+        block_size = config.get("diamond_block_size", DIAMOND_BLOCK_SIZE),
+        index_chunks = config.get("diamond_index_chunks", DIAMOND_INDEX_CHUNKS),
         run_mode = "--more-sensitive" if not config.get("diamond_run_mode", "") == "fast" else ""
     conda:
         "%s/required_packages.yaml" % CONDAENV
@@ -713,14 +705,14 @@ rule parse_blastp:
     params:
         namemap = config["refseq_namemap"],
         treefile = config["refseq_tree"],
-        summary_method = config.get("summary_method", "lca"),
-        aggregation_method = config.get("aggregation_method", "lca-majority"),
-        majority_threshold = config.get("majority_threshold", 0.51),
-        min_identity = config.get("diamond_min_identity", 50),
-        min_bitscore = config.get("min_bitscore", 0),
-        min_length = config.get("min_length", 20),
-        max_evalue = config.get("diamond_e_value", 0.000001),
-        max_hits = config.get("max_hits", 100),
+        summary_method = config.get("summary_method", SUMMARY_METHOD),
+        aggregation_method = config.get("aggregation_method", AGGREGATION_METHOD),
+        majority_threshold = config.get("majority_threshold", MAJORITY_THRESHOLD),
+        min_identity = config.get("diamond_min_identity", DIAMOND_MIN_IDENTITY),
+        min_bitscore = config.get("min_bitscore", MIN_BITSCORE),
+        min_length = config.get("min_length", MIN_LENGTH),
+        max_evalue = config.get("diamond_e_value", DIAMOND_E_VALUE),
+        max_hits = config.get("max_hits", MAX_HITS),
         top_fraction = (100 - config.get("diamond_top_seqs", 5)) * 0.01
     shell:
         """{SHPFXS} atlas refseq --summary-method {params.summary_method} \
