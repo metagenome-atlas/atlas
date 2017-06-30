@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from atlas.utils import validate_assembly_config
 from subprocess import check_call
 
 
@@ -12,10 +11,22 @@ def get_snakefile():
     return sf
 
 
-def assemble(config, jobs, out_dir, dryrun, snakemake_args):
-    if not validate_assembly_config(config):
-        sys.exit("The configuration file is invalid.")
+def annotate(config, jobs, out_dir, dryrun, snakemake_args):
+    out_dir = os.path.realpath(out_dir)
+    cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
+           "--configfile '{config}' --nolock --config workflow=annotate "
+           "{args} --{dryrun}").format(snakefile=get_snakefile(),
+                                       out_dir=out_dir,
+                                       jobs=jobs,
+                                       config=config,
+                                       dryrun="dryrun" if dryrun else "",
+                                       args=" ".join(snakemake_args))
+    logging.info("Executing: %s" % cmd)
+    check_call(cmd, shell=True)
 
+
+def assemble(config, jobs, out_dir, dryrun, snakemake_args):
+    out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
            "--configfile '{config}' --nolock "
            "--config workflow=complete {args} --{dryrun}").format(snakefile=get_snakefile(),
@@ -24,7 +35,7 @@ def assemble(config, jobs, out_dir, dryrun, snakemake_args):
                                                                     config=config,
                                                                     dryrun="dryrun" if dryrun else "",
                                                                     args=" ".join(snakemake_args))
-    logging.info("Executing: " + cmd)
+    logging.info("Executing: %s" % cmd)
     check_call(cmd, shell=True)
 
 
@@ -38,5 +49,5 @@ def download(jobs, out_dir, snakemake_args):
                                                              out_dir=out_dir,
                                                              args=" ".join(snakemake_args))
 
-    logging.info("Executing: " + cmd)
+    logging.info("Executing: %s" % cmd)
     check_call(cmd, shell=True)
