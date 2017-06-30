@@ -7,7 +7,7 @@ from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
-from atlas.workflows import assemble, download
+from atlas.workflows import annotate, assemble, download
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s %(levelname)s] %(message)s")
@@ -214,7 +214,11 @@ def run_assemble(config, jobs, out_dir, dryrun, snakemake_args):
 
 @cli.command("annotate", short_help="annotation workflow")
 @click.argument("config")
-def run_annotate(config):
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_annotate(config, jobs, out_dir, dryrun, snakemake_args):
     """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
     for a sample, quantification is also performed.
 
@@ -223,7 +227,7 @@ def run_annotate(config):
         \b
         atlas make-config
     """
-
+    annotate(os.path.realpath(config), jobs, out_dir, dryrun, snakemake_args)
 
 
 @cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")
