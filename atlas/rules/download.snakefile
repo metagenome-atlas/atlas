@@ -18,7 +18,7 @@ rule transfer_files:
         "%s/{filename}" % config["db_dir"]
     run:
         shell("curl 'https://zenodo.org/record/804435/files/{wildcards.filename}' -s > {output}")
-        if not FILES["{wildcards.filename}"] == md5(output[0]):
+        if not FILES[wildcards.filename] == md5(output[0]):
             raise OSError(2, "Invalid checksum", output[0])
 
 

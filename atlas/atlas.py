@@ -197,9 +197,10 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_assemble(config, jobs, out_dir, dryrun, snakemake_args):
+def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     """Runs the complete ATLAS protocol from raw reads through assembly, annotation, quantification,
     and genomic binning.
 
@@ -209,16 +210,17 @@ def run_assemble(config, jobs, out_dir, dryrun, snakemake_args):
         atlas make-config
 
     """
-    assemble(os.path.realpath(config), jobs, out_dir, dryrun, snakemake_args)
+    assemble(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
 
 
 @cli.command("annotate", short_help="annotation workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_annotate(config, jobs, out_dir, dryrun, snakemake_args):
+def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
     for a sample, quantification is also performed.
 
@@ -227,7 +229,7 @@ def run_annotate(config, jobs, out_dir, dryrun, snakemake_args):
         \b
         atlas make-config
     """
-    annotate(os.path.realpath(config), jobs, out_dir, dryrun, snakemake_args)
+    annotate(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
 
 
 @cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")

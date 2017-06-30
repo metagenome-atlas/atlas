@@ -30,6 +30,8 @@ rule rename_input_contigs:
         lambda wc: config["samples"][wc.sample]["fasta"]
     output:
         "{sample}/{sample}_renamed_contigs.fasta"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
@@ -39,6 +41,8 @@ rule calculate_contigs_stats:
        "{sample}/{sample}_renamed_contigs.fasta"
    output:
        "{sample}/contig_stats.txt"
+   conda:
+       "%s/required_packages.yaml" % CONDAENV
    threads:
        1
    shell:
@@ -68,6 +72,8 @@ rule run_prokka_annotation:
         kingdom = config.get("prokka_kingdom", "Bacteria"),
         # metagenome: false
         metagenome = "--metagenome" if config.get("metagenome", True) else ""
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -113,6 +119,8 @@ rule run_diamond_blastp:
         block_size = config.get("diamond_block_size", 2),
         index_chunks = config.get("diamond_index_chunks", 4),
         run_mode = "--more-sensitive" if not config.get("diamond_run_mode", "") == "fast" else ""
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -195,6 +203,8 @@ rule align_reads_to_renamed_contigs:
         maxsites = config.get("maximum_counted_map_sites", 10)
     log:
         "{sample}/alignments/align_reads.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
@@ -207,26 +217,30 @@ rule align_reads_to_renamed_contigs:
 
 
 rule convert_alignment_sam_to_bam:
-   input:
-       "{sample}/alignments/{sample}.sam"
-   output:
-       temp("{sample}/alignments/{sample}.bam")
-   threads:
-       config.get("threads", 1)
-   shell:
-       """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
-              | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+    input:
+        "{sample}/alignments/{sample}.sam"
+    output:
+        temp("{sample}/alignments/{sample}.bam")
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
+               | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
 
 
 rule create_bam_index:
-   input:
-       "{sample}/alignments/{sample}.bam"
-   output:
-       temp("{sample}/alignments/{sample}.bam.bai")
-   threads:
-       1
-   shell:
-       "{SHPFXS} samtools index {input}"
+    input:
+        "{sample}/alignments/{sample}.bam"
+    output:
+        temp("{sample}/alignments/{sample}.bam.bai")
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        1
+    shell:
+        "{SHPFXS} samtools index {input}"
 
 
 rule remove_pcr_duplicates:
@@ -244,6 +258,8 @@ rule remove_pcr_duplicates:
         mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
     log:
         "{sample}/alignments/remove_pcr_duplicates.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     shell:
         """{SHPFXS} picard MarkDuplicates -Xmx{params.java_mem} INPUT={input.bam} \
                OUTPUT={output.bam} METRICS_FILE={output.txt} ASSUME_SORT_ORDER=coordinate \
@@ -265,6 +281,8 @@ rule counts_per_region:
         primary_only = "--primary" if config.get("primary_only", False) else ""
     log:
         "{sample}/feature_counts/feature_counts.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:

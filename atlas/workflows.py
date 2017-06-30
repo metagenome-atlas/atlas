@@ -11,30 +11,32 @@ def get_snakefile():
     return sf
 
 
-def annotate(config, jobs, out_dir, dryrun, snakemake_args):
+def annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
-           "--configfile '{config}' --nolock --config workflow=annotate "
+           "--configfile '{config}' --nolock {conda} --config workflow=annotate "
            "{args} --{dryrun}").format(snakefile=get_snakefile(),
                                        out_dir=out_dir,
                                        jobs=jobs,
                                        config=config,
+                                       conda="" if no_conda else "--use-conda",
                                        dryrun="dryrun" if dryrun else "",
                                        args=" ".join(snakemake_args))
     logging.info("Executing: %s" % cmd)
     check_call(cmd, shell=True)
 
 
-def assemble(config, jobs, out_dir, dryrun, snakemake_args):
+def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
-           "--configfile '{config}' --nolock "
+           "--configfile '{config}' --nolock {conda} "
            "--config workflow=complete {args} --{dryrun}").format(snakefile=get_snakefile(),
-                                                                    out_dir=out_dir,
-                                                                    jobs=jobs,
-                                                                    config=config,
-                                                                    dryrun="dryrun" if dryrun else "",
-                                                                    args=" ".join(snakemake_args))
+                                                                  out_dir=out_dir,
+                                                                  jobs=jobs,
+                                                                  config=config,
+                                                                  conda="" if no_conda else "--use-conda",
+                                                                  dryrun="dryrun" if dryrun else "",
+                                                                  args=" ".join(snakemake_args))
     logging.info("Executing: %s" % cmd)
     check_call(cmd, shell=True)
 
@@ -42,7 +44,8 @@ def assemble(config, jobs, out_dir, dryrun, snakemake_args):
 def download(jobs, out_dir, snakemake_args):
     out_dir = os.path.realpath(out_dir)
 
-    cmd = ("snakemake -s {snakefile} -d {parent_dir} -p -j {jobs} --nolock --rerun-incomplete "
+    cmd = ("snakemake -s {snakefile} -d {parent_dir} -p -j {jobs} --nolock "
+           "--rerun-incomplete "
            "--config db_dir='{out_dir}' workflow=download -- {args}").format(snakefile=get_snakefile(),
                                                              parent_dir=os.path.dirname(out_dir),
                                                              jobs=jobs,
