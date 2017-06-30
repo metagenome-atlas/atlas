@@ -417,7 +417,7 @@ if config.get("perform_genome_binning", True):
             mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
             mcl = config.get("maxbin_min_contig_length", MAXBIN_MIN_CONTIG_LENGTH),
             pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
-            outdir = lambda wc, output: os.path.join(os.path.dirname(output.summary), wc.sample)
+            outdir = lambda wildcards, output: os.path.join(os.path.dirname(output.summary), wildcards.sample)
         log:
             "{sample}/{assembler}/logs/maxbin2.log"
         conda:
