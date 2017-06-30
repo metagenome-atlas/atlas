@@ -6,9 +6,13 @@ The workflow and some dependencies require Python 3.5::
 
     conda install python=3.5 snakemake
 
-And install ATLAS::
 
-    pip install pnnl-atlas
+The intended usage requires ``conda``.
+
+Using Python 3.5, install ``atlas``::
+
+    pip install -U pnnl-atlas
+
 
 Following install, ``atlas`` should be executable::
 
@@ -32,9 +36,16 @@ Execution Environment
 ---------------------
 
 As ATLAS executes rules to generate output files, an environment is created
-using `snakemake --use-conda` in the background. No dependencies aside from
+using ``snakemake --use-conda`` in the background. No dependencies aside from
 python 3.5, snakemake, and pnnl-atlas are required to be installed prior to
 execution.
+
+For more information related to bioconda, see:
+https://bioconda.github.io/
+
+For more information about Snakemake, see:
+https://snakemake.readthedocs.io
+
 
 .. _bioconda: https://github.com/bioconda/bioconda-recipes
 .. _conda: https://www.continuum.io/downloads

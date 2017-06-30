@@ -115,7 +115,7 @@ provided and filtered from the reads using the following parameters::
 
 
 Contaminant References
-``````````````````````
+----------------------
 
 As shown in the above example, if provided, reads will be removed from the
 FASTQ prior to assembly if they align to these references. If 'rRNA' is
@@ -130,10 +130,10 @@ Additional references can be added arbitrarily, such that::
 
 
 Normalization Parameters
-````````````````````````
+------------------------
 
-To improve assemblies, coverage is normalized across kmers to a target depth
-and can be set using::
+To improve assembly time and often assemblies themselves, coverage is
+normalized across kmers to a target depth and can be set using::
 
     # kmer length over which we calculated coverage
     normalization_kmer_length: 21

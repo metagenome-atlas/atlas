@@ -1,3 +1,5 @@
+.. _annotation:
+
 Annotation
 ==========
 
@@ -60,12 +62,12 @@ options::
 Functional Annotation of ORFs
 -----------------------------
 
-Functional annotation is performed using Prokka. Contigs will be renamed to
+Functional annotation is performed using Prokka_. Contigs will be renamed to
 sample name + a digit, incrementally, such that contig 1 for sample 'example-id'
-is 'example-id_1'. ORFs among a sample are named by Prokka similarly though
-they are padded by zeroes (example-id_00001). Contig IDs and ORFs IDs are
-mapped back to one another using the final output table where each row
-represents an ORF and its assignments.
+is 'example-id_1'. Open reading frames (ORFs) within a sample are named by
+Prokka similarly though they are padded by zeroes (example-id_00001). Contig
+IDs and ORFs IDs are mapped back to one another using the final output table
+where each row represents an ORF and its assignments.
 
 
 Taxonomy Annotation of ORFs and Contigs
@@ -81,13 +83,15 @@ files::
     refseq_tree: /database_dir/refseq.tree
     diamond_db: /database_dir/refseq.dmnd
 
+These files are tracked and downloaded from Zenodo_ along with other
+reference data.
 
-Local Alignment Options for ``blastp`` Search
----------------------------------------------
 
-Within each reference database, the user has the flexibility to optimize
-performance across their compute environment and control the number of
-alignment hits in various ways.
+Local Alignment Options
+-----------------------
+
+The user has the flexibility to optimize performance across their compute
+environment and control the number of alignment hits in various ways.
 
 
 Run Mode
@@ -132,8 +136,6 @@ Query Coverage
 
 Require this much of the query sequence to be matched above
 ``diamond_min_identity``::
-
-::
 
     diamond_query_coverage: 60
 
@@ -224,6 +226,8 @@ assignment.
 
     aggregation_method: lca-majority
 
+For more information on the lca-majority method, please see the `LCA* paper`_.
+
 
 Majority Threshold
 ``````````````````
@@ -234,3 +238,8 @@ aggregation method.
 ::
 
     majority_threshold: 0.51
+
+
+.. _Prokka: https://github.com/tseemann/prokka
+.. _Zenodo: https://zenodo.org/record/804435
+.. _LCA* paper: https://doi.org/10.1093/bioinformatics/btw400

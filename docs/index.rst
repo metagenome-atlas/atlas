@@ -7,24 +7,27 @@ ATLAS
 
     setup/install
     setup/getting_started
+    setup/snakemake
+
 
 .. toctree::
     :maxdepth: 2
     :caption: Assembly Protocol
 
-    assembly/example_configuration
     assembly/samples
     assembly/threads
     assembly/preprocessing
     assembly/assembly
     assembly/annotation
     assembly/advanced
+    assembly/example_configuration
+
 
 .. toctree::
     :maxdepth: 2
     :caption: Annotation Protocol
 
-    annotation_conf/samples
+    annotation/samples
 
 
 Indices and tables
