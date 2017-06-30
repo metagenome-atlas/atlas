@@ -2,3 +2,5 @@ include atlas/Snakefile
 include atlas/rules/assemble.snakefile
 include atlas/rules/annotate.snakefile
 include atlas/rules/download.snakefile
+include atlas/envs/optional_genome_binning.yaml
+include atlas/envs/required_packages.yaml
