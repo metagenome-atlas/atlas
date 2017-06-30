@@ -388,48 +388,7 @@ class BlastHits(object):
             return names_reversed[idx]
 
 
-def get_hit_from_blast_group(grouped_hits, max_hits, top_fraction, min_length, min_identity, max_evalue, min_bitscore, summary_method):
-    hit_id = ""
-    bitscore = "NA"
-    evalue = "NA"
-    orf_hits = BlastHits(max_hits=max_hits, top_fraction=top_fraction)
-    lines = []
-
-    # iterate over blast hits per ORF
-    for hsp in grouped_hits:
-        toks = dict(zip(BLAST6, hsp.strip().split("\t")))
-        if (int(toks["length"]) < min_length or
-                float(toks["pident"]) < min_identity or
-                float(toks["evalue"]) > max_evalue):
-            continue
-        if min_bitscore and float(toks["bitscore"]) < min_bitscore:
-            # input is sorted by decreasing bitscore
-            break
-
-        if summary_method == "best":
-            hit_id = toks["sseqid"]
-            bitscore = toks["bitscore"]
-            evalue = toks["evalue"]
-            break
-
-        orf_hits.add(toks["sseqid"], toks["bitscore"])
-        lines.append(toks)
-
-    # summary method is majority and we have passing HSPs
-    if summary_method == "majority" and lines:
-        hit_id = orf_hits.majority()
-
-        for toks in lines:
-            if toks["sseqid"] == hit_id:
-                bitscore = toks["bitscore"]
-                evalue = toks["evalue"]
-                break
-        if bitscore == "NA":
-            logging.critical("The majority ID was not assigned a bitscore")
-    return hit_id, evalue, bitscore
-
-
-def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min_identity=60,
+def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min_identity=70,
                                   min_bitscore=0, min_length=60, max_evalue=0.000001,
                                   max_hits_per_orf=10, top_fraction_of_hits=None,
                                   table_name="refseq", lca_threshold=1):
@@ -460,9 +419,9 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
 
     with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(blast_tab) as blast_tab_fh:
         cursor = conn.cursor()
-        for query, qgroup in groupby(blast_tab_fh, key=lambda x: x.partition("\t")[0]):
+        # group hits by ORF (column 2)
+        for orf_id, qgroup in groupby(blast_tab_fh, key=lambda x: x.split("\t")[1]):
 
-            contig_name, _, orf_idx = query.rpartition("_")
             protein_function = "hypothetical protein"
             protein_set = False
             taxonomy_id = "1"
@@ -473,7 +432,13 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
 
             # iterate over blast hits per ORF
             for hsp in qgroup:
-                toks = dict(zip(BLAST6, hsp.strip().split("\t")))
+                # HSPs will now have contig in column 1
+                toks = hsp.strip().split("\t")
+                # remove extra column from toks
+                contig_name = toks.pop(0)
+                # convert toks to dictionary
+                toks = dict(zip(BLAST6, toks))
+
                 if (int(toks["length"]) < min_length or
                         float(toks["pident"]) < min_identity or
                         float(toks["evalue"]) > max_evalue):
@@ -485,7 +450,7 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
                 cursor.execute('SELECT function, taxonomy FROM %s WHERE name="%s"' % (table_name, toks["sseqid"]))
                 current_function, current_taxonomy = cursor.fetchone()
 
-                # update taxonomy based on pident
+                # update taxonomy based on pident; would be similar to 16S taxonomy assignments
                 # current_taxonomy = tree.climb_tree(current_taxonomy, float(toks["pident"]))
 
                 if summary_method == "best":
@@ -495,6 +460,7 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
                     evalue = toks["evalue"]
                     break
 
+                # TODO implement bitscore ratio as a measure of alignment quality as a function of input sequence
                 orf_hits.add(current_taxonomy, toks["bitscore"])
                 toks["current_function"] = current_function
                 toks["current_taxonomy"] = current_taxonomy
@@ -522,23 +488,23 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
                 if bitscore == "NA":
                     logging.critical("The summarized ID (%s) was not assigned metadata" % taxonomy_id)
 
-            contigs[contig_name][orf_idx] = (protein_function, taxonomy_id, bitscore, evalue)
+            contigs[contig_name][orf_id] = (protein_function, taxonomy_id, bitscore, evalue)
 
     return contigs
 
 
-def validate_lineage(lineage):
+def validate_lineage(lineage, sep=";"):
     """
     >>> lineage = {"p":"Basidiomycota","c":"Tremellomycetes","o":"Tremellales","g":"Cryptococcus"}
     >>> validate_lineage(lineage)
-    'k__?,p__Basidiomycota,c__Tremellomycetes,o__Tremellales,f__?,g__Cryptococcus,s__?'
+    'k__?;p__Basidiomycota;c__Tremellomycetes;o__Tremellales;f__?;g__Cryptococcus;s__?'
     """
     levels = ["k" if tax_level == "superkingdom" else tax_level[0] for tax_level in TAX_LEVELS]
     valid_lineage = []
     for idx in levels:
-        # removes commas in tax names because you never know...
+        # removes commas in tax names
         valid_lineage.append("%s__%s" % (idx, lineage.get(idx, "?").replace(",", "")))
-    return ",".join(valid_lineage)
+    return sep.join(valid_lineage)
 
 
 def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold=0.51, table_name="refseq"):
@@ -578,5 +544,5 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
         for idx in sorted(orfs.keys()):
             orf_function, orf_tax_id, bitscore, evalue = orfs[idx]
             orf_taxonomy = tree.tree[orf_tax_id].taxonomy
-            print(contig, "%s_%s" % (contig, idx), lineage, error_function, orf_taxonomy,
+            print(contig, idx, lineage, error_function, orf_taxonomy,
                   orf_function, evalue, bitscore, sep="\t", file=output)

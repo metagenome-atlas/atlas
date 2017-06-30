@@ -2,14 +2,15 @@ import click
 import logging
 import multiprocessing
 import os
+import sys
 from atlas import __version__
 from atlas.conf import make_config
-from atlas.parsers import cazy_parser, cog_parser, eggnog_parser, enzyme_parser, refseq_parser
-from atlas.tables import merge_tables, count_tables
-from atlas.workflows import assemble, download
+from atlas.parsers import refseq_parser
+from atlas.tables import merge_tables
+from atlas.workflows import annotate, assemble, download
 
 
-logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
+logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s %(levelname)s] %(message)s")
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -17,154 +18,6 @@ logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asc
 @click.pass_context
 def cli(obj):
     """ATLAS"""
-
-
-@cli.command("cazy", short_help="process blast hits for cazy (dbcan) reference")
-@click.argument("tsv", type=click.Path(exists=True))
-@click.argument("namemap", type=click.Path(exists=True))
-@click.argument("output", type=click.File("w", atomic=True))
-@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
-@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
-@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
-@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
-@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
-@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="dbcan", help="table name within namemap database; expected columns are listed above")
-def run_cazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name):
-    """Parse BLAST hits from CAZy reference database.
-
-    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
-
-        \b
-        sort -k1,1 -k12,12rn tsv > sorted_tsv
-
-    Expected columns in the CAZy database:
-
-        \b
-        cazy_gene
-        cazy_family
-        cazy_class
-        cazy_ec
-
-    For a given gene match, all possible ECs are returned in a single line separated by '|'.
-
-    """
-    cazy_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
-
-
-@cli.command("cog", short_help="process blast hits for COG reference")
-@click.argument("tsv", type=click.Path(exists=True))
-@click.argument("namemap", type=click.Path(exists=True))
-@click.argument("output", type=click.File("w", atomic=True))
-@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
-@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
-@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
-@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
-@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
-@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="cog", help="table name within namemap database; expected columns are listed above")
-def run_cog_parser(tsv, namemap, output, summary_method='best', min_identity=60, min_bitscore=0, min_length=60, max_evalue=0.000001, top_fraction=1, max_hits=10, table_name="cog"):
-    """Parse BLAST hits from COG reference database.
-
-    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
-
-        \b
-        sort -k1,1 -k12,12rn tsv > sorted_tsv
-
-    Expected columns in the COG database:
-
-        \b
-        cog_protein_key (unique and matches sequence name in reference fasta)
-        cog_protein_id
-        cog_id
-        cog_functional_class
-        cog_annotation
-        cog_functional_class_description
-    """
-    cog_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
-
-
-@cli.command("eggnog", short_help="process blast hits for eggnog reference")
-@click.argument("tsv", type=click.Path(exists=True))
-@click.argument("namemap", type=click.Path(exists=True))
-@click.argument("output", type=click.File("w", atomic=True))
-@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
-@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
-@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
-@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
-@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
-@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="eggnog", help="table name within namemap database; expected columns are listed above")
-def run_eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name):
-    """Parse BLAST hits from EGGNOG.
-
-    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
-
-        \b
-        sort -k1,1 -k12,12rn tsv > sorted_tsv
-
-    Expected columns in the EggNOG database:
-
-        \b
-        uniprot_ac
-        eggnog_ssid_b
-        eggnog_species_id
-        uniprot_id
-        cog_func_id
-        cog_id
-        cog_product
-        cog_level1_code
-        cog_level1_name
-        cog_level2_name
-        ko_id
-        ko_level1_name
-        ko_level2_name
-        ko_level3_id
-        ko_level3_name
-        ko_gene_symbol
-        ko_product
-        ko_ec
-
-    """
-    eggnog_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
-
-
-@cli.command("enzyme", short_help="process blast hits for ENZYME reference")
-@click.argument("tsv", type=click.Path(exists=True))
-@click.argument("namemap", type=click.Path(exists=True))
-@click.argument("output", type=click.File("w", atomic=True))
-@click.option("-s", "--summary-method", type=click.Choice(["majority", "best"]), default="best", show_default=True, help="summary method for annotating ORFs; when majority and there is no majority, best is used")
-@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
-@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
-@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
-@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits before finding majority by only keep hits within this fraction, e.g. 0.98, of the highest bitscore; this is recommended over --max-hits")
-@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs as a majority")
-@click.option("--table-name", default="enzyme", help="table name within namemap database; expected columns are listed above")
-def run_enzyme_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name):
-    """Parse BLAST hits from ENZYME reference database.
-
-    The BLAST hits are assumed to be sorted by query with decreasing bitscores (best alignment first):
-
-        \b
-        sort -k1,1 -k12,12rn tsv > sorted_tsv
-
-    Expected columns in the ENZYME database:
-
-        \b
-        uniprot_entry
-        uniparc_entry
-        enzyme_ec
-        enzyme_name
-
-    For a given UniParc match, all possible ECs and ENZYME recommended names are returned in a
-    single line separated by '|'.
-
-    """
-    enzyme_parser(tsv, namemap, output, summary_method, min_identity, min_bitscore, min_length, max_evalue, top_fraction, max_hits, table_name)
 
 
 @cli.command("refseq", short_help="enables tree based LCA and LCA star methods")
@@ -175,7 +28,7 @@ def run_enzyme_parser(tsv, namemap, output, summary_method, min_identity, min_bi
 @click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs; when using LCA, it's recommended that one limits the number of hits using --top-fraction though function will be assigned per the best hit; 'best' is fastest")
 @click.option("-a", "--aggregation-method", type=click.Choice(["lca", "lca-majority", "majority"]), default="lca-majority", show_default=True, help="summary method for aggregating ORF taxonomic assignments to contig level assignment; 'lca' will result in most stringent, least specific assignments")
 @click.option("--majority-threshold", type=float, default=0.51, show_default=True, help="constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method")
-@click.option("--min-identity", type=int, default=60, show_default=True, help="minimum allowable percent ID of BLAST hit")
+@click.option("--min-identity", type=int, default=70, show_default=True, help="minimum allowable percent ID of BLAST hit")
 @click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
 @click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
 @click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
@@ -213,59 +66,110 @@ def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregatio
     refseq_parser(tsv, namemap, treefile, output, summary_method, aggregation_method, majority_threshold, min_identity, min_bitscore, min_length, max_evalue, max_hits, table_name, top_fraction)
 
 
-@cli.command("merge-tables", short_help="merge tables on 'contig' and 'orf' keys")
-@click.argument("tables", type=click.File("r"), nargs=-1)
+@cli.command("gff2tsv", short_help="writes version of Prokka TSV with contig as new first column")
+@click.argument("gff", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
-def run_merge_tables(tables, output):
-    """Takes the output from parsers and combines them into a single TSV table.
+@click.option("--feature-type", default="CDS", show_default=True, help="feature type in GFF annotation to print")
+def run_gff_to_tsv(gff, output, feature_type):
+    import re
+    locus_tag_re = re.compile(r"locus_tag=(.*?)(?:;|$)")
+    ec_re = re.compile(r"eC_number=(.*?)(?:;|$)")
+    gene_re = re.compile(r"gene=(.*?)(?:;|$)")
+    product_re = re.compile(r"product=(.*?)(?:;|$)")
 
-    Headers are required and should contain 'contig' and 'orf' column labels.
+    # print the header into the output file
+    print("contig_id", "locus_tag", "ftype", "gene", "EC_number", "product", sep="\t", file=output)
+
+    with open(gff) as gff_fh:
+        for line in gff_fh:
+            if line.startswith("##FASTA"):
+                break
+            if line.startswith("#"):
+                continue
+            toks = line.strip().split("\t")
+            if not toks[2] == feature_type:
+                continue
+            try:
+                locus_tag = locus_tag_re.findall(toks[-1])[0]
+            except IndexError:
+                locus_tag = ""
+            if not locus_tag:
+                logging.critical("Unable to locate a locus tag in [%s]" % toks[-1])
+                sys.exit(1)
+            try:
+                gene = gene_re.findall(toks[-1])[0]
+            except IndexError:
+                gene = ""
+            try:
+                ec_number = ec_re.findall(toks[-1])[0]
+            except IndexError:
+                ec_number = ""
+            try:
+                product = product_re.findall(toks[-1])[0]
+            except IndexError:
+                product = ""
+            print(toks[0], locus_tag, toks[2], gene, ec_number, product, sep="\t", file=output)
+
+
+@cli.command("munge-blast", short_help="adds contig ID to prokka annotated ORFs")
+@click.argument("tsv", type=click.Path(exists=True))
+@click.argument("gff", type=click.Path(exists=True))
+@click.argument("output", type=click.File("w", atomic=True))
+@click.option("--gene-id", default="ID", show_default=True, help="tag in gff attributes corresponding to ORF ID")
+def run_munge_blast(tsv, gff, output, gene_id):
+    """Prokka ORFs are reconnected to their origin contigs using the GFF of the Prokka output.
+    Contig output is re-inserted as column 1, altering blast hits to be tabular + an extra initial
+    column that will be used to place the ORFs into context.
     """
-    merge_tables(tables, output)
+    import re
+    gff_map = dict()
+
+    logging.info("step 1 of 2; parsing %s" % gff)
+    # gff attrs: ID=Flavobacterium_00802;inference=ab initio prediction:Prodigal:2.60;...
+    orf_id_re = re.compile(r"%s=(.*?)\;" % gene_id)
+    with open(gff) as prokka_gff:
+        for line in prokka_gff:
+            if line.startswith("##FASTA"):
+                break
+            if line.startswith("#"):
+                continue
+            toks = line.strip().split("\t")
+            try:
+                orf_id = orf_id_re.findall(toks[-1])[0]
+            except IndexError:
+                # some, like repeat regions, will not have a locus_tag=, but they also will not
+                # be in the .faa file that is being locally aligned
+                logging.warning("Unable to locate ORF ID using '%s' for line '%s'" % (gene_id, " ".join(toks)))
+                continue
+            gff_map[orf_id] = toks[0]
+
+    logging.info("step 2 of 2; parsing %s" % tsv)
+    # example blast hit:
+    # Flavobacterium_00002	gi|500936490|ref|WP_012025625.1|	100.0	187	0	0	1	187	1	187	1.7e-99	369.8
+    with open(tsv) as blast_hits:
+        for line in blast_hits:
+            toks = line.strip().split("\t")
+            try:
+                toks.insert(0, gff_map[toks[0]])
+            except KeyError:
+                logging.critical("%s was not found in the GFF [%s]" % (toks[0], gff))
+                logging.critical("processing of %s was halted" % tsv)
+                sys.exit(1)
+            print(*toks, sep="\t", file=output)
 
 
-@cli.command("counts", short_help="aggregate read counts across annotation combinations")
-@click.argument("prefix")
-@click.argument("merged", click.Path(exists=True, dir_okay=False, resolve_path=True))
-@click.argument("counts", click.Path(exists=True, dir_okay=False, resolve_path=True))
-@click.argument("combinations")
-@click.option("--suffix", default=".tsv", show_default=True, help="output file suffix")
-def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
-    """Aggregate and integrate count data from `counts` with annotation data in `merged`. The
-    merged data is the result of `merge-tables`. Count data is a TSV formatted with a header:
-
-        \b
-        gene  count
-        orf1  10
-        orf2  7
-        orf3  9
-
-    `combinations` are specified as a JSON string with key to values pairs, e.g.:
-
-        \b
-        '{"KO":["ko_id", "ko_gene_symbol", "ko_product", "ko_ec"], "KO_Product":["ko_product"]}'
-
-    Counts get aggregated (summed) across all values, such that the above example gives two files:
-
-        \b
-        <prefix>_KO.tsv
-
-            \b
-            ko_id   ko_gene_symbol  ko_product                         ko_ec      count
-            K00784  rnz             ribonuclease Z                     3.1.26.11  72
-            K01006  ppdK            pyruvate, orthophosphate dikinase  2.7.9.1    177
-            K01187  malZ            alpha-glucosidase                  3.2.1.20   91
-
-        \b
-        <prefix>_KO_product.tsv
-
-            \b
-            ko_product                  count
-            alpha-glucosidase           91
-            beta-galactosidase          267
-            cell division protein FtsQ  8
+@cli.command("merge-tables", short_help="merge Prokka TSV, Counts, and Taxonomy")
+@click.argument("prokkatsv", type=click.Path(exists=True))
+@click.argument("refseqtsv", type=click.Path(exists=True))
+@click.argument("output")
+@click.option("--counts", type=click.Path(exists=True), help="Feature Counts result TSV")
+@click.option("--completeness", type=click.Path(exists=True), help="CheckM completeness TSV")
+@click.option("--taxonomy", type=click.Path(exists=True), help="CheckM taxonomy TSV")
+@click.option("--fasta", multiple=True, type=click.Path(exists=True), help="Bin fasta file path; can be specified multiple times")
+def run_merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta):
+    """Combines Prokka TSV, RefSeq TSV, and Counts TSV into a single table, merging on locus tag.
     """
-    count_tables(prefix, merged, counts, combinations, suffix)
+    merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta)
 
 
 @cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")
@@ -280,12 +184,11 @@ def run_counts(prefix, merged, counts, combinations, suffix=".tsv"):
 @click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]),
               show_default=True, help="contig assembler")
 def run_make_config(config, path, data_type, database_dir, threads, assembler):
-    """Write the file `config` and complete the sample names and paths for all FASTQ files in
-    `path`.
+    """Write the file CONFIG and complete the sample names and paths for all FASTQ files in
+    PATH.
 
-    `path` is traversed recursively and adds any file with '.fastq' or '.fq' extension with the
-    file name as the sample ID. Any single-end (non-interleaved) FASTQs under `path` will cause
-    errors if left in the configuration file.
+    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in the file name with
+    the file name minus extension as the sample ID.
     """
     make_config(config, path, data_type, database_dir, threads, assembler)
 
@@ -297,14 +200,44 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
 @click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_assemble(config, jobs, out_dir, dryrun, snakemake_args):
+    """Runs the complete ATLAS protocol from raw reads through assembly, annotation, quantification,
+    and genomic binning.
+
+    A skeleton configuration file can be generated with defaults using:
+
+        \b
+        atlas make-config
+
+    """
     assemble(os.path.realpath(config), jobs, out_dir, dryrun, snakemake_args)
 
 
-@cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")
+@cli.command("annotate", short_help="annotation workflow")
+@click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_annotate(config, jobs, out_dir, dryrun, snakemake_args):
+    """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
+    for a sample, quantification is also performed.
+
+    A skeleton configuration file can be generated using:
+
+        \b
+        atlas make-config
+    """
+    annotate(os.path.realpath(config), jobs, out_dir, dryrun, snakemake_args)
+
+
+@cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="number of simultaneous downloads")
 @click.option("-o", "--out-dir", default=os.path.join(os.path.realpath("."), "databases"), show_default=True, help="database download directory")
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_download(jobs, out_dir, snakemake_args):
+    """Executes a snakemake workflow to download reference database files and validate based on
+    their MD5 checksum.
+    """
     download(jobs, out_dir, snakemake_args)
 
 

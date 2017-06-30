@@ -2,32 +2,13 @@ Install
 =======
 
 All dependencies are installed via conda_ using the bioconda_ channel.
-The workflow and some dependencies require Python 3.5.
+The workflow and some dependencies require Python 3.5::
 
-Using `conda`
--------------
-
-Add the required channels to ensure dependencies can be downloaded::
-
-    conda config --add channels conda-forge
-    conda config --add channels defaults
-    conda config --add channels r
-    conda config --add channels bioconda
-
-
-For more information related to bioconda, see: https://bioconda.github.io/
-
-Installing dependencies::
-
-    conda install python=3.5 bbmap click diamond \
-        maxbin2 megahit pandas prodigal pyyaml \
-        samtools snakemake spades subread
-
+    conda install python=3.5 snakemake
 
 And install ATLAS::
 
     pip install pnnl-atlas
-
 
 Following install, ``atlas`` should be executable::
 
@@ -44,19 +25,16 @@ Following install, ``atlas`` should be executable::
       assemble      assembly workflow
       download      download reference files
       make-config   prepopulate a configuration file with samples and defaults
+      ...
 
 
-Creating an Environment
------------------------
+Execution Environment
+---------------------
 
-Not necessary, but this can isolate ATLAS dependencies in a separate work
-environment. Either clone the repository or download the file, then::
-
-    conda env create -f environment.yml
-
-
-And load and unload that environment using ``source activate atlas_env``
-and ``source deactivate atlas_env``, respectively.
+As ATLAS executes rules to generate output files, an environment is created
+using `snakemake --use-conda` in the background. No dependencies aside from
+python 3.5, snakemake, and pnnl-atlas are required to be installed prior to
+execution.
 
 .. _bioconda: https://github.com/bioconda/bioconda-recipes
 .. _conda: https://www.continuum.io/downloads

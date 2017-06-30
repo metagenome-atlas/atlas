@@ -100,9 +100,10 @@ def cli(obj):
 @click.argument("seqids", type=click.Path(exists=True))
 @click.argument("reactions", type=click.Path(exists=True))
 @click.argument("pathwaylinks", type=click.Path(exists=True))
+@click.argument("unirefclusters", type=click.Path(exists=True))
 @click.argument("outmap", type=click.Path())
 @click.argument("outfasta", type=click.Path())
-def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, outmap, outfasta):
+def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclusters, outmap, outfasta):
     """
     # via uniprot
     fasta uniref100.fasta.gz
@@ -110,6 +111,10 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, outmap, ou
     seqids 20.5/data/uniprot-seq-ids.dat
     reactions 20.5/data/reactions.data
     pathwaylinks 20.5/data/pathway-links.dat
+
+    uniref mappings where cluster n>1 (uniref search): count:[2 TO *] AND identity:1.0
+
+    needs cluster id and cluster members
     """
 
     logging.info("Parsing sequence IDs from %s" % seqids)
@@ -142,6 +147,8 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, outmap, ou
             # superpathway of anthocyanin biosynthesis (from delphinidin 3-<i>O</i>-glucoside)
             for http_format in re.findall(r'(\<.*?\>)', toks[1]):
                 pathway_str = pathway_str.replace(http_format, "")
+            # &beta; --> beta
+            pathway_str = pathway_str.replace("&beta;", "beta")
             # ignores synonyms in toks[2:]
             pathway_links[toks[0]] = pathway_str
 
@@ -152,6 +159,8 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, outmap, ou
         pathways = []
         ec_numbers = []
         for line in fh:
+            # EC-NUMBER - |EC-1.14.19.ar| --> EC-NUMBER - EC-1.14.19.ar
+            line = line.replace("|", "")
             if "UNIQUE-ID" in line:
                 name = line.strip().partition(" - ")[-1]
             if "EC-NUMBER" in line:
@@ -195,6 +204,36 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, outmap, ou
                 # using inline EC number
                 uniprot_to_ecs[uid].add(toks[1])
                 uniprot_to_pathways[uid].add("")
+
+    # despite cluster translation we still expect a few to be missing
+    clusters = {}
+    with gzip.open(unirefclusters, "rt") as fh:
+        for line in fh:
+            found = False
+            toks = line.strip().split("\t")
+            uniref_id = toks[0].partition("_")[2]
+            uids = toks[2].split("; ")
+            for uid in uids:
+                if uid in uniprot_to_reactions:
+                    found = True
+            if found:
+                clusters[uniref_id] = uids
+
+    for uniref_id, uids in clusters.items():
+        combined_reactions = set()
+        combined_ecs = set()
+        combined_pathways = set()
+        for uid in uids:
+            combined_reactions.update(uniprot_to_reactions[uid])
+            combined_ecs.update(uniprot_to_ecs[uid])
+            combined_pathways.update(uniprot_to_pathways[uid])
+            uniprot_to_reactions.pop(uid)
+            uniprot_to_ecs.pop(uid)
+            uniprot_to_pathways.pop(uid)
+
+        uniprot_to_reactions[uniref_id] = combined_reactions
+        uniprot_to_ecs[uniref_id] = combined_ecs
+        uniprot_to_pathways[uniref_id] = combined_pathways
 
     # print metacyc map file
     with open(outmap, "w") as fo:

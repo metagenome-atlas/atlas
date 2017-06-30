@@ -15,8 +15,7 @@ Interleaved PE input::
 
     samples:
         sample-1:
-            path:
-                - /data/sample-1_pe.fastq.gz
+            fastq: /data/sample-1_pe.fastq.gz
             type: metagenome
 
 
@@ -24,37 +23,18 @@ Paired-end as separate files::
 
     samples:
         sample-1:
-            path:
+            fastq:
                 - /data/sample-1_R1.fastq.gz
                 - /data/sample-1_R2.fastq.gz
             type: metagenome
 
+The '-' is required if multiple fastq file paths need to be specified.
 
 Data is assumed to be paired-end unless stated otherwise. If your data is
 single-end sequence data, specify 'paired' as ``false``::
 
     samples:
         sample-1:
-            path:
-                - /data/sample-1_pe.fastq.gz
+            fastq: /data/sample-1_pe.fastq.gz
             type: metagenome
             paired: false
-
-
-Defining Coassemblies
----------------------
-
-To assemble multiple samples into one assembly we need to define
-``coassemblies`` in the ``samples`` section of the configuration::
-
-    samples:
-        sample-1:
-            path:
-                - /data/sample-1_pe.fastq.gz
-        sample-2:
-            path:
-                - /data/sample-2_pe.fastq.gz
-        coassemblies:
-            new-sample-name:
-                - sample-1
-                - sample-2

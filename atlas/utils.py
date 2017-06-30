@@ -1,141 +1,17 @@
-import logging
 import os
-import sys
 from collections import Counter, OrderedDict
 from math import log, erfc, sqrt
-from snakemake.io import load_configfile
 
 
 gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
 
 
-def validate_assembly_config(config):
-    c = load_configfile(config)
-    valid = True
-    if not "samples" in c:
-        logging.critical("'samples' is not defined in %s" % config)
-        valid = False
-    try:
-        if len(c["samples"].keys()) == 0:
-            logging.critical("no samples are defined under 'samples' in %s" % config)
-            valid = False
-        for sample, meta in c["samples"].items():
-            if sample == "coassemblies":
-                for coassembly, file_list in meta["coassemblies"].items():
-                    for co_sample in file_list:
-                        if co_sample not in c["samples"]:
-                            logging.critical("Sample %s under coassembly %s is not a defined sample in the configuration" % (co_sample, coassembly))
-                            valid = False
-            # common/known bad characters
-            if " " in sample or "_" in sample:
-                logging.critical("The sample ID for %s contains invalid characters; use words or words separated by dashes only")
-                valid = False
-            if not "path" in meta:
-                logging.critical("'path' is not set for sample %s" % sample)
-                valid = False
-                continue
-            for f in meta["path"]:
-                if not os.path.exists(f):
-                    logging.critical("%s does not exist for sample %s" % (f, sample))
-                    valid = False
-    except KeyError:
-        pass
-
-    if not "preprocessing" in c:
-        logging.critical("'preprocessing' is not defined in %s" % config)
-        valid = False
-    try:
-        if not "adapters" in c["preprocessing"]:
-            logging.critical("'adapters' is not defined under 'preprocessing' in %s" % config)
-            valid = False
-        for f in c["preprocessing"]["adapters"].split(","):
-            if not os.path.exists(f):
-                logging.critical("adapters file [%s] does not exist" % f)
-                valid = False
-        if not "contamination" in c["preprocessing"]:
-            logging.critical("'contamination' is not defined under 'preprocessing' in %s" % config)
-            valid = False
-        if not "references" in c["preprocessing"]["contamination"]:
-            logging.critical("'references' is not defined under 'contamination' in %s" % config)
-            valid = False
-        if not "rRNA" in c["preprocessing"]["contamination"]["references"]:
-            logging.critical("'rRNA' is not a defined contamination reference in %s" % config)
-        for ref, f in c["preprocessing"]["contamination"]["references"].items():
-            if not os.path.exists(f):
-                logging.critical("contamination reference file [%s] does not exist for %s" % (f, ref))
-                valid = False
-        if not "normalization" in c["preprocessing"]:
-            logging.critical("'normalization' is not defined in %s" % config)
-            valid = False
-    except KeyError:
-        pass
-
-    if not "assembly" in c:
-        logging.critical("'assembly' is not defined in %s" % config)
-        valid = False
-    try:
-        if not c["assembly"]["assembler"] == "megahit" and not c["assembly"]["assembler"] == "spades":
-            logging.critical("'assembler' entry [%s] is not a supported assembler" % c["assembly"]["assembler"])
-            valid = False
-    except KeyError:
-        pass
-
-    if not "annotation" in c:
-        logging.critical("'annotation' is not defined in %s" % config)
-        valid = False
-    try:
-        if not "references" in c["annotation"]:
-            logging.critical("'references' is not defined in %s" % config)
-            valid = False
-
-        if "refseq" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["refseq"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["refseq"]["tree"]):
-                logging.critical("tree reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["tree"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["refseq"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["refseq"]["dmnd"])
-                valid = False
-
-        if "cazy" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["cazy"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["cazy"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cazy"]["dmnd"])
-                valid = False
-
-        if "cog" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["cog"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["cog"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["cog"]["dmnd"])
-                valid = False
-
-        if "enzyme" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["enzyme"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["enzyme"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["enzyme"]["dmnd"])
-                valid = False
-
-        if "eggnog" in c["annotation"]["references"]:
-            if not os.path.exists(c["annotation"]["references"]["eggnog"]["namemap"]):
-                logging.critical("namemap reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["namemap"])
-                valid = False
-            if not os.path.exists(c["annotation"]["references"]["eggnog"]["dmnd"]):
-                logging.critical("fasta reference file [%s] does not exist" % c["annotation"]["references"]["eggnog"]["dmnd"])
-                valid = False
-
-    except KeyError:
-        valid = False
-        pass
-
-    return valid
+def touch(fname, mode=0o666, dir_fd=None, **kwargs):
+    """https://stackoverflow.com/questions/1158076/implement-touch-using-python"""
+    flags = os.O_CREAT | os.O_APPEND
+    with os.fdopen(os.open(fname, flags=flags, mode=mode, dir_fd=dir_fd)) as f:
+        os.utime(f.fileno() if os.utime in os.supports_fd else fname,
+            dir_fd=None if os.supports_fd else dir_fd, **kwargs)
 
 
 def index_of_list_items(lists):

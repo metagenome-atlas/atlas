@@ -12,8 +12,6 @@ To download the databases and their respective metadata databases::
 
     atlas download -o /databases
 
-The downloads use approximately 40 GB of disk space.
-
 
 Configuration File
 ------------------
