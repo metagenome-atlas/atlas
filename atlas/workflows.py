@@ -12,6 +12,9 @@ def get_snakefile():
 
 
 def annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+    if not os.path.exists(config):
+        logging.critical("Config not found: %s" % config)
+        sys.exit(1)
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
            "--configfile '{config}' --nolock {conda} --config workflow=annotate "
@@ -27,6 +30,9 @@ def annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
 
 def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+    if not os.path.exists(config):
+        logging.critical("Config not found: %s" % config)
+        sys.exit(1)
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake -s {snakefile} -d {out_dir} -p -j {jobs} --rerun-incomplete "
            "--configfile '{config}' --nolock {conda} "

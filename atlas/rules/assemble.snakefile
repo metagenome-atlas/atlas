@@ -477,7 +477,8 @@ if config.get("perform_genome_binning", True):
 
     rule run_checkm_lineage_wf:
         input:
-            init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
+            touched_output = "logs/checkm_init.txt",
+            # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
             bins = "{sample}/{assembler}/genomic_bins/{sample}.marker"
         output:
             "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv"

@@ -1,11 +1,12 @@
 channels:
     - bioconda
-    - r
-    - defaults
     - conda-forge
+    - defaults
+    - r
 dependencies:
     - python=3.5
     - bbmap
+    - bzip2
     - click
     - diamond
     - megahit
@@ -13,7 +14,7 @@ dependencies:
     - picard
     - prokka
     - pyyaml
-    - samtools
+    - samtools=1.3.1
     - spades
-    - sqlite3
+    - sqlite
     - subread
