@@ -24,13 +24,15 @@ setup(
     license='MIT',
     author='Joe Brown',
     author_email='joe.brown@pnnl.gov',
-    description='ATLAS (Automatic Tool for Local Assembly Structures) - a comprehensive infrastructure for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.',
+    description='ATLAS - a framework for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data',
     long_description=long_description,
     packages=['atlas'],
     package_data={'': ['atlas/Snakefile',
                        'atlas/rules/assemble.snakefile',
-                       'atlas/rules/coassemble.snakefile',
-                       'atlas/rules/reports/sample.snakefile',
+                       'atlas/rules/annotate.snakefile',
+                       'atlas/rules/initialize_checkm.py',
+                       'atlas/envs/optional_genome_binning.yaml',
+                       'atlas/envs/required_packages.yaml',
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
@@ -40,4 +42,5 @@ setup(
               'atlas = atlas.atlas:cli'
           ]
     },
+    classifiers=["Topic :: Scientific/Engineering :: Bio-Informatics"],
 )
