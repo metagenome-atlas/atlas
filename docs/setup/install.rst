@@ -47,5 +47,12 @@ For more information about Snakemake, see:
 https://snakemake.readthedocs.io
 
 
+Execution Paradigm
+------------------
+
+The Snakemake environment will be created each time the output directory is
+altered. For a given experiment, all samples should be defined in a single
+configuration file, so only one environment needs to be created per experiment.
+
 .. _bioconda: https://github.com/bioconda/bioconda-recipes
 .. _conda: https://www.continuum.io/downloads
