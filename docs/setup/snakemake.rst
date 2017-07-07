@@ -46,3 +46,29 @@ We can see that the workflow being utilized is::
 
 So any later or more complex use cases can simply call ``snakemake`` and
 specify ``--snakefile`` for their local instance.
+
+
+Provenance
+----------
+
+Extra arguments on the command line are passed directly into the snakemake
+call, so even within ``atlas assemble`` we can do things like::
+
+    atlas assemble --jobs 24 --out-dir test-dir config.yaml --summary
+
+This results in the call of::
+
+    snakemake -s /anaconda3/lib/python3.5/site-packages/atlas/Snakefile \
+        -d /pic/projects/mint/metaomics/results/subset \
+        -p -j 24 --rerun-incomplete \
+        --configfile config.yaml \
+        --nolock \
+        --use-conda \
+        --config workflow=complete \
+        --summary
+
+The output gives details per output file, which rule created the file, the
+creation date, and other information that is relevant to the file's creation.
+
+Snakemake's ``--detailed-summary`` adds columns for input file as well as the
+shell command that was used.
