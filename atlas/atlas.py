@@ -17,7 +17,11 @@ logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asc
 @click.version_option(__version__)
 @click.pass_context
 def cli(obj):
-    """ATLAS"""
+    """ATLAS - a framework for assembly, annotation, and genomic binning of metagenomic and
+    metatranscriptomic data.
+
+    For updates and reporting issues, see: https://github.com/pnnl/atlas
+    """
 
 
 @cli.command("refseq", short_help="enables tree based LCA and LCA star methods")
@@ -209,6 +213,7 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         \b
         atlas make-config
 
+    For more details, see: http://pnnl-atlas.readthedocs.io/
     """
     assemble(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
 
@@ -228,6 +233,8 @@ def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
         \b
         atlas make-config
+
+    For more details, see: http://pnnl-atlas.readthedocs.io/
     """
     annotate(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
 
