@@ -135,9 +135,9 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     conf["perform_error_correction"] = "true"
 
-    contamination = OrderedDict()
-    contamination["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
-                                               "PhiX":os.path.join(database_dir, PHIX)}
+    conf["contaminant_references"] = OrderedDict()
+    conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
+                                      "PhiX":os.path.join(database_dir, PHIX)}
     conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     conf["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
     conf["contaminant_kmer_length"] = CONTAMINANT_KMER_LENGTH
