@@ -5,7 +5,7 @@ channels:
     - r
 dependencies:
     - python=3.5
-    - bbmap
+    - bbmap=37.17
     - bzip2
     - click
     - diamond
