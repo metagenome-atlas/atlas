@@ -59,29 +59,22 @@ Holds functional annotation output and raw counts across functional regions.
 Feature Counts
 ``````````````
 
-|   |-- annotation
-|   |   |-- feature_counts
-|   |   |   |-- PF32-LM-July2012_counts.txt
-|   |   |   `-- PF32-LM-July2012_counts.txt.summary
-|   |   |-- prokka
-|   |   |   |-- PF32-LM-July2012.err
-|   |   |   |-- PF32-LM-July2012.faa
-|   |   |   |-- PF32-LM-July2012.ffn
-|   |   |   |-- PF32-LM-July2012.fna
-|   |   |   |-- PF32-LM-July2012.fsa
-|   |   |   |-- PF32-LM-July2012.gbk
-|   |   |   |-- PF32-LM-July2012.gff
-|   |   |   |-- PF32-LM-July2012.gtf
-|   |   |   |-- PF32-LM-July2012.log
-|   |   |   |-- PF32-LM-July2012_plus.tsv
-|   |   |   |-- PF32-LM-July2012.sqn
-|   |   |   |-- PF32-LM-July2012.tbl
-|   |   |   |-- PF32-LM-July2012.tsv
-|   |   |   `-- PF32-LM-July2012.txt
-|   |   `-- refseq
-|   |       |-- PF32-LM-July2012_hits_plus_sorted.tsv
-|   |       |-- PF32-LM-July2012_hits.tsv
-|   |       `-- PF32-LM-July2012_tax_assignments.tsv
+Per loci read counts and a summary of read mapping for the sample.
+
+Prokka
+``````
+
+All Prokka output including the amino acid sequence FASTA and associated
+functional annotation. The "plus" file represents a fixed TSV format that
+ensures all rows have the same number of columns.
+
+RefSeq
+``````
+
+Includes raw BLAST hits, sorted BLAST hits with an added first column which
+enables contig to open reading frame mapping, and taxonomy assignments per
+loci.
+
 
 Genomic Bins
 ------------
