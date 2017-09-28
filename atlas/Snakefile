@@ -165,13 +165,10 @@ if config.get("workflow", "complete") == "complete":
 
 elif config.get("workflow") == "download":
 
-    FILES = ["silva_rfam_all_rRNAs.fa", "adapters.fa", "phiX174_virus.fa", "refseq.db",
-             "refseq.dmnd", "refseq.tree"]
-
     FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
              "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
              "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
-             "refseq.dmnd": "d9d0a5f6704a94d574d49f51e06c007a",
+             "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
              "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
              "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66"}
 
