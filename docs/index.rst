@@ -21,6 +21,7 @@ ATLAS
     assembly/annotation
     assembly/advanced
     assembly/example_configuration
+    assembly/output
 
 
 .. toctree::
