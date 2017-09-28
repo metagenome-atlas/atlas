@@ -9,8 +9,8 @@ def get_ribosomal_rna_input(wildcards):
     inputs = []
     data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
 
-    clean_reads = "{sample}/quality_control/{sample}_02_pe.fastq.gz".format(sample=wildcards.sample)
-    rrna_reads = "{sample}/quality_control/{sample}_02_rRNA.fastq.gz".format(sample=wildcards.sample)
+    clean_reads = "{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz".format(sample=wildcards.sample)
+    rrna_reads = "{sample}/sequence_quality_control/{sample}_02_rRNA.fastq.gz".format(sample=wildcards.sample)
 
     if data_type == "metagenome" and os.path.exists(rrna_reads):
         return [clean_reads, rrna_reads]
@@ -20,7 +20,7 @@ def get_ribosomal_rna_input(wildcards):
 
 def get_quality_controlled_reads(wildcards):
     # reads that have gone through ATLAS QC
-    fastq = "{sample}/quality_control/{sample}_03_pe.fastq.gz".format(sample=wildcards.sample)
+    fastq = "{sample}/sequence_quality_control/{sample}_03_pe.fastq.gz".format(sample=wildcards.sample)
     # QA'd reads; the user wants to begin at assembly step
     if config.get("workflow", "complete") == "assembly":
         fastq = config["samples"][wildcards.sample]["fastq"]
@@ -55,8 +55,8 @@ rule quality_filter:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        pe = "{sample,(?:(?!coassemblies)[\w-]+)+}/quality_control/{sample}_00_pe.fastq.gz",
-        se = "{sample}/quality_control/{sample}_00_se.fastq.gz",
+        pe = "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
+        se = "{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -90,11 +90,13 @@ rule quality_filter:
 if config.get("perform_error_correction", True):
     rule error_correction:
         input:
-            "{sample}/quality_control/{sample}_00_pe.fastq.gz"
+            "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz"
         output:
-            "{sample}/quality_control/{sample}_01_pe.fastq.gz"
+            "{sample}/sequence_quality_control/{sample}_01_pe.fastq.gz"
         benchmark:
             "logs/benchmarks/error_correction/{sample}.txt"
+        params:
+            java_mem = config.get("java_mem", JAVA_MEM)
         log:
             "{sample}/logs/{sample}_error_correction.log"
         conda:
@@ -104,23 +106,28 @@ if config.get("perform_error_correction", True):
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} tadpole.sh in={input} out={output} mode=correct threads={threads} \
+            """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
+                   prealloc=1 \
+                   in={input} \
+                   out={output} \
+                   mode=correct \
+                   threads={threads} \
                    ecc=t ecco=t 2> {log}"""
 
 
     # if there are no references, decontamination will be skipped
     rule decontamination:
         input:
-            "{sample}/quality_control/{sample}_01_pe.fastq.gz"
+            "{sample}/sequence_quality_control/{sample}_01_pe.fastq.gz"
         output:
-            dbs = ["{sample}/quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
-            stats = "{sample}/quality_control/{sample}_decontamination_reference_stats.txt",
-            clean = temp("{sample}/quality_control/{sample}_02_pe.fastq.gz")
+            dbs = ["{sample}/sequence_quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
+            stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+            clean = temp("{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz")
         benchmark:
             "logs/benchmarks/decontamination/{sample}.txt"
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-            refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
+            refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
             maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
             minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
             minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
@@ -142,18 +149,17 @@ if config.get("perform_error_correction", True):
 
 else:
     rule decontamination:
-        # verify implications of no disk index when using very large reference
         input:
-            "{sample}/quality_control/quality_filter/{sample}_00_pe.fastq.gz"
+            "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz"
         output:
-            dbs = ["{sample}/quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
-            stats = "{sample}/quality_control/{sample}_decontamination_reference_stats.txt",
-            clean = temp("{sample}/quality_control/{sample}_02_pe.fastq.gz")
+            dbs = ["{sample}/sequence_quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
+            stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+            clean = temp("{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz")
         benchmark:
             "logs/benchmarks/decontamination/{sample}.txt"
         params:
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-            refs_out = lambda wc: " ".join(["out_{ref}={sample}/quality_control/{sample}_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
+            refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
             maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
             minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
             minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
@@ -177,7 +183,7 @@ rule postprocess_after_decontamination:
     input:
         get_ribosomal_rna_input
     output:
-        "{sample}/quality_control/{sample}_03_pe.fastq.gz"
+        "{sample}/sequence_quality_control/{sample}_03_pe.fastq.gz"
     threads:
         1
     shell:
@@ -188,7 +194,7 @@ rule normalize_coverage_across_kmers:
     input:
         get_quality_controlled_reads
     output:
-        "{sample}/quality_control/{sample}_04_%s_pe.fastq.gz" % NORMALIZATION
+        "{sample}/sequence_quality_control/{sample}_04_pe.fastq.gz"
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
@@ -198,7 +204,7 @@ rule normalize_coverage_across_kmers:
         inputs = lambda wc, input: "in=%s" % input[0] if len(input) == 1 else "in=%s in2=%s" % (input[0], input[1]),
         interleaved = lambda wc, input: "t" if config["samples"][wc.sample].get("paired", True) and len(input) == 1 else "f"
     log:
-        "{sample}/logs/{sample}_%s.log" % NORMALIZATION
+        "{sample}/logs/{sample}_normalization.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -212,11 +218,11 @@ rule normalize_coverage_across_kmers:
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
-            "{sample}/quality_control/{sample}_04_%s_pe.fastq.gz" % NORMALIZATION
+            "{sample}/sequence_quality_control/{sample}_04_pe.fastq.gz"
         output:
-            temp("{sample}/{assembler}/{sample}_prefilter.contigs.fa")
+            temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
-            "logs/benchmarks/{assembler}/{sample}.txt"
+            "logs/benchmarks/assembly/{sample}.txt"
         shadow:
             "full"
         params:
@@ -236,37 +242,45 @@ if config.get("assembler", "megahit") == "megahit":
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} megahit --continue --tmp-dir {TMPDIR} --num-cpu-threads {threads} {params.read_flag} {input} \
-                   --k-min {params.k_min} --k-max {params.k_max} --k-step {params.k_step} \
-                   --out-dir {params.outdir} --out-prefix {wildcards.sample}_prefilter \
-                   --min-contig-len {params.min_contig_len} --min-count {params.min_count} \
-                   --merge-level {params.merge_level} --prune-level {params.prune_level} \
+            """{SHPFXM} megahit --continue \
+                   --tmp-dir {TMPDIR} \
+                   --num-cpu-threads {threads} \
+                   {params.read_flag} {input} \
+                   --k-min {params.k_min} \
+                   --k-max {params.k_max} \
+                   --k-step {params.k_step} \
+                   --out-dir {params.outdir} \
+                   --out-prefix {wildcards.sample}_prefilter \
+                   --min-contig-len {params.min_contig_len} \
+                   --min-count {params.min_count} \
+                   --merge-level {params.merge_level} \
+                   --prune-level {params.prune_level} \
                    --low-local-ratio {params.low_local_ratio}"""
 
 
     rule rename_megahit_output:
         input:
-            "{sample}/{assembler}/{sample}_prefilter.contigs.fa"
+            "{sample}/assembly/{sample}_prefilter.contigs.fa"
         output:
-            temp("{sample}/{assembler}/{sample}_raw_contigs.fasta")
+            temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
             "{SHPFXS} cp {input} {output}"
 
 else:
     rule run_spades:
         input:
-            "{sample}/quality_control/{sample}_04_%s_pe.fastq.gz" % NORMALIZATION
+            "{sample}/sequence_quality_control/{sample}_04_pe.fastq.gz"
         output:
-            temp("{sample}/{assembler}/contigs.fasta")
+            temp("{sample}/assembly/contigs.fasta")
         benchmark:
-            "logs/benchmarks/{assembler}/{sample}.txt"
+            "logs/benchmarks/assembly/{sample}.txt"
         params:
             # memory = config["assembly"].get("memory", 0.90)
             read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/{assembler}".format(sample=wc.sample, assembler=ASSEMBLER)
+            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
         log:
-            "{sample}/{assembler}/spades.log"
+            "{sample}/assembly/spades.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -277,9 +291,9 @@ else:
 
     rule rename_spades_output:
         input:
-            "{sample}/{assembler}/contigs.fasta"
+            "{sample}/assembly/contigs.fasta"
         output:
-            temp("{sample}/{assembler}/{sample}_raw_contigs.fasta")
+            temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
             "{SHPFXS} cp {input} {output}"
 
@@ -287,9 +301,9 @@ else:
 rule rename_contigs:
     # standardizes header labels within contig FASTAs
     input:
-        "{sample}/{assembler}/{sample}_raw_contigs.fasta"
+        "{sample}/assembly/{sample}_raw_contigs.fasta"
     output:
-        "{sample}/{assembler}/{sample}_prefilter_contigs.fasta"
+        "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     shell:
@@ -298,9 +312,9 @@ rule rename_contigs:
 
 rule calculate_prefiltered_contigs_stats:
     input:
-        "{sample}/{assembler}/{sample}_prefilter_contigs.fasta"
+        "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     output:
-        "{sample}/{assembler}/contig_stats/prefilter_contig_stats.txt"
+        "{sample}/assembly/contig_stats/prefilter_contig_stats.txt"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -311,20 +325,20 @@ rule calculate_prefiltered_contigs_stats:
 
 rule calculate_prefiltered_contig_coverage_stats:
     input:
-        fasta = "{sample}/{assembler}/{sample}_prefilter_contigs.fasta",
+        fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
         fastq = get_quality_controlled_reads
     output:
-        bhist = "{sample}/{assembler}/contig_stats/prefilter_base_composition.txt",
-        bqhist = "{sample}/{assembler}/contig_stats/prefilter_box_quality.txt",
-        mhist = "{sample}/{assembler}/contig_stats/prefilter_mutation_rates.txt",
-        statsfile = "{sample}/{assembler}/contig_stats/prefilter_mapping_stats.txt",
-        covstats = "{sample}/{assembler}/contig_stats/prefilter_coverage_stats.txt"
+        bhist = "{sample}/assembly/contig_stats/prefilter_base_composition.txt",
+        bqhist = "{sample}/assembly/contig_stats/prefilter_box_quality.txt",
+        mhist = "{sample}/assembly/contig_stats/prefilter_mutation_rates.txt",
+        statsfile = "{sample}/assembly/contig_stats/prefilter_mapping_stats.txt",
+        covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
     log:
-        "{sample}/{assembler}/logs/prefiltered_contig_coverage_stats.log"
+        "{sample}/assembly/logs/prefiltered_contig_coverage_stats.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -338,11 +352,11 @@ rule calculate_prefiltered_contig_coverage_stats:
 
 rule filter_by_coverage:
     input:
-        fasta = "{sample}/{assembler}/{sample}_prefilter_contigs.fasta",
-        covstats = "{sample}/{assembler}/contig_stats/prefilter_coverage_stats.txt"
+        fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
+        covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
     output:
-        fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
-        removed_names = "{sample}/{assembler}/{sample}_discarded_contigs.fasta"
+        fasta = "{sample}/{sample}_contigs.fasta",
+        removed_names = "{sample}/assembly/{sample}_discarded_contigs.fasta"
     params:
         minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
         minp = config.get("minimum_percent_covered_bases", MINIMUM_PERCENT_COVERED_BASES),
@@ -350,67 +364,90 @@ rule filter_by_coverage:
         minl = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
         trim = config.get("contig_trim_bp", CONTIG_TRIM_BP)
     log:
-        "{sample}/{assembler}/logs/filter_by_coverage.log"
+        "{sample}/assembly/logs/filter_by_coverage.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         1
     shell:
-        """{SHPFXS} filterbycoverage.sh in={input.fasta} cov={input.covstats} out={output.fasta} \
-               outd={output.removed_names} minc={params.minc} minp={params.minp} \
-               minr={params.minr} minl={params.minl} trim={params.trim} 2> {log}"""
+        """{SHPFXS} filterbycoverage.sh in={input.fasta} \
+               cov={input.covstats} \
+               out={output.fasta} \
+               outd={output.removed_names} \
+               minc={params.minc} \
+               minp={params.minp} \
+               minr={params.minr} \
+               minl={params.minl} \
+               trim={params.trim} 2> {log}"""
 
 
 rule align_reads_to_filtered_contigs:
     input:
-        fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
+        fasta = "{sample}/{sample}_contigs.fasta",
         fastq = get_quality_controlled_reads
     output:
-        sam = temp("{sample}/{assembler}/alignments/{sample}.sam"),
-        bhist = "{sample}/{assembler}/contig_stats/postfilter_base_composition.txt",
-        bqhist = "{sample}/{assembler}/contig_stats/postfilter_box_quality.txt",
-        mhist = "{sample}/{assembler}/contig_stats/postfilter_mutation_rates.txt",
-        gchist = "{sample}/{assembler}/contig_stats/postfilter_gc_rates.txt",
-        statsfile = "{sample}/{assembler}/contig_stats/postfilter_mapping_stats.txt",
-        covstats = "{sample}/{assembler}/contig_stats/postfilter_coverage_stats.txt"
+        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
+        bhist = "{sample}/assembly/contig_stats/postfilter_base_composition.txt",
+        bqhist = "{sample}/assembly/contig_stats/postfilter_box_quality.txt",
+        mhist = "{sample}/assembly/contig_stats/postfilter_mutation_rates.txt",
+        gchist = "{sample}/assembly/contig_stats/postfilter_gc_rates.txt",
+        statsfile = "{sample}/assembly/contig_stats/postfilter_mapping_stats.txt",
+        covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES)
     log:
-        "{sample}/{assembler}/logs/contig_coverage_stats.log"
+        "{sample}/assembly/logs/contig_coverage_stats.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} trimreaddescriptions=t \
-               out={output.sam} mappedonly=t threads={threads} bhist={output.bhist} \
-               bqhist={output.bqhist} mhist={output.mhist} gchist={output.gchist} \
-               statsfile={output.statsfile} covstats={output.covstats} mdtag=t xstag=fs nmtag=t \
-               sam=1.3 local=t ambiguous=all interleaved={params.interleaved} secondary=t ssao=t \
+        """{SHPFXM} bbmap.sh nodisk=t \
+               ref={input.fasta} \
+               in={input.fastq} \
+               trimreaddescriptions=t \
+               out={output.sam} \
+               mappedonly=t \
+               threads={threads} \
+               bhist={output.bhist} \
+               bqhist={output.bqhist} \
+               mhist={output.mhist} \
+               gchist={output.gchist} \
+               statsfile={output.statsfile} \
+               covstats={output.covstats} \
+               mdtag=t \
+               xstag=fs \
+               nmtag=t \
+               sam=1.3 \
+               local=t \
+               ambiguous=all \
+               interleaved={params.interleaved} \
+               secondary=t \
+               ssao=t \
                maxsites={params.maxsites} 2> {log}"""
 
 
 if config.get("perform_genome_binning", True):
     rule make_maxbin_abundance_file:
         input:
-            "{sample}/{assembler}/contig_stats/postfilter_coverage_stats.txt"
+            "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
         output:
-            "{sample}/{assembler}/genomic_bins/{sample}_contig_coverage.tsv"
+            "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
         run:
             bb_cov_stats_to_maxbin(input[0], output[0])
 
 
     rule run_maxbin:
         input:
-            fasta = "{sample}/{assembler}/{sample}_contigs.fasta",
-            abundance = "{sample}/{assembler}/genomic_bins/{sample}_contig_coverage.tsv"
+            fasta = "{sample}/{sample}_contigs.fasta",
+            abundance = "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
         output:
             # fastas will need to be dynamic if we do something with them at a later time
-            summary = "{sample}/{assembler}/genomic_bins/{sample}.summary",
-            marker = "{sample}/{assembler}/genomic_bins/{sample}.marker"
+            summary = "{sample}/genomic_bins/{sample}.summary",
+            marker = "{sample}/genomic_bins/{sample}.marker"
         benchmark:
             "logs/benchmarks/maxbin2/{sample}.txt"
         params:
@@ -419,15 +456,19 @@ if config.get("perform_genome_binning", True):
             pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
             outdir = lambda wildcards, output: os.path.join(os.path.dirname(output.summary), wildcards.sample)
         log:
-            "{sample}/{assembler}/logs/maxbin2.log"
+            "{sample}/logs/maxbin2.log"
         conda:
             "%s/optional_genome_binning.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} run_MaxBin.pl -contig {input.fasta} -abund {input.abundance} \
-                -out {params.outdir} -min_contig_length {params.mcl} -thread {threads} \
-                -prob_threshold {params.pt} -max_iteration {params.mi} > {log}"""
+            """{SHPFXM} run_MaxBin.pl -contig {input.fasta} \
+                   -abund {input.abundance} \
+                   -out {params.outdir} \
+                   -min_contig_length {params.mcl} \
+                   -thread {threads} \
+                   -prob_threshold {params.pt} \
+                   -max_iteration {params.mi} > {log}"""
 
 
     rule initialize_checkm:
@@ -479,9 +520,9 @@ if config.get("perform_genome_binning", True):
         input:
             touched_output = "logs/checkm_init.txt",
             # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
-            bins = "{sample}/{assembler}/genomic_bins/{sample}.marker"
+            bins = "{sample}/genomic_bins/{sample}.marker"
         output:
-            "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv"
+            "{sample}/genomic_bins/checkm/completeness.tsv"
         params:
             bin_dir = lambda wc, input: os.path.dirname(input.bins),
             output_dir = lambda wc, output: os.path.dirname(output[0])
@@ -491,44 +532,58 @@ if config.get("perform_genome_binning", True):
             config.get("threads", 1)
         shell:
             """rm -r {params.output_dir} && \
-               {SHPFXM} checkm lineage_wf --file {params.output_dir}/completeness.tsv --tab_table \
-                   --quiet --extension fasta --threads {threads} {params.bin_dir} \
+               {SHPFXM} checkm lineage_wf \
+                   --file {params.output_dir}/completeness.tsv \
+                   --tab_table \
+                   --quiet \
+                   --extension fasta \
+                   --threads {threads} \
+                   {params.bin_dir} \
                    {params.output_dir}"""
 
 
     rule run_checkm_tree_qa:
         input:
-            "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv"
+            "{sample}/genomic_bins/checkm/completeness.tsv"
         output:
-            "{sample}/{assembler}/genomic_bins/checkm/taxonomy.tsv"
+            "{sample}/genomic_bins/checkm/taxonomy.tsv"
         params:
-            output_dir = "{sample}/{assembler}/genomic_bins/checkm"
+            output_dir = "{sample}/genomic_bins/checkm"
         conda:
             "%s/optional_genome_binning.yaml" % CONDAENV
         shell:
-            """{SHPFXS} checkm tree_qa --tab_table --out_format 2 \
-                   --file {params.output_dir}/taxonomy.tsv {params.output_dir}"""
+            """{SHPFXS} checkm tree_qa \
+                   --tab_table \
+                   --out_format 2 \
+                   --file {params.output_dir}/taxonomy.tsv \
+                   {params.output_dir}"""
 
 
 rule convert_sam_to_bam:
     input:
-        "{sample}/{assembler}/alignments/{sample}.sam"
+        "{sample}/sequence_alignment/{sample}.sam"
     output:
-        temp("{sample}/{assembler}/alignments/{sample}.bam")
+        temp("{sample}/sequence_alignment/{sample}.bam")
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
-               | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+        """{SHPFXM} samtools view \
+               -@ {threads} \
+               -bSh1 {input} | samtools sort \
+                                   -m 1536M \
+                                   -@ {threads} \
+                                   -T {TMPDIR}/{wildcards.sample}_tmp \
+                                   -o {output} \
+                                   -O bam -"""
 
 
 rule create_bam_index:
     input:
-        "{sample}/{assembler}/alignments/{sample}.bam"
+        "{sample}/sequence_alignment/{sample}.bam"
     output:
-        temp("{sample}/{assembler}/alignments/{sample}.bam.bai")
+        temp("{sample}/sequence_alignment/{sample}.bam.bai")
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -539,9 +594,9 @@ rule create_bam_index:
 
 rule calculate_final_contigs_stats:
     input:
-        "{sample}/{assembler}/{sample}_contigs.fasta"
+        "{sample}/{sample}_contigs.fasta"
     output:
-        "{sample}/{assembler}/contig_stats/final_contig_stats.txt"
+        "{sample}/assembly/contig_stats/final_contig_stats.txt"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -552,20 +607,20 @@ rule calculate_final_contigs_stats:
 
 rule run_prokka_annotation:
     input:
-        "{sample}/{assembler}/{sample}_contigs.fasta"
+        "{sample}/{sample}_contigs.fasta"
     output:
-        discrepancy = "{sample}/{assembler}/functional_annotation/prokka/{sample}.err",
-        faa = "{sample}/{assembler}/functional_annotation/prokka/{sample}.faa",
-        ffn = "{sample}/{assembler}/functional_annotation/prokka/{sample}.ffn",
-        fna = "{sample}/{assembler}/functional_annotation/prokka/{sample}.fna",
-        fsa = "{sample}/{assembler}/functional_annotation/prokka/{sample}.fsa",
-        gbk = "{sample}/{assembler}/functional_annotation/prokka/{sample}.gbk",
-        gff = "{sample}/{assembler}/functional_annotation/prokka/{sample}.gff",
-        log = "{sample}/{assembler}/functional_annotation/prokka/{sample}.log",
-        sqn = "{sample}/{assembler}/functional_annotation/prokka/{sample}.sqn",
-        tbl = "{sample}/{assembler}/functional_annotation/prokka/{sample}.tbl",
-        tsv = "{sample}/{assembler}/functional_annotation/prokka/{sample}.tsv",
-        txt = "{sample}/{assembler}/functional_annotation/prokka/{sample}.txt"
+        discrepancy = "{sample}/annotation/prokka/{sample}.err",
+        faa = "{sample}/annotation/prokka/{sample}.faa",
+        ffn = "{sample}/annotation/prokka/{sample}.ffn",
+        fna = "{sample}/annotation/prokka/{sample}.fna",
+        fsa = "{sample}/annotation/prokka/{sample}.fsa",
+        gbk = "{sample}/annotation/prokka/{sample}.gbk",
+        gff = "{sample}/annotation/prokka/{sample}.gff",
+        log = "{sample}/annotation/prokka/{sample}.log",
+        sqn = "{sample}/annotation/prokka/{sample}.sqn",
+        tbl = "{sample}/annotation/prokka/{sample}.tbl",
+        tsv = "{sample}/annotation/prokka/{sample}.tsv",
+        txt = "{sample}/annotation/prokka/{sample}.txt"
     benchmark:
         "logs/benchmarks/prokka/{sample}.txt"
     params:
@@ -576,36 +631,41 @@ rule run_prokka_annotation:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} prokka --outdir {params.outdir} --force --prefix {wildcards.sample} \
-               --locustag {wildcards.sample} --kingdom {params.kingdom} --metagenome \
-               --cpus {threads} {input}"""
+        """{SHPFXM} prokka --outdir {params.outdir} \
+               --force \
+               --prefix {wildcards.sample} \
+               --locustag {wildcards.sample} \
+               --kingdom {params.kingdom} \
+               --metagenome \
+               --cpus {threads} \
+               {input}"""
 
 
 rule update_prokka_tsv:
     input:
-        "{sample}/{assembler}/functional_annotation/prokka/{sample}.gff"
+        "{sample}/annotation/prokka/{sample}.gff"
     output:
-        "{sample}/{assembler}/functional_annotation/prokka/{sample}_plus.tsv"
+        "{sample}/annotation/prokka/{sample}_plus.tsv"
     shell:
         """{SHPFXS} atlas gff2tsv {input} {output}"""
 
 
 rule convert_gff_to_gtf:
     input:
-        "{sample}/{assembler}/functional_annotation/prokka/{sample}.gff"
+        "{sample}/annotation/prokka/{sample}.gff"
     output:
-        "{sample}/{assembler}/functional_annotation/prokka/{sample}.gtf"
+        "{sample}/annotation/prokka/{sample}.gtf"
     run:
         gff_to_gtf(input[0], output[0])
 
 
 rule remove_pcr_duplicates:
     input:
-        bam = "{sample}/{assembler}/alignments/{sample}.bam",
-        bai = "{sample}/{assembler}/alignments/{sample}.bam.bai"
+        bam = "{sample}/sequence_alignment/{sample}.bam",
+        bai = "{sample}/sequence_alignment/{sample}.bam.bai"
     output:
-        bam = "{sample}/{assembler}/alignments/{sample}_markdup.bam",
-        txt = "{sample}/{assembler}/alignments/{sample}_markdup_metrics.txt"
+        bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
+        txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
         "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
     params:
@@ -615,42 +675,54 @@ rule remove_pcr_duplicates:
     resources:
         mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
     shell:
-        """{SHPFXS} picard MarkDuplicates -Xmx{params.java_mem} INPUT={input.bam} \
-               OUTPUT={output.bam} METRICS_FILE={output.txt} ASSUME_SORT_ORDER=coordinate \
-               MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 REMOVE_DUPLICATES=TRUE \
-               VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=TRUE"""
+        """{SHPFXS} picard MarkDuplicates \
+               -Xmx{params.java_mem} \
+               INPUT={input.bam} \
+               OUTPUT={output.bam} \
+               METRICS_FILE={output.txt} \
+               ASSUME_SORT_ORDER=coordinate \
+               MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
+               REMOVE_DUPLICATES=TRUE \
+               VALIDATION_STRINGENCY=LENIENT \
+               CREATE_INDEX=TRUE"""
 
 
 rule find_counts_per_region:
     input:
-        gtf = "{sample}/{assembler}/functional_annotation/prokka/{sample}.gtf",
-        bam = "{sample}/{assembler}/alignments/{sample}_markdup.bam"
+        gtf = "{sample}/annotation/prokka/{sample}.gtf",
+        bam = "{sample}/sequence_alignment/{sample}_markdup.bam"
     output:
-        summary = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt.summary",
-        counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt"
+        summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
+        counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
     params:
         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
         paired_mode = lambda wc: "-p" if config["samples"][wc.sample].get("paired", True) else "",
         multi_mapping = "-M" if config.get("count_multi_mapped_reads") else "",
         primary_only = "--primary" if config.get("primary_only", False) else ""
     log:
-        "{sample}/{assembler}/logs/counts_per_region.log"
+        "{sample}/logs/counts_per_region.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} featureCounts {params.paired_mode} -F gtf -T {threads} \
-               {params.multi_mapping} -t CDS -g ID -a {input.gtf} -o {output.counts} \
+        """{SHPFXM} featureCounts {params.paired_mode} \
+               -F gtf \
+               -T {threads} \
+               {params.multi_mapping} \
+               -t CDS \
+               -g ID \
+               -a {input.gtf} \
+               -o {output.counts} \
                {input.bam} 2> {log}"""
 
 
 rule run_diamond_blastp:
     input:
-        fasta = "{sample}/{assembler}/functional_annotation/prokka/{sample}.faa",
+        fasta = "{sample}/annotation/prokka/{sample}.faa",
         db = config["diamond_db"]
     output:
-        "{sample}/{assembler}/functional_annotation/refseq/{sample}_hits.tsv"
+        "{sample}/annotation/refseq/{sample}_hits.tsv"
     benchmark:
         "logs/benchmarks/run_diamond_blastp/{sample}.txt"
     params:
@@ -669,20 +741,30 @@ rule run_diamond_blastp:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} diamond blastp --threads {threads} --outfmt 6 --out {output} \
-               --query {input.fasta} --db {input.db} --top {params.top_seqs} \
-               --evalue {params.e_value} --id {params.min_identity} \
-               --query-cover {params.query_cover} {params.run_mode} --gapopen {params.gap_open} \
-               --gapextend {params.gap_extend} {params.tmpdir} --block-size {params.block_size} \
+        """{SHPFXM} diamond blastp \
+               --threads {threads} \
+               --outfmt 6 \
+               --out {output} \
+               --query {input.fasta} \
+               --db {input.db} \
+               --top {params.top_seqs} \
+               --evalue {params.e_value} \
+               --id {params.min_identity} \
+               --query-cover {params.query_cover} \
+               {params.run_mode} \
+               --gapopen {params.gap_open} \
+               --gapextend {params.gap_extend} \
+               {params.tmpdir} \
+               --block-size {params.block_size} \
                --index-chunks {params.index_chunks}"""
 
 
 rule add_contig_metadata:
     input:
-        hits = "{sample}/{assembler}/functional_annotation/refseq/{sample}_hits.tsv",
-        gff = "{sample}/{assembler}/functional_annotation/prokka/{sample}.gff"
+        hits = "{sample}/annotation/refseq/{sample}_hits.tsv",
+        gff = "{sample}/annotation/prokka/{sample}.gff"
     output:
-        temp("{sample}/{assembler}/functional_annotation/refseq/{sample}_hits_plus.tsv")
+        temp("{sample}/annotation/refseq/{sample}_hits_plus.tsv")
     shell:
         "{SHPFXS} atlas munge-blast {input.hits} {input.gff} {output}"
 
@@ -690,9 +772,9 @@ rule add_contig_metadata:
 rule sort_munged_blast_hits:
     # ensure blast hits are grouped by contig, ORF, and then decreasing by bitscore
     input:
-        "{sample}/{assembler}/functional_annotation/refseq/{sample}_hits_plus.tsv"
+        "{sample}/annotation/refseq/{sample}_hits_plus.tsv"
     output:
-        "{sample}/{assembler}/functional_annotation/refseq/{sample}_hits_plus_sorted.tsv"
+        "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
     shell:
         "{SHPFXS} sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
@@ -700,9 +782,9 @@ rule sort_munged_blast_hits:
 rule parse_blastp:
     # assign a taxonomy to contigs using the consensus of the ORF assignments
     input:
-        "{sample}/{assembler}/functional_annotation/refseq/{sample}_hits_plus_sorted.tsv"
+        "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
     output:
-        "{sample}/{assembler}/functional_annotation/refseq/{sample}_tax_assignments.tsv"
+        "{sample}/annotation/refseq/{sample}_tax_assignments.tsv"
     params:
         namemap = config["refseq_namemap"],
         treefile = config["refseq_tree"],
@@ -716,7 +798,8 @@ rule parse_blastp:
         max_hits = config.get("max_hits", MAX_HITS),
         top_fraction = (100 - config.get("diamond_top_seqs", 5)) * 0.01
     shell:
-        """{SHPFXS} atlas refseq --summary-method {params.summary_method} \
+        """{SHPFXS} atlas refseq \
+               --summary-method {params.summary_method} \
                --aggregation-method {params.aggregation_method} \
                --majority-threshold {params.majority_threshold} \
                --min-identity {params.min_identity} \
@@ -725,47 +808,59 @@ rule parse_blastp:
                --max-evalue {params.max_evalue} \
                --max-hits {params.max_hits} \
                --top-fraction {params.top_fraction} \
-               {input} {params.namemap} {params.treefile} {output}"""
+               {input} \
+               {params.namemap} \
+               {params.treefile} \
+               {output}"""
 
 
 if config.get("perform_genome_binning", True):
     rule merge_sample_tables:
         input:
-            prokka = "{sample}/{assembler}/functional_annotation/prokka/{sample}_plus.tsv",
-            refseq = "{sample}/{assembler}/functional_annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt",
-            completeness = "{sample}/{assembler}/genomic_bins/checkm/completeness.tsv",
-            taxonomy = "{sample}/{assembler}/genomic_bins/checkm/taxonomy.tsv"
+            prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
+            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+            completeness = "{sample}/genomic_bins/checkm/completeness.tsv",
+            taxonomy = "{sample}/genomic_bins/checkm/taxonomy.tsv"
         output:
-            "{sample}/{assembler}/{sample}_annotations.txt"
+            "{sample}/{sample}_annotations.txt"
         params:
-            fastas = lambda wc: " --fasta ".join(glob("{sample}/{assembler}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample, assembler=wc.assembler)))
+            fastas = lambda wc: " --fasta ".join(glob("{sample}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample)))
         shell:
-            "{SHPFXS} atlas merge-tables --counts {input.counts} \
-                 --completeness {input.completeness} --taxonomy {input.taxonomy} \
-                 --fasta {params.fastas} {input.prokka} {input.refseq} {output}"
+            "{SHPFXS} atlas merge-tables \
+                 --counts {input.counts} \
+                 --completeness {input.completeness} \
+                 --taxonomy {input.taxonomy} \
+                 --fasta {params.fastas} \
+                 {input.prokka} \
+                 {input.refseq} \
+                 {output}"
 
 
 else:
     rule merge_sample_tables:
         input:
-            prokka = "{sample}/{assembler}/functional_annotation/prokka/{sample}_plus.tsv",
-            refseq = "{sample}/{assembler}/functional_annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/{assembler}/functional_annotation/feature_counts/{sample}_counts.txt"
+            prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
+            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
         output:
-            "{sample}/{assembler}/{sample}_annotations.txt"
+            "{sample}/{sample}_annotations.txt"
         shell:
-            "{SHPFXS} atlas merge-tables --counts {input.counts} {input.prokka} {input.refseq} {output}"
+            "{SHPFXS} atlas merge-tables \
+                 --counts {input.counts} \
+                 {input.prokka} \
+                 {input.refseq} \
+                 {output}"
 
 
 # rule assembly_report:
 #
 #     input:
-#         contig_stats = "{sample}/{assembler}/contig_stats/final_contig_stats.txt",
-#         base_comp = "{sample}/{assembler}/contig_stats/postfilter_base_composition.txt"
+#         contig_stats = "{sample}/assembly/contig_stats/final_contig_stats.txt",
+#         base_comp = "{sample}/assembly/contig_stats/postfilter_base_composition.txt"
 #         # css = os.path.join(workflow.basedir, "resources", "report.css")
 #     output:
-#         html = "{sample}/{sample}_{assembler}_README.html"
+#         html = "{sample}/{sample}_assembly_README.html"
 #     shadow:
 #         "shallow"
 #     run:

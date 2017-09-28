@@ -25,6 +25,7 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             print(toks[0], toks[1], sep="\t", file=fo)
 
 
+# TODO this should provide an old name to new name map
 rule rename_input_contigs:
     input:
         lambda wc: config["samples"][wc.sample]["fasta"]
@@ -124,11 +125,21 @@ rule run_diamond_blastp:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} diamond blastp --threads {threads} --outfmt 6 --out {output} \
-               --query {input.fasta} --db {input.db} --top {params.top_seqs} \
-               --evalue {params.e_value} --id {params.min_identity} \
-               --query-cover {params.query_cover} {params.run_mode} --gapopen {params.gap_open} \
-               --gapextend {params.gap_extend} {params.tmpdir} --block-size {params.block_size} \
+        """{SHPFXM} diamond blastp \
+               --threads {threads} \
+               --outfmt 6 \
+               --out {output} \
+               --query {input.fasta} \
+               --db {input.db} \
+               --top {params.top_seqs} \
+               --evalue {params.e_value} \
+               --id {params.min_identity} \
+               --query-cover {params.query_cover} \
+               {params.run_mode} \
+               --gapopen {params.gap_open} \
+               --gapextend {params.gap_extend} \
+               {params.tmpdir} \
+               --block-size {params.block_size} \
                --index-chunks {params.index_chunks}"""
 
 
@@ -188,7 +199,7 @@ rule align_reads_to_renamed_contigs:
         fasta = "{sample}/{sample}_renamed_contigs.fasta",
         fastq = lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        sam = temp("{sample}/alignments/{sample}.sam"),
+        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
         bhist = "{sample}/contig_stats/base_composition.txt",
         bqhist = "{sample}/contig_stats/box_quality.txt",
         mhist = "{sample}/contig_stats/mutation_rates.txt",
@@ -202,7 +213,7 @@ rule align_reads_to_renamed_contigs:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
         maxsites = config.get("maximum_counted_map_sites", 10)
     log:
-        "{sample}/alignments/align_reads.log"
+        "{sample}/sequence_alignment/align_reads.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -218,9 +229,9 @@ rule align_reads_to_renamed_contigs:
 
 rule convert_alignment_sam_to_bam:
     input:
-        "{sample}/alignments/{sample}.sam"
+        "{sample}/sequence_alignment/{sample}.sam"
     output:
-        temp("{sample}/alignments/{sample}.bam")
+        temp("{sample}/sequence_alignment/{sample}.bam")
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -232,9 +243,9 @@ rule convert_alignment_sam_to_bam:
 
 rule create_bam_index:
     input:
-        "{sample}/alignments/{sample}.bam"
+        "{sample}/sequence_alignment/{sample}.bam"
     output:
-        temp("{sample}/alignments/{sample}.bam.bai")
+        temp("{sample}/sequence_alignment/{sample}.bam.bai")
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -245,11 +256,11 @@ rule create_bam_index:
 
 rule remove_pcr_duplicates:
     input:
-        bam = "{sample}/alignments/{sample}.bam",
-        bai = "{sample}/alignments/{sample}.bam.bai"
+        bam = "{sample}/sequence_alignment/{sample}.bam",
+        bai = "{sample}/sequence_alignment/{sample}.bam.bai"
     output:
-        bam = "{sample}/alignments/{sample}_markdup.bam",
-        txt = "{sample}/alignments/{sample}_markdup_metrics.txt"
+        bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
+        txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
         "benchmarks/picard_mark_duplicates/{sample}.txt"
     params:
@@ -257,7 +268,7 @@ rule remove_pcr_duplicates:
     resources:
         mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
     log:
-        "{sample}/alignments/remove_pcr_duplicates.log"
+        "{sample}/sequence_alignment/remove_pcr_duplicates.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     shell:
@@ -270,7 +281,7 @@ rule remove_pcr_duplicates:
 rule counts_per_region:
     input:
         gtf = "{sample}/prokka/{sample}.gtf",
-        bam = "{sample}/alignments/{sample}_markdup.bam"
+        bam = "{sample}/sequence_alignment/{sample}_markdup.bam"
     output:
         summary = "{sample}/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/feature_counts/{sample}_counts.txt"

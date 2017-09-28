@@ -76,20 +76,6 @@ def get_conda_envs_dir():
     return yaml_dir
 
 
-def get_assembler(config):
-    norm_str = "normalization_k{length}_t{depth}".format(
-                   length=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-                   depth=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH))
-    if config.get("assembler") == "spades":
-        assembler_str = "spades_{k}".format(k=config.get("spades_k", "auto").replace(",", "_"))
-    else:
-        k_min = config.get("megahit_k_min", 21)
-        k_max = config.get("megahit_k_max", 121)
-        k_step = config.get("megahit_k_step", 20)
-        assembler_str = "megahit_{min}_{max}_{step}".format(min=k_min, max=k_max, step=k_step)
-    return "{assembler}_{norm}".format(assembler=assembler_str, norm=norm_str)
-
-
 def get_temp_dir(config):
     if config.get("tmpdir"):
         tmp_dir = config["tmpdir"]
@@ -102,16 +88,16 @@ def get_contaminant_output_files(samples, config):
     ret_str = ""
     if "contaminant_references" in config.keys():
         if len(config["contaminant_references"]) > 0:
-            ret_str = expand("{sample}/quality_control/{sample}_02_{decon_dbs}.fastq.gz",
+            ret_str = expand("{sample}/sequence_quality_control/{sample}_02_{decon_dbs}.fastq.gz",
                           sample=samples, decon_dbs=list(config["contaminant_references"].keys()))
     return ret_str
 
 
-def get_bin_summary_files(do_binning, samples, assembler):
+def get_bin_summary_files(do_binning, samples):
     ret_str = ""
     if do_binning:
-        ret_str = expand("{sample}/{assembler}/genomic_bins/{sample}.summary",
-                      sample=samples, assembler=assembler)
+        ret_str = expand("{sample}/genomic_bins/{sample}.summary",
+                      sample=samples)
     return ret_str
 
 
@@ -152,10 +138,6 @@ if config.get("workflow", "complete") == "complete":
 
     # TABLES = get_count_tables(config, "summary_counts")
     TMPDIR = get_temp_dir(config)
-    NORMALIZATION = "normalization_k{length}_t{depth}".format(
-                        length=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-                        depth=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH))
-    ASSEMBLER = get_assembler(config)
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
 
     SAMPLES = [i for i in config["samples"].keys()]
@@ -166,22 +148,18 @@ if config.get("workflow", "complete") == "complete":
     rule all:
         input:
             get_contaminant_output_files(SAMPLES, config),
-            expand("{sample}/quality_control/{sample}_decontamination_reference_stats.txt",
+            expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
                 sample=SAMPLES),
-            expand("{sample}/quality_control/{sample}_00_se.fastq.gz",
+            expand("{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
                 sample=SAMPLES),
             expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
                 sample=SAMPLES),
-            expand("{sample}/{assembler}/contig_stats/prefilter_contig_stats.txt",
-                sample=SAMPLES,
-                assembler=ASSEMBLER),
-            expand("{sample}/{assembler}/contig_stats/final_contig_stats.txt",
-                sample=SAMPLES,
-                assembler=ASSEMBLER),
-            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES, ASSEMBLER),
-            expand("{sample}/{assembler}/{sample}_annotations.txt",
-                sample=SAMPLES,
-                assembler=ASSEMBLER)
+            expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
+                sample=SAMPLES),
+            expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
+                sample=SAMPLES),
+            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),
+            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
 
     include: "rules/assemble.snakefile"
 
