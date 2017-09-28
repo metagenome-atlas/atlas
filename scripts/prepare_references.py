@@ -274,7 +274,7 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
     """Takes the RefSeq FASTA which will look like:
 
         \b
-        >gi|507053311|ref|WP_016124266.1| two-component sensor histidine kinase [Bacillus cereus]
+        >WP_016124266.1 two-component sensor histidine kinase [Bacillus cereus]
         MNFNKRLIIQFIMQHVFVLVTLLIAVVAAFTYLIFLLTSTLYEPNIPDSDSFTISRYISSEDGHISLQSEVQDLIKEKND
 
     And from NCBI's taxonomy dump, names.dmp, which starts like:
@@ -295,7 +295,7 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
     taxonomy ID:
 
         \b
-        gi|507053311|ref|WP_016124266.1|<tab>two-component sensor histidine kinase<tab>Bacillus cereus
+        WP_016124266.1<tab>two-component sensor histidine kinase<tab>Bacillus cereus
 
     As well as TREE:
 
@@ -316,7 +316,7 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
             scientific_name = ""
             synonym = ""
             for line in group:
-                toks = [x.strip() for x in line.strip().split("|")]
+                toks = [x.strip().replace("'", "").replace('"','') for x in line.strip().split("|")]
                 if toks[-2] == "scientific name":
                     tax_to_scientific_name[toks[0]] = toks[1]
                 elif toks[-2] == "misspelling":
@@ -332,18 +332,20 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
                 name_to_tax[toks[1]] = toks[0]
 
     logging.info("Iterating over %s" % fasta)
-    with open(fasta) as fa:
+    with gzip.open(fasta, 'rt') as fa:
         for name, seq in read_fasta(fa):
             name_parts = name.partition(" ")
             # biotin--[acetyl-CoA-carboxylase] synthetase [Aeromonas allosaccharophila]
             function = name_parts[2].rpartition("[")[0].strip()
-            taxonomy_name = name_parts[2].rpartition("[")[2].strip("]")
+            taxonomy_name = name_parts[2].rpartition("[")[2].strip("]").replace("'","").replace('"','')
             # phosphoribosyltransferase [[Haemophilus] parasuis]
             if "[[" in name_parts[2]:
                 taxonomy_name = "[%s" % taxonomy_name
             # https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?lvl=0&id=1737424
             if taxonomy_name == "Blautia sp. GD8":
                 taxonomy_name = "Blautia sp. GD9"
+            if taxonomy_name == "unclassified Actinobacteria (miscellaneous)":
+                taxonomy_name = "unclassified Actinobacteria (class) (miscellaneous)"
             try:
                 taxonomy_id = name_to_tax[taxonomy_name]
             except KeyError:
