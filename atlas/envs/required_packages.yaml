@@ -6,15 +6,15 @@ channels:
 dependencies:
     - python=3.5
     - bbmap=37.17
-    - bzip2
-    - click
-    - diamond
-    - megahit
-    - pandas
-    - picard
-    - prokka
-    - pyyaml
+    - bzip2=1.0.6
+    - click=6.7
+    - diamond=0.9.10
+    - megahit=1.1.2
+    - pandas=0.20.3
+    - picard=2.9.0
+    - prokka=1.12
+    - pyyaml=3.12
     - samtools=1.3.1
-    - spades
-    - sqlite
-    - subread
+    - spades=3.11.0
+    - sqlite=3.13.0
+    - subread=1.5.3
