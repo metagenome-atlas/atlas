@@ -10,18 +10,21 @@ from atlas.utils import touch
 from atlas.parsers import read_fasta
 
 
-PROKKA_TSV_HEADER = ["contig_id", "locus_tag", "ftype", "gene", "EC_number", "product"]
-REFSEQ_TSV_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy", "refseq_product",
-                     "refseq_evalue", "refseq_bitscore"]
+PROKKA_TSV_HEADER = ["contig_id", "locus_tag", "ftype", "gene", "EC_number",
+                     "product"]
+REFSEQ_TSV_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
+                     "refseq_product", "refseq_evalue", "refseq_bitscore"]
 # minus the sam/bam file name which is the last column
 COUNTS_HEADER = ["Geneid", "Chr", "Start", "End", "Strand", "Length"]
-MERGED_HEADER = ["contig_id", "locus_tag", "ftype", "Length", "gene", "EC_number", "product",
-                 "orf_taxonomy", "taxonomy", "erfc", "count"]
-ANNOTATE_HEADER = ["contig_id", "locus_tag", "ftype", "gene", "EC_number", "product",
-                   "orf_taxonomy", "taxonomy", "erfc"]
-BINNED_HEADER = ["contig_id", "locus_tag", "ftype", "Length", "gene", "EC_number", "product",
-                 "orf_taxonomy", "taxonomy", "erfc", "count", "bin_id",
-                 "checkm_bin_taxonomy_contained", "checkm_bin_taxonomy_sister_lineage",
+MERGED_HEADER = ["contig_id", "locus_tag", "ftype", "Length", "gene",
+                 "EC_number", "product", "orf_taxonomy", "taxonomy", "erfc",
+                 "count"]
+ANNOTATE_HEADER = ["contig_id", "locus_tag", "ftype", "gene", "EC_number",
+                   "product", "orf_taxonomy", "taxonomy", "erfc"]
+BINNED_HEADER = ["contig_id", "locus_tag", "ftype", "Length", "gene",
+                 "EC_number", "product", "orf_taxonomy", "taxonomy", "erfc",
+                 "count", "bin_id", "checkm_bin_taxonomy_contained",
+                 "checkm_bin_taxonomy_sister_lineage",
                  "checkm_bin_number_unique_markers", "checkm_bin_completeness",
                  "checkm_bin_contamination"]
 
@@ -60,20 +63,26 @@ def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None):
 
     if counts_tsv:
         logging.info("Parsing Counts TSV: %s" % counts_tsv)
-        counts_df = get_valid_dataframe(counts_tsv, COUNTS_HEADER, sep="\t", comment="#")
-        counts_df.rename(columns={counts_df.columns.tolist()[-1]:"count"}, inplace=True)
+        counts_df = get_valid_dataframe(counts_tsv, COUNTS_HEADER, sep="\t",
+                        comment="#")
+        counts_df.rename(columns={counts_df.columns.tolist()[-1]:"count"},
+            inplace=True)
 
         # merge prokka and counts
-        merged = pd.merge(left=counts_df, right=prokka_df, how="left", left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
+        merged = pd.merge(left=counts_df, right=prokka_df, how="left",
+                     left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
 
     logging.info("Parsing RefSeq file: %s" % refseq_tsv)
     refseq_df = get_valid_dataframe(refseq_tsv, REFSEQ_TSV_HEADER, sep="\t")
 
     if counts_tsv:
         # merge in refseq data
-        merged = pd.merge(left=merged, right=refseq_df, how="left", left_on=COUNTS_HEADER[0], right_on=REFSEQ_TSV_HEADER[1])
+        merged = pd.merge(left=merged, right=refseq_df, how="left",
+                     left_on=COUNTS_HEADER[0], right_on=REFSEQ_TSV_HEADER[1])
     else:
-        merged = pd.merge(left=prokka_df, right=refseq_df, how="left", left_on=PROKKA_TSV_HEADER[1], right_on=REFSEQ_TSV_HEADER[1])
+        merged = pd.merge(left=prokka_df, right=refseq_df, how="left",
+                     left_on=PROKKA_TSV_HEADER[1],
+                     right_on=REFSEQ_TSV_HEADER[1])
     return merged
 
 
@@ -84,27 +93,34 @@ def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None):
 
     if counts_tsv:
         logging.info("Parsing Counts TSV: %s" % counts_tsv)
-        counts_df = get_valid_dataframe(counts_tsv, COUNTS_HEADER, sep="\t", comment="#")
-        counts_df.rename(columns={counts_df.columns.tolist()[-1]:"count"}, inplace=True)
+        counts_df = get_valid_dataframe(counts_tsv, COUNTS_HEADER, sep="\t",
+                        comment="#")
+        counts_df.rename(columns={counts_df.columns.tolist()[-1]:"count"},
+            inplace=True)
 
         # merge prokka and counts
-        merged = pd.merge(left=counts_df, right=prokka_df, how="left", left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
+        merged = pd.merge(left=counts_df, right=prokka_df, how="left",
+                     left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
 
     logging.info("Parsing RefSeq file: %s" % refseq_tsv)
     refseq_df = get_valid_dataframe(refseq_tsv, REFSEQ_TSV_HEADER, sep="\t")
 
     if counts_tsv:
         # merge in refseq data
-        merged = pd.merge(left=merged, right=refseq_df, how="left", left_on=COUNTS_HEADER[0], right_on=REFSEQ_TSV_HEADER[1])
+        merged = pd.merge(left=merged, right=refseq_df, how="left",
+                     left_on=COUNTS_HEADER[0], right_on=REFSEQ_TSV_HEADER[1])
     else:
-        merged = pd.merge(left=prokka_df, right=refseq_df, how="left", left_on=PROKKA_TSV_HEADER[1], right_on=REFSEQ_TSV_HEADER[1])
+        merged = pd.merge(left=prokka_df, right=refseq_df, how="left",
+                     left_on=PROKKA_TSV_HEADER[1],
+                     right_on=REFSEQ_TSV_HEADER[1])
     return merged
 
 
 def merge_bin_data(df, completeness_tsv, taxonomy_tsv, fasta_files):
     tax_df = pd.read_table(taxonomy_tsv)
     com_df = pd.read_table(completeness_tsv)
-    m = pd.merge(left=tax_df, right=com_df, how="left", left_on="Bin Id", right_on="Bin Id")
+    m = pd.merge(left=tax_df, right=com_df, how="left", left_on="Bin Id",
+                 right_on="Bin Id")
 
     contig_by_bin = defaultdict(list)
     for fasta in fasta_files:
@@ -127,12 +143,13 @@ def merge_bin_data(df, completeness_tsv, taxonomy_tsv, fasta_files):
     contig_df = pd.DataFrame.from_dict(contig_dict, orient="index")
     contig_df = contig_df.reset_index().rename(columns={"index":"binned_contig_id"})
 
-    merged = pd.merge(left=df, right=contig_df, how="left", left_on="Chr", right_on="binned_contig_id")
+    merged = pd.merge(left=df, right=contig_df, how="left", left_on="Chr",
+                      right_on="binned_contig_id")
     return merged
 
 
-def merge_tables(prokka_tsv, refseq_tsv, output, counts_tsv=None, completeness=None, taxonomy=None,
-                 fastas=None):
+def merge_tables(prokka_tsv, refseq_tsv, output, counts_tsv=None,
+    completeness=None, taxonomy=None, fastas=None):
     """
 
     Count data is a TSV formatted with a header:
