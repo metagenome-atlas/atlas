@@ -63,10 +63,10 @@ rule quality_filter:
     params:
         lref = "lref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
         rref = "rref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
-        mink = config.get("preprocess_adapter_min_k", PREPROCESS_ADAPTER_MIN_K),
+        mink = "" if not config.get("preprocess_adapters") else "mink=%d" % config.get("preprocess_adapter_min_k", 8),
         trimq = config.get("preprocess_minimum_base_quality", PREPROCESS_MINIMUM_BASE_QUALITY),
-        hdist = config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
-        k = config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
+        hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
+        k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
         qtrim = config.get("qtrim", QTRIM),
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
@@ -79,11 +79,13 @@ rule quality_filter:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} outs={output.se} \
-               {params.rref} {params.lref} mink={params.mink} qout=33 \
-               stats={output.stats} hdist={params.hdist} k={params.k} \
-               trimq={params.trimq} qtrim={params.qtrim} threads={threads} \
-               minlength={params.minlength} minbasefrequency={params.minbasefrequency} \
+        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} \
+               outs={output.se} {params.rref} {params.lref} \
+               {params.mink} qout=33 stats={output.stats} \
+               {params.hdist} {params.k} trimq={params.trimq} \
+               qtrim={params.qtrim} threads={threads} \
+               minlength={params.minlength} trd=t \
+               minbasefrequency={params.minbasefrequency} \
                interleaved={params.interleaved} overwrite=true 2> {log}"""
 
 
