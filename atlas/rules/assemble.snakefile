@@ -54,7 +54,8 @@ rule quality_filter:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        pe="{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
+        pe = "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
+        se = "{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -78,24 +79,19 @@ rule quality_filter:
         config.get("threads", 1)
     resources:
         mem = config.get("java_mem", JAVA_MEM)
-    shadow: "shallow"
     shell:
-        """{SHPFXM} bbduk2.sh {params.inputs} out=good_quality_pe.fastq.gz outs=good_quality_se.fastq.gz \
+        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} outs={output.se} \
                {params.rref} {params.lref} mink={params.mink} qout=33 \
                stats={output.stats} hdist={params.hdist} k={params.k} \
                trimq={params.trimq} qtrim={params.qtrim} threads={threads} -Xmx{resources.mem}G \
                minlength={params.minlength} minbasefrequency={params.minbasefrequency} \
-               interleaved={params.interleaved} overwrite=true 2> {log}
-
-                cat good_quality_pe.fastq.gz good_quality_se.fastq.gz > {output.pe} 2>> {log}
-
-               """
+               interleaved={params.interleaved} overwrite=true 2> {log}"""
 
 
 if config.get("perform_error_correction", True):
     rule error_correction:
         input:
-            "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
+            "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz"
         output:
             "{sample}/sequence_quality_control/{sample}_01_pe.fastq.gz"
         benchmark:
@@ -115,9 +111,7 @@ if config.get("perform_error_correction", True):
                    out={output} \
                    mode=correct \
                    threads={threads} \
-                   ecc=t ecco=t 2> {log}
-
-            """
+                   ecc=t ecco=t 2> {log}"""
 
 
     # if there are no references, decontamination will be skipped
@@ -695,13 +689,15 @@ rule remove_pcr_duplicates:
         txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
         "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
+    params:
+        java_mem = config.get("java_mem", JAVA_MEM)
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
         mem = int(config.get("java_mem", "32"))
     shell:
         """{SHPFXS} picard MarkDuplicates \
-               -Xmx{resources.mem}G \
+               -Xmx{params.java_mem} \
                INPUT={input.bam} \
                OUTPUT={output.bam} \
                METRICS_FILE={output.txt} \
