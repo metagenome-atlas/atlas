@@ -695,15 +695,13 @@ rule remove_pcr_duplicates:
         txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
         "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
-    params:
-        java_mem = config.get("java_mem", JAVA_MEM)
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
         mem = int(config.get("java_mem", "32"))
     shell:
         """{SHPFXS} picard MarkDuplicates \
-               -Xmx{params.java_mem} \
+               -Xmx{resources.mem}G \
                INPUT={input.bam} \
                OUTPUT={output.bam} \
                METRICS_FILE={output.txt} \
