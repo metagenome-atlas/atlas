@@ -3,6 +3,8 @@ ATLAS
 
 |DOI|
 
+.. image:: atlas/resources/images/atlas_workflow.png
+
 Documentation
 =============
 
