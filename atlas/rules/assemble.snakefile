@@ -55,8 +55,7 @@ rule quality_filter:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        pe = "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
-        se = "{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
+        fastq = "{sample}/sequence_quality_control/{sample}_filtered.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -79,106 +78,115 @@ rule quality_filter:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} \
-               outs={output.se} {params.rref} {params.lref} \
+        """{SHPFXM} bbduk2.sh {params.inputs} out=good_quality_pe.fastq.gz \
+               outs=good_quality_pe.fastq.gz {params.rref} {params.lref} \
                {params.mink} qout=33 stats={output.stats} \
                {params.hdist} {params.k} trimq={params.trimq} \
                qtrim={params.qtrim} threads={threads} \
                minlength={params.minlength} trd=t \
                minbasefrequency={params.minbasefrequency} \
-               interleaved={params.interleaved} overwrite=true 2> {log}"""
+               interleaved={params.interleaved} overwrite=true 2> {log}
 
+            cat good_quality_pe.fastq.gz good_quality_se.fastq.gz > {output.fastq} 2>> {log}
+        """
 
-if config.get("perform_error_correction", True):
-    rule error_correction:
+fastq_files=rules.quality_filter.output.fastq
+
+if config.get("merge_pairs", True):  #check also if paired 
+
+    rule merge_pairs:
         input:
-            "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz"
+             fastq_files #contains pe and se
         output:
-            "{sample}/sequence_quality_control/{sample}_01_pe.fastq.gz"
-        benchmark:
-            "logs/benchmarks/error_correction/{sample}.txt"
-        params:
-            java_mem = config.get("java_mem", JAVA_MEM)
-        log:
-            "{sample}/logs/{sample}_error_correction.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "{sample}/sequence_quality_control/{sample}_merged_pairs.fastq.gz"
+        threads:
+            config.get("threads", 1)
         resources:
-            mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
-        threads:
-            config.get("threads", 1)
-        shell:
-            """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
-                   prealloc=1 \
-                   in={input} \
-                   out={output} \
-                   mode=correct \
-                   threads={threads} \
-                   ecc=t ecco=t 2> {log}"""
-
-
-    # if there are no references, decontamination will be skipped
-    rule decontamination:
-        input:
-            "{sample}/sequence_quality_control/{sample}_01_pe.fastq.gz"
-        output:
-            dbs = ["{sample}/sequence_quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
-            stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-            clean = temp("{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz")
-        benchmark:
-            "logs/benchmarks/decontamination/{sample}.txt"
-        params:
-            refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-            refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
-            maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
-            minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
-            minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
-            ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
-            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-            interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
-        log:
-            "{sample}/logs/{sample}_decontamination.log"
+            mem = config.get("java_mem", JAVA_MEM)
         conda:
             "%s/required_packages.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
+        log:
+            "{sample}/logs/{sample}_merge_pairs.log"
+        benchmark:
+            "logs/benchmarks/merge_pairs/{sample}.txt"
+        shadow: "shallow"
+        params:
+            kmer = config.get("merging_k", MERGING_K),
+            extend2 = config.get("merging_extend2", MERGING_EXTEND2)
+            flags = config.get("merging_flags", MERGING_FLAGS)
         shell:
-            """{SHPFXM} bbsplit.sh nodisk=t {params.refs_in} in={input} outu={output.clean} \
-                   {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
-                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                   interleaved={params.interleaved} threads={threads} k={params.k} local=t 2> {log}"""
+            """
+                {SHPFXM} bbmerge-auto.sh -Xmx{resources.mem}G threads={threads} \
+                in={input} outmerged=merged_pairs.fastq.gz outunmerged=unmerged_pairs.fastq.gz {params.flags} k={params.kmer} extend2={params.extend2} ecct vstrict 2> {log}
+                
+                # merged pairs are now part of the single end fraction
 
+                cat merged_pairs.fastq.gz unmerged_pairs.fastq.gz > {output} 2>> {log}
+            """
+    fastq_files=rules.merge_pairs.output
 
 else:
-    rule decontamination:
-        input:
-            "{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz"
-        output:
-            dbs = ["{sample}/sequence_quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
-            stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-            clean = temp("{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz")
-        benchmark:
-            "logs/benchmarks/decontamination/{sample}.txt"
-        params:
-            refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-            refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
-            maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
-            minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
-            minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
-            ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
-            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-            interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
-        log:
-            "{sample}/logs/{sample}_decontamination.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        shell:
-            """{SHPFXM} bbsplit.sh nodisk=t {params.refs_in} in={input} outu={output.clean} \
-                   {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
-                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                   interleaved={params.interleaved} threads={threads} k={params.k} local=t 2> {log}"""
+    if config.get("perform_error_correction", True):
+        rule error_correction:
+            input:
+                fastq_files #contains pe and se
+            output:
+                "{sample}/sequence_quality_control/{sample}_errcor.fastq.gz"
+            benchmark:
+                "logs/benchmarks/error_correction/{sample}.txt"
+            params:
+                java_mem = config.get("java_mem", JAVA_MEM)
+            log:
+                "{sample}/logs/{sample}_error_correction.log"
+            conda:
+                "%s/required_packages.yaml" % CONDAENV
+            resources:
+                mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+            threads:
+                config.get("threads", 1)
+            shell:
+                """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
+                       prealloc=1 \
+                       in={input} \
+                       out={output.pe} \
+                       mode=correct \
+                       threads={threads} \
+                       ecc=t ecco=t 2> {log}
+                """
+
+    fastq_files=rules.error_correction.output
+
+# if there are no references, decontamination will be skipped
+rule decontamination:
+    input:
+        fastq_files #contains pe and se
+    output:
+        dbs = ["{sample}/sequence_quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
+        stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+        clean = temp("{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz")
+    benchmark:
+        "logs/benchmarks/decontamination/{sample}.txt"
+    params:
+        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
+        refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
+        maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
+        minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
+        minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
+        ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
+        k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
+        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
+    log:
+        "{sample}/logs/{sample}_decontamination.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """{SHPFXM} bbsplit.sh nodisk=t {params.refs_in} in={input} outu={output.clean} \
+               {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
+               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+               interleaved={params.interleaved} threads={threads} k={params.k} local=t 2> {log}"""
+
 
 
 rule postprocess_after_decontamination:
