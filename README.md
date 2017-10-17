@@ -2,6 +2,9 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
+![scheme of workflow](resources/images/atlas_workflow.png)
+
+
 # Documentation
 
 [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
