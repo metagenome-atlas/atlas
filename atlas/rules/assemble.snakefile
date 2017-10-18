@@ -3,14 +3,14 @@ import re
 import sys
 from glob import glob
 from snakemake.utils import report
-
+import warnings
 
 def get_ribosomal_rna_input(wildcards):
     inputs = []
     data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
 
-    clean_reads = "{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz".format(sample=wildcards.sample)
-    rrna_reads = "{sample}/sequence_quality_control/{sample}_02_rRNA.fastq.gz".format(sample=wildcards.sample)
+    clean_reads = "{sample}/sequence_quality_control/{sample}_clean_{fraction}.fastq.gz".format(**wildcards)
+    rrna_reads = "{sample}/sequence_quality_control/{sample}_02_rRNA_{fraction}.fastq.gz".format(**wildcards)
 
     if data_type == "metagenome" and os.path.exists(rrna_reads):
         return [clean_reads, rrna_reads]
@@ -19,13 +19,42 @@ def get_ribosomal_rna_input(wildcards):
 
 
 def get_quality_controlled_reads(wildcards):
-    # reads that have gone through ATLAS QC
-    fastq = "{sample}/sequence_quality_control/{sample}_03_pe.fastq.gz".format(sample=wildcards.sample)
-    # QA'd reads; the user wants to begin at assembly step
+    """
+        Gets quality controlled reads:
+            when preprocessed with ATLAS:
+            R1, R2 and SE fastq files or just SE
+            when preprocess externaly and run ATLAS workflow assembly
+            R1, R2 or SE
+    """
+
+    n_files= len(config["samples"][wildcards.sample]["fastq"])
+
     if config.get("workflow", "complete") == "assembly":
-        fastq = config["samples"][wildcards.sample]["fastq"]
+        # QA'd reads; the user wants to begin at assembly step
+        if n_files==2:
+            fastq = dict(zip(['R1','R2'],config["samples"][wildcards.sample]["fastq"]))
+        elif n_files==1:
+            fastq = {'se':config["samples"][wildcards.sample]["fastq"]}
+            assert not config["samples"][wc.sample].get("paired", False), "Starting with a paired-end interleaved file is not implemented. De interleve your fastq with reformat.sh"
+    else:
+        # reads that have gone through ATLAS QC
+        fractions= ['R1','R2','se'] if (n_files==2) or config["samples"][wildcards.sample].get("paired", False) else ['se']
+        fastq = dict(zip(fractions, expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",fraction=fractions,**wildcards)))
+
     return fastq
 
+
+def input_params_for_bbwrap(wildcards,input):
+    """
+    This function generates the inputflag needed for bbwrap for all cases possible for get_quality_controlled_reads
+    """
+    if len(input)==3:
+        flag="in1={R1},{SE} in2={R2}".format(input)
+    elif len(input)==2:
+        flag="in1={R1} in2={R2}".format(input)
+    elif len(input)==1:
+        flag="in1={SE}".format(input)
+    return flag
 
 def gff_to_gtf(gff_in, gtf_out):
     # orf_re = re.compile(r"ID=(.*?)\;")
@@ -51,11 +80,14 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             print(toks[0], toks[1], sep="\t", file=fo)
 
 
+paired_end=all([s.get("paired", False) or (len(s["fastq"]) == 2) for s in config["samples"]])
+
 rule quality_filter:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        fastq = "{sample}/sequence_quality_control/{sample}_filtered.fastq.gz",
+        pe = "{sample}/sequence_quality_control/{sample}_filtered_pe.fastq.gz",
+        se = "{sample}/sequence_quality_control/{sample}_filtered_se.fastq.gz",
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -69,7 +101,7 @@ rule quality_filter:
         qtrim = config.get("qtrim", QTRIM),
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
-        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
+        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (*tuple(config["samples"][wc.sample]["fastq"])),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f"
     log:
         "{sample}/logs/{sample}_quality_filter.log"
@@ -78,105 +110,106 @@ rule quality_filter:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbduk2.sh {params.inputs} out=good_quality_pe.fastq.gz \
-               outs=good_quality_pe.fastq.gz {params.rref} {params.lref} \
+        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} \
+               outs={output.se} {params.rref} {params.lref} \
                {params.mink} qout=33 stats={output.stats} \
                {params.hdist} {params.k} trimq={params.trimq} \
                qtrim={params.qtrim} threads={threads} \
                minlength={params.minlength} trd=t \
                minbasefrequency={params.minbasefrequency} \
                interleaved={params.interleaved} overwrite=true 2> {log}
-
-            cat good_quality_pe.fastq.gz good_quality_se.fastq.gz > {output.fastq} 2>> {log}
         """
 
-fastq_files=rules.quality_filter.output.fastq
+last_step='filtered'
 
-if config.get("merge_pairs", True):  #check also if paired 
+if config.get("merge_pairs", True):
+    if paired_end:
 
-    rule merge_pairs:
-        input:
-             fastq_files #contains pe and se
-        output:
-            "{sample}/sequence_quality_control/{sample}_merged_pairs.fastq.gz"
-        threads:
-            config.get("threads", 1)
-        resources:
-            mem = config.get("java_mem", JAVA_MEM)
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        log:
-            "{sample}/logs/{sample}_merge_pairs.log"
-        benchmark:
-            "logs/benchmarks/merge_pairs/{sample}.txt"
-        shadow: "shallow"
-        params:
-            kmer = config.get("merging_k", MERGING_K),
-            extend2 = config.get("merging_extend2", MERGING_EXTEND2)
-            flags = config.get("merging_flags", MERGING_FLAGS)
-        shell:
-            """
-                {SHPFXM} bbmerge-auto.sh -Xmx{resources.mem}G threads={threads} \
-                in={input} outmerged=merged_pairs.fastq.gz outunmerged=unmerged_pairs.fastq.gz {params.flags} k={params.kmer} extend2={params.extend2} ecct vstrict 2> {log}
-                
-                # merged pairs are now part of the single end fraction
-
-                cat merged_pairs.fastq.gz unmerged_pairs.fastq.gz > {output} 2>> {log}
-            """
-    fastq_files=rules.merge_pairs.output
-
-else:
-    if config.get("perform_error_correction", True):
-        rule error_correction:
+        rule merge_pairs:
             input:
-                fastq_files #contains pe and se
+                 rules.quality_filter.output
             output:
-                "{sample}/sequence_quality_control/{sample}_errcor.fastq.gz"
-            benchmark:
-                "logs/benchmarks/error_correction/{sample}.txt"
-            params:
-                java_mem = config.get("java_mem", JAVA_MEM)
-            log:
-                "{sample}/logs/{sample}_error_correction.log"
-            conda:
-                "%s/required_packages.yaml" % CONDAENV
-            resources:
-                mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+                pe="{sample}/sequence_quality_control/{sample}_merged_pe.fastq.gz",
+                se="{sample}/sequence_quality_control/{sample}_merged_se.fastq.gz"
             threads:
                 config.get("threads", 1)
+            resources:
+                mem = config.get("java_mem", JAVA_MEM)
+            conda:
+                "%s/required_packages.yaml" % CONDAENV
+            log:
+                "{sample}/logs/{sample}_merge_pairs.log"
+            benchmark:
+                "logs/benchmarks/merge_pairs/{sample}.txt"
+            shadow: "shallow"
+            params:
+                kmer = config.get("merging_k", MERGING_K),
+                extend2 = config.get("merging_extend2", MERGING_EXTEND2)
+                flags = config.get("merging_flags", MERGING_FLAGS)
             shell:
-                """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
-                       prealloc=1 \
-                       in={input} \
-                       out={output.pe} \
-                       mode=correct \
-                       threads={threads} \
-                       ecc=t ecco=t 2> {log}
                 """
+                    {SHPFXM} bbmerge-auto.sh -Xmx{resources.mem}G threads={threads} \
+                    in={input} outmerged={wildcards.sample}_merged_pairs.fastq.gz outunmerged={output.unmerged_pe} {params.flags} k={params.kmer} extend2={params.extend2} 2> {log}
 
-    fastq_files=rules.error_correction.output
+                    cat {wildcards.sample}_merged_pairs.fastq.gz {input.se} > {output.se} 2> {log}
+
+                """
+        last_step='merged'
+    else:
+        warnings.warn('Skip: merging of pairs, because reads are single-ended. You can deactivate the "merge_pairs" in the config file')
+
+
+if config.get("perform_error_correction", True):
+    rule error_correction:
+        input:
+            "{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{{fraction}}.fastq.gz".format(last_step)
+        output:
+            "{sample}/sequence_quality_control/{sample}_errcor_{fraction}.fastq.gz"
+        benchmark:
+            "logs/benchmarks/error_correction/{sample}_{fraction}.txt"
+        params:
+            java_mem = config.get("java_mem", JAVA_MEM)
+        log:
+            "{sample}/logs/{sample}_error_correction.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        resources:
+            mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+        threads:
+            config.get("threads", 1)
+        shell:
+            """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
+                   prealloc=1 \
+                   in={input} \
+                   out={output} \
+                   mode=correct \
+                   threads={threads} \
+                   ecc=t ecco=t 2>> {log}
+            """
+
+    last_step='errcor'
 
 # if there are no references, decontamination will be skipped
 rule decontamination:
     input:
-        fastq_files #contains pe and se
+        "{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{{fraction}}.fastq.gz".format(last_step)
     output:
-        dbs = ["{sample}/sequence_quality_control/{sample}_02_%s.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
-        stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-        clean = temp("{sample}/sequence_quality_control/{sample}_02_pe.fastq.gz")
+        dbs = ["{sample}/sequence_quality_control/{sample}_02_%s_{fraction}.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
+        stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats_{fraction}.txt",
+        clean = temp("{sample}/sequence_quality_control/{sample}_clean_{fraction}.fastq.gz")
     benchmark:
-        "logs/benchmarks/decontamination/{sample}.txt"
+        "logs/benchmarks/decontamination/{sample}_{fraction}.txt"
     params:
         refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-        refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}.fastq.gz".format(ref=n, sample=wc.sample) for n in list(config["contaminant_references"].keys())]),
+        refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}_{fraction}.fastq.gz".format(ref=n, sample=wc.sample, wc.fraction) for n in list(config["contaminant_references"].keys())]),
         maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
         minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
         minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
         ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
         k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
+        interleaved = lambda wc: "t" if (wc.fraction=='pe') else "auto"
     log:
-        "{sample}/logs/{sample}_decontamination.log"
+        "{sample}/logs/{sample}_{fraction}_decontamination.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -189,30 +222,65 @@ rule decontamination:
 
 
 
+
 rule postprocess_after_decontamination:
     input:
         get_ribosomal_rna_input
     output:
-        "{sample}/sequence_quality_control/{sample}_03_pe.fastq.gz"
+        "{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz"
     threads:
         1
     shell:
         "{SHPFXS} cat {input} > {output}"
 
 
+
+rule deinterleave:
+    input:
+        "{sample}/sequence_quality_control/{sample}_QC_pe.fastq.gz"
+    output:
+        expand("{{sample}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz", fraction= ['R1','R2'])
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "{sample}/logs/{sample}_QC.log"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+            {SHPFXM} reformat.sh in={input} interleaved=t out1={output[0]} out2={output[1]} 2>> {log}
+            rm {input}
+        """
+
+rule finalize_QC:
+    input: 
+        unpack(get_quality_controlled_reads)
+    output:
+        "{sample}/sequence_quality_control/finished_QC"
+    run:
+        touch(output)
+
+
+############## END of QC ##################
+# may be we can put the following code in a separate snakefile
+
 rule normalize_coverage_across_kmers:
     input:
-        get_quality_controlled_reads
+        unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
-        "{sample}/sequence_quality_control/{sample}_04_pe.fastq.gz"
+        SE="{sample}/sequence_quality_control/{sample}_normalized_se.fastq.gz",
+        PE="{sample}/sequence_quality_control/{sample}_normalized_pe.fastq.gz"
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-        inputs = lambda wc, input: "in=%s" % input[0] if len(input) == 1 else "in=%s in2=%s" % (input[0], input[1]),
-        interleaved = lambda wc, input: "t" if config["samples"][wc.sample].get("paired", True) and len(input) == 1 else "f"
+        input_single = lambda wc, input: "in=%s" % input.SE if hasatr(input,'SE') else "null",
+        extra_single = lambda wc, input: "extra=%s,%s" & (input.R1, input.R2) if hasatr(input,'R1') else ""
+        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasatr(input,'R1') else "null"
+        extra_paired = lambda wc, input: "extra=%s" % input.SE if hasatr(input,'SE') else "",
+        interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
     conda:
@@ -220,15 +288,44 @@ rule normalize_coverage_across_kmers:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbnorm.sh in={input} out={output} k={params.k} t={params.t} \
-               interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-               threads={threads} 2> {log}"""
+        """
+            if [ {params.input_single} != "null" ];
+            then 
+        {SHPFXM} bbnorm.sh {params.input_single} \
+                {params.extra_single} \
+                out={output.SE} \
+                k={params.k} t={params.t} \
+                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                threads={threads} 2> {log}
+
+            else: 
+                printf "create empty file {output.SE}\n" 2>> {log}
+                touch {output.SE}
+            fi
+
+
+            if [ {params.input_paired} != "null" ];
+            then 
+        {SHPFXM} bbnorm.sh {params.input_paired} \
+                {params.extra_paired} \
+                out={output.PE} \
+                k={params.k} t={params.t} \
+                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                threads={threads} 2>> {log}
+
+            else: 
+                printf "create empty file {output.PE}\n" 2>> {log}
+                touch {output.PE}
+            fi
+
+            """
+
 
 
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
-            "{sample}/sequence_quality_control/{sample}_04_pe.fastq.gz"
+            rules.output.normalize_coverage_across_kmers
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -236,7 +333,7 @@ if config.get("assembler", "megahit") == "megahit":
         shadow:
             "full"
         params:
-            read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--read",
+            #read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--read",
             memory = config.get("megahit_memory", MEGAHIT_MEMORY),
             min_count = config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
             k_min = config.get("megahit_k_min", MEGAHIT_K_MIN),
@@ -255,7 +352,7 @@ if config.get("assembler", "megahit") == "megahit":
             """{SHPFXM} megahit --continue \
                    --tmp-dir {TMPDIR} \
                    --num-cpu-threads {threads} \
-                   {params.read_flag} {input} \
+                   --12 {input-PE} --read {input.SE} \
                    --k-min {params.k_min} \
                    --k-max {params.k_max} \
                    --k-step {params.k_step} \
@@ -279,14 +376,14 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     rule run_spades:
         input:
-            "{sample}/sequence_quality_control/{sample}_04_pe.fastq.gz"
+            rules.output.normalize_coverage_across_kmers
         output:
             temp("{sample}/assembly/contigs.fasta")
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
         params:
             # memory = config["assembly"].get("memory", 0.90)
-            read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
+            #read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "-s",
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
         log:
@@ -296,7 +393,7 @@ else:
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta {params.read_flag} {input}"""
+            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta --12 {input.PE} -s {input.SE}"""
 
 
     rule rename_spades_output:
@@ -335,8 +432,9 @@ rule calculate_prefiltered_contigs_stats:
 
 rule calculate_prefiltered_contig_coverage_stats:
     input:
-        fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
-        fastq = get_quality_controlled_reads
+        unpack(get_quality_controlled_reads),
+        fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+        
     output:
         bhist = "{sample}/assembly/contig_stats/prefilter_base_composition.txt",
         bqhist = "{sample}/assembly/contig_stats/prefilter_box_quality.txt",
@@ -346,7 +444,8 @@ rule calculate_prefiltered_contig_coverage_stats:
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
+        input= lambda wc,input : input_params_for_bbwrap(wc,input)
+        interleaved = "auto" #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
     log:
         "{sample}/assembly/logs/prefiltered_contig_coverage_stats.log"
     conda:
@@ -354,7 +453,7 @@ rule calculate_prefiltered_contig_coverage_stats:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t \
+        """{SHPFXM} bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
                interleaved={params.interleaved} threads={threads} bhist={output.bhist} \
                bqhist={output.bqhist} mhist={output.mhist} statsfile={output.statsfile} \
                covstats={output.covstats} 2> {log}"""
@@ -393,8 +492,8 @@ rule filter_by_coverage:
 
 rule align_reads_to_filtered_contigs:
     input:
+        unpack(get_quality_controlled_reads)
         fasta = "{sample}/{sample}_contigs.fasta",
-        fastq = get_quality_controlled_reads
     output:
         sam = temp("{sample}/sequence_alignment/{sample}.sam"),
         bhist = "{sample}/assembly/contig_stats/postfilter_base_composition.txt",
@@ -406,7 +505,8 @@ rule align_reads_to_filtered_contigs:
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
+        input= lambda wc,input : input_params_for_bbwrap(wc,input),
+        interleaved = "auto" #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES)
     log:
         "{sample}/assembly/logs/contig_coverage_stats.log"
@@ -415,9 +515,9 @@ rule align_reads_to_filtered_contigs:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbmap.sh nodisk=t \
+        """{SHPFXM} bbwrap.sh nodisk=t \
                ref={input.fasta} \
-               in={input.fastq} \
+               {params.input} \
                trimreaddescriptions=t \
                out={output.sam} \
                mappedonly=t \
