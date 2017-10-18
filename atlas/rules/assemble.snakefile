@@ -250,7 +250,7 @@ if config.get("assembler", "megahit") == "megahit":
         threads:
             config.get("threads", 1)
         resources:
-            mem=config.get("megahit_memory", MEGAHIT_MEMORY)
+            mem=config.get("megahit_memory", MEGAHIT_MEMORY) #in GB
         shell:
             """{SHPFXM} megahit --continue \
                    --tmp-dir {TMPDIR} \
@@ -266,7 +266,8 @@ if config.get("assembler", "megahit") == "megahit":
                    --merge-level {params.merge_level} \
                    --prune-level {params.prune_level} \
                    --low-local-ratio {params.low_local_ratio} \
-                   --memory {resources.mem}000000000 #GB"""
+                   --memory {resources.mem}000000000  
+            """
 
 
     rule rename_megahit_output:
