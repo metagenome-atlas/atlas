@@ -4,7 +4,6 @@ import sys
 from glob import glob
 from snakemake.utils import report
 
-
 def get_ribosomal_rna_input(wildcards):
     inputs = []
     data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
@@ -78,15 +77,16 @@ rule quality_filter:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} \
-               outs={output.se} {params.rref} {params.lref} \
-               {params.mink} qout=33 stats={output.stats} \
-               {params.hdist} {params.k} trimq={params.trimq} \
-               qtrim={params.qtrim} threads={threads} \
-               minlength={params.minlength} trd=t \
-               minbasefrequency={params.minbasefrequency} \
-               interleaved={params.interleaved} overwrite=true 2> {log}"""
+        """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} outs={output.se} \
+               {params.rref} {params.lref} mink={params.mink} qout=33 \
+               stats={output.stats} hdist={params.hdist} k={params.k} \
+               trimq={params.trimq} qtrim={params.qtrim} threads={threads} -Xmx{resources.mem}G \
+               minlength={params.minlength} minbasefrequency={params.minbasefrequency} \
+               interleaved={params.interleaved} overwrite=true 2> {log}
+        """
 
 
 if config.get("perform_error_correction", True):
@@ -97,18 +97,16 @@ if config.get("perform_error_correction", True):
             "{sample}/sequence_quality_control/{sample}_01_pe.fastq.gz"
         benchmark:
             "logs/benchmarks/error_correction/{sample}.txt"
-        params:
-            java_mem = config.get("java_mem", JAVA_MEM)
         log:
             "{sample}/logs/{sample}_error_correction.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         resources:
-            mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+            mem = config.get("java_mem", JAVA_MEM)
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
+            """{SHPFXM} tadpole.sh -Xmx{resources.mem}G \
                    prealloc=1 \
                    in={input} \
                    out={output} \
@@ -142,11 +140,13 @@ if config.get("perform_error_correction", True):
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
         shell:
             """{SHPFXM} bbsplit.sh nodisk=t {params.refs_in} in={input} outu={output.clean} \
                    {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                   interleaved={params.interleaved} threads={threads} k={params.k} local=t 2> {log}"""
+                   interleaved={params.interleaved} threads={threads} -Xmx{resources.mem}G k={params.k} local=t 2> {log}"""
 
 
 else:
@@ -174,11 +174,15 @@ else:
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
         shell:
             """{SHPFXM} bbsplit.sh nodisk=t {params.refs_in} in={input} outu={output.clean} \
                    {params.refs_out} maxindel={params.maxindel} minratio={params.minratio} \
                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                   interleaved={params.interleaved} threads={threads} k={params.k} local=t 2> {log}"""
+                   interleaved={params.interleaved} threads={threads} -Xmx{resources.mem}G k={params.k} local=t 2> {log}"""
+
+
 
 
 rule postprocess_after_decontamination:
@@ -190,6 +194,8 @@ rule postprocess_after_decontamination:
         1
     shell:
         "{SHPFXS} cat {input} > {output}"
+
+
 
 
 rule normalize_coverage_across_kmers:
@@ -211,10 +217,12 @@ rule normalize_coverage_across_kmers:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXM} bbnorm.sh in={input} out={output} k={params.k} t={params.t} \
                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-               threads={threads} 2> {log}"""
+               threads={threads} -Xmx{resources.mem}G 2> {log}"""
 
 
 if config.get("assembler", "megahit") == "megahit":
@@ -229,7 +237,6 @@ if config.get("assembler", "megahit") == "megahit":
             "full"
         params:
             read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--read",
-            memory = config.get("megahit_memory", MEGAHIT_MEMORY),
             min_count = config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
             k_min = config.get("megahit_k_min", MEGAHIT_K_MIN),
             k_max = config.get("megahit_k_max", MEGAHIT_K_MAX),
@@ -243,6 +250,8 @@ if config.get("assembler", "megahit") == "megahit":
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
+        resources:
+            mem=config.get("megahit_memory", MEGAHIT_MEMORY) #in GB
         shell:
             """{SHPFXM} megahit --continue \
                    --tmp-dir {TMPDIR} \
@@ -257,7 +266,9 @@ if config.get("assembler", "megahit") == "megahit":
                    --min-count {params.min_count} \
                    --merge-level {params.merge_level} \
                    --prune-level {params.prune_level} \
-                   --low-local-ratio {params.low_local_ratio}"""
+                   --low-local-ratio {params.low_local_ratio} \
+                   --memory {resources.mem}000000000  
+            """
 
 
     rule rename_megahit_output:
@@ -321,8 +332,10 @@ rule calculate_prefiltered_contigs_stats:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         1
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
-        "{SHPFXS} stats.sh in={input} format=3 > {output}"
+        "{SHPFXS} stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
 
 
 rule calculate_prefiltered_contig_coverage_stats:
@@ -345,11 +358,13 @@ rule calculate_prefiltered_contig_coverage_stats:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} in={input.fastq} fast=t \
                interleaved={params.interleaved} threads={threads} bhist={output.bhist} \
                bqhist={output.bqhist} mhist={output.mhist} statsfile={output.statsfile} \
-               covstats={output.covstats} 2> {log}"""
+               covstats={output.covstats} -Xmx{resources.mem}G 2> {log}"""
 
 
 rule filter_by_coverage:
@@ -371,6 +386,8 @@ rule filter_by_coverage:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         1
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXS} filterbycoverage.sh in={input.fasta} \
                cov={input.covstats} \
@@ -380,7 +397,8 @@ rule filter_by_coverage:
                minp={params.minp} \
                minr={params.minr} \
                minl={params.minl} \
-               trim={params.trim} 2> {log}"""
+               trim={params.trim} \
+               -Xmx{resources.mem}G 2> {log}"""
 
 
 rule align_reads_to_filtered_contigs:
@@ -406,6 +424,8 @@ rule align_reads_to_filtered_contigs:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:    
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXM} bbmap.sh nodisk=t \
                ref={input.fasta} \
@@ -429,7 +449,8 @@ rule align_reads_to_filtered_contigs:
                interleaved={params.interleaved} \
                secondary=t \
                ssao=t \
-               maxsites={params.maxsites} 2> {log}"""
+               maxsites={params.maxsites} \
+               -Xmx{resources.mem}G 2> {log}"""
 
 
 if config.get("perform_genome_binning", True):
@@ -675,7 +696,7 @@ rule remove_pcr_duplicates:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
-        mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+        mem = int(config.get("java_mem", "32"))
     shell:
         """{SHPFXS} picard MarkDuplicates \
                -Xmx{params.java_mem} \
