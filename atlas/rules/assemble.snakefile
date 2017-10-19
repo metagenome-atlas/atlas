@@ -120,7 +120,10 @@ rule quality_filter:
                qtrim={params.qtrim} threads={threads} \
                minlength={params.minlength} trd=t \
                minbasefrequency={params.minbasefrequency} \
-               interleaved={params.interleaved} overwrite=true append2> {log}
+               interleaved={params.interleaved}\
+               overwrite=true\
+               -Xmx{resources.mem}G
+               append 2> {log}
         """
 
 last_step='filtered'
@@ -170,8 +173,6 @@ if config.get("perform_error_correction", True):
             "{sample}/sequence_quality_control/{sample}_errcor_{fraction}.fastq.gz"
         benchmark:
             "logs/benchmarks/error_correction/{sample}_{fraction}.txt"
-        params:
-            java_mem = config.get("java_mem", JAVA_MEM)
         log:
             "{sample}/logs/{sample}_error_correction.log"
         conda:
@@ -302,7 +303,8 @@ rule normalize_coverage_across_kmers:
                 out={output.SE} \
                 k={params.k} t={params.t} \
                 interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-                threads={threads} 2> {log}
+                threads={threads} \
+                -Xmx{resources.mem}G 2> {log}
 
             else: 
                 printf "create empty file {output.SE}\n" 2>> {log}
@@ -317,7 +319,8 @@ rule normalize_coverage_across_kmers:
                 out={output.PE} \
                 k={params.k} t={params.t} \
                 interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-                threads={threads} 2>> {log}
+                threads={threads} \
+                -Xmx{resources.mem}G 2>> {log}
 
             else: 
                 printf "create empty file {output.PE}\n" 2>> {log}
@@ -801,15 +804,13 @@ rule remove_pcr_duplicates:
         txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
         "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
-    params:
-        java_mem = config.get("java_mem", JAVA_MEM)
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
         mem = int(config.get("java_mem", "32"))
     shell:
         """{SHPFXS} picard MarkDuplicates \
-               -Xmx{params.java_mem}G \
+               -Xmx{resources.mem}G \
                INPUT={input.bam} \
                OUTPUT={output.bam} \
                METRICS_FILE={output.txt} \
