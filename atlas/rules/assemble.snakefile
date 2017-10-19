@@ -80,7 +80,7 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             print(toks[0], toks[1], sep="\t", file=fo)
 
 
-paired_end=all([s.get("paired", False) or (len(s["fastq"]) == 2) for s in config["samples"]])
+paired_end=all([config["samples"][s].get("paired", False) or (len(config["samples"][s]["fastq"]) == 2) for s in config["samples"]])
 
 rule quality_filter:
     input:
@@ -101,7 +101,7 @@ rule quality_filter:
         qtrim = config.get("qtrim", QTRIM),
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
-        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (*tuple(config["samples"][wc.sample]["fastq"])),
+        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f"
     log:
         "{sample}/logs/{sample}_quality_filter.log"
@@ -117,7 +117,7 @@ rule quality_filter:
                qtrim={params.qtrim} threads={threads} \
                minlength={params.minlength} trd=t \
                minbasefrequency={params.minbasefrequency} \
-               interleaved={params.interleaved} overwrite=true 2> {log}
+               interleaved={params.interleaved} overwrite=true append2> {log}
         """
 
 last_step='filtered'
@@ -144,7 +144,7 @@ if config.get("merge_pairs", True):
             shadow: "shallow"
             params:
                 kmer = config.get("merging_k", MERGING_K),
-                extend2 = config.get("merging_extend2", MERGING_EXTEND2)
+                extend2 = config.get("merging_extend2", MERGING_EXTEND2),
                 flags = config.get("merging_flags", MERGING_FLAGS)
             shell:
                 """
@@ -200,8 +200,8 @@ rule decontamination:
     benchmark:
         "logs/benchmarks/decontamination/{sample}_{fraction}.txt"
     params:
-        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-        refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}_{fraction}.fastq.gz".format(ref=n, sample=wc.sample, wc.fraction) for n in list(config["contaminant_references"].keys())]),
+        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n,fa in config["contaminant_references"].items()]),
+        refs_out = lambda wc: " ".join(["out_{ref}={sample}/sequence_quality_control/{sample}_02_{ref}_{fraction}.fastq.gz".format(ref=n, sample=wc.sample, fraction=wc.fraction) for n in list(config["contaminant_references"].keys())]),
         maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
         minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
         minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
@@ -277,8 +277,8 @@ rule normalize_coverage_across_kmers:
         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
         input_single = lambda wc, input: "in=%s" % input.SE if hasatr(input,'SE') else "null",
-        extra_single = lambda wc, input: "extra=%s,%s" & (input.R1, input.R2) if hasatr(input,'R1') else ""
-        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasatr(input,'R1') else "null"
+        extra_single = lambda wc, input: "extra=%s,%s" & (input.R1, input.R2) if hasatr(input,'R1') else "",
+        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasatr(input,'R1') else "null",
         extra_paired = lambda wc, input: "extra=%s" % input.SE if hasatr(input,'SE') else "",
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
@@ -444,7 +444,7 @@ rule calculate_prefiltered_contig_coverage_stats:
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
-        input= lambda wc,input : input_params_for_bbwrap(wc,input)
+        input= lambda wc,input : input_params_for_bbwrap(wc,input),
         interleaved = "auto" #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
     log:
         "{sample}/assembly/logs/prefiltered_contig_coverage_stats.log"
@@ -456,7 +456,7 @@ rule calculate_prefiltered_contig_coverage_stats:
         """{SHPFXM} bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
                interleaved={params.interleaved} threads={threads} bhist={output.bhist} \
                bqhist={output.bqhist} mhist={output.mhist} statsfile={output.statsfile} \
-               covstats={output.covstats} 2> {log}"""
+               covstats={output.covstats} append 2> {log}"""
 
 
 rule filter_by_coverage:
@@ -492,8 +492,8 @@ rule filter_by_coverage:
 
 rule align_reads_to_filtered_contigs:
     input:
-        unpack(get_quality_controlled_reads)
-        fasta = "{sample}/{sample}_contigs.fasta",
+        unpack(get_quality_controlled_reads),
+        fasta = "{sample}/{sample}_contigs.fasta"
     output:
         sam = temp("{sample}/sequence_alignment/{sample}.sam"),
         bhist = "{sample}/assembly/contig_stats/postfilter_base_composition.txt",
@@ -506,7 +506,7 @@ rule align_reads_to_filtered_contigs:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
         input= lambda wc,input : input_params_for_bbwrap(wc,input),
-        interleaved = "auto" #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
+        interleaved = "auto", #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES)
     log:
         "{sample}/assembly/logs/contig_coverage_stats.log"
@@ -537,7 +537,7 @@ rule align_reads_to_filtered_contigs:
                interleaved={params.interleaved} \
                secondary=t \
                ssao=t \
-               maxsites={params.maxsites} 2> {log}"""
+               maxsites={params.maxsites} append 2> {log}"""
 
 
 if config.get("perform_genome_binning", True):
