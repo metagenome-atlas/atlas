@@ -128,8 +128,7 @@ rule quality_filter:
                minbasefrequency={params.minbasefrequency} \
                interleaved={params.interleaved}\
                overwrite=true\
-               -Xmx{resources.mem}G
-               append 2> {log}
+               -Xmx{resources.mem}G 2> {log}
         """
 
 last_step='filtered'
