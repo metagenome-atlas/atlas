@@ -1,0 +1,68 @@
+samples:
+  SAMN01915213:
+    fastq:
+    - /raid/user2/kieser/Metagenomics/coding/test_data/SAMN01915213_gut_metagenome_R1.fastq.gz
+    - /raid/user2/kieser/Metagenomics/coding/test_data/SAMN01915213_gut_metagenome_R2.fastq.gz
+    type: metagenome
+tmpdir: /tmp
+threads: 8
+java_mem: 50
+preprocess_adapters: /raid/user2/kieser/Metagenomics/Atlas/databases/adapters.fa
+preprocess_adapter_min_k: 8
+preprocess_minimum_base_quality: 10
+preprocess_allowable_kmer_mismatches: 1
+preprocess_reference_kmer_match_length: 27
+preprocess_minimum_passing_read_length: 51
+preprocess_minimum_base_frequency: 0.05
+perform_error_correction: 'true'
+contaminant_references:
+  PhiX: /raid/user2/kieser/Metagenomics/Atlas/databases/phiX174_virus.fa
+  rRNA: /raid/user2/kieser/Metagenomics/Atlas/databases/silva_rfam_all_rRNAs.fa
+contaminant_max_indel: 20
+contaminant_min_ratio: 0.65
+contaminant_kmer_length: 13
+contaminant_minimum_hits: 1
+contaminant_ambiguous: best
+normalization_kmer_length: 21
+normalization_target_depth: 100
+normalization_minimum_kmers: 15
+assembler: megahit
+megahit_memory: 50
+megahit_min_count: 2
+megahit_k_min: 21
+megahit_k_max: 121
+megahit_k_step: 20
+megahit_merge_level: 20,0.98
+megahit_prune_level: 2
+megahit_low_local_ratio: 0.2
+minimum_contig_length: 1000
+spades_k: auto
+minimum_average_coverage: 5
+minimum_percent_covered_bases: 40
+minimum_mapped_reads: 0
+contig_trim_bp: 0
+translation_table: 11
+minimum_region_overlap: 1
+primary_only: 'false'
+count_multi_mapped_reads: 'true'
+maximum_counted_map_sites: 10
+perform_genome_binning: 'true'
+maxbin_max_iteration: 50
+maxbin_min_contig_length: 200
+maxbin_prob_threshold: 0.9
+refseq_namemap: /raid/user2/kieser/Metagenomics/Atlas/databases/refseq.db
+refseq_tree: /raid/user2/kieser/Metagenomics/Atlas/databases/refseq.tree
+diamond_db: /raid/user2/kieser/Metagenomics/Atlas/databases/refseq.dmnd
+diamond_run_mode: fast
+diamond_top_seqs: 2
+diamond_e_value: 1.0e-06
+diamond_min_identity: 50
+diamond_query_coverage: 60
+diamond_gap_open: 11
+diamond_gap_extend: 1
+diamond_block_size: 2
+diamond_index_chunks: 4
+summary_method: lca
+aggregation_method: lca-majority
+majority_threshold: 0.51
+
