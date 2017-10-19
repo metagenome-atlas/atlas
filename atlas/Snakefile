@@ -88,15 +88,6 @@ def get_temp_dir(config):
     return tmp_dir
 
 
-def get_contaminant_output_files(samples, config):
-    ret_str = ""
-    if "contaminant_references" in config.keys():
-        if len(config["contaminant_references"]) > 0:
-            ret_str = expand("{sample}/sequence_quality_control/{sample}_02_{decon_dbs}.fastq.gz",
-                          sample=samples, decon_dbs=list(config["contaminant_references"].keys()))
-    return ret_str
-
-
 def get_bin_summary_files(do_binning, samples):
     ret_str = ""
     if do_binning:
@@ -151,13 +142,7 @@ if config.get("workflow", "complete") == "complete":
 
     rule all:
         input:
-            get_contaminant_output_files(SAMPLES, config),
-            expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-                sample=SAMPLES),
-            expand("{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
-                sample=SAMPLES),
-            expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
-                sample=SAMPLES),
+            expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
