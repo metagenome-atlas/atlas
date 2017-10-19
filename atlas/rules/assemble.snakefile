@@ -5,6 +5,7 @@ from glob import glob
 from snakemake.utils import report
 import warnings
 
+
 def get_ribosomal_rna_input(wildcards):
     inputs = []
     data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
@@ -109,6 +110,8 @@ rule quality_filter:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXM} bbduk2.sh {params.inputs} out={output.pe} \
                outs={output.se} {params.rref} {params.lref} \
@@ -174,11 +177,11 @@ if config.get("perform_error_correction", True):
         conda:
             "%s/required_packages.yaml" % CONDAENV
         resources:
-            mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+            mem = config.get("java_mem", JAVA_MEM)
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} tadpole.sh -Xmx{params.java_mem} \
+            """{SHPFXM} tadpole.sh -Xmx{resources.mem}G \
                    prealloc=1 \
                    in={input} \
                    out={output} \
@@ -264,6 +267,7 @@ rule finalize_QC:
 ############## END of QC ##################
 # may be we can put the following code in a separate snakefile
 
+
 rule normalize_coverage_across_kmers:
     input:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
@@ -287,6 +291,8 @@ rule normalize_coverage_across_kmers:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """
             if [ {params.input_single} != "null" ];
@@ -322,6 +328,7 @@ rule normalize_coverage_across_kmers:
 
 
 
+
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
@@ -348,6 +355,8 @@ if config.get("assembler", "megahit") == "megahit":
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
+        resources:
+            mem=config.get("megahit_memory", MEGAHIT_MEMORY) #in GB
         shell:
             """{SHPFXM} megahit --continue \
                    --tmp-dir {TMPDIR} \
@@ -362,7 +371,9 @@ if config.get("assembler", "megahit") == "megahit":
                    --min-count {params.min_count} \
                    --merge-level {params.merge_level} \
                    --prune-level {params.prune_level} \
-                   --low-local-ratio {params.low_local_ratio}"""
+                   --low-local-ratio {params.low_local_ratio} \
+                   --memory {resources.mem}000000000  
+            """
 
 
     rule rename_megahit_output:
@@ -426,8 +437,10 @@ rule calculate_prefiltered_contigs_stats:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         1
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
-        "{SHPFXS} stats.sh in={input} format=3 > {output}"
+        "{SHPFXS} stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
 
 
 rule calculate_prefiltered_contig_coverage_stats:
@@ -452,11 +465,14 @@ rule calculate_prefiltered_contig_coverage_stats:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXM} bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
                interleaved={params.interleaved} threads={threads} bhist={output.bhist} \
                bqhist={output.bqhist} mhist={output.mhist} statsfile={output.statsfile} \
-               covstats={output.covstats} append 2> {log}"""
+               covstats={output.covstats} -Xmx{resources.mem}G 2> {log}"""
+
 
 
 rule filter_by_coverage:
@@ -478,6 +494,8 @@ rule filter_by_coverage:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         1
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXS} filterbycoverage.sh in={input.fasta} \
                cov={input.covstats} \
@@ -487,7 +505,8 @@ rule filter_by_coverage:
                minp={params.minp} \
                minr={params.minr} \
                minl={params.minl} \
-               trim={params.trim} 2> {log}"""
+               trim={params.trim} \
+               -Xmx{resources.mem}G 2> {log}"""
 
 
 rule align_reads_to_filtered_contigs:
@@ -514,6 +533,8 @@ rule align_reads_to_filtered_contigs:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:    
+        mem = config.get("java_mem", JAVA_MEM)
     shell:
         """{SHPFXM} bbwrap.sh nodisk=t \
                ref={input.fasta} \
@@ -537,7 +558,9 @@ rule align_reads_to_filtered_contigs:
                interleaved={params.interleaved} \
                secondary=t \
                ssao=t \
-               maxsites={params.maxsites} append 2> {log}"""
+               maxsites={params.maxsites} \
+               -Xmx{resources.mem}G 2> {log}"""
+
 
 
 if config.get("perform_genome_binning", True):
@@ -783,10 +806,10 @@ rule remove_pcr_duplicates:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
-        mem = int(re.findall(r"(\d+)", config.get("java_mem", "32"))[0])
+        mem = int(config.get("java_mem", "32"))
     shell:
         """{SHPFXS} picard MarkDuplicates \
-               -Xmx{params.java_mem} \
+               -Xmx{params.java_mem}G \
                INPUT={input.bam} \
                OUTPUT={output.bam} \
                METRICS_FILE={output.txt} \
