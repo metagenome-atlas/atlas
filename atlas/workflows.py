@@ -57,13 +57,11 @@ def download(jobs, out_dir, snakemake_args):
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake --snakefile {snakefile} --directory {parent_dir} "
            "--printshellcmds --jobs {jobs} --rerun-incomplete "
-           "--nolock {conda} {dryrun} "
+           "--nolock "
            "--config workflow=download db_dir='{out_dir}' {add_args} "
            "{args}").format(snakefile=get_snakefile(),
                             parent_dir=os.path.dirname(out_dir),
                             jobs=jobs,
-                            conda="" if no_conda else "--use-conda",
-                            dryrun="--dryrun" if dryrun else "",
                             out_dir=out_dir,
                             add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
                             args=" ".join(snakemake_args))
