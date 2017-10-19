@@ -27,7 +27,6 @@ def get_quality_controlled_reads(wildcards):
             when preprocess externaly and run ATLAS workflow assembly
             R1, R2 or SE
     """
-
     n_files= len(config["samples"][wildcards.sample]["fastq"])
 
     if config.get("workflow", "complete") == "assembly":
@@ -49,12 +48,19 @@ def input_params_for_bbwrap(wildcards,input):
     """
     This function generates the inputflag needed for bbwrap for all cases possible for get_quality_controlled_reads
     """
-    if len(input)==3:
-        flag="in1={R1},{SE} in2={R2}".format(input)
-    elif len(input)==2:
-        flag="in1={R1} in2={R2}".format(input)
-    elif len(input)==1:
-        flag="in1={SE}".format(input)
+    if hasattr(input,'R1') and hasattr(input,'R2'):
+        if hasattr(input,'se'):
+            flag="in1={R1},{se} in2={R2}".format(**input)
+        else:
+            flag="in1={R1} in2={R2}".format(**input)
+    elif hasattr(input,'se'):
+        flag="in1={se}".format(**input)
+    else:
+        raise Exception("""
+I don't know what file you have,
+expect one of: 1 file= single-end, two files = R1,R2 , 3 files= R1,R2,SE
+got: {n} files:\n{}
+""".format('\n'.join(input),n=len(input)))
     return flag
 
 def gff_to_gtf(gff_in, gtf_out):
@@ -168,7 +174,7 @@ if config.get("merge_pairs", True):
 if config.get("perform_error_correction", True):
     rule error_correction:
         input:
-            "{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{{fraction}}.fastq.gz".format(last_step)
+            "{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{{fraction}}.fastq.gz".format(last_step=last_step)
         output:
             "{sample}/sequence_quality_control/{sample}_errcor_{fraction}.fastq.gz"
         benchmark:
@@ -196,7 +202,7 @@ if config.get("perform_error_correction", True):
 # if there are no references, decontamination will be skipped
 rule decontamination:
     input:
-        "{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{{fraction}}.fastq.gz".format(last_step)
+        "{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{{fraction}}.fastq.gz".format(last_step=last_step)
     output:
         dbs = ["{sample}/sequence_quality_control/{sample}_02_%s_{fraction}.fastq.gz" % db for db in list(config["contaminant_references"].keys())],
         stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats_{fraction}.txt",
@@ -243,7 +249,7 @@ rule deinterleave:
     input:
         "{sample}/sequence_quality_control/{sample}_QC_pe.fastq.gz"
     output:
-        expand("{{sample}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz", fraction= ['R1','R2'])
+        expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz", fraction= ['R1','R2'])
     conda:
         "%s/required_packages.yaml" % CONDAENV
     log:
@@ -256,9 +262,26 @@ rule deinterleave:
             rm {input}
         """
 
+
+def get_contaminant_output_files(samples, config):
+    ret_str = ""
+    if "contaminant_references" in config.keys():
+        if len(config["contaminant_references"]) > 0:
+            ret_str = expand("{sample}/sequence_quality_control/{sample}_02_{decon_dbs}_se.fastq.gz",
+                          sample=samples, decon_dbs=list(config["contaminant_references"].keys()))
+    return ret_str
+
 rule finalize_QC:
     input: 
-        unpack(get_quality_controlled_reads)
+        unpack(get_quality_controlled_reads),
+            get_contaminant_output_files(SAMPLES, config),
+            expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats_se.txt",
+                sample=SAMPLES),
+            # intermediate file
+            # expand("{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
+            #     sample=SAMPLES),
+            expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
+                sample=SAMPLES)
     output:
         "{sample}/sequence_quality_control/finished_QC"
     run:
@@ -281,10 +304,10 @@ rule normalize_coverage_across_kmers:
         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-        input_single = lambda wc, input: "in=%s" % input.SE if hasatr(input,'SE') else "null",
-        extra_single = lambda wc, input: "extra=%s,%s" & (input.R1, input.R2) if hasatr(input,'R1') else "",
-        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasatr(input,'R1') else "null",
-        extra_paired = lambda wc, input: "extra=%s" % input.SE if hasatr(input,'SE') else "",
+        input_single = lambda wc, input: "in=%s" % input.SE if hasattr(input,'SE') else "null",
+        extra_single = lambda wc, input: "extra=%s,%s" % (input.R1, input.R2) if hasattr(input,'R1') else "",
+        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
+        extra_paired = lambda wc, input: "extra=%s" % input.SE if hasattr(input,'SE') else "",
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
@@ -335,7 +358,7 @@ rule normalize_coverage_across_kmers:
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
-            rules.output.normalize_coverage_across_kmers
+            rules.normalize_coverage_across_kmers.output
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -390,7 +413,7 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     rule run_spades:
         input:
-            rules.output.normalize_coverage_across_kmers
+            rules.normalize_coverage_across_kmers.output
         output:
             temp("{sample}/assembly/contigs.fasta")
         benchmark:
@@ -450,7 +473,6 @@ rule calculate_prefiltered_contig_coverage_stats:
     input:
         unpack(get_quality_controlled_reads),
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
-        
     output:
         bhist = "{sample}/assembly/contig_stats/prefilter_base_composition.txt",
         bqhist = "{sample}/assembly/contig_stats/prefilter_box_quality.txt",
