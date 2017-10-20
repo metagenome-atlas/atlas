@@ -23,9 +23,9 @@ def get_quality_controlled_reads(wildcards):
     """
         Gets quality controlled reads:
             when preprocessed with ATLAS:
-            R1, R2 and SE fastq files or just SE
+            R1, R2 and se fastq files or just se
             when preprocess externaly and run ATLAS workflow assembly
-            R1, R2 or SE
+            R1, R2 or se
     """
     n_files= len(config["samples"][wildcards.sample]["fastq"])
 
@@ -58,7 +58,7 @@ def input_params_for_bbwrap(wildcards,input):
     else:
         raise Exception("""
 I don't know what file you have,
-expect one of: 1 file= single-end, two files = R1,R2 , 3 files= R1,R2,SE
+expect one of: 1 file= single-end, two files = R1,R2 , 3 files= R1,R2,se
 got: {n} files:\n{}
 """.format('\n'.join(input),n=len(input)))
     return flag
@@ -138,7 +138,8 @@ if config.get("merge_pairs", True):
 
         rule merge_pairs:
             input:
-                 rules.quality_filter.output
+                 pe=rules.quality_filter.output.pe,
+                 se=rules.quality_filter.output.se
             output:
                 pe="{sample}/sequence_quality_control/{sample}_merged_pe.fastq.gz",
                 se="{sample}/sequence_quality_control/{sample}_merged_se.fastq.gz"
@@ -160,9 +161,10 @@ if config.get("merge_pairs", True):
             shell:
                 """
                     {SHPFXM} bbmerge-auto.sh -Xmx{resources.mem}G threads={threads} \
-                    in={input} outmerged={wildcards.sample}_merged_pairs.fastq.gz outunmerged={output.unmerged_pe} {params.flags} k={params.kmer} extend2={params.extend2} 2> {log}
+                    in={input.pe} outmerged={wildcards.sample}_merged_pairs.fastq.gz outunmerged={output.pe} \
+                    {params.flags} k={params.kmer} extend2={params.extend2} 2> {log}
 
-                    cat {wildcards.sample}_merged_pairs.fastq.gz {input.se} > {output.se} 2> {log}
+                    cat {wildcards.sample}_merged_pairs.fastq.gz {input.se} > {output.se} 2>> {log}
 
                 """
         last_step='merged'
@@ -282,9 +284,9 @@ rule finalize_QC:
             expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
                 sample=SAMPLES)
     output:
-        "{sample}/sequence_quality_control/finished_QC"
-    run:
-        touch(output)
+        touch("{sample}/sequence_quality_control/finished_QC")
+
+        
 
 
 ############## END of QC ##################
@@ -295,18 +297,19 @@ rule normalize_coverage_across_kmers:
     input:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
-        SE="{sample}/sequence_quality_control/{sample}_normalized_se.fastq.gz",
-        PE="{sample}/sequence_quality_control/{sample}_normalized_pe.fastq.gz"
+        se="{sample}/sequence_quality_control/{sample}_normalized_se.fastq.gz",
+        pe="{sample}/sequence_quality_control/{sample}_normalized_pe.fastq.gz"
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-        input_single = lambda wc, input: "in=%s" % input.SE if hasattr(input,'SE') else "null",
+        input_single = lambda wc, input: "in=%s" % input.se if hasattr(input,'se') else "null",
         extra_single = lambda wc, input: "extra=%s,%s" % (input.R1, input.R2) if hasattr(input,'R1') else "",
+        has_paired_end_files= lambda wc, input: "t" if hasattr(input,'R1') else "f",
         input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
-        extra_paired = lambda wc, input: "extra=%s" % input.SE if hasattr(input,'SE') else "",
+        extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input,'se') else "",
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
@@ -318,35 +321,36 @@ rule normalize_coverage_across_kmers:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
         """
+
             if [ {params.input_single} != "null" ];
             then 
         {SHPFXM} bbnorm.sh {params.input_single} \
                 {params.extra_single} \
-                out={output.SE} \
+                out={output.se} \
                 k={params.k} t={params.t} \
                 interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
                 threads={threads} \
                 -Xmx{resources.mem}G 2> {log}
 
-            else: 
-                printf "create empty file {output.SE}\n" 2>> {log}
-                touch {output.SE}
+            else
+                printf "create empty file {output.se}\n" 2> {log}
+                touch {output.se}
             fi
 
 
-            if [ {params.input_paired} != "null" ];
+            if [ {params.has_paired_end_files} = "t" ];
             then 
         {SHPFXM} bbnorm.sh {params.input_paired} \
                 {params.extra_paired} \
-                out={output.PE} \
+                out={output.pe} \
                 k={params.k} t={params.t} \
                 interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
                 threads={threads} \
                 -Xmx{resources.mem}G 2>> {log}
 
-            else: 
-                printf "create empty file {output.PE}\n" 2>> {log}
-                touch {output.PE}
+            else
+                printf "create empty file {output.pe}\n" 2>> {log}
+                touch {output.pe}
             fi
 
             """
@@ -357,13 +361,16 @@ rule normalize_coverage_across_kmers:
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
-            rules.normalize_coverage_across_kmers.output
+            pe=rules.normalize_coverage_across_kmers.output.pe,
+            se=rules.normalize_coverage_across_kmers.output.se
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
-        shadow:
-            "full"
+        #shadow:
+        #    "full"
+        log:
+             "{sample}/logs/{sample}_megahit.log"
         params:
             #read_flag = lambda wc: "--12" if config["samples"][wc.sample].get("paired", True) else "--read",
             memory = config.get("megahit_memory", MEGAHIT_MEMORY),
@@ -386,7 +393,7 @@ if config.get("assembler", "megahit") == "megahit":
             """{SHPFXM} megahit --continue \
                    --tmp-dir {TMPDIR} \
                    --num-cpu-threads {threads} \
-                   --12 {input-PE} --read {input.SE} \
+                   --12 {input.pe} --read {input.se} \
                    --k-min {params.k_min} \
                    --k-max {params.k_max} \
                    --k-step {params.k_step} \
@@ -397,7 +404,7 @@ if config.get("assembler", "megahit") == "megahit":
                    --merge-level {params.merge_level} \
                    --prune-level {params.prune_level} \
                    --low-local-ratio {params.low_local_ratio} \
-                   --memory {resources.mem}000000000  
+                   --memory {resources.mem}000000000  2> {log}
             """
 
 
@@ -429,7 +436,7 @@ else:
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta --12 {input.PE} -s {input.SE}"""
+            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta --12 {input.pe} -s {input.se}"""
 
 
     rule rename_spades_output:
