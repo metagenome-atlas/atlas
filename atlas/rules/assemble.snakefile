@@ -7,7 +7,7 @@ import warnings
 
 
 
-
+localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm
 
 
 
@@ -431,7 +431,6 @@ if config.get("assembler", "megahit") == "megahit":
         log:
              "{sample}/logs/{sample}_megahit.log"
         params:
-            memory = config.get("megahit_memory", MEGAHIT_MEMORY),
             min_count = config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
             k_min = config.get("megahit_k_min", MEGAHIT_K_MIN),
             k_max = config.get("megahit_k_max", MEGAHIT_K_MAX),
@@ -445,9 +444,9 @@ if config.get("assembler", "megahit") == "megahit":
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
-            config.get("threads", 1)
+            config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
-            mem=config.get("megahit_memory", MEGAHIT_MEMORY) #in GB
+            mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """{SHPFXM} megahit --continue \
                     {params.inputs} \
@@ -463,7 +462,7 @@ if config.get("assembler", "megahit") == "megahit":
                    --merge-level {params.merge_level} \
                    --prune-level {params.prune_level} \
                    --low-local-ratio {params.low_local_ratio} \
-                   --memory {resources.mem}000000000  2> {log}
+                   --memory {resources.mem}000000000  2> >(tee {log})
             """
 
 
@@ -484,18 +483,22 @@ else:
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
         params:
-            # memory = config["assembly"].get("memory", 0.90)
             inputs=lambda wc,input: "--12 {0} -s {1}".format(*input) if len(input)==2 else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
         log:
             "{sample}/assembly/spades.log"
+        shadow:
+            "full"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
-            config.get("threads", 1)
+            config.get("assembly_threads", ASSEMBLY_THREADS)
+        resources:
+            mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """{SHPFXM} spades.py -t {threads} -o {params.outdir} --meta {params.inputs}"""
+            """{SHPFXM} spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
+            --continue --only-assembler 2> >(tee {log}) """
 
 
     rule rename_spades_output:
@@ -618,18 +621,18 @@ rule align_reads_to_filtered_contigs:
         basecov="{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz",
         covhist= "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
         covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-        unmapped=expand("{{sample}}/sequence_alignment/{{sample}}_unmapped_{fraction}.fastq.gz",fraction=interleaved_fractions)
+        #unmapped=expand("{{sample}}/sequence_alignment/{{sample}}_unmapped_{fraction}.fastq.gz",fraction=interleaved_fractions)
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     params:
         input= lambda wc,input : input_params_for_bbwrap(wc,input),
-        unmapped= lambda wc,output: ",".join(output.unmapped),
+        #unmapped= lambda wc,output: ",".join(output.unmapped),
         interleaved = "auto", #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES)
     log:
         "{sample}/assembly/logs/contig_coverage_stats.log"
-    #conda:
-    #    "%s/required_packages.yaml" % CONDAENV
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     resources:    
@@ -654,13 +657,14 @@ rule align_reads_to_filtered_contigs:
                maxsites={params.maxsites} \
                -Xmx{resources.mem}G \
                append \
-               outu={params.unmapped}  \
                2> {log}
 
 
             {SHPFXM} pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
             -Xmx{resources.mem}G covstats={output.covstats} \
             hist={output.covhist} basecov={output.basecov} physcov 2>> {log}
+
+            #samtools view -u -f4 {output.sam} | samtools bam2fq -s unmapped.se.fq - > unmapped.pe.fq
 
                """
 
