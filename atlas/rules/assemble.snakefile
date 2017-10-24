@@ -227,6 +227,8 @@ rule decontamination:
         ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
         k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
         paired= "true" if paired_end else "false",
+        input_single= lambda wc,input: input[2] if paired_end else input[0],
+        output_sinlge= lambda wc,output: output[2] if paired_end else output[0]
     log:
         "{sample}/logs/{sample}_decontamination.log"
     conda:
@@ -242,16 +244,10 @@ rule decontamination:
                maxindel={params.maxindel} minratio={params.minratio} \
                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
                threads={threads} k={params.k} local=t 2> {log}
-
-               input_single={input[2]}
-               output_single={output[2]}
-        else
-               input_single={input[0]}
-               output_single={output[0]}
         fi 
 
-        {SHPFXM} bbsplit.sh in=$input_single  \
-                outu=$output_single \
+        {SHPFXM} bbsplit.sh in={params.input_single}  \
+                outu={params.output_sinlge} \
                basename="{params.contaminant_folder}/%_se.fastq.gz" \
                maxindel={params.maxindel} minratio={params.minratio} \
                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
@@ -498,7 +494,7 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """{SHPFXM} spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
-            --continue --only-assembler 2> >(tee {log}) """
+            --only-assembler 2> >(tee {log}) """
 
 
     rule rename_spades_output:
