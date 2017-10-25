@@ -50,8 +50,8 @@ rule init_QC:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=raw_input_fractions,step=processed_steps[-1])
+        temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            fraction=raw_input_fractions,step=processed_steps[-1]))
     params:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
@@ -169,8 +169,8 @@ if config.get('deduplicate',False):
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=processed_steps[-2],fraction=raw_input_fractions)
         output:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=raw_input_fractions,step=processed_steps[-1])
+            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=raw_input_fractions,step=processed_steps[-1]))
         benchmark:
             "logs/benchmarks/deduplicate/{sample}.txt"
         params:
@@ -204,8 +204,8 @@ rule quality_filter:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=raw_input_fractions,step=processed_steps[-2])
     output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=multifile_fractions,step=processed_steps[-1]),
+        temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            fraction=multifile_fractions,step=processed_steps[-1])),
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -255,9 +255,9 @@ if config.get("merge_pairs", True):
                 expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                     step=processed_steps[-2],fraction=multifile_fractions)
             output:
-                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                    fraction=multifile_fractions,step=processed_steps[-1]),
-                insert_size_hist="{sample}/sequence_quality_control/{sample}_insert_size_hsit.txt",
+                temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    fraction=multifile_fractions,step=processed_steps[-1])),
+                insert_size_hist="{sample}/sequence_quality_control/read_stats/insert_size_hsit.txt",
             threads:
                 config.get("threads", 1)
             resources:
@@ -285,60 +285,28 @@ if config.get("merge_pairs", True):
     else:
         warnings.warn('Skip: merging of pairs, because reads are single-ended. You can deactivate the "merge_pairs" in the config file')
 
-
-if config.get("perform_error_correction", True):
-    processed_steps+=['errcor']
-    rule error_correction:
-        input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2],fraction=multifile_fractions)
-        output:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=multifile_fractions,step=processed_steps[-1])
-        benchmark:
-            "logs/benchmarks/error_correction/{sample}.txt"
-        log:
-            "{sample}/logs/{sample}_error_correction.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        resources:
-            mem = config.get("java_mem", JAVA_MEM)
-        params:
-            inputs=lambda wc,input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
-            outputs=lambda wc,output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
-        threads:
-            config.get("threads", 1)
-        shell:
-            """
-                {SHPFXM} tadpole.sh -Xmx{resources.mem}G \
-                   prealloc=1 \
-                   {params.inputs} \
-                   {params.outputs} \
-                   mode=correct \
-                   threads={threads} \
-                   ecc=t ecco=t 2>> {log}
-            """
-
-rule build_decontamination_db:
-    output:
-        "ref/genome/1/summary.txt"
-    threads:
-        config.get("threads", 1)
-    resources:
-        mem = config.get("java_mem", JAVA_MEM)
-    log:
-        "logs/build_decontamination_db.log"
-    params:
-        k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-        refs_in = " ".join(["ref_%s=%s" % (n, fa) for n,fa in config["contaminant_references"].items()]),
-    shell:
-        """{SHPFXM} bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
-
 # if there are no references, decontamination will be skipped
 
 if len(config.get("contaminant_references",{}).keys()) > 0:
 
-    processed_steps+=['clean']
+    rule build_decontamination_db:
+        output:
+            "ref/genome/1/summary.txt"
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        log:
+            "logs/build_decontamination_db.log"
+        params:
+            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
+            refs_in = " ".join(["ref_%s=%s" % (n, fa) for n,fa in config["contaminant_references"].items()]),
+        shell:
+            """{SHPFXM} bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
+
+
+
+
 
     rule decontamination:
         input:
@@ -346,8 +314,8 @@ if len(config.get("contaminant_references",{}).keys()) > 0:
                 step=processed_steps[-2],fraction=multifile_fractions),
             db= "ref/genome/1/summary.txt"
         output:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=multifile_fractions, step=processed_steps[-1]),
+            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=multifile_fractions, step='decontamined')),
             contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
                     db=list(config["contaminant_references"].keys()),
                     fraction=multifile_fractions),
@@ -391,31 +359,80 @@ if len(config.get("contaminant_references",{}).keys()) > 0:
 
             """
 
+    processed_steps+=['clean']
+
+    def get_ribosomal_rna_input(wildcards):
+     
+        inputs = []
+        data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
+
+        clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step='decontamined',**wildcards)
+        rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
+
+        if data_type == "metagenome" and os.path.exists(rrna_reads):
+            return [clean_reads, rrna_reads]
+        else:
+            return [clean_reads]
+
+    rule postprocess_after_decontamination:
+        input:
+            get_ribosomal_rna_input
+        output:
+            "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-1])
+        threads:
+            1
+        shell:
+            "{SHPFXS} cat {input} > {output}"
+
+
+if config.get("perform_error_correction", True):
+    processed_steps+=['errcor']
+    rule error_correction:
+        input:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2],fraction=multifile_fractions)
+        output:
+            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=multifile_fractions,step=processed_steps[-1]))
+        benchmark:
+            "logs/benchmarks/error_correction/{sample}.txt"
+        log:
+            "{sample}/logs/{sample}_error_correction.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        params:
+            inputs=lambda wc,input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
+            outputs=lambda wc,output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
+        threads:
+            config.get("threads", 1)
+        shell:
+            """
+                {SHPFXM} tadpole.sh -Xmx{resources.mem}G \
+                   prealloc=1 \
+                   {params.inputs} \
+                   {params.outputs} \
+                   mode=correct \
+                   threads={threads} \
+                   ecc=t ecco=t 2>> {log}
+            """
+
+
 processed_steps+=['QC']
 
-def get_ribosomal_rna_input(wildcards):
-     
-    inputs = []
-    data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
-
-    clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step=processed_steps[-2],**wildcards)
-    rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
-
-    if data_type == "metagenome" and os.path.exists(rrna_reads):
-        return [clean_reads, rrna_reads]
-    else:
-        return [clean_reads]
-
-
-rule postprocess_after_decontamination:
+rule finalize_QC:
     input:
-        get_ribosomal_rna_input
+        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-2])
     output:
-        "{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz"
+        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-1])
     threads:
         1
     shell:
-        "{SHPFXS} cat {input} > {output}"
+        "{SHPFXS} mv {input} {output}"
+
+
+
 
 
 def get_quality_controlled_reads(wildcards):
@@ -443,7 +460,7 @@ def get_quality_controlled_reads(wildcards):
     return fastq
 
 
-rule finalize_QC:
+rule QC_report:
     input: 
         unpack(get_quality_controlled_reads),
             #rules.decontamination.output.contaminants.format,
@@ -462,7 +479,6 @@ rule finalize_QC:
         """ rm -r ref
         """
 
-        
 
 
 ############## END of QC ##################
