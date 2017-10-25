@@ -7,7 +7,7 @@ import warnings
 
 
 
-localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,init_QC
+localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,init_QC,finalize_QC,QC_report
 
 
 
