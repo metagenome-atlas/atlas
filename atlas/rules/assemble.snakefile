@@ -429,9 +429,7 @@ rule finalize_QC:
     threads:
         1
     shell:
-        "{SHPFXS} mv {input} {output}"
-
-
+        "{SHPFXS} cp {input} {output}"
 
 
 
