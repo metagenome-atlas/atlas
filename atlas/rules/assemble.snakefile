@@ -481,9 +481,10 @@ else:
         params:
             inputs=lambda wc,input: "--12 {0} -s {1}".format(*input) if len(input)==2 else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
+            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
+            error_correction="" if False else "--only-assembler"
         log:
-            "{sample}/assembly/spades.log"
+            "{sample}/logs/{sample}_spades.log"
         shadow:
             "full"
         conda:
@@ -493,8 +494,10 @@ else:
         resources:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """{SHPFXM} spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
-            --only-assembler 2> >(tee {log}) """
+            """
+            rm -rf {params.outdir} 2> >(tee {log})
+            {SHPFXM} spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
+            {params.error_correction} 2> >(tee {log}) """
 
 
     rule rename_spades_output:
