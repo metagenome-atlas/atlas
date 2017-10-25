@@ -7,7 +7,7 @@ import warnings
 
 
 
-localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm
+localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,init_QC
 
 
 
@@ -36,50 +36,176 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             print(toks[0], toks[1], sep="\t", file=fo)
 
 
-paired_end=all([config["samples"][s].get("paired", False) or (len(config["samples"][s]["fastq"]) == 2) for s in config["samples"]])
+paired_end=all([config["samples"][s].get("paired", False) or (len(config["samples"][s]["fastq"]) >1) for s in config["samples"]])
 
 interleaved_fractions= ['pe','se'] if paired_end else ['se']
 multifile_fractions= ['R1','R2','se'] if paired_end else ['se']
 raw_input_fractions=['R1','R2'] if paired_end else ['se']
 
+processed_steps=['raw']
 
-rule compress:
+# controls files and deinterlevves them, for the pipeline all files have the same format
+
+rule init_QC:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_compressed_{fraction}.fastq.gz",
-            fraction=raw_input_fractions)
-    benchmark:
-        "logs/benchmarks/compress/{sample}.txt"
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            fraction=raw_input_fractions,step=processed_steps[-1])
     params:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
         outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if paired_end else "out={0}".format(*output),
-        deduplicate= "t" if config.get('deduplicate',False) else "f",
-        dupesubs= config.get('DUPLICATES_ALLOW_SUBSTITUTIONS',0)
+        verifypaired="t" if paired_end else "f"
     log:
-        "{sample}/logs/{sample}_compress.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "{sample}/logs/{sample}_init.log"
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", 5)
+    shell:
+        """{SHPFXM} reformat.sh {params.inputs} interleaved={params.interleaved}\
+        {params.outputs} \
+        qout=33 \
+        overwrite=true\
+        verifypaired={params.verifypaired} \
+        threads={threads} \
+        -Xmx{resources.mem}G 2> {log}
+        """
+rule read_stats:
+    input:
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{{step}}_{fraction}.fastq.gz",
+            fraction=raw_input_fractions)
+    output:
+        "{sample}/sequence_quality_control/read_stats/{step}.zip"
+    log:
+        "{sample}/logs/read_stats.log"
     threads:
         config.get("threads", 1)
     resources:
         mem = config.get("java_mem", JAVA_MEM)
-    shell:
-        """{SHPFXM} clumpify.sh {params.inputs} interleaved={params.interleaved}\
-        {params.outputs} \
-        qout=33 \
-        overwrite=true\
-        dedupe={params.deduplicate} \
-        dupesubs={params.dupesubs} \
-        -Xmx{resources.mem}G 2> {log}
-        """
+    params:
+        folder= lambda wc, output: os.path.splitext(output[0])[0],
+        sample_read_stats_file="{sample}/sequence_quality_control/read_stats/read_counts.tsv",
+        single_end_file="{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
+    run:
+        import datetime    
+        Timestamp= datetime.datetime.now().strftime('%Y-%m-%d-%X')
+
+        def get_read_stats_(fraction,params_in):
+
+            subfolder=os.path.join(params.folder,fraction)
+            shell("""
+                    mkdir -p {subfolder}
+
+                    reformat.sh {params_in} \
+                    bhist={subfolder}/base_hist.txt \
+                    qhist={subfolder}/quality_by_pos.txt \
+                    lhist={subfolder}/readlength.txt \
+                    gchist={subfolder}/gc_hist.txt \
+                    gcbins=auto \
+                    bqhist={subfolder}/boxplot_quality.txt \
+                    threads={threads} \
+                    overwrite=true \
+                    -Xmx{mem}G \
+                    2> >(tee log.txt {log})
+                 """.format(subfolder=subfolder,params_in=params_in,log=log, 
+                    threads=threads,mem=resources.mem))
+            content= open('log.txt').read()
+            pos= content.find('Input:')
+            if pos ==-1: 
+                raise Exception("Didn't find read number in file:\n\n"+content)
+            else:
+
+                content[pos:].split()[1:4]
+                        # Input:    123 reads   1234 bases
+                n_reads,_,n_bases=content[pos:].split()[1:4]
+                os.remove('log.txt')
+
+
+            return int(n_reads),int(n_bases)
+
+        if paired_end:
+            n_reads_pe,n_bases_pe = get_read_stats_('pe',"in1={0} in2={1}".format(*input))
+
+            headers= ['Sample','Step','Total_Reads','Total_Bases','Reads_pe','Bases_pe','Reads_se','Bases_se','Timestamp']
+
+            if os.path.exists(params.single_end_file):
+                n_reads_se,n_bases_se= get_read_stats_('se',"in="+params.single_end_file)
+            else:
+                n_reads_se,n_bases_se = 0,0
+
+            values=[n_reads_pe+n_reads_se, n_bases_pe+n_bases_se,
+                    n_reads_pe, n_bases_pe,
+                    n_reads_se, n_bases_se]
+
+        else:
+            headers= ['Sample','Step','Total_Reads','Total_Bases','Reads','Bases','Timestamp']
+            values = 2* get_read_stats_('',"in="+input[0])
+
+
+
+
+
+        if not os.path.exists(params.sample_read_stats_file):
+            f= open(params.sample_read_stats_file,'w')
+            f.write('\t'.join(headers)+'\n')
+
+        else: f= open(params.sample_read_stats_file,'a')
+
+        f.write('\t'.join([wildcards.sample,wildcards.step]+[str(v)  for v in values]+[Timestamp])+'\n')
+        f.close() 
+
+        import shutil
+        shutil.make_archive(params.folder, 'zip',params.folder)
+        shutil.rmtree(params.folder)
+
+
+if config.get('deduplicate',False):
+    
+    processed_steps+=['deduplicated']
+    rule deduplicate:
+        input:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2],fraction=raw_input_fractions)
+        output:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=raw_input_fractions,step=processed_steps[-1])
+        benchmark:
+            "logs/benchmarks/deduplicate/{sample}.txt"
+        params:
+            inputs= lambda wc,input:"in1={0} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
+            outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if paired_end else "out={0}".format(*output),
+            deduplicate= "t" if config.get('deduplicate',False) else "f",
+            dupesubs= config.get('DUPLICATES_ALLOW_SUBSTITUTIONS',0)
+        log:
+            "{sample}/logs/{sample}_deduplicate.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        shell:
+            """{SHPFXM} clumpify.sh  {params.inputs} \
+            {params.outputs} \
+            overwrite=true\
+            dedupe={params.deduplicate} \
+            dupesubs={params.dupesubs} \
+            threads={threads} \
+            -Xmx{resources.mem}G 2> {log}
+            """
+
+
+processed_steps+=['filtered']
 
 rule quality_filter:
     input:
-        rules.compress.output
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            fraction=raw_input_fractions,step=processed_steps[-2])
     output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_filtered_{fraction}.fastq.gz",fraction=multifile_fractions),
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            fraction=multifile_fractions,step=processed_steps[-1]),
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -118,16 +244,19 @@ rule quality_filter:
                -Xmx{resources.mem}G 2> {log}
         """
 
-last_step='filtered'
+
 
 if config.get("merge_pairs", True):
     if paired_end:
+        processed_steps+=['merged']
 
         rule merge_pairs:
             input:
-                expand("{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{fraction}.fastq.gz",last_step=last_step,fraction=multifile_fractions)
+                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    step=processed_steps[-2],fraction=multifile_fractions)
             output:
-                expand("{{sample}}/sequence_quality_control/{{sample}}_merged_{fraction}.fastq.gz",fraction=multifile_fractions),
+                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    fraction=multifile_fractions,step=processed_steps[-1]),
                 insert_size_hist="{sample}/sequence_quality_control/{sample}_insert_size_hsit.txt",
             threads:
                 config.get("threads", 1)
@@ -153,17 +282,19 @@ if config.get("merge_pairs", True):
                     cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} > {output[2]} 2>> {log}
 
                 """
-        last_step='merged'
     else:
         warnings.warn('Skip: merging of pairs, because reads are single-ended. You can deactivate the "merge_pairs" in the config file')
 
 
 if config.get("perform_error_correction", True):
+    processed_steps+=['errcor']
     rule error_correction:
         input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{fraction}.fastq.gz",last_step=last_step,fraction=multifile_fractions)
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2],fraction=multifile_fractions)
         output:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_errcor_{fraction}.fastq.gz",fraction=multifile_fractions)
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=multifile_fractions,step=processed_steps[-1])
         benchmark:
             "logs/benchmarks/error_correction/{sample}.txt"
         log:
@@ -188,9 +319,6 @@ if config.get("perform_error_correction", True):
                    ecc=t ecco=t 2>> {log}
             """
 
-    last_step='errcor'
-
-
 rule build_decontamination_db:
     output:
         "ref/genome/1/summary.txt"
@@ -207,62 +335,70 @@ rule build_decontamination_db:
         """{SHPFXM} bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
 
 # if there are no references, decontamination will be skipped
-rule decontamination:
-    input:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{last_step}_{fraction}.fastq.gz",last_step=last_step,fraction=multifile_fractions),
-        db= "ref/genome/1/summary.txt"
-    output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_clean_{fraction}.fastq.gz",fraction=multifile_fractions),
-        contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
-                db=list(config["contaminant_references"].keys()),
-                fraction=multifile_fractions),
-        stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt"
-    benchmark:
-        "logs/benchmarks/decontamination/{sample}.txt"
-    params:
-        contaminant_folder = lambda wc, output: os.path.dirname(output.contaminants[0]),
-        maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
-        minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
-        minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
-        ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
-        k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-        paired= "true" if paired_end else "false",
-        input_single= lambda wc,input: input[2] if paired_end else input[0],
-        output_sinlge= lambda wc,output: output[2] if paired_end else output[0]
-    log:
-        "{sample}/logs/{sample}_decontamination.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    shell:
-        """
-        if [ "{params.paired}" = true ] ; then
-        {SHPFXM} bbsplit.sh in1={input[0]} in2={input[1]} \
-                        outu1={output[0]} outu2={output[1]} \
-               basename="{params.contaminant_folder}/%_R#.fastq.gz" \
-               maxindel={params.maxindel} minratio={params.minratio} \
-               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-               threads={threads} k={params.k} local=t 2> {log}
-        fi 
 
-        {SHPFXM} bbsplit.sh in={params.input_single}  \
-                outu={params.output_sinlge} \
-               basename="{params.contaminant_folder}/%_se.fastq.gz" \
-               maxindel={params.maxindel} minratio={params.minratio} \
-               minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
-               interleaved=f threads={threads} k={params.k} local=t 2>> {log}
+if len(config.get("contaminant_references",{}).keys()) > 0:
+
+    processed_steps+=['clean']
+
+    rule decontamination:
+        input:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2],fraction=multifile_fractions),
+            db= "ref/genome/1/summary.txt"
+        output:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=multifile_fractions, step=processed_steps[-1]),
+            contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
+                    db=list(config["contaminant_references"].keys()),
+                    fraction=multifile_fractions),
+            stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt"
+        benchmark:
+            "logs/benchmarks/decontamination/{sample}.txt"
+        params:
+            contaminant_folder = lambda wc, output: os.path.dirname(output.contaminants[0]),
+            maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
+            minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
+            minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
+            ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
+            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
+            paired= "true" if paired_end else "false",
+            input_single= lambda wc,input: input[2] if paired_end else input[0],
+            output_sinlge= lambda wc,output: output[2] if paired_end else output[0]
+        log:
+            "{sample}/logs/{sample}_decontamination.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        shell:
+            """
+            if [ "{params.paired}" = true ] ; then
+            {SHPFXM} bbsplit.sh in1={input[0]} in2={input[1]} \
+                            outu1={output[0]} outu2={output[1]} \
+                   basename="{params.contaminant_folder}/%_R#.fastq.gz" \
+                   maxindel={params.maxindel} minratio={params.minratio} \
+                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+                   threads={threads} k={params.k} local=t 2> {log}
+            fi 
+
+            {SHPFXM} bbsplit.sh in={params.input_single}  \
+                    outu={params.output_sinlge} \
+                   basename="{params.contaminant_folder}/%_se.fastq.gz" \
+                   maxindel={params.maxindel} minratio={params.minratio} \
+                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
+                   interleaved=f threads={threads} k={params.k} local=t 2>> {log}
 
 
-        """
+            """
 
+processed_steps+=['QC']
 
 def get_ribosomal_rna_input(wildcards):
      
     inputs = []
     data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
 
-    clean_reads = "{sample}/sequence_quality_control/{sample}_clean_{fraction}.fastq.gz".format(**wildcards)
+    clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step=processed_steps[-2],**wildcards)
     rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
 
     if data_type == "metagenome" and os.path.exists(rrna_reads):
@@ -313,6 +449,8 @@ rule finalize_QC:
             #rules.decontamination.output.contaminants.format,
             expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
                 sample=SAMPLES),
+            expand("{sample}/sequence_quality_control/read_stats/{step}.zip",
+                sample=SAMPLES,step=processed_steps),
             # intermediate file
             # expand("{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
             #     sample=SAMPLES),
