@@ -14,6 +14,10 @@ QTRIM = "rl"
 PREPROCESS_MINIMUM_PASSING_READ_LENGTH = 51
 PREPROCESS_MINIMUM_BASE_FREQUENCY = 0.05
 
+MERGING_FLAGS="ecct vstrict"
+MERGING_EXTEND2 = 50
+MERGING_K = 62
+
 CONTAMINANT_MAX_INDEL = 20
 CONTAMINANT_MIN_RATIO = 0.65
 CONTAMINANT_MINIMUM_HITS = 1
@@ -24,7 +28,8 @@ NORMALIZATION_KMER_LENGTH = 21
 NORMALIZATION_TARGET_DEPTH = 100
 NORMALIZATION_MINIMUM_KMERS = 15
 
-MEGAHIT_MEMORY = 0.90
+ASSEMBLY_MEMORY = 50
+ASSEMBLY_THREADS = 8
 MEGAHIT_MIN_COUNT = 2
 MEGAHIT_K_MIN = 21
 MEGAHIT_K_MAX = 121
@@ -84,15 +89,6 @@ def get_temp_dir(config):
     return tmp_dir
 
 
-def get_contaminant_output_files(samples, config):
-    ret_str = ""
-    if "contaminant_references" in config.keys():
-        if len(config["contaminant_references"]) > 0:
-            ret_str = expand("{sample}/sequence_quality_control/{sample}_02_{decon_dbs}.fastq.gz",
-                          sample=samples, decon_dbs=list(config["contaminant_references"].keys()))
-    return ret_str
-
-
 def get_bin_summary_files(do_binning, samples):
     ret_str = ""
     if do_binning:
@@ -130,6 +126,7 @@ def update_config_file_paths(config):
 
 CONDAENV = get_conda_envs_dir()
 
+localrules: all
 
 if config.get("workflow", "complete") == "complete":
     config = update_config_file_paths(config)
@@ -147,13 +144,7 @@ if config.get("workflow", "complete") == "complete":
 
     rule all:
         input:
-            get_contaminant_output_files(SAMPLES, config),
-            expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-                sample=SAMPLES),
-            expand("{sample}/sequence_quality_control/{sample}_00_pe.fastq.gz",
-                sample=SAMPLES),
-            expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
-                sample=SAMPLES),
+            expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
