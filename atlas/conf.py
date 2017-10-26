@@ -11,7 +11,7 @@ ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
 
-JAVA_MEM = "32g"
+JAVA_MEM = 32
 PREPROCESS_ADAPTER_MIN_K = 8
 PREPROCESS_MINIMUM_BASE_QUALITY = 10
 PREPROCESS_ALLOWABLE_KMER_MISMATCHES = 1
@@ -112,7 +112,20 @@ def get_sample_files(path, data_type):
 
 
 def make_config(config, path, data_type, database_dir, threads, assembler):
-    """Write the file `config` and complete the sample names and paths for all files in `path`."""
+    """Write the file `config` and complete the sample names and paths for all
+    files in `path`.
+
+    Args:
+        config (str): output file path for yaml
+        path (str): fastq/fasta data directory
+        data_type (str): this is either metagenome or metatranscriptome
+        database_dir (str): location of downloaded databases
+        threads (int): number of threads per node to utilize
+        assembler (str): either spades or megahit
+    """
+    config = os.path.realpath(os.path.expanduser(config))
+    os.makedirs(os.path.dirname(config), exist_ok=True)
+
     represent_dict_order = lambda self, data: self.represent_mapping('tag:yaml.org,2002:map', data.items())
     yaml.add_representer(OrderedDict, represent_dict_order)
     path = os.path.realpath(os.path.expanduser(path))
@@ -135,7 +148,6 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     conf["perform_error_correction"] = "true"
 
-    conf["contaminant_references"] = OrderedDict()
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
                                       "PhiX":os.path.join(database_dir, PHIX)}
     conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
