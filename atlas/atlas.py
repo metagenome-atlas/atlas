@@ -179,20 +179,25 @@ def run_merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonom
 @cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")
 @click.argument("config")
 @click.argument("path")
-@click.option("--data-type", default="metagenome", type=click.Choice(["metagenome", "metatranscriptome"]),
+@click.option("--assembler", default="megahit",
+              type=click.Choice(["megahit", "spades"]),
+              show_default=True, help="contig assembler")
+@click.option("--data-type", default="metagenome",
+              type=click.Choice(["metagenome", "metatranscriptome"]),
               show_default=True, help="sample data type")
 @click.option("--database-dir", default="databases", show_default=True,
               help="location of formatted databases (from `atlas download`)")
-@click.option("--threads", default=None, type=int,
+# @click.option("--process", default="assemble",
+#               type=click.Choice(["annotate", "assemble"]),
+#               help="additional fields in the configuration file have no effect on the protocol, to limit the options for annotation only set `--process annotate`")
+@click.option("--threads", default=multiprocessing.cpu_count(), type=int,
               help="number of threads to use per multi-threaded job")
-@click.option("--assembler", default="megahit", type=click.Choice(["megahit", "spades"]),
-              show_default=True, help="contig assembler")
 def run_make_config(config, path, data_type, database_dir, threads, assembler):
-    """Write the file CONFIG and complete the sample names and paths for all FASTQ files in
-    PATH.
+    """Write the file CONFIG and complete the sample names and paths for all
+    FASTQ files in PATH.
 
-    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in the file name with
-    the file name minus extension as the sample ID.
+    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+    the file name with the file name minus extension as the sample ID.
     """
     make_config(config, path, data_type, database_dir, threads, assembler)
 
@@ -218,7 +223,7 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     assemble(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
 
 
-@cli.command("annotate", short_help="annotation workflow")
+@cli.command("annotate", context_settings=dict(ignore_unknown_options=True), short_help="annotation workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
