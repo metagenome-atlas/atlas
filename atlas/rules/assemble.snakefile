@@ -49,6 +49,7 @@ rule init_QC:
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=raw_input_fractions,step=processed_steps[-1]))
+    priority: 80
     params:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
@@ -77,6 +78,7 @@ rule read_stats:
             fraction=raw_input_fractions)
     output:
         "{sample}/sequence_quality_control/read_stats/{step}.zip"
+    priority: 30
     log:
         "{sample}/logs/read_stats.log"
     threads:
@@ -293,6 +295,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             mem = config.get("java_mem", JAVA_MEM)
         log:
             "logs/build_decontamination_db.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
         params:
             k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n,fa in config["contaminant_references"].items()]),
@@ -303,7 +307,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
     rule decontamination:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2], fraction=multifile_fractions),
+                step=processed_steps[-1], fraction=multifile_fractions),
             db = "ref/genome/1/summary.txt"
         output:
             temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
