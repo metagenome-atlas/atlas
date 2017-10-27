@@ -111,10 +111,10 @@ rule read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2> >(tee log.txt {log})
+                    2> >(tee {log})
                  """.format(subfolder=subfolder,params_in=params_in,log=log,
                     threads=threads,mem=resources.mem))
-            content= open('log.txt').read()
+            content= open(log[0]).read()
             pos= content.find('Input:')
             if pos == -1:
                 raise Exception("Didn't find read number in file:\n\n" + content)
@@ -123,7 +123,6 @@ rule read_stats:
                 content[pos:].split()[1:4]
                         # Input:    123 reads   1234 bases
                 n_reads,_,n_bases=content[pos:].split()[1:4]
-                os.remove('log.txt')
             return int(n_reads),int(n_bases)
 
 
