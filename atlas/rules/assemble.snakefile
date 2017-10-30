@@ -78,7 +78,8 @@ rule read_stats:
             fraction=raw_input_fractions)
     output:
         "{sample}/sequence_quality_control/read_stats/{step}.zip"
-    priority: 30
+    priority:
+        30
     log:
         "{sample}/logs/read_stats.log"
     threads:
@@ -86,18 +87,18 @@ rule read_stats:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     params:
-        folder= lambda wc, output: os.path.splitext(output[0])[0],
-        sample_read_stats_file="{sample}/sequence_quality_control/read_stats/read_counts.tsv",
-        single_end_file="{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
+        folder = lambda wc, output: os.path.splitext(output[0])[0],
+        sample_read_stats_file = "{sample}/sequence_quality_control/read_stats/read_counts.tsv",
+        single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
     run:
         import datetime
         import shutil
 
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%X')
 
-        def get_read_stats_(fraction,params_in):
+        def get_read_stats(fraction, params_in):
 
-            subfolder=os.path.join(params.folder,fraction)
+            subfolder = os.path.join(params.folder, fraction)
             shell("""
                     mkdir -p {subfolder}
 
@@ -112,27 +113,29 @@ rule read_stats:
                     overwrite=true \
                     -Xmx{mem}G \
                     2> >(tee {log})
-                 """.format(subfolder=subfolder,params_in=params_in,log=log,
-                    threads=threads,mem=resources.mem))
-            content= open(log[0]).read()
-            pos= content.find('Input:')
+                 """.format(subfolder=subfolder, params_in=params_in, log=log,
+                            threads=threads, mem=resources.mem))
+            content = open(log[0]).read()
+            pos = content.find('Input:')
             if pos == -1:
                 raise Exception("Didn't find read number in file:\n\n" + content)
             else:
 
                 content[pos:].split()[1:4]
                         # Input:    123 reads   1234 bases
-                n_reads,_,n_bases=content[pos:].split()[1:4]
-            return int(n_reads),int(n_bases)
+                n_reads, _, n_bases = content[pos:].split()[1:4]
+            return int(n_reads), int(n_bases)
 
 
         if paired_end:
-            n_reads_pe, n_bases_pe = get_read_stats_('pe', "in1={0} in2={1}".format(*input))
+            n_reads_pe, n_bases_pe = get_read_stats('pe', "in1={0} in2={1}".format(*input))
 
-            headers= ['Sample','Step','Total_Reads','Total_Bases','Reads_pe','Bases_pe','Reads_se','Bases_se','Timestamp']
+            headers= ['Sample', 'Step', 'Total_Reads', 'Total_Bases',
+                      'Reads_pe', 'Bases_pe', 'Reads_se', 'Bases_se',
+                      'Timestamp']
 
             if os.path.exists(params.single_end_file):
-                n_reads_se, n_bases_se= get_read_stats_('se', "in=" + params.single_end_file)
+                n_reads_se, n_bases_se = get_read_stats('se', "in=" + params.single_end_file)
             else:
                 n_reads_se, n_bases_se = 0, 0
 
@@ -140,8 +143,9 @@ rule read_stats:
                     n_reads_pe, n_bases_pe,
                     n_reads_se, n_bases_se]
         else:
-            headers= ['Sample','Step','Total_Reads','Total_Bases','Reads','Bases','Timestamp']
-            values = 2 * get_read_stats_('', "in=" + input[0])
+            headers= ['Sample', 'Step', 'Total_Reads', 'Total_Bases', 'Reads',
+                      'Bases', 'Timestamp']
+            values = 2 * get_read_stats('', "in=" + input[0])
 
         if not os.path.exists(params.sample_read_stats_file):
             f = open(params.sample_read_stats_file, 'w')
@@ -466,9 +470,13 @@ rule QC_report:
             expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
                 sample=SAMPLES)
     output:
+        # FIXME: Input is all samples while output is per sample
         touch("{sample}/sequence_quality_control/finished_QC")
     shell:
-        """ rm -r ref
+        """
+        if [ -d ref ]; then
+            rm -r ref
+        fi
         """
 
 
