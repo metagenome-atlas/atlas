@@ -6,7 +6,7 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,finalize_QC,QC_report
+localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,get_QC_reads,finalize_QC,QC_report
 
 
 def gff_to_gtf(gff_in, gtf_out):
@@ -99,6 +99,7 @@ rule read_stats:
         def get_read_stats(fraction, params_in):
 
             subfolder = os.path.join(params.folder, fraction)
+            tmp_file=os.path.join(subfolder,"read_stats.tmp")
             shell("""
                     mkdir -p {subfolder}
 
@@ -112,10 +113,10 @@ rule read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2> >(tee {log})
+                    2> >(tee {log} {tmp_file} )
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
-                            threads=threads, mem=resources.mem))
-            content = open(log[0]).read()
+                            threads=threads, mem=resources.mem,tmp_file=tmp_file))
+            content = open(tmp_file).read()
             pos = content.find('Input:')
             if pos == -1:
                 raise Exception("Didn't find read number in file:\n\n" + content)
@@ -124,6 +125,8 @@ rule read_stats:
                 content[pos:].split()[1:4]
                         # Input:    123 reads   1234 bases
                 n_reads, _, n_bases = content[pos:].split()[1:4]
+
+                os.remove(tmp_file)
             return int(n_reads), int(n_bases)
 
 
@@ -161,40 +164,6 @@ rule read_stats:
         shutil.rmtree(params.folder)
 
 
-if config.get('deduplicate',False):
-
-    processed_steps += ['deduplicated']
-    rule deduplicate:
-        input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2], fraction=raw_input_fractions)
-        output:
-            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=raw_input_fractions, step=processed_steps[-1]))
-        benchmark:
-            "logs/benchmarks/deduplicate/{sample}.txt"
-        params:
-            inputs= lambda wc,input:"in1={0} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
-            outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if paired_end else "out={0}".format(*output),
-            deduplicate= "t" if config.get('deduplicate',False) else "f",
-            dupesubs= config.get('DUPLICATES_ALLOW_SUBSTITUTIONS', 0)
-        log:
-            "{sample}/logs/{sample}_deduplicate.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        resources:
-            mem = config.get("java_mem", JAVA_MEM)
-        shell:
-            """{SHPFXM} clumpify.sh {params.inputs} \
-            {params.outputs} \
-            overwrite=true\
-            dedupe={params.deduplicate} \
-            dupesubs={params.dupesubs} \
-            threads={threads} \
-            -Xmx{resources.mem}G 2> {log}
-            """
 
 
 processed_steps += ['filtered']
@@ -217,6 +186,7 @@ rule quality_filter:
         hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
         k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
         qtrim = config.get("qtrim", QTRIM),
+        error_correction_pe= "t" if paired_end and config.get('error_correction_overlapping_pairs',True) else "f",
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
         interleaved = "t" if paired_end else "f",
@@ -241,50 +211,9 @@ rule quality_filter:
                minbasefrequency={params.minbasefrequency} \
                interleaved={params.interleaved}\
                overwrite=true \
+               ecco={params.error_correction_pe} \
                -Xmx{resources.mem}G 2> {log}
         """
-
-
-if config.get("merge_pairs", True):
-    if paired_end:
-        processed_steps += ['merged']
-
-        rule merge_pairs:
-            input:
-                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                    step=processed_steps[-2],fraction=multifile_fractions)
-            output:
-                temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                    fraction=multifile_fractions,step=processed_steps[-1])),
-                insert_size_hist="{sample}/sequence_quality_control/read_stats/insert_size_hsit.txt",
-            threads:
-                config.get("threads", 1)
-            resources:
-                mem = config.get("java_mem", JAVA_MEM)
-            conda:
-                "%s/required_packages.yaml" % CONDAENV
-            log:
-                "{sample}/logs/{sample}_merge_pairs.log"
-            benchmark:
-                "logs/benchmarks/merge_pairs/{sample}.txt"
-            shadow:
-                "shallow"
-            params:
-                kmer = config.get("merging_k", MERGING_K),
-                extend2 = config.get("merging_extend2", MERGING_EXTEND2),
-                flags = config.get("merging_flags", MERGING_FLAGS)
-            shell:
-                """
-                    {SHPFXM} bbmerge.sh -Xmx{resources.mem}G threads={threads} \
-                    in1={input[0]} in2={input[1]} outmerged={wildcards.sample}_merged_pairs.fastq.gz outu={output[0]} outu2={output[1]} \
-                    {params.flags} k={params.kmer} extend2={params.extend2} ihist={output.insert_size_hist} 2> {log}
-
-                    cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} > {output[2]} 2>> {log}
-
-                """
-    else:
-        warnings.warn('Skip: merging of pairs, because reads are single-ended. You can deactivate the "merge_pairs" in the config file')
-
 # if there are no references, decontamination will be skipped
 
 if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -337,15 +266,18 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
         shell:
             """
             if [ "{params.paired}" = true ] ; then
             {SHPFXM} bbsplit.sh in1={input[0]} in2={input[1]} \
-                            outu1={output[0]} outu2={output[1]} \
-                   basename="{params.contaminant_folder}/%_R#.fastq.gz" \
-                   maxindel={params.maxindel} minratio={params.minratio} \
-                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                   threads={threads} k={params.k} local=t 2> {log}
+                    outu1={output[0]} outu2={output[1]} \
+                    basename="{params.contaminant_folder}/%_R#.fastq.gz" \
+                    maxindel={params.maxindel} minratio={params.minratio} \
+                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+                    threads={threads} k={params.k} local=t \
+                    -Xmx{resources.mem}G 2> {log}
             fi
 
             {SHPFXM} bbsplit.sh in={params.input_single}  \
@@ -353,7 +285,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
                    basename="{params.contaminant_folder}/%_se.fastq.gz" \
                    maxindel={params.maxindel} minratio={params.minratio} \
                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
-                   interleaved=f threads={threads} k={params.k} local=t 2>> {log}
+                   interleaved=f threads={threads} k={params.k} local=t \
+                   -Xmx{resources.mem}G 2>> {log}
 
 
             """
@@ -373,6 +306,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         else:
             return [clean_reads]
 
+
     rule postprocess_after_decontamination:
         input:
             get_ribosomal_rna_input
@@ -384,43 +318,9 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             "{SHPFXS} cat {input} > {output}"
 
 
-if config.get("perform_error_correction", True):
-    processed_steps += ['errcor']
-    rule error_correction:
-        input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2], fraction=multifile_fractions)
-        output:
-            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=multifile_fractions, step=processed_steps[-1]))
-        benchmark:
-            "logs/benchmarks/error_correction/{sample}.txt"
-        log:
-            "{sample}/logs/{sample}_error_correction.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        resources:
-            mem = config.get("java_mem", JAVA_MEM)
-        params:
-            inputs=lambda wc,input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
-            outputs=lambda wc,output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
-        threads:
-            config.get("threads", 1)
-        shell:
-            """
-                {SHPFXM} tadpole.sh -Xmx{resources.mem}G \
-                   prealloc=1 \
-                   {params.inputs} \
-                   {params.outputs} \
-                   mode=correct \
-                   threads={threads} \
-                   ecc=t ecco=t 2>> {log}
-            """
-
-
 processed_steps += ['QC']
 
-rule finalize_QC:
+rule get_QC_reads:
     input:
         "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-2])
     output:
@@ -456,32 +356,51 @@ def get_quality_controlled_reads(wildcards):
     return fastq
 
 
-rule QC_report:
+rule finalize_QC:
     input:
         unpack(get_quality_controlled_reads),
-            #rules.decontamination.output.contaminants.format,
-            expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-                sample=SAMPLES),
-            expand("{sample}/sequence_quality_control/read_stats/{step}.zip",
-                sample=SAMPLES, step=processed_steps),
-            # intermediate file
-            # expand("{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
-            #     sample=SAMPLES),
-            expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
-                sample=SAMPLES)
+            rules.decontamination.output.contaminants,
+            "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+            expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
+            "{sample}/logs/{sample}_quality_filtering_stats.txt"
     output:
-        # FIXME: Input is all samples while output is per sample
-        touch("{sample}/sequence_quality_control/finished_QC")
-    shell:
+        touch("{sample}/sequence_quality_control/finished_QC"),
+        read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
+    run:
+        print("Rinishd QC for sample {sample}\n".format(**wildcards))
+        import pandas as pd
+        d= pd.read_table(output.read_stats,index_col=[0,1])
+        d=d.loc[~d.index.duplicated(keep='last')] # if a rule is run several times remove all but the last execution
+        d.to_csv(output.read_stats,sep='\t')
+
+
+
+rule QC_report:
+    input:
+        expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
+        read_stats=expand("{sample}/sequence_quality_control/read_stats/read_counts.tsv",sample=SAMPLES)
+    output:
+        Combined_read_stats="Combined_read_stats.tsv"
+    run:
+        shell(
         """
         if [ -d ref ]; then
             rm -r ref
         fi
-        """
+        """)
+
+        import pandas as pd
+        
+        Read_stats=pd.DataFrame()
+
+        for f in input.read_stats:
+            d= pd.read_table(f,index_col=[0,1])
+            Read_stats=Read_stats.append(d)
+
+        Read_stats.to_csv(output.Combined_read_stats,sep='\t')
 
 
-############## END of QC ##################
-# may be we can put the following code in a separate snakefile
+    # aggregate stats reports ...
 
 
 def input_params_for_bbwrap(wildcards,input):
@@ -502,6 +421,68 @@ expect one of: 1 file= single-end, two files = R1,R2 , 3 files= R1,R2,se
 got: {n} files:\n{}
 """.format('\n'.join(input),n=len(input)))
     return flag
+
+############## END of QC ##################
+# may be we can put the following code in a separate snakefile
+
+
+if config.get('deduplicate',False):
+    processed_steps += ['deduplicated']
+    rule deduplicate:
+        input:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2], fraction=multifile_fractions)
+        output:
+            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=multifile_fractions, step=processed_steps[-1]))
+        benchmark:
+            "logs/benchmarks/deduplicate/{sample}.txt"
+        params:
+            has_paired_end_files= lambda wc, input: "t" if hasattr(input,'R1') else "f",
+            input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
+            output_single = lambda wc,output,input: "out=%s" % output[1] if hasattr(input,'R1') else "out=%s" % output[0],
+            output_paired = lambda wc,output: "out=%s" % output[0],
+            dupesubs= config.get('DUPLICATES_ALLOW_SUBSTITUTIONS', 0)
+        log:
+            "{sample}/logs/{sample}_deduplicate.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        shell:
+            """
+            if [ {params.input_single} != "null" ];
+            then
+            {SHPFXM} clumpify.sh \
+            {params.input_single} \
+            {params.output_single} \
+            overwrite=true\
+            dedupe=t \
+            dupesubs={params.dupesubs} \
+            threads={threads} \
+            -Xmx{resources.mem}G 2> {log}
+
+            fi
+
+
+            if [ {params.has_paired_end_files} = "t" ];
+            then
+            
+            {SHPFXM} clumpify.sh \
+            {params.input_paired} \
+            {params.output_paired} \
+            overwrite=true\
+            dedupe=t \
+            dupesubs={params.dupesubs} \
+            threads={threads} \
+            -Xmx{resources.mem}G 2>> {log}
+
+            fi
+
+            """
+
 
 
 rule normalize_coverage_across_kmers:
@@ -558,6 +539,79 @@ rule normalize_coverage_across_kmers:
             fi
 
             """
+
+if config.get("perform_error_correction", True):
+    processed_steps += ['errcor']
+    rule error_correction:
+        input:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2], fraction=multifile_fractions)
+        output:
+            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=multifile_fractions, step=processed_steps[-1]))
+        benchmark:
+            "logs/benchmarks/error_correction/{sample}.txt"
+        log:
+            "{sample}/logs/{sample}_error_correction.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        params:
+            inputs=lambda wc,input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
+            outputs=lambda wc,output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
+        threads:
+            config.get("threads", 1)
+        shell:
+            """
+                {SHPFXM} tadpole.sh -Xmx{resources.mem}G \
+                   prealloc=1 \
+                   {params.inputs} \
+                   {params.outputs} \
+                   mode=correct \
+                   threads={threads} \
+                   ecc=t ecco=t 2>> {log}
+            """
+
+if config.get("merge_pairs", True):
+    if paired_end:
+        processed_steps += ['merged']
+
+        rule merge_pairs:
+            input:
+                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    step=processed_steps[-2],fraction=multifile_fractions)
+            output:
+                temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    fraction=multifile_fractions,step=processed_steps[-1])),
+                insert_size_hist="{sample}/sequence_quality_control/read_stats/insert_size_hsit.txt",
+            threads:
+                config.get("threads", 1)
+            resources:
+                mem = config.get("java_mem", JAVA_MEM)
+            conda:
+                "%s/required_packages.yaml" % CONDAENV
+            log:
+                "{sample}/logs/{sample}_merge_pairs.log"
+            benchmark:
+                "logs/benchmarks/merge_pairs/{sample}.txt"
+            shadow:
+                "shallow"
+            params:
+                kmer = config.get("merging_k", MERGING_K),
+                extend2 = config.get("merging_extend2", MERGING_EXTEND2),
+                flags = config.get("merging_flags", MERGING_FLAGS)
+            shell:
+                """
+                    {SHPFXM} bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+                    in1={input[0]} in2={input[1]} outmerged={wildcards.sample}_merged_pairs.fastq.gz outu={output[0]} outu2={output[1]} \
+                    {params.flags} k={params.kmer} extend2={params.extend2} ihist={output.insert_size_hist} 2> {log}
+
+                    cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} > {output[2]} 2>> {log}
+
+                """
+    else:
+        warnings.warn('Skip: merging of pairs, because reads are single-ended. You can deactivate the "merge_pairs" in the config file')
 
 
 if config.get("assembler", "megahit") == "megahit":
@@ -680,6 +734,9 @@ rule calculate_prefiltered_contigs_stats:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
         "{SHPFXS} stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
+
+
+
 
 
 rule calculate_prefiltered_contig_coverage_stats:
@@ -964,17 +1021,6 @@ rule convert_sam_to_bam:
                                    -O bam -"""
 
 
-rule create_bam_index:
-    input:
-        "{sample}/sequence_alignment/{sample}.bam"
-    output:
-        temp("{sample}/sequence_alignment/{sample}.bam.bai")
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        1
-    shell:
-        "{SHPFXS} samtools index {input}"
 
 
 rule calculate_final_contigs_stats:
@@ -1044,36 +1090,11 @@ rule convert_gff_to_gtf:
         gff_to_gtf(input[0], output[0])
 
 
-rule remove_pcr_duplicates:
-    input:
-        bam = "{sample}/sequence_alignment/{sample}.bam",
-        bai = "{sample}/sequence_alignment/{sample}.bam.bai"
-    output:
-        bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
-        txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
-    benchmark:
-        "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    resources:
-        mem = int(config.get("java_mem", "32"))
-    shell:
-        """{SHPFXS} picard MarkDuplicates \
-               -Xmx{resources.mem}G \
-               INPUT={input.bam} \
-               OUTPUT={output.bam} \
-               METRICS_FILE={output.txt} \
-               ASSUME_SORT_ORDER=coordinate \
-               MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
-               REMOVE_DUPLICATES=TRUE \
-               VALIDATION_STRINGENCY=LENIENT \
-               CREATE_INDEX=TRUE"""
-
 
 rule find_counts_per_region:
     input:
         gtf = "{sample}/annotation/prokka/{sample}.gtf",
-        bam = "{sample}/sequence_alignment/{sample}_markdup.bam"
+        bam = "{sample}/sequence_alignment/{sample}.bam"
     output:
         summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
