@@ -360,16 +360,16 @@ rule finalize_QC:
             rules.decontamination.output.contaminants,
             "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
             expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-            "{sample}/logs/{sample}_quality_filtering_stats.txt",
-            read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv"
+            "{sample}/logs/{sample}_quality_filtering_stats.txt"
     output:
-        touch("{sample}/sequence_quality_control/finished_QC")
+        touch("{sample}/sequence_quality_control/finished_QC"),
+        read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
     run:
         print("Rinishd QC for sample {sample}\n".format(**wildcards))
         import pandas as pd
-        d= pd.read_table(input.read_stats,index_col=[0,1])
+        d= pd.read_table(output.read_stats,index_col=[0,1])
         d=d.loc[~d.index.duplicated(keep='last')] # if a rule is run several times remove all but the last execution
-        d.to_csv(input.read_stats,sep='\t')
+        d.to_csv(output.read_stats,sep='\t')
 
 
 
