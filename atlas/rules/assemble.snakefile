@@ -99,7 +99,7 @@ rule read_stats:
         def get_read_stats(fraction, params_in):
 
             subfolder = os.path.join(params.folder, fraction)
-            temp_file=os.path.join(subfolder,"read_stats.tmp")
+            tmp_file=os.path.join(subfolder,"read_stats.tmp")
             shell("""
                     mkdir -p {subfolder}
 
@@ -126,7 +126,7 @@ rule read_stats:
                         # Input:    123 reads   1234 bases
                 n_reads, _, n_bases = content[pos:].split()[1:4]
 
-                os.remove(temp_file)
+                os.remove(tmp_file)
             return int(n_reads), int(n_bases)
 
 
