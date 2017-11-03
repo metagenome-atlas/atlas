@@ -6,7 +6,7 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,finalize_QC,QC_report
+localrules: postprocess_after_decontamination,rename_megahit_output,rename_spades_output,initialize_checkm,get_QC_reads,finalize_QC,QC_report
 
 
 def gff_to_gtf(gff_in, gtf_out):
@@ -99,6 +99,7 @@ rule read_stats:
         def get_read_stats(fraction, params_in):
 
             subfolder = os.path.join(params.folder, fraction)
+            temp_file=os.path.join(subfolder,"read_stats.tmp")
             shell("""
                     mkdir -p {subfolder}
 
@@ -112,10 +113,10 @@ rule read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2> >(tee {log})
+                    2> >(tee {log} {tmp_file} )
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
-                            threads=threads, mem=resources.mem))
-            content = open(log[0]).read()
+                            threads=threads, mem=resources.mem,tmp_file=tmp_file))
+            content = open(tmp_file).read()
             pos = content.find('Input:')
             if pos == -1:
                 raise Exception("Didn't find read number in file:\n\n" + content)
@@ -124,6 +125,8 @@ rule read_stats:
                 content[pos:].split()[1:4]
                         # Input:    123 reads   1234 bases
                 n_reads, _, n_bases = content[pos:].split()[1:4]
+
+                os.remove(temp_file)
             return int(n_reads), int(n_bases)
 
 
@@ -297,6 +300,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         else:
             return [clean_reads]
 
+
     rule postprocess_after_decontamination:
         input:
             get_ribosomal_rna_input
@@ -310,7 +314,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
 
 processed_steps += ['QC']
 
-rule finalize_QC:
+rule get_QC_reads:
     input:
         "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-2])
     output:
@@ -346,28 +350,33 @@ def get_quality_controlled_reads(wildcards):
     return fastq
 
 
-rule QC_report:
+rule finalize_QC:
     input:
         unpack(get_quality_controlled_reads),
-            #rules.decontamination.output.contaminants.format,
-            expand("{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-                sample=SAMPLES),
-            expand("{sample}/sequence_quality_control/read_stats/{step}.zip",
-                sample=SAMPLES, step=processed_steps),
-            # intermediate file
-            # expand("{sample}/sequence_quality_control/{sample}_00_se.fastq.gz",
-            #     sample=SAMPLES),
-            expand("{sample}/logs/{sample}_quality_filtering_stats.txt",
-                sample=SAMPLES)
+            rules.decontamination.output.contaminants,
+            "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+            expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
+            "{sample}/logs/{sample}_quality_filtering_stats.txt",
     output:
-        # FIXME: Input is all samples while output is per sample
         touch("{sample}/sequence_quality_control/finished_QC")
-    shell:
+    run:
+        print("Rinishd QC for sample {sample}\n".format(**wildcards))
+
+
+rule QC_report:
+    input:
+        expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES)
+    output:
+        touch("finished_QC")
+    run:
+        shell(
         """
         if [ -d ref ]; then
             rm -r ref
         fi
-        """
+        """)
+    # aggregate stats reports ...
+
 
 def input_params_for_bbwrap(wildcards,input):
     """
