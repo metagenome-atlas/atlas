@@ -186,6 +186,7 @@ rule quality_filter:
         hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
         k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
         qtrim = config.get("qtrim", QTRIM),
+        error_correction_pe= "t" if paired_end and config.get('error_correction_overlapping_pairs',True) else "f",
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
         interleaved = "t" if paired_end else "f",
@@ -210,6 +211,7 @@ rule quality_filter:
                minbasefrequency={params.minbasefrequency} \
                interleaved={params.interleaved}\
                overwrite=true \
+               ecco={params.error_correction_pe} \
                -Xmx{resources.mem}G 2> {log}
         """
 # if there are no references, decontamination will be skipped

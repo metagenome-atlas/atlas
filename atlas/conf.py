@@ -145,7 +145,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["preprocess_reference_kmer_match_length"] = PREPROCESS_REFERENCE_KMER_MATCH_LENGTH
     conf["preprocess_minimum_passing_read_length"] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
     conf["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
-
+    con["error_correction_overlapping_pairs"] = True
     conf["perform_error_correction"] = "true"
 
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
