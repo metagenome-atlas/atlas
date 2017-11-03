@@ -1021,17 +1021,6 @@ rule convert_sam_to_bam:
                                    -O bam -"""
 
 
-rule create_bam_index:
-    input:
-        "{sample}/sequence_alignment/{sample}.bam"
-    output:
-        temp("{sample}/sequence_alignment/{sample}.bam.bai")
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        1
-    shell:
-        "{SHPFXS} samtools index {input}"
 
 
 rule calculate_final_contigs_stats:
@@ -1101,36 +1090,11 @@ rule convert_gff_to_gtf:
         gff_to_gtf(input[0], output[0])
 
 
-rule remove_pcr_duplicates:
-    input:
-        bam = "{sample}/sequence_alignment/{sample}.bam",
-        bai = "{sample}/sequence_alignment/{sample}.bam.bai"
-    output:
-        bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
-        txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
-    benchmark:
-        "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    resources:
-        mem = int(config.get("java_mem", "32"))
-    shell:
-        """{SHPFXS} picard MarkDuplicates \
-               -Xmx{resources.mem}G \
-               INPUT={input.bam} \
-               OUTPUT={output.bam} \
-               METRICS_FILE={output.txt} \
-               ASSUME_SORT_ORDER=coordinate \
-               MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
-               REMOVE_DUPLICATES=TRUE \
-               VALIDATION_STRINGENCY=LENIENT \
-               CREATE_INDEX=TRUE"""
-
 
 rule find_counts_per_region:
     input:
         gtf = "{sample}/annotation/prokka/{sample}.gtf",
-        bam = "{sample}/sequence_alignment/{sample}_markdup.bam"
+        bam = "{sample}/sequence_alignment/{sample}.bam"
     output:
         summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
