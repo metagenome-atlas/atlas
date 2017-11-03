@@ -264,15 +264,18 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
         shell:
             """
             if [ "{params.paired}" = true ] ; then
             {SHPFXM} bbsplit.sh in1={input[0]} in2={input[1]} \
-                            outu1={output[0]} outu2={output[1]} \
-                   basename="{params.contaminant_folder}/%_R#.fastq.gz" \
-                   maxindel={params.maxindel} minratio={params.minratio} \
-                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                   threads={threads} k={params.k} local=t 2> {log}
+                    outu1={output[0]} outu2={output[1]} \
+                    basename="{params.contaminant_folder}/%_R#.fastq.gz" \
+                    maxindel={params.maxindel} minratio={params.minratio} \
+                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+                    threads={threads} k={params.k} local=t \
+                    -Xmx{resources.mem}G 2> {log}
             fi
 
             {SHPFXM} bbsplit.sh in={params.input_single}  \
@@ -280,7 +283,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
                    basename="{params.contaminant_folder}/%_se.fastq.gz" \
                    maxindel={params.maxindel} minratio={params.minratio} \
                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
-                   interleaved=f threads={threads} k={params.k} local=t 2>> {log}
+                   interleaved=f threads={threads} k={params.k} local=t \
+                   -Xmx{resources.mem}G 2>> {log}
 
 
             """
