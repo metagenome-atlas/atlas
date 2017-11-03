@@ -361,17 +361,24 @@ rule finalize_QC:
             "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
             expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
             "{sample}/logs/{sample}_quality_filtering_stats.txt",
+            read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv"
     output:
         touch("{sample}/sequence_quality_control/finished_QC")
     run:
         print("Rinishd QC for sample {sample}\n".format(**wildcards))
+        import pandas as pd
+        d= pd.read_table(input.read_stats,index_col=[0,1])
+        d=d.loc[~d.index.duplicated(keep='last')] # if a rule is run several times remove all but the last execution
+        d.to_csv(input.read_stats,sep='\t')
+
 
 
 rule QC_report:
     input:
-        expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES)
+        expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
+        read_stats=expand("{sample}/sequence_quality_control/read_stats/read_counts.tsv",sample=SAMPLES)
     output:
-        touch("finished_QC")
+        Combined_read_stats="Combined_read_stats.tsv"
     run:
         shell(
         """
@@ -379,6 +386,18 @@ rule QC_report:
             rm -r ref
         fi
         """)
+
+        import pandas as pd
+        
+        Read_stats=pd.DataFrame()
+
+        for f in input.read_stats:
+            d= pd.read_table(f,index_col=[0,1])
+            Read_stats=Read_stats.append(d)
+
+        Read_stats.to_csv(output.Combined_read_stats,sep='\t')
+
+
     # aggregate stats reports ...
 
 

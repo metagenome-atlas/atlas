@@ -145,6 +145,7 @@ if config.get("workflow", "complete") == "complete":
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
+            "Combined_read_stats.tsv",
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
