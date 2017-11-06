@@ -150,7 +150,7 @@ rule read_stats:
                       'Bases', 'Timestamp']
             values = 2 * get_read_stats('', "in=" + input[0])
 
-        with open(output.read_counts, 'w') as f
+        with open(output.read_counts, 'w') as f:
             f.write('\t'.join(headers) + '\n')
             f.write('\t'.join([wildcards.sample, wildcards.step] + [str(v) for v in values] + [timestamp]) + '\n')
 
