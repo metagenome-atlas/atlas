@@ -4,7 +4,7 @@ import sys
 import tempfile
 
 
-from .default_values import *
+from default_values import *
 
 
 def get_conda_envs_dir():
