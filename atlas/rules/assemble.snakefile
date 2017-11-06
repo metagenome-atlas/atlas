@@ -356,9 +356,10 @@ rule finalize_QC:
         unpack(get_quality_controlled_reads),
             rules.decontamination.output.contaminants,
             "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+            "{sample}/logs/{sample}_quality_filtering_stats.txt",
             expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-            expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
-            "{sample}/logs/{sample}_quality_filtering_stats.txt"
+            read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps)
+
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
         read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
@@ -366,7 +367,7 @@ rule finalize_QC:
         print("Rinishd QC for sample {sample}\n".format(**wildcards))
         import pandas as pd
         All_read_counts= pd.DataFrame()
-        for read_stats_file in output.read_stats:
+        for read_stats_file in input.read_count_files:
             d= pd.read_table(read_stats_file,index_col=[0,1])
             All_read_counts= All_read_counts.append(d)
         All_read_counts.to_csv(output.read_stats,sep='\t')
