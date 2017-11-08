@@ -364,7 +364,7 @@ rule finalize_QC:
         touch("{sample}/sequence_quality_control/finished_QC"),
         read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
     run:
-        print("Rinishd QC for sample {sample}\n".format(**wildcards))
+        print("Finishd QC for sample {sample}\n".format(**wildcards))
         import pandas as pd
         All_read_counts= pd.DataFrame()
         for read_stats_file in input.read_count_files:
