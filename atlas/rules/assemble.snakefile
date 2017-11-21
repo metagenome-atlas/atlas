@@ -77,7 +77,8 @@ rule read_stats:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{{step}}_{fraction}.fastq.gz",
             fraction=raw_input_fractions)
     output:
-        "{sample}/sequence_quality_control/read_stats/{step}.zip"
+        "{sample}/sequence_quality_control/read_stats/{step}.zip",
+        read_counts = temp("{sample}/sequence_quality_control/read_stats/{step}_read_counts.tsv"),
     priority:
         30
     log:
@@ -88,7 +89,6 @@ rule read_stats:
         mem = config.get("java_mem", JAVA_MEM)
     params:
         folder = lambda wc, output: os.path.splitext(output[0])[0],
-        sample_read_stats_file = "{sample}/sequence_quality_control/read_stats/read_counts.tsv",
         single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
     run:
         import datetime
@@ -150,15 +150,10 @@ rule read_stats:
                       'Bases', 'Timestamp']
             values = 2 * get_read_stats('', "in=" + input[0])
 
-        if not os.path.exists(params.sample_read_stats_file):
-            f = open(params.sample_read_stats_file, 'w')
+        with open(output.read_counts, 'w') as f:
             f.write('\t'.join(headers) + '\n')
+            f.write('\t'.join([wildcards.sample, wildcards.step] + [str(v) for v in values] + [timestamp]) + '\n')
 
-        else:
-            f = open(params.sample_read_stats_file, 'a')
-
-        f.write('\t'.join([wildcards.sample, wildcards.step] + [str(v) for v in values] + [timestamp]) + '\n')
-        f.close()
 
         shutil.make_archive(params.folder, 'zip', params.folder)
         shutil.rmtree(params.folder)
@@ -361,17 +356,21 @@ rule finalize_QC:
         unpack(get_quality_controlled_reads),
             rules.decontamination.output.contaminants,
             "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+            "{sample}/logs/{sample}_quality_filtering_stats.txt",
             expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-            "{sample}/logs/{sample}_quality_filtering_stats.txt"
+            read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps)
+
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
         read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
     run:
-        print("Rinishd QC for sample {sample}\n".format(**wildcards))
+        print("Finishd QC for sample {sample}\n".format(**wildcards))
         import pandas as pd
-        d= pd.read_table(output.read_stats,index_col=[0,1])
-        d=d.loc[~d.index.duplicated(keep='last')] # if a rule is run several times remove all but the last execution
-        d.to_csv(output.read_stats,sep='\t')
+        All_read_counts= pd.DataFrame()
+        for read_stats_file in input.read_count_files:
+            d= pd.read_table(read_stats_file,index_col=[0,1])
+            All_read_counts= All_read_counts.append(d)
+        All_read_counts.to_csv(output.read_stats,sep='\t')
 
 
 
@@ -1021,6 +1020,17 @@ rule convert_sam_to_bam:
                                    -O bam -"""
 
 
+rule create_bam_index:
+    input:
+        "{sample}/sequence_alignment/{sample}.bam"
+    output:
+        temp("{sample}/sequence_alignment/{sample}.bam.bai")
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        1
+    shell:
+        "{SHPFXS} samtools index {input}"
 
 
 rule calculate_final_contigs_stats:
@@ -1090,11 +1100,36 @@ rule convert_gff_to_gtf:
         gff_to_gtf(input[0], output[0])
 
 
+rule remove_pcr_duplicates:
+    input:
+        bam = "{sample}/sequence_alignment/{sample}.bam",
+        bai = "{sample}/sequence_alignment/{sample}.bam.bai"
+    output:
+        bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
+        txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
+    benchmark:
+        "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    resources:
+        mem = int(config.get("java_mem", "32"))
+    shell:
+        """{SHPFXS} picard MarkDuplicates \
+               -Xmx{resources.mem}G \
+               INPUT={input.bam} \
+               OUTPUT={output.bam} \
+               METRICS_FILE={output.txt} \
+               ASSUME_SORT_ORDER=coordinate \
+               MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
+               REMOVE_DUPLICATES=TRUE \
+               VALIDATION_STRINGENCY=LENIENT \
+               CREATE_INDEX=TRUE"""
+
 
 rule find_counts_per_region:
     input:
         gtf = "{sample}/annotation/prokka/{sample}.gtf",
-        bam = "{sample}/sequence_alignment/{sample}.bam"
+        bam = "{sample}/sequence_alignment/{sample}_markdup.bam"
     output:
         summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
