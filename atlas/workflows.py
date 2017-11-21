@@ -1,7 +1,7 @@
 import logging
 import os
+import subprocess
 import sys
-from subprocess import check_call
 
 
 def get_snakefile():
@@ -29,7 +29,11 @@ def annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
                             add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
                             args=" ".join(snakemake_args))
     logging.info("Executing: %s" % cmd)
-    check_call(cmd, shell=True)
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError as e:
+        # removes the traceback
+        logging.critical(e)
 
 
 def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
@@ -50,7 +54,11 @@ def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
                             add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
                             args=" ".join(snakemake_args))
     logging.info("Executing: %s" % cmd)
-    check_call(cmd, shell=True)
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError as e:
+        # removes the traceback
+        logging.critical(e)
 
 
 def download(jobs, out_dir, snakemake_args):
@@ -66,4 +74,8 @@ def download(jobs, out_dir, snakemake_args):
                             add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
                             args=" ".join(snakemake_args))
     logging.info("Executing: %s" % cmd)
-    check_call(cmd, shell=True)
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError as e:
+        # removes the traceback
+        logging.critical(e)
