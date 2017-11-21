@@ -6,70 +6,8 @@ import yaml
 from collections import OrderedDict
 from snakemake.io import load_configfile
 
+from .default_values import *
 
-ADAPTERS = "adapters.fa"
-RRNA = "silva_rfam_all_rRNAs.fa"
-PHIX = "phiX174_virus.fa"
-
-JAVA_MEM = 32
-PREPROCESS_ADAPTER_MIN_K = 8
-PREPROCESS_MINIMUM_BASE_QUALITY = 10
-PREPROCESS_ALLOWABLE_KMER_MISMATCHES = 1
-PREPROCESS_REFERENCE_KMER_MATCH_LENGTH = 27
-QTRIM = "rl"
-PREPROCESS_MINIMUM_PASSING_READ_LENGTH = 51
-PREPROCESS_MINIMUM_BASE_FREQUENCY = 0.05
-
-CONTAMINANT_MAX_INDEL = 20
-CONTAMINANT_MIN_RATIO = 0.65
-CONTAMINANT_MINIMUM_HITS = 1
-CONTAMINANT_AMBIGUOUS = "best"
-CONTAMINANT_KMER_LENGTH = 13
-
-NORMALIZATION_KMER_LENGTH = 21
-NORMALIZATION_TARGET_DEPTH = 100
-NORMALIZATION_MINIMUM_KMERS = 15
-
-MEGAHIT_MEMORY = 0.90
-MEGAHIT_MIN_COUNT = 2
-MEGAHIT_K_MIN = 21
-MEGAHIT_K_MAX = 121
-MEGAHIT_K_STEP = 20
-MEGAHIT_MERGE_LEVEL = "20,0.98"
-MEGAHIT_PRUNE_LEVEL = 2
-MEGAHIT_LOW_LOCAL_RATIO = 0.2
-SPADES_K = "auto"
-MINIMUM_CONTIG_LENGTH = 1000
-
-MINIMUM_AVERAGE_COVERAGE = 5
-MINIMUM_PERCENT_COVERED_BASES = 40
-MINIMUM_MAPPED_READS = 0
-MINIMUM_CONTIG_LENGTH = 1000
-CONTIG_TRIM_BP = 0
-
-MINIMUM_REGION_OVERLAP = 1
-MAXIMUM_COUNTED_MAP_SITES = 10
-PROKKA_KINGDOM = "Bacteria"
-
-MAXBIN_MAX_ITERATION = 50
-MAXBIN_MIN_CONTIG_LENGTH = 200
-MAXBIN_PROB_THRESHOLD = 0.9
-
-DIAMOND_TOP_SEQS = 2
-DIAMOND_E_VALUE = 0.000001
-DIAMOND_MIN_IDENTITY = 50
-DIAMOND_QUERY_COVERAGE = 60
-DIAMOND_GAP_OPEN = 11
-DIAMOND_GAP_EXTEND = 1
-DIAMOND_BLOCK_SIZE = 2
-DIAMOND_INDEX_CHUNKS = 4
-
-SUMMARY_METHOD = "lca"
-AGGREGATION_METHOD = "lca-majority"
-MAJORITY_THRESHOLD = 0.51
-MIN_BITSCORE = 0
-MIN_LENGTH = 20
-MAX_HITS = 100
 
 
 def get_sample_files(path, data_type):
@@ -146,7 +84,10 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["preprocess_minimum_passing_read_length"] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
     conf["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
 
-    conf["perform_error_correction"] = "true"
+    conf["perform_error_correction"] = True
+    conf["deduplicate"] = False
+    conf["error_correction_overlapping_pairs"] = True
+
 
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
                                       "PhiX":os.path.join(database_dir, PHIX)}
@@ -160,8 +101,13 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
     conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
 
+    conf["merging_k"]= MERGING_K
+    conf["merging_extend2"] = MERGING_EXTEND2
+    conf["merging_flags"]  = MERGING_FLAGS
+
     conf["assembler"] = "megahit"
-    conf["megahit_memory"] = MEGAHIT_MEMORY
+    conf["assembly_memory"] = ASSEMBLY_MEMORY
+    conf["assembly_threads"] = ASSEMBLY_THREADS
     conf["megahit_min_count"] = MEGAHIT_MIN_COUNT
     conf["megahit_k_min"] = MEGAHIT_K_MIN
     conf["megahit_k_max"] = MEGAHIT_K_MAX
@@ -178,10 +124,10 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     conf["translation_table"] = 11
     conf["minimum_region_overlap"] = MINIMUM_REGION_OVERLAP
-    conf["primary_only"] = "false"
-    conf["count_multi_mapped_reads"] = "true"
+    conf["primary_only"] = False
+    conf["count_multi_mapped_reads"] = True
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
-    conf["perform_genome_binning"] = "true"
+    conf["perform_genome_binning"] = True
     conf["maxbin_max_iteration"] = MAXBIN_MAX_ITERATION
     conf["maxbin_min_contig_length"] = MAXBIN_MIN_CONTIG_LENGTH
     conf["maxbin_prob_threshold"] = MAXBIN_PROB_THRESHOLD
