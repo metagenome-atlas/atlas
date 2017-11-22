@@ -84,10 +84,9 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["preprocess_minimum_passing_read_length"] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
     conf["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
 
-    conf["perform_error_correction"] = True
     conf["deduplicate"] = False
     conf["error_correction_overlapping_pairs"] = True
-
+    conf["assembly_preprocessing_steps"]=['normalized','errorcorr','merged']
 
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
                                       "PhiX":os.path.join(database_dir, PHIX)}
