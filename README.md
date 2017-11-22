@@ -19,7 +19,7 @@ The intended usage requires `conda`.
 With `conda`, execute:
 
 ```
-conda install -c bioconda python=3.5 snakemake
+conda install -c bioconda python=3.5 snakemake bbmap=37.17
 ```
 
 Using Python 3.5, install `atlas`:
