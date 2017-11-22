@@ -325,10 +325,11 @@ if config.get('deduplicate',False):
         benchmark:
             "logs/benchmarks/deduplicate/{sample}.txt"
         params:
-            has_paired_end_files= lambda wc, input: "t" if hasattr(input,'R1') else "f",
-            input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
-            output_single = lambda wc,output,input: "out=%s" % output[1] if hasattr(input,'R1') else "out=%s" % output[0],
-            output_paired = lambda wc,output: "out=%s" % output[0],
+            has_paired_end_files= lambda wc, input: "t" if paired_end else "f",
+            input_single = lambda wc, input: "in=%s" % input[2] if paired_end else "in=%s" % input[0],
+            input_paired = lambda wc, input: "in=%s in2=%s" % (input[0], input[1]) if paired_end else "null",
+            output_single = lambda wc,output,input: "out=%s" % output[2] if paired_end else "out=%s" % output[0],
+            output_paired = lambda wc,output: "out=%s out2=%s" % (output[0],output[1]) if paired_end else "null",
             dupesubs= config.get('DUPLICATES_ALLOW_SUBSTITUTIONS', 0)
         log:
             "{sample}/logs/{sample}_deduplicate.log"
@@ -340,8 +341,7 @@ if config.get('deduplicate',False):
             mem = config.get("java_mem", JAVA_MEM)
         shell:
             """
-            if [ {params.input_single} != "null" ];
-            then
+
             {SHPFXM} clumpify.sh \
             {params.input_single} \
             {params.output_single} \
@@ -351,7 +351,6 @@ if config.get('deduplicate',False):
             threads={threads} \
             -Xmx{resources.mem}G 2> {log}
 
-            fi
 
 
             if [ {params.has_paired_end_files} = "t" ];
