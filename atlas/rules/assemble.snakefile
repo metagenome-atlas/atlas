@@ -627,7 +627,7 @@ rule merge_pairs:
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
-            expand("{{sample}}/assembly/reads/{{assembly_preprocessing_steps}}_{fraction}.fastq.gz",
+            expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
             fraction=interleaved_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
@@ -684,7 +684,7 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     rule run_spades:
         input:
-            expand("{{sample}}/assembly/reads/{{assembly_preprocessing_steps}}_{fraction}.fastq.gz",
+            expand("{{sample}}/assembly/reads/{sassembly_preprocessing_steps}_{fraction}.fastq.gz",
             fraction=interleaved_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
