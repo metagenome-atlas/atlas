@@ -594,8 +594,7 @@ rule merge_pairs:
             fraction=interleaved_fractions)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
-            fraction=interleaved_fractions)),
-        insert_size_hist="{sample}/sequence_quality_control/read_stats/insert_size_hsit.txt",
+            fraction=interleaved_fractions))
     threads:
         config.get("threads", 1)
     resources:
@@ -616,7 +615,7 @@ rule merge_pairs:
         """
             {SHPFXM} bbmerge.sh -Xmx{resources.mem}G threads={threads} \
             in1={input[0]} in2={input[1]} outmerged={wildcards.sample}_merged_pairs.fastq.gz outu={output[0]} outu2={output[1]} \
-            {params.flags} k={params.kmer} extend2={params.extend2} ihist={output.insert_size_hist} 2> {log}
+            {params.flags} k={params.kmer} extend2={params.extend2} 2> {log}
 
             cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} > {output[2]} 2>> {log}
 
