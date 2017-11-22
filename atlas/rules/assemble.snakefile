@@ -506,7 +506,7 @@ rule normalize_coverage_across_kmers:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
         temp(expand("{{sample}}/assembly/reads/normalized_{fraction}.fastq.gz",
-                fraction=interleaved_fractions))
+                fraction= multifile_fractions))
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
@@ -518,8 +518,8 @@ rule normalize_coverage_across_kmers:
         has_paired_end_files= lambda wc, input: "t" if hasattr(input,'R1') else "f",
         input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
         extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input,'se') else "",
-        output_single = lambda wc,output,input: "out=%s" % output[1] if hasattr(input,'R1') else "out=%s" % output[0],
-        output_paired = lambda wc,output: "out=%s" % output[0],
+        output_single = lambda wc,output,input: "out=%s" % output[2] if hasattr(input,'R1') else "out=%s" % output[0],
+        output_paired = lambda wc,output: "out=%s out2=%s" % (output[0],output[1]),
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
@@ -559,10 +559,10 @@ rule normalize_coverage_across_kmers:
 rule error_correction:
     input:
         expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=interleaved_fractions)
+            fraction=multifile_fractions)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
-            fraction=interleaved_fractions))
+            fraction=multifile_fractions))
     benchmark:
         "logs/benchmarks/error_correction/{sample}.txt"
     log:
@@ -591,10 +591,10 @@ rule error_correction:
 rule merge_pairs:
     input:
         expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=interleaved_fractions)
+            fraction=multifile_fractions)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
-            fraction=interleaved_fractions))
+            fraction=multifile_fractions))
     threads:
         config.get("threads", 1)
     resources:
@@ -628,7 +628,7 @@ if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=interleaved_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
+            fraction=multifile_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -647,7 +647,7 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs=lambda wc,input: "--12 {0} --read {1}".format(*input) if len(input)==2 else "--read {0}".format(*input)
+            inputs=lambda wc,input: "-1 {0} -2 {1} --read {2}".format(*input) if len(input)==2 else "--read {0}".format(*input)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -685,13 +685,13 @@ else:
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{sassembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=interleaved_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
+            fraction=multifile_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
         params:
-            inputs=lambda wc,input: "--12 {0} -s {1}".format(*input) if len(input)==2 else "-s {0}".format(*input),
+            inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if len(input)==2 else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
             error_correction="" if False else "--only-assembler"
