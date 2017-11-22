@@ -558,10 +558,10 @@ rule normalize_coverage_across_kmers:
 
 rule error_correction:
     input:
-        expand("{{sample}}/assembly/reads/{previous_steps}_{fraction}.fastq.gz",
+        expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
             fraction=interleaved_fractions)
     output:
-        temp(expand("{{sample}}/assembly/reads/{previous_steps}.errorcorr_{fraction}.fastq.gz",
+        temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
             fraction=interleaved_fractions))
     benchmark:
         "logs/benchmarks/error_correction/{sample}.txt"
@@ -590,10 +590,10 @@ rule error_correction:
 
 rule merge_pairs:
     input:
-        expand("{{sample}}/assembly/reads/{previous_steps}_{fraction}.fastq.gz",
+        expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
             fraction=interleaved_fractions)
     output:
-        temp(expand("{{sample}}/assembly/reads/{previous_steps}.merged_{fraction}.fastq.gz",
+        temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
             fraction=interleaved_fractions)),
         insert_size_hist="{sample}/sequence_quality_control/read_stats/insert_size_hsit.txt",
     threads:
@@ -628,7 +628,7 @@ rule merge_pairs:
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
-            expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+            expand("{{sample}}/assembly/reads/{{assembly_preprocessing_steps}}_{fraction}.fastq.gz",
             fraction=interleaved_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
@@ -685,7 +685,7 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     rule run_spades:
         input:
-            expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+            expand("{{sample}}/assembly/reads/{{assembly_preprocessing_steps}}_{fraction}.fastq.gz",
             fraction=interleaved_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
