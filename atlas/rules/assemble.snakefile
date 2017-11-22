@@ -57,6 +57,8 @@ rule init_QC:
         verifypaired="t" if paired_end else "f"
     log:
         "{sample}/logs/{sample}_init.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     resources:
@@ -73,6 +75,8 @@ rule init_QC:
 
 
 rule read_stats:
+    # TODO: remove run block in favor of script or alternate cli
+    # see http://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-external-scripts
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{{step}}_{fraction}.fastq.gz",
             fraction=raw_input_fractions)
@@ -83,6 +87,8 @@ rule read_stats:
         30
     log:
         "{sample}/logs/read_stats.log"
+    # conda:
+    #     "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
     resources:
@@ -355,7 +361,7 @@ if config.get('deduplicate',False):
 
             if [ {params.has_paired_end_files} = "t" ];
             then
-            
+
             {SHPFXM} clumpify.sh \
             {params.input_paired} \
             {params.output_paired} \
@@ -446,7 +452,7 @@ rule QC_report:
         """)
 
         import pandas as pd
-        
+
         Read_stats=pd.DataFrame()
 
         for f in input.read_stats:
@@ -492,7 +498,7 @@ for step in requested_steps:
 	if not step in possible_assembly_preprocessing_steps:
 		raise Exception("Requesting unknown step, {} before assembly. Choose only steps from {}".format(step,possible_assembly_preprocessing_steps))
 	if step=='merged' and not paired_end:
-		warnings.warn("""Skip: merging of pairs before assembly, because reads are single-ended. 
+		warnings.warn("""Skip: merging of pairs before assembly, because reads are single-ended.
 			You can remove the "merge" from assembly_preprocessing_steps  in the config file""")
 		requested_steps.remove(step)
 
