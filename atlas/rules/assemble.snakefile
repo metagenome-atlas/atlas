@@ -526,7 +526,7 @@ rule normalize_coverage_across_kmers:
         input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
         extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input,'se') else "",
         output_single = lambda wc,output,input: "out=%s" % output[2] if hasattr(input,'R1') else "out=%s" % output[0],
-        output_paired = lambda wc,output: "out=%s out2=%s" % (output[0],output[1]) if hasattr(input,'R1') else "",
+        output_paired = lambda wc,output,input: "out=%s out2=%s" % (output[0],output[1]) if hasattr(input,'R1') else "null",
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
