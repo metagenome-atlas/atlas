@@ -109,6 +109,8 @@ rule read_stats:
             shell("""
                     mkdir -p {subfolder}
 
+                    readlength.sh in={params_in} out={subfolder}/read_length_hist.txt 2> >(tee {log})
+
                     reformat.sh {params_in} \
                     bhist={subfolder}/base_hist.txt \
                     qhist={subfolder}/quality_by_pos.txt \
@@ -119,7 +121,7 @@ rule read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2> >(tee {log} {tmp_file} )
+                    2> >(tee -a {log} {tmp_file} )
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
                             threads=threads, mem=resources.mem,tmp_file=tmp_file))
             content = open(tmp_file).read()
