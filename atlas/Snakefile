@@ -86,7 +86,7 @@ if config.get("workflow", "complete") == "complete":
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES),
-            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),
+#            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
             expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
 
     include: "rules/assemble.snakefile"
