@@ -109,6 +109,8 @@ rule read_stats:
             shell("""
                     mkdir -p {subfolder}
 
+                    readlength.sh in={params_in} out={subfolder}/read_length_hist.txt 2> >(tee {log})
+
                     reformat.sh {params_in} \
                     bhist={subfolder}/base_hist.txt \
                     qhist={subfolder}/quality_by_pos.txt \
@@ -119,7 +121,7 @@ rule read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2> >(tee {log} {tmp_file} )
+                    2> >(tee -a {log} {tmp_file} )
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
                             threads=threads, mem=resources.mem,tmp_file=tmp_file))
             content = open(tmp_file).read()
@@ -524,7 +526,7 @@ rule normalize_coverage_across_kmers:
         input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
         extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input,'se') else "",
         output_single = lambda wc,output,input: "out=%s" % output[2] if hasattr(input,'R1') else "out=%s" % output[0],
-        output_paired = lambda wc,output: "out=%s out2=%s" % (output[0],output[1]) if hasattr(input,'R1') else "",
+        output_paired = lambda wc,output,input: "out=%s out2=%s" % (output[0],output[1]) if hasattr(input,'R1') else "null",
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
@@ -1118,36 +1120,10 @@ rule convert_gff_to_gtf:
         gff_to_gtf(input[0], output[0])
 
 
-rule remove_pcr_duplicates:
-    input:
-        bam = "{sample}/sequence_alignment/{sample}.bam",
-        bai = "{sample}/sequence_alignment/{sample}.bam.bai"
-    output:
-        bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
-        txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
-    benchmark:
-        "logs/benchmarks/picard_mark_duplicates/{sample}.txt"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    resources:
-        mem = int(config.get("java_mem", "32"))
-    shell:
-        """{SHPFXS} picard MarkDuplicates \
-               -Xmx{resources.mem}G \
-               INPUT={input.bam} \
-               OUTPUT={output.bam} \
-               METRICS_FILE={output.txt} \
-               ASSUME_SORT_ORDER=coordinate \
-               MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
-               REMOVE_DUPLICATES=TRUE \
-               VALIDATION_STRINGENCY=LENIENT \
-               CREATE_INDEX=TRUE"""
-
-
 rule find_counts_per_region:
     input:
         gtf = "{sample}/annotation/prokka/{sample}.gtf",
-        bam = "{sample}/sequence_alignment/{sample}_markdup.bam"
+        bam = "{sample}/sequence_alignment/{sample}.bam"
     output:
         summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
