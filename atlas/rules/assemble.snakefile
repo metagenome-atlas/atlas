@@ -64,11 +64,14 @@ rule init_QC:
     resources:
         mem = config.get("java_mem", 5)
     shell:
-        """{SHPFXM} reformat.sh {params.inputs} interleaved={params.interleaved}\
+        """{SHPFXM} reformat.sh {params.inputs} \
+        interleaved={params.interleaved} \
         {params.outputs} \
         qout=33 \
-        overwrite=true\
+        overwrite=true \
         verifypaired={params.verifypaired} \
+        addslash=t \
+        trimreaddescription=t \
         threads={threads} \
         -Xmx{resources.mem}G 2> {log}
         """
