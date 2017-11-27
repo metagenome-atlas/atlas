@@ -2,6 +2,9 @@ import hashlib
 import os
 
 
+ZENODO_ARCHIVE = "998810"
+
+
 def md5(fname):
     # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
     hash_md5 = hashlib.md5()
@@ -17,7 +20,7 @@ rule transfer_files:
     output:
         "%s/{filename}" % config["db_dir"]
     run:
-        shell("curl 'https://zenodo.org/record/998810/files/{wildcards.filename}' -s > {output}")
+        shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
         if not FILES[wildcards.filename] == md5(output[0]):
             raise OSError(2, "Invalid checksum", output[0])
 
@@ -29,4 +32,4 @@ onsuccess:
 
 onerror:
     print("An error occurred while downloading reference databases.")
-    print("Databases can be manually downloaded from: https://zenodo.org/record/804435")
+    print("Databases can be manually downloaded from: https://zenodo.org/record/%s" % ZENODO_ARCHIVE)
