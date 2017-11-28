@@ -702,10 +702,11 @@ else:
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
         params:
-            inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if len(input)==2 else "-s {0}".format(*input),
+            inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if len(input) == 3 else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            error_correction="" if False else "--only-assembler"
+            # FIXME: this does nothing
+            error_correction= "" if False else "--only-assembler"
         log:
             "{sample}/logs/{sample}_spades.log"
         shadow:
@@ -718,8 +719,7 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            rm -rf {params.outdir} 2> >(tee {log})
-            {SHPFXM} spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
+            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
             {params.error_correction} 2> >(tee {log}) """
 
 
