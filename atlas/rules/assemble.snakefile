@@ -493,7 +493,7 @@ got: {n} files:\n{}
 # may be we can put the following code in a separate snakefile
 
 
-# define which steps are defined before asslembly and in which order
+# define which steps are defined before assembly and in which order
 
 possible_assembly_preprocessing_steps=['normalized','errorcorr','merged']
 
@@ -582,8 +582,8 @@ rule error_correction:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     params:
-        inputs=lambda wc,input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
-        outputs=lambda wc,output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
+        inputs=lambda wc, input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
+        outputs=lambda wc, output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
     threads:
         config.get("threads", 1)
     shell:
@@ -694,8 +694,9 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     rule run_spades:
         input:
-            expand("{{sample}}/assembly/reads/{sassembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=multifile_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
+            expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                   fraction=multifile_fractions,
+                   assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
         benchmark:
