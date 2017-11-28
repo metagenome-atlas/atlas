@@ -112,7 +112,7 @@ rule read_stats:
             shell("""
                     mkdir -p {subfolder}
 
-                    readlength.sh in={params_in} out={subfolder}/read_length_hist.txt 2> >(tee {log})
+                    readlength.sh {params_in} out={subfolder}/read_length_hist.txt 2> >(tee {log})
 
                     reformat.sh {params_in} \
                     bhist={subfolder}/base_hist.txt \
@@ -143,10 +143,10 @@ rule read_stats:
 
         if paired_end:
             n_reads_pe, n_bases_pe = get_read_stats('pe', "in1={0} in2={1}".format(*input))
-            n_reads_pe= n_reads_pe/2
-            headers= ['Sample', 'Step', 'Total_Reads', 'Total_Bases',
-                      'Reads_pe', 'Bases_pe', 'Reads_se', 'Bases_se',
-                      'Timestamp']
+            n_reads_pe = n_reads_pe / 2
+            headers = ['Sample', 'Step', 'Total_Reads', 'Total_Bases',
+                       'Reads_pe', 'Bases_pe', 'Reads_se', 'Bases_se',
+                       'Timestamp']
 
             if os.path.exists(params.single_end_file):
                 n_reads_se, n_bases_se = get_read_stats('se', "in=" + params.single_end_file)
