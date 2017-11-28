@@ -104,7 +104,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["merging_extend2"] = MERGING_EXTEND2
     conf["merging_flags"]  = MERGING_FLAGS
 
-    conf["assembler"] = "megahit"
+    conf["assembler"] = assembler
     conf["assembly_memory"] = ASSEMBLY_MEMORY
     conf["assembly_threads"] = ASSEMBLY_THREADS
     conf["megahit_min_count"] = MEGAHIT_MIN_COUNT
