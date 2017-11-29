@@ -324,7 +324,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             "{SHPFXS} cat {input} > {output}"
 
 
-if config.get('deduplicate',False):
+if config.get('deduplicate', False):
     processed_steps += ['deduplicated']
     rule deduplicate:
         input:
@@ -432,7 +432,7 @@ rule finalize_QC:
         touch("{sample}/sequence_quality_control/finished_QC"),
         read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
     run:
-        print("Finishd QC for sample {sample}\n".format(**wildcards))
+        print("Finished QC for sample {sample}\n".format(**wildcards))
         import pandas as pd
         All_read_counts= pd.DataFrame()
         for read_stats_file in input.read_count_files:
@@ -622,13 +622,15 @@ rule merge_pairs:
         extend2 = config.get("merging_extend2", MERGING_EXTEND2),
         flags = config.get("merging_flags", MERGING_FLAGS)
     shell:
-        """
-            {SHPFXM} bbmerge.sh -Xmx{resources.mem}G threads={threads} \
-            in1={input[0]} in2={input[1]} outmerged={wildcards.sample}_merged_pairs.fastq.gz outu={output[0]} outu2={output[1]} \
-            {params.flags} k={params.kmer} extend2={params.extend2} 2> {log}
+        """bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+               in1={input[0]} in2={input[1]} \
+               outmerged={wildcards.sample}_merged_pairs.fastq.gz \
+               outu={output[0]} outu2={output[1]} \
+               {params.flags} k={params.kmer} \
+               extend2={params.extend2} 2> {log}
 
-            cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} > {output[2]} 2>> {log}
-
+           cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} \
+               > {output[2]} 2>> {log}
         """
 
 
