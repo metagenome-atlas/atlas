@@ -86,7 +86,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     conf["deduplicate"] = True
     conf["error_correction_overlapping_pairs"] = True
-    conf["assembly_preprocessing_steps"]=['normalized','errorcorr','merged']
+    conf["merge_pairs_before_assembly"]=True
 
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
                                       "PhiX":os.path.join(database_dir, PHIX)}
