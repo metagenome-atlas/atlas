@@ -304,12 +304,8 @@ rule calculate_prefiltered_contig_coverage_stats:
         unpack(get_quality_controlled_reads),
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     output: # bbwrap gives output statistics only for single ended
-       # bhist = "{sample}/assembly/contig_stats/prefilter_base_composition.txt",
-       # bqhist = "{sample}/assembly/contig_stats/prefilter_box_quality.txt",
-       # mhist = "{sample}/assembly/contig_stats/prefilter_mutation_rates.txt",
-       # statsfile = "{sample}/assembly/contig_stats/prefilter_mapping_stats.txt",
         covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
-        sam= temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam.gz")
+        sam= temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam")
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
@@ -368,29 +364,24 @@ rule filter_by_coverage:
                -Xmx{resources.mem}G 2> {log}"""
 
 
-rule align_reads_to_filtered_contigs:
+rule align_reads_to_final_contigs:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "{sample}/{sample}_contigs.fasta"
+        fasta = "{sample}/{sample}_contigs.fasta",
     output:
-        # TODO: this should likely be temp
-        sam = "{sample}/sequence_alignment/{sample}.sam",
-        #bhist = "{sample}/assembly/contig_stats/postfilter_base_composition.txt",
-        #bqhist = "{sample}/assembly/contig_stats/postfilter_box_quality.txt",
-        #mhist = "{sample}/assembly/contig_stats/postfilter_mutation_rates.txt",
-        #gchist = "{sample}/assembly/contig_stats/postfilter_gc_rates.txt",
-        #statsfile = "{sample}/assembly/contig_stats/postfilter_mapping_stats.txt",
-        basecov="{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz",
-        covhist= "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
-        covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-        #unmapped=expand("{{sample}}/sequence_alignment/{{sample}}_unmapped_{fraction}.fastq.gz",fraction=interleaved_fractions)
+        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
+        unmapped= expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",fraction=multifile_fractions)
+    params:
+        input = lambda wc,input : input_params_for_bbwrap(wc,input),
+        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
+        unmapped = lambda wc,output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if paired_end else "outu={0}".format(*output.unmapped),
+        max_distance_between_pairs=config.get('max_distance_between_pairs',CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+        paired_only = 't' if config.get("map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
+        ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else'best',
+        min_id= config.get('map_min_id',CONTIG_MIN_ID),
+        maxindel=100 # default 16000 goode for genome deletions but not necessary for alignement to contigs
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
-    params:
-        input= lambda wc,input : input_params_for_bbwrap(wc,input),
-        #unmapped= lambda wc,output: ",".join(output.unmapped),
-        interleaved = "auto", #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto",
-        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES)
     log:
         "{sample}/assembly/logs/contig_coverage_stats.log"
     conda:
@@ -404,32 +395,53 @@ rule align_reads_to_filtered_contigs:
                ref={input.fasta} \
                {params.input} \
                trimreaddescriptions=t \
-               out={output.sam} \
-               mappedonly=t \
+               outm={output.sam} \
+               {params.unmapped} \
                threads={threads} \
+               pairlen={params.max_distance_between_pairs} \
+               pairedonly={params.paired_only} \
                mdtag=t \
                xstag=fs \
                nmtag=t \
                sam=1.3 \
                local=t \
-               ambiguous=all \
-               interleaved={params.interleaved} \
+               ambiguous={params.ambiguous} \
                secondary=t \
                ssao=t \
                maxsites={params.maxsites} \
                -Xmx{resources.mem}G \
-               append \
                2> {log}
-
-
-            {SHPFXM} pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
+        """
+rule pileup:
+    input:
+        fasta = "{sample}/{sample}_contigs.fasta",
+        sam = "{sample}/sequence_alignment/{sample}.sam",
+        #predicted_genes="{folder}/predicted_genes/{Reference}_genes.fna"
+    output:
+        basecov=temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
+        covhist= "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
+        covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
+        bincov ="{sample}/assembly/contig_stats/postfilter_coverage_binned.txt",
+        #gene_coverage="{sample}/assembly/contig_stats/postfilter_gene_coverage.txt.gz", add: outorf={output.gene_coverage}
+    params:
+        pileup_secondary='t' if config.get("count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
+    benchmark:
+        "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
+    log:
+        "{sample}/assembly/logs/contig_coverage_stats.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
+    shell:
+        """
+            pileup.sh ref={input.fasta} in={input.sam} threads={threads} \
             -Xmx{resources.mem}G covstats={output.covstats} \
-            hist={output.covhist} basecov={output.basecov} physcov 2>> {log}
-
-            #samtools view -u -f4 {output.sam} | samtools bam2fq -s unmapped.se.fq - > unmapped.pe.fq
-
-               """
-
+            hist={output.covhist} basecov={output.basecov} concise \
+            physcov secondary={params.pileup_secondary} bincov={output.bincov} 2>> {log}
+        """
 
 
 if config.get("perform_genome_binning", True):
@@ -670,9 +682,10 @@ rule find_counts_per_region:
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
     params:
         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
-        paired_mode = lambda wc: "-p" if config["samples"][wc.sample].get("paired", True) else "",
-        multi_mapping = "-M" if config.get("count_multi_mapped_reads") else "",
-        primary_only = "--primary" if config.get("primary_only", False) else ""
+        paired_only= "-B" if config.get('cotig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
+        paired_mode = "-p" if paired_end else "",
+        multi_mapping = "-M −−fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
+        feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
     log:
         "{sample}/logs/counts_per_region.log"
     conda:
@@ -681,9 +694,12 @@ rule find_counts_per_region:
         config.get("threads", 1)
     shell:
         """{SHPFXM} featureCounts {params.paired_mode} \
+                −−minOverlap {params.min_read_overlap}\
+                {params.paired_only}\
                -F gtf \
                -T {threads} \
                {params.multi_mapping} \
+               {params.feature_counts_allow_overlap}\
                -t CDS \
                -g ID \
                -a {input.gtf} \
