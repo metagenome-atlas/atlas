@@ -563,9 +563,9 @@ if config.get("perform_genome_binning", True):
 
 rule convert_sam_to_bam:
     input:
-        "{sample}/sequence_alignment/{sample}.sam"
+        "{file}.sam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.bam")
+        "{file}.bam"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -583,9 +583,9 @@ rule convert_sam_to_bam:
 
 rule create_bam_index:
     input:
-        "{sample}/sequence_alignment/{sample}.bam"
+        "{file}.bam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.bam.bai")
+        "{file}.bam.bai"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
