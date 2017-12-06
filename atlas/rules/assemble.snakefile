@@ -33,6 +33,45 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             print(toks[0], toks[1], sep="\t", file=fo)
 
 
+def get_line_from_file(file, line_start):
+    "function to extract line after string name, eg in datafile with average in comments #Avg: 123"
+
+    with open(file) as f:
+        for line in f:
+            if line.startswith(line_start):
+                break
+
+    if not line.startswith(line_start):
+        raise Exception("Didn't find {name} in file ({file}):\n\n".format(name=name,file=file))
+    else:
+        return line[len(line_start):].strip()
+
+
+def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
+    "parse comments at begin of file #Avg: 123"
+    Parsed = {}
+    with open(file) as f:
+        line = f.readline()
+
+        while line.startswith(comment):
+            line_values = line[1:].strip().split(sep)
+            name = line_values[0]
+            if name[-1] == ':':
+                name = name[:-1]
+            values = line_values[1:]
+
+            if len(values) == 1:
+                Parsed[name]=values[0]
+            elif not expect_one_value:
+                Parsed[name]=values
+
+            line= f.readline()
+
+    if len(Parsed)==0:
+        raise Exception("Couldn't parse values from file {} with comment char {} and sep '{}' ".format(file,comment,sep))
+    return Parsed
+
+
 paired_end=all([config["samples"][s].get("paired", False) or (len(config["samples"][s]["fastq"]) >1) for s in config["samples"]])
 
 interleaved_fractions= ['pe','se'] if paired_end else ['se']
@@ -76,7 +115,6 @@ rule init_QC:
         -Xmx{resources.mem}G 2> {log}
         """
 
-
 rule read_stats:
     # TODO: remove run block in favor of script or alternate cli
     # see http://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-external-scripts
@@ -111,8 +149,6 @@ rule read_stats:
             tmp_file=os.path.join(subfolder,"read_stats.tmp")
             shell("""
                     mkdir -p {subfolder}
-
-                    readlength.sh {params_in} out={subfolder}/read_length_hist.txt 2> >(tee {log})
 
                     reformat.sh {params_in} \
                     bhist={subfolder}/base_hist.txt \
@@ -396,6 +432,129 @@ def get_quality_controlled_reads(wildcards):
     return fastq
 
 
+if paired_end:
+    rule calculate_insert_size:
+        input:
+            unpack(get_quality_controlled_reads)
+        output:
+            ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
+            cardinality= "{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",
+            read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        log:
+            "{sample}/logs/{sample}_calculate_insert_size.log"
+        benchmark:
+            "logs/benchmarks/merge_pairs/{sample}_insert_size.txt"
+        params:
+            kmer = config.get("merging_k", MERGING_K),
+            extend2 = config.get("merging_extend2", MERGING_EXTEND2),
+            flags = 'loose ecct'
+        shell:
+            """bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+                   in1={input.R1} in2={input.R2} \
+                   {params.flags} k={params.kmer} \
+                   extend2={params.extend2} \
+                   ihist={output.ihist} outc={output.cardinality} merge=f \
+                   mininsert0=35 minoverlap0=8 2> >(tee {log})
+                
+                readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
+            """
+else:
+
+    rule calculate_read_length_hist:
+        input:
+            unpack(get_quality_controlled_reads)
+        output:
+            read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
+            cardinality= "{sample}/sequence_quality_control/read_stats/QC_cardinality.txt"
+        params:
+            kmer = config.get("merging_k", MERGING_K),
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        log:
+            "{sample}/logs/{sample}_calculate_read_length.log"
+        shell:
+            """ 
+                readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
+                loglog.sh in={input.se} k={params.kmer} > {output.cardinality} 2> >(tee {log})
+            """
+
+localrules: combine_read_length_stats,combine_insert_stats
+
+
+rule combine_read_length_stats:
+    input:
+        expand("{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",sample=SAMPLES),
+    output:
+        'stats/read_length_stats.tsv'
+    run:
+        import pandas as pd
+        import os
+
+
+
+        Stats= pd.DataFrame()
+
+        for length_file in input:
+            sample= length_file.split(os.path.sep)[0]
+
+            data = parse_comments(length_file)
+            data = pd.Series(data)[['Reads','Bases','Max','Min','Avg','Median','Mode','Std_Dev']]
+
+            Stats[sample]=data
+
+        Stats.to_csv(output[0],sep='\t')   
+
+             
+
+if paired_end:
+    rule combine_insert_stats:
+        input:
+            expand("{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",sample=SAMPLES),
+        output:
+            'stats/insert_stats.tsv'
+        run:
+            import pandas as pd
+            import os
+            Stats= pd.DataFrame()
+
+            for insert_file in input:
+                sample= insert_file.split(os.path.sep)[0]
+
+                data = parse_comments(insert_file)
+                data = pd.Series(data)[['Avg','Median','Mode','STDev','PercentOfPairs']]
+
+                Stats[sample]=data
+
+            Stats.to_csv(output[0],sep='\t')  
+
+
+rule combine_read_counts:
+    input:
+        expand("{sample}/sequence_quality_control/read_stats/read_counts.tsv",sample=SAMPLES)
+    output:
+        "stats/read_counts.tsv"
+    run:
+        import pandas as pd
+
+        Read_stats=pd.DataFrame()
+
+        for f in input:
+            d= pd.read_table(f,index_col=[0,1])
+            Read_stats=Read_stats.append(d)
+
+        Read_stats.to_csv(output[0],sep='\t')
+
+
 rule finalize_QC:
     input:
         unpack(get_quality_controlled_reads),
@@ -403,7 +562,8 @@ rule finalize_QC:
             "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
             "{sample}/logs/{sample}_quality_filtering_stats.txt",
             expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-            read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps)
+            read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
+            read_length_hist="{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
 
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
@@ -418,30 +578,20 @@ rule finalize_QC:
         All_read_counts.to_csv(output.read_stats,sep='\t')
 
 
-
+# 
 rule QC_report:
     input:
         expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-        read_stats=expand("{sample}/sequence_quality_control/read_stats/read_counts.tsv",sample=SAMPLES)
+        "stats/read_counts.tsv",
+        read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if paired_end else 'stats/read_length_stats.tsv'
     output:
-        Combined_read_stats="Combined_read_stats.tsv"
-    run:
-        shell(
+        touch("finished_QC")
+    shell:
         """
         if [ -d ref ]; then
             rm -r ref
         fi
-        """)
-
-        import pandas as pd
-
-        Read_stats=pd.DataFrame()
-
-        for f in input.read_stats:
-            d= pd.read_table(f,index_col=[0,1])
-            Read_stats=Read_stats.append(d)
-
-        Read_stats.to_csv(output.Combined_read_stats,sep='\t')
+        """
 
 
     # aggregate stats reports ...
@@ -472,19 +622,13 @@ got: {n} files:\n{}
 
 # define which steps are defined before assembly and in which order
 
-possible_assembly_preprocessing_steps=['normalized','errorcorr','merged']
+assembly_preprocessing_steps=['normalized','errorcorr','merged']
 
-requested_steps= list(config['assembly_preprocessing_steps'])
+if not (config.get('merge_pairs_before_assembly',True) or paired_end ):
+    assembly_preprocessing_steps.remove('merged')
+assembly_preprocessing_steps=".".join(assembly_preprocessing_steps)
 
-for step in requested_steps:
-	if not step in possible_assembly_preprocessing_steps:
-		raise Exception("Requesting unknown step, {} before assembly. Choose only steps from {}".format(step,possible_assembly_preprocessing_steps))
-	if step=='merged' and not paired_end:
-		warnings.warn("""Skip: merging of pairs before assembly, because reads are single-ended.
-			You can remove the "merge" from assembly_preprocessing_steps  in the config file""")
-		requested_steps.remove(step)
 
-assembly_preprocessing_steps=".".join(requested_steps)
 
 
 
