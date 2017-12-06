@@ -118,6 +118,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["megahit_prune_level"] = MEGAHIT_PRUNE_LEVEL
     conf["megahit_low_local_ratio"] = MEGAHIT_LOW_LOCAL_RATIO
     conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
+    conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
     conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES

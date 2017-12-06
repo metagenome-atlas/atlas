@@ -800,7 +800,7 @@ if config.get("assembler", "megahit") == "megahit":
             merge_level = config.get("megahit_merge_level", MEGAHIT_MERGE_LEVEL),
             prune_level = config.get("megahit_prune_level", MEGAHIT_PRUNE_LEVEL),
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
-            min_contig_len = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
+            min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
             inputs=lambda wc,input: "-1 {0} -2 {1} --read {2}".format(*input) if len(input)==2 else "--read {0}".format(*input)
         conda:
@@ -850,8 +850,7 @@ else:
             inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if len(input) == 3 else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            # FIXME: this does nothing
-            error_correction= "" if False else "--only-assembler"
+            config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
         log:
             "{sample}/logs/{sample}_spades.log"
         shadow:
@@ -864,8 +863,7 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} \
-            {params.error_correction} 2> >(tee {log}) """
+            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} 2> >(tee {log}) """
 
 
     rule rename_spades_output:
@@ -1045,10 +1043,15 @@ rule pileup:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
         """
-            pileup.sh ref={input.fasta} in={input.sam} threads={threads} \
-            -Xmx{resources.mem}G covstats={output.covstats} \
-            hist={output.covhist} basecov={output.basecov} concise \
-            physcov secondary={params.pileup_secondary} bincov={output.bincov} 2>> {log}
+            pileup.sh ref={input.fasta} in={input.sam} \
+            threads={threads} \
+            -Xmx{resources.mem}G \
+            covstats={output.covstats} \
+            hist={output.covhist} \
+            basecov={output.basecov} concise \
+            physcov \
+            secondary={params.pileup_secondary} \
+            bincov={output.bincov} 2>> {log}
         """
 
 
