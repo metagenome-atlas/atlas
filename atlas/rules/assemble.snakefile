@@ -171,6 +171,46 @@ rule read_stats:
 
 
 
+if config.get('deduplicate', True):
+    processed_steps += ['deduplicated']
+    rule deduplicate:
+        input:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=processed_steps[-2], fraction=raw_input_fractions)
+        output:
+            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=raw_input_fractions, step=processed_steps[-1]))
+        benchmark:
+            "logs/benchmarks/deduplicate/{sample}.txt"
+        params:
+            inputs = lambda wc, input: "in=%s in2=%s" % (input[0], input[1]) if paired_end else "in=%s" % input[0],
+            outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if paired_end else "out={0}".format(*output),
+            dupesubs= config.get('duplicates_allow_substitutions', DUPLICATES_ALLOW_SUBSTITUTIONS),
+            only_optical = 't' if config.get('duplicates_only_optical',DUPLICATES_ONLY_OPTICAL) else 'f'
+        log:
+            "{sample}/logs/{sample}_deduplicate.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        shell:
+            """
+
+            {SHPFXM} clumpify.sh \
+            {params.inputs} \
+            {params.outputs} \
+            overwrite=true\
+            dedupe=t \
+            dupesubs={params.dupesubs} \
+            optical={params.only_optical}\
+            threads={threads} \
+            -Xmx{resources.mem}G 2> {log}
+
+            """
+
+
 
 processed_steps += ['filtered']
 
@@ -224,6 +264,8 @@ rule quality_filter:
 
 if len(config.get("contaminant_references", {}).keys()) > 0:
 
+    processed_steps += ['clean']
+
     rule build_decontamination_db:
         output:
             "ref/genome/1/summary.txt"
@@ -245,11 +287,11 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
     rule decontamination:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-1], fraction=multifile_fractions),
+                step=processed_steps[-2], fraction=multifile_fractions),
             db = "ref/genome/1/summary.txt"
         output:
             temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=multifile_fractions, step='decontamined')),
+                fraction=multifile_fractions, step=processed_steps[-1])),
             contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
                     db=list(config["contaminant_references"].keys()),
                     fraction=multifile_fractions),
@@ -297,101 +339,36 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
 
             """
 
-    processed_steps += ['clean']
-
-    def get_ribosomal_rna_input(wildcards):
-
-        inputs = []
-        data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
-
-        clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step='decontamined',**wildcards)
-        rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
-
-        if data_type == "metagenome" and os.path.exists(rrna_reads):
-            return [clean_reads, rrna_reads]
-        else:
-            return [clean_reads]
-
-
-    rule postprocess_after_decontamination:
-        input:
-            get_ribosomal_rna_input
-        output:
-            "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-1])
-        threads:
-            1
-        shell:
-            "{SHPFXS} cat {input} > {output}"
-
-
-if config.get('deduplicate', False):
-    processed_steps += ['deduplicated']
-    rule deduplicate:
-        input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2], fraction=multifile_fractions)
-        output:
-            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=multifile_fractions, step=processed_steps[-1]))
-        benchmark:
-            "logs/benchmarks/deduplicate/{sample}.txt"
-        params:
-            has_paired_end_files= lambda wc, input: "t" if paired_end else "f",
-            input_single = lambda wc, input: "in=%s" % input[2] if paired_end else "in=%s" % input[0],
-            input_paired = lambda wc, input: "in=%s in2=%s" % (input[0], input[1]) if paired_end else "null",
-            output_single = lambda wc,output,input: "out=%s" % output[2] if paired_end else "out=%s" % output[0],
-            output_paired = lambda wc,output: "out=%s out2=%s" % (output[0],output[1]) if paired_end else "null",
-            dupesubs= config.get('DUPLICATES_ALLOW_SUBSTITUTIONS', 0)
-        log:
-            "{sample}/logs/{sample}_deduplicate.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        resources:
-            mem = config.get("java_mem", JAVA_MEM)
-        shell:
-            """
-
-            {SHPFXM} clumpify.sh \
-            {params.input_single} \
-            {params.output_single} \
-            overwrite=true\
-            dedupe=t \
-            dupesubs={params.dupesubs} \
-            threads={threads} \
-            -Xmx{resources.mem}G 2> {log}
-
-
-
-            if [ {params.has_paired_end_files} = "t" ];
-            then
-
-            {SHPFXM} clumpify.sh \
-            {params.input_paired} \
-            {params.output_paired} \
-            overwrite=true\
-            dedupe=t \
-            dupesubs={params.dupesubs} \
-            threads={threads} \
-            -Xmx{resources.mem}G 2>> {log}
-
-            fi
-
-            """
 
 
 processed_steps += ['QC']
 
-rule get_QC_reads:
+def get_ribosomal_rna_input(wildcards):
+
+    inputs = []
+    data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
+
+    clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step=processed_steps[-2],**wildcards)
+    rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
+
+    if data_type == "metagenome" and os.path.exists(rrna_reads):
+        return [clean_reads, rrna_reads]
+    else:
+        return [clean_reads]
+
+
+rule postprocess_after_decontamination:
     input:
-        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-2])
+        get_ribosomal_rna_input
     output:
         "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-1])
     threads:
         1
     shell:
-        "{SHPFXS} cp {input} {output}"
+        "{SHPFXS} cat {input} > {output}"
+
+
+
 
 
 def get_quality_controlled_reads(wildcards):
