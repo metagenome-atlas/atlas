@@ -125,9 +125,16 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["contig_trim_bp"] = CONTIG_TRIM_BP
 
     conf["translation_table"] = 11
+
+    # map reads to contigs and to genes
     conf["minimum_region_overlap"] = MINIMUM_REGION_OVERLAP
-    conf["primary_only"] = False
-    conf["count_multi_mapped_reads"] = True
+    conf["feature_counts_allow_overlap"] = FEATURE_COUNTS_ALLOW_OVERLAP
+    conf["contig_count_multi_mapped_reads"] = CONTIG_COUNT_MULTI_MAPPED_READS
+    conf["contig_min_id"] = CONTIG_MIN_ID
+    conf["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
+    conf["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
+ 
+
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
     conf["perform_genome_binning"] = True
     conf["maxbin_max_iteration"] = MAXBIN_MAX_ITERATION
