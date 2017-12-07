@@ -38,7 +38,7 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
 
 assembly_preprocessing_steps=['normalized','errorcorr','merged']
 
-if not (config.get('merge_pairs_before_assembly',True) or paired_end ):
+if not (config.get('merge_pairs_before_assembly',True) and paired_end ):
     assembly_preprocessing_steps.remove('merged')
 assembly_preprocessing_steps=".".join(assembly_preprocessing_steps)
 

@@ -155,7 +155,8 @@ elif config.get("workflow", "complete") == "complete":
 #            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
             expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
 
-    include: "rules/assemble.snakefile", "rules/qc.snakefile"
+    include: "rules/assemble.snakefile"
+    include: "rules/qc.snakefile"
 
 elif config.get("workflow") == "download":
 
