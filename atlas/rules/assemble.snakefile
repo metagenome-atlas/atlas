@@ -514,6 +514,8 @@ if config.get("perform_genome_binning", True):
             database_dir = CHECKMDIR
         conda:
             "%s/optional_genome_binning.yaml" % CONDAENV
+        log: 
+            "logs/initialize_checkm.log"
         script:
             "initialize_checkm.py"
 
