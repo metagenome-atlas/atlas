@@ -60,6 +60,52 @@ def update_config_file_paths(config):
     return config
 
 
+def get_quality_controlled_reads(wildcards):
+    """
+        Gets quality controlled reads:
+            when preprocessed with ATLAS:
+            R1, R2 and se fastq files or just se
+            when preprocess externaly and run ATLAS workflow assembly
+            R1, R2 or se
+    """
+    n_files= len(config["samples"][wildcards.sample]["fastq"])
+
+    if config.get("workflow", "complete") == "annotate":
+        # QA'd reads; the user wants to begin at assembly step
+        if n_files==2:
+            fastq = dict(zip(['R1','R2'],config["samples"][wildcards.sample]["fastq"]))
+        elif n_files==1:
+            fastq = {'se':config["samples"][wildcards.sample]["fastq"]}
+            assert not config["samples"][wc.sample].get("paired", False), "Starting with a paired-end interleaved file is not implemented. De interleve your fastq with reformat.sh"
+    else:
+        # reads that have gone through ATLAS QC
+        fractions= ['R1','R2','se'] if (n_files==2) or config["samples"][wildcards.sample].get("paired", False) else ['se']
+        fastq = dict(zip(fractions, expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",fraction=fractions,**wildcards)))
+
+    return fastq
+
+def input_params_for_bbwrap(wildcards,input):
+    """
+    This function generates the inputflag needed for bbwrap for all cases possible for get_quality_controlled_reads
+    """
+    if hasattr(input,'R1') and hasattr(input,'R2'):
+        if hasattr(input,'se'):
+            flag="in1={R1},{se} in2={R2},null".format(**input)
+        else:
+            flag="in1={R1} in2={R2}".format(**input)
+    elif hasattr(input,'se'):
+        flag="in1={se}".format(**input)
+    else:
+        raise Exception("""
+I don't know what file you have,
+expect one of: 1 file= single-end, two files = R1,R2 , 3 files= R1,R2,se
+got: {n} files:\n{}
+""".format('\n'.join(input),n=len(input)))
+    return flag
+
+
+
+
 CONDAENV = get_conda_envs_dir()
 
 localrules: all
@@ -74,6 +120,13 @@ if config.get("workflow") != "download":
 
     SAMPLES = [i for i in config["samples"].keys()]
 
+    # define paired end or not
+    paired_end=all([config["samples"][s].get("paired", False) or (len(config["samples"][s]["fastq"]) >1) for s in config["samples"]])
+
+    interleaved_fractions= ['pe','se'] if paired_end else ['se']
+    multifile_fractions= ['R1','R2','se'] if paired_end else ['se']
+    raw_input_fractions=['R1','R2'] if paired_end else ['se']
+
 
 if config.get("workflow", "complete") == "qc":
     wildcard_constraints:
@@ -84,7 +137,7 @@ if config.get("workflow", "complete") == "qc":
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
             "finished_QC"
             
-    include: "rules/assemble.snakefile"
+    include: "rules/qc.snakefile"
 
 
 elif config.get("workflow", "complete") == "complete":
@@ -103,6 +156,7 @@ elif config.get("workflow", "complete") == "complete":
             expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
 
     include: "rules/assemble.snakefile"
+    include: "rules/qc.snakefile"
 
 elif config.get("workflow") == "download":
 
