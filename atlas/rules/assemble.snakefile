@@ -981,10 +981,10 @@ rule align_reads_to_final_contigs:
         input = lambda wc,input : input_params_for_bbwrap(wc,input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         unmapped = lambda wc,output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if paired_end else "outu={0}".format(*output.unmapped),
-        max_distance_between_pairs=config.get('max_distance_between_pairs',CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
-        paired_only = 't' if config.get("map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
+        max_distance_between_pairs=config.get('contig_max_distance_between_pairs',CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+        paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
         ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else'best',
-        min_id= config.get('map_min_id',CONTIG_MIN_ID),
+        min_id= config.get('contig_min_id',CONTIG_MIN_ID),
         maxindel=100 # default 16000 goode for genome deletions but not necessary for alignement to contigs
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
@@ -1294,7 +1294,7 @@ rule find_counts_per_region:
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
     params:
         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
-        paired_only= "-B" if config.get('cotig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
+        paired_only= "-B" if config.get('contig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
         paired_mode = "-p" if paired_end else "",
         multi_mapping = "-M −−fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
         feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
@@ -1317,7 +1317,6 @@ rule find_counts_per_region:
                -a {input.gtf} \
                -o {output.counts} \
                {input.bam} 2> {log}"""
-
 
 rule run_diamond_blastp:
     input:
