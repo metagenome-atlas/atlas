@@ -63,8 +63,7 @@ def update_config_file_paths(config):
 CONDAENV = get_conda_envs_dir()
 
 localrules: all
-
-if config.get("workflow", "complete") == "complete":
+if config.get("workflow") != "download":
     config = update_config_file_paths(config)
     SHPFXM = get_shell_prefix(config)
     SHPFXS = get_shell_prefix(config, {"threads": "1"})
@@ -75,13 +74,27 @@ if config.get("workflow", "complete") == "complete":
 
     SAMPLES = [i for i in config["samples"].keys()]
 
+
+if config.get("workflow", "complete") == "qc":
     wildcard_constraints:
         sample = "[\w-]+"
 
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-            "Combined_read_stats.tsv",
+            "finished_QC"
+            
+    include: "rules/assemble.snakefile"
+
+
+elif config.get("workflow", "complete") == "complete":
+    wildcard_constraints:
+        sample = "[\w-]+"
+
+    rule all:
+        input:
+            expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
+            "finished_QC",
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
@@ -107,12 +120,7 @@ elif config.get("workflow") == "download":
     include: "rules/download.snakefile"
 
 elif config.get("workflow") == "annotate":
-    config = update_config_file_paths(config)
-    SAMPLES = list(config["samples"].keys())
-    TMPDIR = get_temp_dir(config)
-    SHPFXM = get_shell_prefix(config)
-    SHPFXS = get_shell_prefix(config, {"threads": "1"})
-    CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
+
 
     rule all:
         input:

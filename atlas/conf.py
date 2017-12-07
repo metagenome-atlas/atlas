@@ -86,7 +86,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     conf["deduplicate"] = True
     conf["error_correction_overlapping_pairs"] = True
-    conf["assembly_preprocessing_steps"]=['normalized','errorcorr','merged']
+    conf["merge_pairs_before_assembly"]=True
 
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
                                       "PhiX":os.path.join(database_dir, PHIX)}
@@ -95,6 +95,9 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["contaminant_kmer_length"] = CONTAMINANT_KMER_LENGTH
     conf["contaminant_minimum_hits"] = CONTAMINANT_MINIMUM_HITS
     conf["contaminant_ambiguous"] = CONTAMINANT_AMBIGUOUS
+
+    conf["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
+    conf["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
 
     conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
