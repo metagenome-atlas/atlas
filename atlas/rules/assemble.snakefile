@@ -440,8 +440,9 @@ rule pileup:
             -Xmx{resources.mem}G \
             covstats={output.covstats} \
             hist={output.covhist} \
-            basecov={output.basecov} concise \
-            physcov \
+            basecov={output.basecov}\
+            concise=t \
+            physcov=t \
             secondary={params.pileup_secondary} \
             bincov={output.bincov} 2>> {log}
         """
