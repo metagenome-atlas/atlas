@@ -70,7 +70,7 @@ def get_quality_controlled_reads(wildcards):
     """
     n_files= len(config["samples"][wildcards.sample]["fastq"])
 
-    if config.get("workflow", "complete") == "assembly":
+    if config.get("workflow", "complete") == "annotate":
         # QA'd reads; the user wants to begin at assembly step
         if n_files==2:
             fastq = dict(zip(['R1','R2'],config["samples"][wildcards.sample]["fastq"]))
