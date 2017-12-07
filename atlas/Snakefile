@@ -6,6 +6,8 @@ import tempfile
 
 from default_values import *
 
+from snakemake.utils import min_version
+min_version("3.4")
 
 def get_conda_envs_dir():
     if config.get("yaml_dir"):
