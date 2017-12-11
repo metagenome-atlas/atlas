@@ -364,7 +364,7 @@ def get_ribosomal_rna_input(wildcards):
 
 rule postprocess_after_decontamination:
     input:
-        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz".format(step=processed_steps[-2],fraction=multifile_fractions)
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=processed_steps[-2],fraction=multifile_fractions)
     output:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=processed_steps[-1],fraction=multifile_fractions)
     threads:
@@ -373,7 +373,7 @@ rule postprocess_after_decontamination:
         rrna_reads= expand("{{sample}}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz",fraction=multifile_fractions)
     run:
         data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
-        for i in range(3):
+        for i in range(len(multifile_fractions)):
             import shutil
             with open(output[i], 'wb') as outFile:
                 with open(input[i], 'rb') as infile1:
