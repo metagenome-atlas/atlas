@@ -516,18 +516,18 @@ rule combine_read_counts:
             d= pd.read_table(f,index_col=[0,1])
             Read_stats=Read_stats.append(d)
 
-        Read_stats.T.to_csv(output[0],sep='\t')
+        Read_stats.to_csv(output[0],sep='\t')
 
 
 rule finalize_QC:
     input:
         unpack(get_quality_controlled_reads),
-            rules.decontamination.output.contaminants,
-            "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-            "{sample}/logs/{sample}_quality_filtering_stats.txt",
-            expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-            read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
-            read_length_hist="{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
+        rules.decontamination.output.contaminants,
+        "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+        "{sample}/logs/{sample}_quality_filtering_stats.txt",
+        expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
+        read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
+        read_length_hist="{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
 
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
