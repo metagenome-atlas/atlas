@@ -279,11 +279,11 @@ rule rename_contigs:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
 
-rule calculate_prefiltered_contigs_stats:
+rule calculate_contigs_stats:
     input:
-        "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+        "{sample}/assembly/{sample}_{assembly_step}_contigs.fasta"
     output:
-        "{sample}/assembly/contig_stats/prefilter_contig_stats.txt"
+        "{sample}/assembly/contig_stats/{assembly_step}_contig_stats.txt"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -294,6 +294,20 @@ rule calculate_prefiltered_contigs_stats:
         "{SHPFXS} stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
 
 
+rule combine_sample_contig_stats:
+    input:
+        "{{sample}}/assembly/contig_stats/{assembly_step}_contig_stats.txt", assembly_step= ['prefilter','final'])
+    output:
+        "{sample}/assembly/contig_stats.tsv"
+    run:
+        import pandas as pd
+            C=pd.DataFrame()
+        for file in input:
+            D=pd.read_table(file)
+            assembly_step=file.split('/')[-1].replace("_contig_stats.txt","")
+            C.loc[assembly_step]
+
+        C.to_csv(output[0],sep='\t')
 
 
 
@@ -333,7 +347,7 @@ rule filter_by_coverage:
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
         covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
     output:
-        fasta = "{sample}/{sample}_contigs.fasta",
+        fasta = temp("{sample}/assembly/{sample}_final_contigs.fasta"),
         removed_names = "{sample}/assembly/{sample}_discarded_contigs.fasta"
     params:
         minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
@@ -360,6 +374,21 @@ rule filter_by_coverage:
                minl={params.minl} \
                trim={params.trim} \
                -Xmx{resources.mem}G 2> {log}"""
+
+localrules: finalize_contigs
+
+rule finalize_contigs:
+    input:
+        "{sample}/assembly/{sample}_final_contigs.fasta"
+    output:
+        "{sample}/{sample}_contigs.fasta"
+    threads:
+        1
+    shell:
+        """
+            cp {input} {output}
+        """
+
 
 
 rule align_reads_to_final_contigs:
@@ -608,19 +637,6 @@ rule create_bam_index:
         1
     shell:
         "{SHPFXS} samtools index {input}"
-
-
-rule calculate_final_contigs_stats:
-    input:
-        "{sample}/{sample}_contigs.fasta"
-    output:
-        "{sample}/assembly/contig_stats/final_contig_stats.txt"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        1
-    shell:
-        "{SHPFXS} stats.sh in={input} format=3 > {output}"
 
 
 rule run_prokka_annotation:
