@@ -242,7 +242,7 @@ else:
             inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if len(input) == 3 else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
+            #min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
         log:
             "{sample}/logs/{sample}_spades.log"
         shadow:
@@ -301,7 +301,7 @@ rule combine_sample_contig_stats:
         "{sample}/assembly/contig_stats.tsv"
     run:
         import pandas as pd
-            C=pd.DataFrame()
+        C=pd.DataFrame()
         for file in input:
             D=pd.read_table(file)
             assembly_step=file.split('/')[-1].replace("_contig_stats.txt","")
