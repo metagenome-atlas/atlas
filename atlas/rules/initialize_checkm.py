@@ -53,8 +53,10 @@ def run_popen(cmd, response,stderr=None):
     stdout = p.communicate(input=newline.join(response) if isinstance(response, list) else response)[0]
 
 
-run_popen(["checkm", "data", "setRoot"], [snakemake.params.database_dir, snakemake.params.database_dir],open(snakemake.log[0],'w'))
-run_popen(["checkm", "data", "update"], ["y", "y"],open(snakemake.log[0],'w'))
+with open(snakemake.log[0],'w') as errlog:
+
+    run_popen(["checkm", "data", "setRoot"], [snakemake.params.database_dir, snakemake.params.database_dir],errlog)
+    run_popen(["checkm", "data", "update"], ["y", "y"],errlog)
 
 # when re-activating a conda env, reset the .dmanifest directory and download
 with open(snakemake.output.touched_output, "w") as fh:
