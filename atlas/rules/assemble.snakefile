@@ -296,7 +296,7 @@ rule calculate_contigs_stats:
 
 rule combine_sample_contig_stats:
     input:
-        "{{sample}}/assembly/contig_stats/{assembly_step}_contig_stats.txt", assembly_step= ['prefilter','final'])
+        expand("{{sample}}/assembly/contig_stats/{assembly_step}_contig_stats.txt", assembly_step= ['prefilter','final'])
     output:
         "{sample}/assembly/contig_stats.tsv"
     run:
