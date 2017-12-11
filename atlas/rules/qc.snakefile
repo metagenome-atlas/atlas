@@ -388,7 +388,6 @@ if paired_end:
             unpack(get_quality_controlled_reads)
         output:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
-            cardinality= temp("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt"),
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         threads:
             config.get("threads", 1)
@@ -409,7 +408,7 @@ if paired_end:
                    in1={input.R1} in2={input.R2} \
                    {params.flags} k={params.kmer} \
                    extend2={params.extend2} \
-                   ihist={output.ihist} outc={output.cardinality} merge=f \
+                   ihist={output.ihist} merge=f \
                    mininsert0=35 minoverlap0=8 2> >(tee {log})
                 
                 readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
@@ -421,7 +420,6 @@ else:
             unpack(get_quality_controlled_reads)
         output:
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
-            cardinality= temp("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt")
         params:
             kmer = config.get("merging_k", MERGING_K),
         threads:
@@ -435,10 +433,9 @@ else:
         shell:
             """ 
                 readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
-                loglog.sh in={input.se} k={params.kmer} > {output.cardinality} 2> >(tee {log})
             """
 
-localrules: combine_read_length_stats, combine_insert_stats, combine_cardinality, combine_read_counts
+localrules: combine_read_length_stats, combine_insert_stats, combine_read_counts
 
 
 rule combine_read_length_stats:
@@ -465,25 +462,25 @@ rule combine_read_length_stats:
         Stats.to_csv(output[0],sep='\t')   
 
              
-rule combine_cardinality:
-    input:
-        expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
-    output:
-        'stats/cardinality.tsv'
-    run:
-        import pandas as pd
-        import os
+# rule combine_cardinality:
+#     input:
+#         expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
+#     output:
+#         'stats/cardinality.tsv'
+#     run:
+#         import pandas as pd
+#         import os
 
-        Stats= pd.Series()
+#         Stats= pd.Series()
 
-        for file in input:
-            sample= file.split(os.path.sep)[0]
-            with open(file) as f:
-                cardinality= int(f.read().strip())
+#         for file in input:
+#             sample= file.split(os.path.sep)[0]
+#             with open(file) as f:
+#                 cardinality= int(f.read().strip())
 
-            Stats.loc[sample]=cardinality
+#             Stats.loc[sample]=cardinality
 
-        Stats.to_csv(output[0],sep='\t')
+#         Stats.to_csv(output[0],sep='\t')
 
 
 
@@ -554,7 +551,6 @@ rule QC_report:
     input:
         expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
         "stats/read_counts.tsv",
-        'stats/cardinality.tsv',
         read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if paired_end else 'stats/read_length_stats.tsv'
     output:
         touch("finished_QC")
