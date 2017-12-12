@@ -364,24 +364,30 @@ def get_ribosomal_rna_input(wildcards):
 
 rule postprocess_after_decontamination:
     input:
-        get_ribosomal_rna_input
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=processed_steps[-2],fraction=multifile_fractions)
     output:
-        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{{fraction}}.fastq.gz".format(step=processed_steps[-1])
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=processed_steps[-1],fraction=multifile_fractions)
     threads:
         1
-    shell:
-        "{SHPFXS} cat {input} > {output}"
-
-
-
-
+    params:
+        rrna_reads= expand("{{sample}}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz",fraction=multifile_fractions)
+    run:
+        data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
+        for i in range(len(multifile_fractions)):
+            import shutil
+            with open(output[i], 'wb') as outFile:
+                with open(input[i], 'rb') as infile1:
+                    shutil.copyfileobj(infile1, outFile)
+                    if data_type == "metagenome" and os.path.exists(params.rrna_reads[i]):
+                        with open(params.rrna_reads[i], 'rb') as infile2:
+                            shutil.copyfileobj(infile2, outFile)
+    
 if paired_end:
     rule calculate_insert_size:
         input:
             unpack(get_quality_controlled_reads)
         output:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
-            cardinality= temp("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt"),
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         threads:
             config.get("threads", 1)
@@ -402,7 +408,7 @@ if paired_end:
                    in1={input.R1} in2={input.R2} \
                    {params.flags} k={params.kmer} \
                    extend2={params.extend2} \
-                   ihist={output.ihist} outc={output.cardinality} merge=f \
+                   ihist={output.ihist} merge=f \
                    mininsert0=35 minoverlap0=8 2> >(tee {log})
                 
                 readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
@@ -414,7 +420,6 @@ else:
             unpack(get_quality_controlled_reads)
         output:
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
-            cardinality= temp("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt")
         params:
             kmer = config.get("merging_k", MERGING_K),
         threads:
@@ -428,10 +433,9 @@ else:
         shell:
             """ 
                 readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
-                loglog.sh in={input.se} k={params.kmer} > {output.cardinality} 2> >(tee {log})
             """
 
-localrules: combine_read_length_stats, combine_insert_stats, combine_cardinality, combine_read_counts
+localrules: combine_read_length_stats, combine_insert_stats, combine_read_counts
 
 
 rule combine_read_length_stats:
@@ -458,25 +462,25 @@ rule combine_read_length_stats:
         Stats.to_csv(output[0],sep='\t')   
 
              
-rule combine_cardinality:
-    input:
-        expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
-    output:
-        'stats/cardinality.tsv'
-    run:
-        import pandas as pd
-        import os
+# rule combine_cardinality:
+#     input:
+#         expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
+#     output:
+#         'stats/cardinality.tsv'
+#     run:
+#         import pandas as pd
+#         import os
 
-        Stats= pd.Series()
+#         Stats= pd.Series()
 
-        for file in input:
-            sample= file.split(os.path.sep)[0]
-            with open(file) as f:
-                cardinality= int(f.read().strip())
+#         for file in input:
+#             sample= file.split(os.path.sep)[0]
+#             with open(file) as f:
+#                 cardinality= int(f.read().strip())
 
-            Stats.loc[sample]=cardinality
+#             Stats.loc[sample]=cardinality
 
-        Stats.to_csv(output[0],sep='\t')
+#         Stats.to_csv(output[0],sep='\t')
 
 
 
@@ -516,18 +520,18 @@ rule combine_read_counts:
             d= pd.read_table(f,index_col=[0,1])
             Read_stats=Read_stats.append(d)
 
-        Read_stats.T.to_csv(output[0],sep='\t')
+        Read_stats.to_csv(output[0],sep='\t')
 
 
 rule finalize_QC:
     input:
         unpack(get_quality_controlled_reads),
-            rules.decontamination.output.contaminants,
-            "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-            "{sample}/logs/{sample}_quality_filtering_stats.txt",
-            expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-            read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
-            read_length_hist="{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
+        rules.decontamination.output.contaminants,
+        "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+        "{sample}/logs/{sample}_quality_filtering_stats.txt",
+        expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
+        read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
+        read_length_hist="{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
 
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
@@ -547,7 +551,6 @@ rule QC_report:
     input:
         expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
         "stats/read_counts.tsv",
-        'stats/cardinality.tsv',
         read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if paired_end else 'stats/read_length_stats.tsv'
     output:
         touch("finished_QC")

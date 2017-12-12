@@ -4,7 +4,7 @@ import shutil
 from subprocess import Popen, PIPE
 
 
-def run_popen(cmd, response):
+def run_popen(cmd, response,stderr=None):
     # $ checkm data setRoot
     # It seems that the CheckM data folder has not been set yet or has been removed. Running: 'checkm data setRoot'.
     # Where should CheckM store it's data?
@@ -49,12 +49,14 @@ def run_popen(cmd, response):
     # Continue? (y,n) : y
     # ****************************************************************
     newline = os.linesep
-    p = Popen(cmd, stdin=PIPE, stdout=PIPE, universal_newlines=True)
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, universal_newlines=True,stderr=stderr)
     stdout = p.communicate(input=newline.join(response) if isinstance(response, list) else response)[0]
 
 
-run_popen(["checkm", "data", "setRoot"], [snakemake.params.database_dir, snakemake.params.database_dir])
-run_popen(["checkm", "data", "update"], ["y", "y"])
+with open(snakemake.log[0],'w') as errlog:
+
+    run_popen(["checkm", "data", "setRoot"], [snakemake.params.database_dir, snakemake.params.database_dir],errlog)
+    run_popen(["checkm", "data", "update"], ["y", "y"],errlog)
 
 # when re-activating a conda env, reset the .dmanifest directory and download
 with open(snakemake.output.touched_output, "w") as fh:
