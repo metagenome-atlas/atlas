@@ -5,9 +5,8 @@ import tempfile
 import yaml
 from collections import OrderedDict
 from snakemake.io import load_configfile
-
-from .default_values import *
-
+# default globals
+from atlas.default_values import *
 
 
 def get_sample_files(path, data_type):
@@ -86,7 +85,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
     conf["deduplicate"] = True
     conf["error_correction_overlapping_pairs"] = True
-    conf["merge_pairs_before_assembly"]=True
+    conf["merge_pairs_before_assembly"] = True
 
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
                                       "PhiX":os.path.join(database_dir, PHIX)}
@@ -103,7 +102,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
     conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
 
-    conf["merging_k"]= MERGING_K
+    conf["merging_k"] = MERGING_K
     conf["merging_extend2"] = MERGING_EXTEND2
     conf["merging_flags"]  = MERGING_FLAGS
 
@@ -134,7 +133,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["contig_min_id"] = CONTIG_MIN_ID
     conf["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
     conf["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
- 
+
 
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
     conf["perform_genome_binning"] = True
