@@ -72,7 +72,7 @@ rule init_QC:
     resources:
         mem = config.get("java_mem", 5)
     shell:
-        """{SHPFXM} reformat.sh {params.inputs} \
+        """reformat.sh {params.inputs} \
         interleaved={params.interleaved} \
         {params.outputs} \
         qout=33 \
@@ -203,7 +203,7 @@ if config.get('deduplicate', True):
         shell:
             """
 
-            {SHPFXM} clumpify.sh \
+            clumpify.sh \
             {params.inputs} \
             {params.outputs} \
             overwrite=true\
@@ -252,7 +252,7 @@ rule quality_filter:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """{SHPFXM} bbduk2.sh {params.inputs} \
+        """bbduk2.sh {params.inputs} \
               {params.outputs} \
                {params.rref} {params.lref} \
                {params.mink} qout=33 stats={output.stats} \
@@ -286,7 +286,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n,fa in config["contaminant_references"].items()]),
         shell:
-            """{SHPFXM} bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
+            """bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
 
 
     rule decontamination:
@@ -324,7 +324,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         shell:
             """
             if [ "{params.paired}" = true ] ; then
-            {SHPFXM} bbsplit.sh in1={input[0]} in2={input[1]} \
+            bbsplit.sh in1={input[0]} in2={input[1]} \
                     outu1={output[0]} outu2={output[1]} \
                     basename="{params.contaminant_folder}/%_R#.fastq.gz" \
                     maxindel={params.maxindel} minratio={params.minratio} \
@@ -333,7 +333,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
                     -Xmx{resources.mem}G 2> {log}
             fi
 
-            {SHPFXM} bbsplit.sh in={params.input_single}  \
+            bbsplit.sh in={params.input_single}  \
                     outu={params.output_single} \
                    basename="{params.contaminant_folder}/%_se.fastq.gz" \
                    maxindel={params.maxindel} minratio={params.minratio} \
@@ -381,7 +381,7 @@ rule postprocess_after_decontamination:
                     if data_type == "metagenome" and os.path.exists(params.rrna_reads[i]):
                         with open(params.rrna_reads[i], 'rb') as infile2:
                             shutil.copyfileobj(infile2, outFile)
-    
+
 if paired_end:
     rule calculate_insert_size:
         input:
@@ -410,7 +410,7 @@ if paired_end:
                    extend2={params.extend2} \
                    ihist={output.ihist} merge=f \
                    mininsert0=35 minoverlap0=8 2> >(tee {log})
-                
+
                 readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
             """
 else:
@@ -431,7 +431,7 @@ else:
         log:
             "{sample}/logs/{sample}_calculate_read_length.log"
         shell:
-            """ 
+            """
                 readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
             """
 
@@ -459,9 +459,9 @@ rule combine_read_length_stats:
 
             Stats[sample]=data
 
-        Stats.to_csv(output[0],sep='\t')   
+        Stats.to_csv(output[0],sep='\t')
 
-             
+
 # rule combine_cardinality:
 #     input:
 #         expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
@@ -503,7 +503,7 @@ if paired_end:
 
                 Stats[sample]=data
 
-            Stats.T.to_csv(output[0],sep='\t')  
+            Stats.T.to_csv(output[0],sep='\t')
 
 
 rule combine_read_counts:
@@ -546,7 +546,7 @@ rule finalize_QC:
         All_read_counts.to_csv(output.read_stats,sep='\t')
 
 
-# 
+#
 rule QC_report:
     input:
         expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
