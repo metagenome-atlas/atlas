@@ -623,7 +623,7 @@ rule convert_sam_to_bam:
                -bSh1 {input} | samtools sort \
                                    -m 1536M \
                                    -@ {threads} \
-                                   -T {TMPDIR}/{wildcards.sample}_tmp \
+                                   -T {TMPDIR}/{wildcards.file}_tmp \
                                    -o {output} \
                                    -O bam -"""
 
