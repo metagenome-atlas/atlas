@@ -32,7 +32,7 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             toks = line.strip().split("\t")
             print(toks[0], toks[1], sep="\t", file=fo)
 
-            
+
 
 # define which steps are defined before assembly and in which order
 
@@ -78,7 +78,7 @@ rule normalize_coverage_across_kmers:
         """
             if [ {params.input_single} != "null" ];
             then
-        {SHPFXM} bbnorm.sh {params.input_single} \
+        bbnorm.sh {params.input_single} \
                 {params.extra_single} \
                 {params.output_single} \
                 k={params.k} t={params.t} \
@@ -90,7 +90,7 @@ rule normalize_coverage_across_kmers:
 
             if [ {params.has_paired_end_files} = "t" ];
             then
-        {SHPFXM} bbnorm.sh {params.input_paired} \
+        bbnorm.sh {params.input_paired} \
                 {params.extra_paired} \
                 {params.output_paired} \
                 k={params.k} t={params.t} \
@@ -123,7 +123,7 @@ rule error_correction:
         config.get("threads", 1)
     shell:
         """
-            {SHPFXM} tadpole.sh -Xmx{resources.mem}G \
+            tadpole.sh -Xmx{resources.mem}G \
                prealloc=1 \
                {params.inputs} \
                {params.outputs} \
@@ -202,7 +202,7 @@ if config.get("assembler", "megahit") == "megahit":
         resources:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """{SHPFXM} megahit --continue \
+            """megahit --continue \
                     {params.inputs} \
                    --tmp-dir {TMPDIR} \
                    --num-cpu-threads {threads} \
@@ -226,7 +226,7 @@ if config.get("assembler", "megahit") == "megahit":
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
-            "{SHPFXS} cp {input} {output}"
+            "cp {input} {output}"
 
 else:
     rule run_spades:
@@ -264,7 +264,7 @@ else:
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
-            "{SHPFXS} cp {input} {output}"
+            "cp {input} {output}"
 
 
 rule rename_contigs:
@@ -291,7 +291,7 @@ rule calculate_contigs_stats:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        "{SHPFXS} stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
+        "stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
 
 
 rule combine_sample_contig_stats:
@@ -332,11 +332,11 @@ rule calculate_prefiltered_contig_coverage_stats:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """{SHPFXM} bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
+        """bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
                interleaved={params.interleaved} threads={threads} \
             -Xmx{resources.mem}G append out={output.sam} 2> {log}
 
-            {SHPFXM} pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
+            pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
             -Xmx{resources.mem}G covstats={output.covstats} physcov 2>> {log}
 
         """
@@ -364,7 +364,7 @@ rule filter_by_coverage:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """{SHPFXS} filterbycoverage.sh in={input.fasta} \
+        """filterbycoverage.sh in={input.fasta} \
                cov={input.covstats} \
                out={output.fasta} \
                outd={output.removed_names} \
@@ -418,7 +418,7 @@ rule align_reads_to_final_contigs:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """{SHPFXM} bbwrap.sh nodisk=t \
+        """bbwrap.sh nodisk=t \
                ref={input.fasta} \
                {params.input} \
                trimreaddescriptions=t \
@@ -509,7 +509,7 @@ if config.get("perform_genome_binning", True):
         threads:
             config.get("threads", 1)
         shell:
-            """{SHPFXM} run_MaxBin.pl -contig {input.fasta} \
+            """run_MaxBin.pl -contig {input.fasta} \
                    -abund {input.abundance} \
                    -out {params.outdir} \
                    -min_contig_length {params.mcl} \
@@ -559,7 +559,7 @@ if config.get("perform_genome_binning", True):
             database_dir = CHECKMDIR
         conda:
             "%s/optional_genome_binning.yaml" % CONDAENV
-        log: 
+        log:
             "logs/initialize_checkm.log"
         script:
             "initialize_checkm.py"
@@ -581,7 +581,7 @@ if config.get("perform_genome_binning", True):
             config.get("threads", 1)
         shell:
             """rm -r {params.output_dir} && \
-               {SHPFXM} checkm lineage_wf \
+               checkm lineage_wf \
                    --file {params.output_dir}/completeness.tsv \
                    --tab_table \
                    --quiet \
@@ -601,7 +601,7 @@ if config.get("perform_genome_binning", True):
         conda:
             "%s/optional_genome_binning.yaml" % CONDAENV
         shell:
-            """{SHPFXS} checkm tree_qa \
+            """checkm tree_qa \
                    --tab_table \
                    --out_format 2 \
                    --file {params.output_dir}/taxonomy.tsv \
@@ -618,7 +618,7 @@ rule convert_sam_to_bam:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} samtools view \
+        """samtools view \
                -@ {threads} \
                -bSh1 {input} | samtools sort \
                                    -m 1536M \
@@ -638,7 +638,7 @@ rule create_bam_index:
     threads:
         1
     shell:
-        "{SHPFXS} samtools index {input}"
+        "samtools index {input}"
 
 
 rule run_prokka_annotation:
@@ -667,7 +667,7 @@ rule run_prokka_annotation:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} prokka --outdir {params.outdir} \
+        """prokka --outdir {params.outdir} \
                --force \
                --prefix {wildcards.sample} \
                --locustag {wildcards.sample} \
@@ -683,7 +683,7 @@ rule update_prokka_tsv:
     output:
         "{sample}/annotation/prokka/{sample}_plus.tsv"
     shell:
-        """{SHPFXS} atlas gff2tsv {input} {output}"""
+        """atlas gff2tsv {input} {output}"""
 
 
 rule convert_gff_to_gtf:
@@ -715,7 +715,7 @@ rule find_counts_per_region:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} featureCounts {params.paired_mode} \
+        """featureCounts {params.paired_mode} \
                 −−minOverlap {params.min_read_overlap}\
                 {params.paired_only}\
                -F gtf \
@@ -752,7 +752,7 @@ rule run_diamond_blastp:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} diamond blastp \
+        """diamond blastp \
                --threads {threads} \
                --outfmt 6 \
                --out {output} \
@@ -777,7 +777,7 @@ rule add_contig_metadata:
     output:
         temp("{sample}/annotation/refseq/{sample}_hits_plus.tsv")
     shell:
-        "{SHPFXS} atlas munge-blast {input.hits} {input.gff} {output}"
+        "atlas munge-blast {input.hits} {input.gff} {output}"
 
 
 rule sort_munged_blast_hits:
@@ -787,7 +787,7 @@ rule sort_munged_blast_hits:
     output:
         "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
     shell:
-        "{SHPFXS} sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
+        "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
 
 rule parse_blastp:
@@ -809,7 +809,7 @@ rule parse_blastp:
         max_hits = config.get("max_hits", MAX_HITS),
         top_fraction = (100 - config.get("diamond_top_seqs", 5)) * 0.01
     shell:
-        """{SHPFXS} atlas refseq \
+        """atlas refseq \
                --summary-method {params.summary_method} \
                --aggregation-method {params.aggregation_method} \
                --majority-threshold {params.majority_threshold} \
@@ -838,7 +838,7 @@ if config.get("perform_genome_binning", True):
         params:
             fastas = lambda wc: " --fasta ".join(glob("{sample}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample)))
         shell:
-            "{SHPFXS} atlas merge-tables \
+            "atlas merge-tables \
                  --counts {input.counts} \
                  --completeness {input.completeness} \
                  --taxonomy {input.taxonomy} \
@@ -857,7 +857,7 @@ else:
         output:
             "{sample}/{sample}_annotations.txt"
         shell:
-            "{SHPFXS} atlas merge-tables \
+            "atlas merge-tables \
                  --counts {input.counts} \
                  {input.prokka} \
                  {input.refseq} \

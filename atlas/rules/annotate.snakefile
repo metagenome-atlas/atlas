@@ -47,7 +47,7 @@ rule calculate_contigs_stats:
    threads:
        1
    shell:
-       "{SHPFXS} stats.sh in={input} format=3 > {output}"
+       "stats.sh in={input} format=3 > {output}"
 
 
 rule run_prokka_annotation:
@@ -78,7 +78,7 @@ rule run_prokka_annotation:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} prokka --outdir {params.outdir} --force --prefix {wildcards.sample} \
+        """prokka --outdir {params.outdir} --force --prefix {wildcards.sample} \
                --locustag {wildcards.sample} --kingdom {params.kingdom} {params.metagenome} \
                --cpus {threads} {input}"""
 
@@ -89,7 +89,7 @@ rule update_prokka_tsv:
     output:
         "{sample}/prokka/{sample}_fixed.tsv"
     shell:
-        """{SHPFXS} atlas gff2tsv {input} {output}"""
+        """atlas gff2tsv {input} {output}"""
 
 
 rule convert_gff_to_gtf:
@@ -125,7 +125,7 @@ rule run_diamond_blastp:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} diamond blastp \
+        """diamond blastp \
                --threads {threads} \
                --outfmt 6 \
                --out {output} \
@@ -150,7 +150,7 @@ rule add_contig_metadata_to_blast_hits:
     output:
         temp("{sample}/refseq/{sample}_hits_plus.tsv")
     shell:
-        "{SHPFXS} atlas munge-blast {input.hits} {input.gff} {output}"
+        "atlas munge-blast {input.hits} {input.gff} {output}"
 
 
 rule sort_munged_blast_hits:
@@ -160,7 +160,7 @@ rule sort_munged_blast_hits:
     output:
         "{sample}/refseq/{sample}_hits_plus_sorted.tsv"
     shell:
-        "{SHPFXS} sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
+        "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
 
 rule parse_blastp:
@@ -182,7 +182,7 @@ rule parse_blastp:
         max_hits = config.get("max_hits", 100),
         top_fraction = (100 - config.get("diamond_top_seqs", 5)) * 0.01
     shell:
-        """{SHPFXS} atlas refseq --summary-method {params.summary_method} \
+        """atlas refseq --summary-method {params.summary_method} \
                --aggregation-method {params.aggregation_method} \
                --majority-threshold {params.majority_threshold} \
                --min-identity {params.min_identity} \
@@ -219,7 +219,7 @@ rule align_reads_to_renamed_contigs:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} bbmap.sh nodisk=t ref={input.fasta} {params.inputs} trimreaddescriptions=t \
+        """bbmap.sh nodisk=t ref={input.fasta} {params.inputs} trimreaddescriptions=t \
                out={output.sam} mappedonly=t threads={threads} bhist={output.bhist} \
                bqhist={output.bqhist} mhist={output.mhist} gchist={output.gchist} \
                statsfile={output.statsfile} covstats={output.covstats} mdtag=t xstag=fs nmtag=t \
@@ -237,7 +237,7 @@ rule convert_alignment_sam_to_bam:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} samtools view -@ {threads} -bSh1 {input} \
+        """samtools view -@ {threads} -bSh1 {input} \
                | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
 
 
@@ -251,7 +251,7 @@ rule create_bam_index:
     threads:
         1
     shell:
-        "{SHPFXS} samtools index {input}"
+        "samtools index {input}"
 
 
 rule remove_pcr_duplicates:
@@ -270,7 +270,7 @@ rule remove_pcr_duplicates:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     shell:
-        """{SHPFXS} picard MarkDuplicates -Xmx{resources.mem}G INPUT={input.bam} \
+        """picard MarkDuplicates -Xmx{resources.mem}G INPUT={input.bam} \
                OUTPUT={output.bam} METRICS_FILE={output.txt} ASSUME_SORT_ORDER=coordinate \
                MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 REMOVE_DUPLICATES=TRUE \
                VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=TRUE 2> {log}"""
@@ -295,7 +295,7 @@ rule counts_per_region:
     threads:
         config.get("threads", 1)
     shell:
-        """{SHPFXM} featureCounts {params.paired_mode} -F gtf -T {threads} \
+        """featureCounts {params.paired_mode} -F gtf -T {threads} \
                {params.multi_mapping} -t CDS -g ID -a {input.gtf} -o {output.counts} \
                {input.bam} 2> {log}"""
 
@@ -309,7 +309,7 @@ if config.get("quantification"):
         output:
             "{sample}_annotations.txt"
         shell:
-            "{SHPFXS} atlas merge-tables --counts {input.counts} {input.prokka} {input.refseq} {output}"
+            "atlas merge-tables --counts {input.counts} {input.prokka} {input.refseq} {output}"
 
 else:
     rule merge_sample_tables:
@@ -319,4 +319,4 @@ else:
         output:
             "{sample}_annotations.txt"
         shell:
-            "{SHPFXS} atlas merge-tables {input.prokka} {input.refseq} {output}"
+            "atlas merge-tables {input.prokka} {input.refseq} {output}"
