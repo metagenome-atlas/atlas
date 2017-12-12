@@ -31,6 +31,7 @@ setup(
                        'atlas/rules/assemble.snakefile',
                        'atlas/rules/annotate.snakefile',
                        'atlas/rules/initialize_checkm.py',
+                       'atlas/rules/qc.snakefile',
                        'atlas/envs/optional_genome_binning.yaml',
                        'atlas/envs/required_packages.yaml',
                        ]},
