@@ -6,7 +6,10 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: postprocess_after_decontamination,initialize_checkm,finalize_QC,QC_report
+localrules: postprocess_after_decontamination, initialize_checkm, \
+            finalize_QC, QC_report, combine_read_length_stats, \
+            combine_insert_stats, combine_read_counts
+
 
 def get_line_from_file(file, line_start):
     "function to extract line after string name, eg in datafile with average in comments #Avg: 123"
@@ -47,22 +50,49 @@ def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
     return Parsed
 
 
-processed_steps=['raw']
+def get_ribosomal_rna_input(wildcards):
+    inputs = []
+    data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
+
+    clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step=PROCESSED_STEPS[-2],**wildcards)
+    rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
+
+    if data_type == "metagenome" and os.path.exists(rrna_reads):
+        return [clean_reads, rrna_reads]
+    else:
+        return [clean_reads]
+
+
+def get_finalize_qc_input(wildcards):
+    inputs = get_quality_controlled_reads(wildcards)
+    try:
+        inputs["decontaminated_seqs"] = rules.decontamination.output.contaminants
+        inputs["decontaminated_stats"] = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt".format(sample=wildcards.sample)
+    except AttributeError:
+        pass
+    inputs["quality_filtering_stats"] = "{sample}/logs/{sample}_quality_filtering_stats.txt".format(sample=wildcards.sample)
+    inputs["reads_stats_zip"] = expand("{sample}/sequence_quality_control/read_stats/{step}.zip", sample=wildcards.sample, step=PROCESSED_STEPS)
+    inputs["read_count_files"] = expand("{sample}/sequence_quality_control/read_stats/{step}_read_counts.tsv", sample=wildcards.sample, step=PROCESSED_STEPS)
+    inputs["read_length_hist"] = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt".format(sample=wildcards.sample)
+    return inputs
+
+
+PROCESSED_STEPS = ['raw']
+
 
 # controls files and deinterlevves them, for the pipeline all files have the same format
-
 rule init_QC:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                    fraction=RAW_INPUT_FRACTIONS, step=processed_steps[-1]))
+                    fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
     priority: 80
     params:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
         outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
-        verifypaired="t" if PAIRED_END else "f"
+        verifypaired = "t" if PAIRED_END else "f"
     log:
         "{sample}/logs/{sample}_init.log"
     conda:
@@ -83,6 +113,7 @@ rule init_QC:
         threads={threads} \
         -Xmx{resources.mem}G 2> {log}
         """
+
 
 rule read_stats:
     # TODO: remove run block in favor of script or alternate cli
@@ -170,28 +201,26 @@ rule read_stats:
             f.write('\t'.join(headers) + '\n')
             f.write('\t'.join([wildcards.sample, wildcards.step] + [str(v) for v in values] + [timestamp]) + '\n')
 
-
         shutil.make_archive(params.folder, 'zip', params.folder)
         shutil.rmtree(params.folder)
 
 
-
 if config.get('deduplicate', True):
-    processed_steps += ['deduplicated']
+    PROCESSED_STEPS.append("deduplicated")
     rule deduplicate:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2], fraction=RAW_INPUT_FRACTIONS)
+                step=PROCESSED_STEPS[-2], fraction=RAW_INPUT_FRACTIONS)
         output:
             temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=RAW_INPUT_FRACTIONS, step=processed_steps[-1]))
+                fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
         benchmark:
             "logs/benchmarks/deduplicate/{sample}.txt"
         params:
             inputs = lambda wc, input: "in=%s in2=%s" % (input[0], input[1]) if PAIRED_END else "in=%s" % input[0],
             outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
-            dupesubs= config.get('duplicates_allow_substitutions', DUPLICATES_ALLOW_SUBSTITUTIONS),
-            only_optical = 't' if config.get('duplicates_only_optical',DUPLICATES_ONLY_OPTICAL) else 'f'
+            dupesubs = config.get('duplicates_allow_substitutions', DUPLICATES_ALLOW_SUBSTITUTIONS),
+            only_optical = 't' if config.get('duplicates_only_optical', DUPLICATES_ONLY_OPTICAL) else 'f'
         log:
             "{sample}/logs/{sample}_deduplicate.log"
         conda:
@@ -202,30 +231,28 @@ if config.get('deduplicate', True):
             mem = config.get("java_mem", JAVA_MEM)
         shell:
             """
-
             clumpify.sh \
-            {params.inputs} \
-            {params.outputs} \
-            overwrite=true\
-            dedupe=t \
-            dupesubs={params.dupesubs} \
-            optical={params.only_optical}\
-            threads={threads} \
-            -Xmx{resources.mem}G 2> {log}
-
+                {params.inputs} \
+                {params.outputs} \
+                overwrite=true\
+                dedupe=t \
+                dupesubs={params.dupesubs} \
+                optical={params.only_optical}\
+                threads={threads} \
+                -Xmx{resources.mem}G 2> {log}
             """
 
 
+PROCESSED_STEPS.append("filtered")
 
-processed_steps += ['filtered']
 
 rule quality_filter:
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=RAW_INPUT_FRACTIONS, step=processed_steps[-2])
+            fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2])
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS, step=processed_steps[-1])),
+            fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
@@ -237,12 +264,12 @@ rule quality_filter:
         hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
         k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
         qtrim = config.get("qtrim", QTRIM),
-        error_correction_pe= "t" if PAIRED_END and config.get('error_correction_overlapping_pairs',True) else "f",
+        error_correction_pe = "t" if PAIRED_END and config.get('error_correction_overlapping_pairs',True) else "f",
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
         interleaved = "t" if PAIRED_END else "f",
-        inputs= lambda wc,input:"in1={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
-        outputs=  lambda wc,output:"out1={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
+        inputs = lambda wc, input:"in1={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
+        outputs = lambda wc, output:"out1={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
     log:
         "{sample}/logs/{sample}_quality_filter.log"
     conda:
@@ -252,24 +279,25 @@ rule quality_filter:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """bbduk2.sh {params.inputs} \
-              {params.outputs} \
-               {params.rref} {params.lref} \
-               {params.mink} qout=33 stats={output.stats} \
-               {params.hdist} {params.k} trimq={params.trimq} \
-               qtrim={params.qtrim} threads={threads} \
-               minlength={params.minlength} trd=t \
-               minbasefrequency={params.minbasefrequency} \
-               interleaved={params.interleaved}\
-               overwrite=true \
-               ecco={params.error_correction_pe} \
-               -Xmx{resources.mem}G 2> {log}
         """
+        bbduk2.sh {params.inputs} \
+            {params.outputs} \
+            {params.rref} {params.lref} \
+            {params.mink} qout=33 stats={output.stats} \
+            {params.hdist} {params.k} trimq={params.trimq} \
+            qtrim={params.qtrim} threads={threads} \
+            minlength={params.minlength} trd=t \
+            minbasefrequency={params.minbasefrequency} \
+            interleaved={params.interleaved}\
+            overwrite=true \
+            ecco={params.error_correction_pe} \
+            -Xmx{resources.mem}G 2> {log}
+        """
+
+
 # if there are no references, decontamination will be skipped
-
 if len(config.get("contaminant_references", {}).keys()) > 0:
-
-    processed_steps += ['clean']
+    PROCESSED_STEPS.append("clean")
 
     rule build_decontamination_db:
         output:
@@ -284,7 +312,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             "%s/required_packages.yaml" % CONDAENV
         params:
             k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-            refs_in = " ".join(["ref_%s=%s" % (n, fa) for n,fa in config["contaminant_references"].items()]),
+            refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
         shell:
             """bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
 
@@ -292,11 +320,11 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
     rule decontamination:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=processed_steps[-2], fraction=MULTIFILE_FRACTIONS),
+                step=PROCESSED_STEPS[-2], fraction=MULTIFILE_FRACTIONS),
             db = "ref/genome/1/summary.txt"
         output:
             temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS, step=processed_steps[-1])),
+                fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
             contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
                     db=list(config["contaminant_references"].keys()),
                     fraction=MULTIFILE_FRACTIONS),
@@ -324,7 +352,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         shell:
             """
             if [ "{params.paired}" = true ] ; then
-            bbsplit.sh in1={input[0]} in2={input[1]} \
+                bbsplit.sh in1={input[0]} in2={input[1]} \
                     outu1={output[0]} outu2={output[1]} \
                     basename="{params.contaminant_folder}/%_R#.fastq.gz" \
                     maxindel={params.maxindel} minratio={params.minratio} \
@@ -334,39 +362,23 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             fi
 
             bbsplit.sh in={params.input_single}  \
-                    outu={params.output_single} \
-                   basename="{params.contaminant_folder}/%_se.fastq.gz" \
-                   maxindel={params.maxindel} minratio={params.minratio} \
-                   minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
-                   interleaved=f threads={threads} k={params.k} local=t \
-                   -Xmx{resources.mem}G 2>> {log}
-
-
+                outu={params.output_single} \
+                basename="{params.contaminant_folder}/%_se.fastq.gz" \
+                maxindel={params.maxindel} minratio={params.minratio} \
+                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
+                interleaved=f threads={threads} k={params.k} local=t \
+                -Xmx{resources.mem}G 2>> {log}
             """
 
 
-
-processed_steps += ['QC']
-
-def get_ribosomal_rna_input(wildcards):
-
-    inputs = []
-    data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
-
-    clean_reads = "{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz".format(step=processed_steps[-2],**wildcards)
-    rrna_reads = "{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz".format(**wildcards)
-
-    if data_type == "metagenome" and os.path.exists(rrna_reads):
-        return [clean_reads, rrna_reads]
-    else:
-        return [clean_reads]
+PROCESSED_STEPS.append("QC")
 
 
 rule postprocess_after_decontamination:
     input:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=processed_steps[-2],fraction=MULTIFILE_FRACTIONS)
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=PROCESSED_STEPS[-2],fraction=MULTIFILE_FRACTIONS)
     output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=processed_steps[-1],fraction=MULTIFILE_FRACTIONS)
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=PROCESSED_STEPS[-1],fraction=MULTIFILE_FRACTIONS)
     threads:
         1
     params:
@@ -381,6 +393,7 @@ rule postprocess_after_decontamination:
                     if data_type == "metagenome" and os.path.exists(params.rrna_reads[i]):
                         with open(params.rrna_reads[i], 'rb') as infile2:
                             shutil.copyfileobj(infile2, outFile)
+
 
 if PAIRED_END:
     rule calculate_insert_size:
@@ -404,17 +417,19 @@ if PAIRED_END:
             extend2 = config.get("merging_extend2", MERGING_EXTEND2),
             flags = 'loose ecct'
         shell:
-            """bbmerge.sh -Xmx{resources.mem}G threads={threads} \
-                   in1={input.R1} in2={input.R2} \
-                   {params.flags} k={params.kmer} \
-                   extend2={params.extend2} \
-                   ihist={output.ihist} merge=f \
-                   mininsert0=35 minoverlap0=8 2> >(tee {log})
-
-                readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
             """
-else:
+            bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+                in1={input.R1} in2={input.R2} \
+                {params.flags} k={params.kmer} \
+                extend2={params.extend2} \
+                ihist={output.ihist} merge=f \
+                mininsert0=35 minoverlap0=8 2> >(tee {log})
 
+            readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
+            """
+
+
+else:
     rule calculate_read_length_hist:
         input:
             unpack(get_quality_controlled_reads)
@@ -432,34 +447,28 @@ else:
             "{sample}/logs/{sample}_calculate_read_length.log"
         shell:
             """
-                readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
             """
-
-localrules: combine_read_length_stats, combine_insert_stats, combine_read_counts
 
 
 rule combine_read_length_stats:
     input:
-        expand("{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",sample=SAMPLES),
+        expand("{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt", sample=SAMPLES),
     output:
         'stats/read_length_stats.tsv'
     run:
         import pandas as pd
         import os
 
-
-
         Stats= pd.DataFrame()
 
         for length_file in input:
-            sample= length_file.split(os.path.sep)[0]
-
+            sample = length_file.split(os.path.sep)[0]
             data = parse_comments(length_file)
             data = pd.Series(data)[['Reads','Bases','Max','Min','Avg','Median','Mode','Std_Dev']]
-
             Stats[sample]=data
 
-        Stats.to_csv(output[0],sep='\t')
+        Stats.to_csv(output[0], sep='\t')
 
 
 # rule combine_cardinality:
@@ -483,7 +492,6 @@ rule combine_read_length_stats:
 #         Stats.to_csv(output[0],sep='\t')
 
 
-
 if PAIRED_END:
     rule combine_insert_stats:
         input:
@@ -493,17 +501,16 @@ if PAIRED_END:
         run:
             import pandas as pd
             import os
+
             Stats= pd.DataFrame()
 
             for insert_file in input:
-                sample= insert_file.split(os.path.sep)[0]
-
+                sample = insert_file.split(os.path.sep)[0]
                 data = parse_comments(insert_file)
                 data = pd.Series(data)[['Avg','Median','Mode','STDev','PercentOfPairs']]
-
                 Stats[sample]=data
 
-            Stats.T.to_csv(output[0],sep='\t')
+            Stats.T.to_csv(output[0], sep='\t')
 
 
 rule combine_read_counts:
@@ -514,31 +521,25 @@ rule combine_read_counts:
     run:
         import pandas as pd
 
-        Read_stats=pd.DataFrame()
+        Read_stats = pd.DataFrame()
 
         for f in input:
-            d= pd.read_table(f,index_col=[0,1])
-            Read_stats=Read_stats.append(d)
+            d = pd.read_table(f, index_col=[0, 1])
+            Read_stats = Read_stats.append(d)
 
-        Read_stats.to_csv(output[0],sep='\t')
+        Read_stats.to_csv(output[0], sep='\t')
 
 
 rule finalize_QC:
     input:
-        unpack(get_quality_controlled_reads),
-        rules.decontamination.output.contaminants,
-        "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-        "{sample}/logs/{sample}_quality_filtering_stats.txt",
-        expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=processed_steps),
-        read_count_files= expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=processed_steps),
-        read_length_hist="{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
-
+        unpack(get_finalize_qc_input)
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
-        read_stats= "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
+        read_stats = "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
     run:
-        print("Finished QC for sample {sample}\n".format(**wildcards))
         import pandas as pd
+
+        print("Finished QC for sample {sample}\n".format(**wildcards))
         All_read_counts= pd.DataFrame()
         for read_stats_file in input.read_count_files:
             d= pd.read_table(read_stats_file,index_col=[0,1])
@@ -546,7 +547,6 @@ rule finalize_QC:
         All_read_counts.to_csv(output.read_stats,sep='\t')
 
 
-#
 rule QC_report:
     input:
         expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
@@ -561,5 +561,4 @@ rule QC_report:
         fi
         """
 
-
-    # aggregate stats reports ...
+# aggregate stats reports ...
