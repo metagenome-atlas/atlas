@@ -6,7 +6,16 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: rename_megahit_output,rename_spades_output,initialize_checkm
+localrules: rename_megahit_output,rename_spades_output,initialize_checkm,finalize_contigs
+
+
+def get_preprocessing_steps(config):
+    preprocessing_steps = ["normalized"]
+    if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
+        preprocessing_steps.append("merged")
+    if config.get("error_correction_overlapping_pairs", True):
+        preprocessing_steps.append("errorcorr")
+    return ".".join(preprocessing_steps)
 
 
 def gff_to_gtf(gff_in, gtf_out):
@@ -33,17 +42,7 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
             print(toks[0], toks[1], sep="\t", file=fo)
 
 
-
-# define which steps are defined before assembly and in which order
-
-assembly_preprocessing_steps=['normalized','errorcorr','merged']
-
-if not (config.get('merge_pairs_before_assembly',True) and paired_end ):
-    assembly_preprocessing_steps.remove('merged')
-assembly_preprocessing_steps=".".join(assembly_preprocessing_steps)
-
-
-
+assembly_preprocessing_steps = get_preprocessing_steps(config)
 
 
 rule normalize_coverage_across_kmers:
@@ -51,7 +50,7 @@ rule normalize_coverage_across_kmers:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
         temp(expand("{{sample}}/assembly/reads/normalized_{fraction}.fastq.gz",
-                fraction= multifile_fractions))
+                fraction=MULTIFILE_FRACTIONS))
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
@@ -78,36 +77,35 @@ rule normalize_coverage_across_kmers:
         """
             if [ {params.input_single} != "null" ];
             then
-        bbnorm.sh {params.input_single} \
-                {params.extra_single} \
-                {params.output_single} \
-                k={params.k} t={params.t} \
-                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-                threads={threads} \
-                -Xmx{resources.mem}G 2> {log}
+                bbnorm.sh {params.input_single} \
+                    {params.extra_single} \
+                    {params.output_single} \
+                    k={params.k} t={params.t} \
+                    interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                    threads={threads} \
+                    -Xmx{resources.mem}G 2> {log}
             fi
-
 
             if [ {params.has_paired_end_files} = "t" ];
             then
-        bbnorm.sh {params.input_paired} \
-                {params.extra_paired} \
-                {params.output_paired} \
-                k={params.k} t={params.t} \
-                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-                threads={threads} \
-                -Xmx{resources.mem}G 2>> {log}
+                bbnorm.sh {params.input_paired} \
+                    {params.extra_paired} \
+                    {params.output_paired} \
+                    k={params.k} t={params.t} \
+                    interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                    threads={threads} \
+                    -Xmx{resources.mem}G 2>> {log}
             fi
+        """
 
-            """
 
 rule error_correction:
     input:
         expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=multifile_fractions)
+            fraction=MULTIFILE_FRACTIONS)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
-            fraction=multifile_fractions))
+            fraction=MULTIFILE_FRACTIONS))
     benchmark:
         "logs/benchmarks/error_correction/{sample}.txt"
     log:
@@ -117,8 +115,8 @@ rule error_correction:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     params:
-        inputs=lambda wc, input: "in1={0},{2} in2={1}".format(*input) if paired_end else "in={0}".format(*input),
-        outputs=lambda wc, output: "out1={0},{2} out2={1}".format(*output) if paired_end else "out={0}".format(*output)
+        inputs=lambda wc, input: "in1={0},{2} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
+        outputs=lambda wc, output: "out1={0},{2} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output)
     threads:
         config.get("threads", 1)
     shell:
@@ -136,10 +134,10 @@ rule error_correction:
 rule merge_pairs:
     input:
         expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=multifile_fractions)
+            fraction=MULTIFILE_FRACTIONS)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
-            fraction=multifile_fractions))
+            fraction=MULTIFILE_FRACTIONS))
     threads:
         config.get("threads", 1)
     resources:
@@ -169,13 +167,11 @@ rule merge_pairs:
         """
 
 
-
-
 if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=multifile_fractions,assembly_preprocessing_steps=assembly_preprocessing_steps)
+            fraction=MULTIFILE_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -228,11 +224,12 @@ if config.get("assembler", "megahit") == "megahit":
         shell:
             "cp {input} {output}"
 
+
 else:
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                   fraction=multifile_fractions,
+                   fraction=MULTIFILE_FRACTIONS,
                    assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
@@ -300,15 +297,16 @@ rule combine_sample_contig_stats:
     output:
         "{sample}/assembly/contig_stats.tsv"
     run:
+        import os
         import pandas as pd
-        C=pd.DataFrame()
-        for file in input:
-            D=pd.read_table(file)
-            assembly_step=file.split('/')[-1].replace("_contig_stats.txt","")
-            C.loc[assembly_step]
 
-        C.to_csv(output[0],sep='\t')
+        c = pd.DataFrame()
+        for f in input:
+            df = pd.read_table(f)
+            assembly_step = os.path.basename(f).replace("_contig_stats.txt", "")
+            c.loc[assembly_step]
 
+        c.to_csv(output[0], sep='\t')
 
 
 rule calculate_prefiltered_contig_coverage_stats:
@@ -317,12 +315,12 @@ rule calculate_prefiltered_contig_coverage_stats:
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     output: # bbwrap gives output statistics only for single ended
         covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
-        sam= temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam")
+        sam = temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam")
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
-        input= lambda wc,input : input_params_for_bbwrap(wc,input),
-        interleaved = "auto" #lambda wc: "t" if config["samples"][wc.sample].get("paired", True) else "auto"
+        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        interleaved = "auto"
     log:
         "{sample}/assembly/logs/prefiltered_contig_coverage_stats.log"
     conda:
@@ -338,7 +336,6 @@ rule calculate_prefiltered_contig_coverage_stats:
 
             pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
             -Xmx{resources.mem}G covstats={output.covstats} physcov 2>> {log}
-
         """
 
 
@@ -375,7 +372,6 @@ rule filter_by_coverage:
                trim={params.trim} \
                -Xmx{resources.mem}G 2> {log}"""
 
-localrules: finalize_contigs
 
 rule finalize_contigs:
     input:
@@ -385,10 +381,7 @@ rule finalize_contigs:
     threads:
         1
     shell:
-        """
-            cp {input} {output}
-        """
-
+        "cp {input} {output}"
 
 
 rule align_reads_to_final_contigs:
@@ -397,16 +390,17 @@ rule align_reads_to_final_contigs:
         fasta = "{sample}/{sample}_contigs.fasta",
     output:
         sam = temp("{sample}/sequence_alignment/{sample}.sam"),
-        unmapped= expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",fraction=multifile_fractions)
+        unmapped = expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+                          fraction=MULTIFILE_FRACTIONS)
     params:
-        input = lambda wc,input : input_params_for_bbwrap(wc,input),
+        input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-        unmapped = lambda wc,output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if paired_end else "outu={0}".format(*output.unmapped),
-        max_distance_between_pairs=config.get('contig_max_distance_between_pairs',CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+        unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
+        max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
         paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
-        ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else'best',
-        min_id= config.get('contig_min_id',CONTIG_MIN_ID),
-        maxindel=100 # default 16000 goode for genome deletions but not necessary for alignement to contigs
+        ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
+        min_id = config.get('contig_min_id', CONTIG_MIN_ID),
+        maxindel = 100 # default 16000 good for genome deletions but not necessarily for alignment to contigs
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}.txt"
     log:
@@ -439,19 +433,21 @@ rule align_reads_to_final_contigs:
                -Xmx{resources.mem}G \
                2> {log}
         """
+
+
 rule pileup:
     input:
         fasta = "{sample}/{sample}_contigs.fasta",
-        sam = "{sample}/sequence_alignment/{sample}.sam",
+        sam = "{sample}/sequence_alignment/{sample}.sam"
         #predicted_genes="{folder}/predicted_genes/{Reference}_genes.fna"
     output:
-        basecov=temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
-        covhist= "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
+        basecov = temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
+        covhist = "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
         covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-        bincov ="{sample}/assembly/contig_stats/postfilter_coverage_binned.txt",
+        bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
         #gene_coverage="{sample}/assembly/contig_stats/postfilter_gene_coverage.txt.gz", add: outorf={output.gene_coverage}
     params:
-        pileup_secondary='t' if config.get("count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
+        pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
     log:
@@ -463,18 +459,16 @@ rule pileup:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
-        """
-            pileup.sh ref={input.fasta} in={input.sam} \
-            threads={threads} \
-            -Xmx{resources.mem}G \
-            covstats={output.covstats} \
-            hist={output.covhist} \
-            basecov={output.basecov}\
-            concise=t \
-            physcov=t \
-            secondary={params.pileup_secondary} \
-            bincov={output.bincov} 2>> {log}
-        """
+        """pileup.sh ref={input.fasta} in={input.sam} \
+               threads={threads} \
+               -Xmx{resources.mem}G \
+               covstats={output.covstats} \
+               hist={output.covhist} \
+               basecov={output.basecov}\
+               concise=t \
+               physcov=t \
+               secondary={params.pileup_secondary} \
+               bincov={output.bincov} 2>> {log}"""
 
 
 if config.get("perform_genome_binning", True):
@@ -705,7 +699,7 @@ rule find_counts_per_region:
     params:
         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
         paired_only= "-B" if config.get('contig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
-        paired_mode = "-p" if paired_end else "",
+        paired_mode = "-p" if PAIRED_END else "",
         multi_mapping = "-M −−fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
         feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
     log:
