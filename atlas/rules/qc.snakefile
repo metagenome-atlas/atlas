@@ -499,7 +499,7 @@ if paired_end:
                 sample= insert_file.split(os.path.sep)[0]
 
                 data = parse_comments(insert_file)
-                data = pd.Series(data)[['Avg','Median','Mode','STDev','PercentOfPairs']]
+                data = pd.Series(data)[['Mean','Median','Mode','STDev','PercentOfPairs']]
 
                 Stats[sample]=data
 
