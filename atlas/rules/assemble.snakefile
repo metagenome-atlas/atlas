@@ -6,7 +6,8 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: rename_megahit_output,rename_spades_output,initialize_checkm,finalize_contigs
+localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
+            finalize_contigs
 
 
 def get_preprocessing_steps(config):
