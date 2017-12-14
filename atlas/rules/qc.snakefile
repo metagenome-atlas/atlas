@@ -384,9 +384,9 @@ rule postprocess_after_decontamination:
     params:
         rrna_reads= expand("{{sample}}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz",fraction=MULTIFILE_FRACTIONS)
     run:
+        import shutil
         data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
         for i in range(len(MULTIFILE_FRACTIONS)):
-            import shutil
             with open(output[i], 'wb') as outFile:
                 with open(input[i], 'rb') as infile1:
                     shutil.copyfileobj(infile1, outFile)
@@ -460,15 +460,15 @@ rule combine_read_length_stats:
         import pandas as pd
         import os
 
-        Stats= pd.DataFrame()
+        stats = pd.DataFrame()
 
         for length_file in input:
             sample = length_file.split(os.path.sep)[0]
             data = parse_comments(length_file)
-            data = pd.Series(data)[['Reads','Bases','Max','Min','Avg','Median','Mode','Std_Dev']]
-            Stats[sample]=data
+            data = pd.Series(data)[['Reads', 'Bases', 'Max', 'Min', 'Avg', 'Median', 'Mode', 'Std_Dev']]
+            stats[sample] = data
 
-        Stats.to_csv(output[0], sep='\t')
+        stats.to_csv(output[0], sep='\t')
 
 
 # rule combine_cardinality:
@@ -480,16 +480,16 @@ rule combine_read_length_stats:
 #         import pandas as pd
 #         import os
 
-#         Stats= pd.Series()
+#         stats= pd.Series()
 
 #         for file in input:
 #             sample= file.split(os.path.sep)[0]
 #             with open(file) as f:
 #                 cardinality= int(f.read().strip())
 
-#             Stats.loc[sample]=cardinality
+#             stats.loc[sample]=cardinality
 
-#         Stats.to_csv(output[0],sep='\t')
+#         stats.to_csv(output[0],sep='\t')
 
 
 if PAIRED_END:
@@ -502,15 +502,15 @@ if PAIRED_END:
             import pandas as pd
             import os
 
-            Stats= pd.DataFrame()
+            stats = pd.DataFrame()
 
             for insert_file in input:
                 sample = insert_file.split(os.path.sep)[0]
                 data = parse_comments(insert_file)
-                data = pd.Series(data)[['Avg','Median','Mode','STDev','PercentOfPairs']]
-                Stats[sample]=data
+                data = pd.Series(data)[['Mean', 'Median', 'Mode', 'STDev', 'PercentOfPairs']]
+                stats[sample] = data
 
-            Stats.T.to_csv(output[0], sep='\t')
+            stats.T.to_csv(output[0], sep='\t')
 
 
 rule combine_read_counts:
@@ -521,13 +521,13 @@ rule combine_read_counts:
     run:
         import pandas as pd
 
-        Read_stats = pd.DataFrame()
+        stats = pd.DataFrame()
 
         for f in input:
             d = pd.read_table(f, index_col=[0, 1])
-            Read_stats = Read_stats.append(d)
+            stats = stats.append(d)
 
-        Read_stats.to_csv(output[0], sep='\t')
+        stats.to_csv(output[0], sep='\t')
 
 
 rule finalize_QC:
