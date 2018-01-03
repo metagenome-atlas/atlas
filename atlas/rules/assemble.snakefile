@@ -194,7 +194,7 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs=lambda wc,input: "-1 {0} -2 {1} --read {2}".format(*input) if len(input)==2 else "--read {0}".format(*input)
+            inputs=lambda wc,input: "-1 {0} -2 {1} --read {2}".format(*input) if paired_end else "--read {0}".format(*input)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -239,7 +239,7 @@ else:
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
         params:
-            inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if len(input) == 3 else "-s {0}".format(*input),
+            inputs=lambda wc,input: "-1 {0} -2 {1} -s {2}".format(*input) if paired_end else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
             #min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)

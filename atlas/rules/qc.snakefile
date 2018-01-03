@@ -409,7 +409,8 @@ if paired_end:
                    {params.flags} k={params.kmer} \
                    extend2={params.extend2} \
                    ihist={output.ihist} merge=f \
-                   mininsert0=35 minoverlap0=8 2> >(tee {log})
+                   mininsert0=35 minoverlap0=8 \
+                   prealloc=t prefilter=t 2> >(tee {log})
                 
                 readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
             """
@@ -499,7 +500,7 @@ if paired_end:
                 sample= insert_file.split(os.path.sep)[0]
 
                 data = parse_comments(insert_file)
-                data = pd.Series(data)[['Avg','Median','Mode','STDev','PercentOfPairs']]
+                data = pd.Series(data)[['Mean','Median','Mode','STDev','PercentOfPairs']]
 
                 Stats[sample]=data
 
