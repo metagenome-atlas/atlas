@@ -157,16 +157,21 @@ elif config.get("workflow", "complete") == "complete":
 
 elif config.get("workflow") == "download":
 
+    DBDIR = os.path.realpath(config["db_dir"])
+    CHECKMDIR = os.path.join(DBDIR, "checkm")
+    CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
     FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
              "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
              "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
              "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
              "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
-             "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66"}
+             "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
+             CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
     rule all:
         input:
-            expand("{dir}/{filename}", dir=os.path.realpath(config["db_dir"]), filename=list(FILES.keys()))
+            expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
+            "%s/taxon_marker_sets.tsv" % CHECKMDIR
 
     include: "rules/download.snakefile"
 

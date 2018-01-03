@@ -556,8 +556,8 @@ if config.get("perform_genome_binning", True):
             "%s/optional_genome_binning.yaml" % CONDAENV
         log:
             "logs/initialize_checkm.log"
-        script:
-            "initialize_checkm.py"
+        shell:
+            "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
     rule run_checkm_lineage_wf:
