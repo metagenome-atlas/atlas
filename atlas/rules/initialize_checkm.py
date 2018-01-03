@@ -58,9 +58,6 @@ def run_popen(cmd, response, stderr=None):
     newline = os.linesep
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, universal_newlines=True, stderr=stderr)
     stdout = p.communicate(input=newline.join(response) if isinstance(response, list) else response)[0]
-    if not p.returncode == 0:
-        logging.critical("See CheckM logged output in: %s" % stderr)
-        sys.exit(1)
 
 
 def main(db_dir, confirmation, log):
