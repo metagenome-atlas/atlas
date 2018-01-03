@@ -69,7 +69,7 @@ def main(db_dir, confirmation, log):
 
     # when re-activating a conda env, reset the .dmanifest directory and download
     with open(confirmation, "w") as fh:
-        logging.info("CheckM has been successfully intialized.")
+        logging.info("CheckM has been successfully initialized.")
         fh.write("CheckM successfully initialized.\n")
 
 
