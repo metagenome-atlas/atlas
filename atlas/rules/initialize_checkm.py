@@ -64,8 +64,8 @@ def main(db_dir, confirmation, log):
     with open(log, "w") as errlog:
         logging.info("Updating CheckM's data directory.")
         run_popen(["checkm", "data", "setRoot"], [db_dir, db_dir], stderr=errlog)
-        logging.info("Downloading CheckM reference data.")
-        run_popen(["checkm", "data", "update"], ["y", "y"], stderr=errlog)
+        # logging.info("Downloading CheckM reference data.")
+        # run_popen(["checkm", "data", "update"], ["y", "y"], stderr=errlog)
 
     # when re-activating a conda env, reset the .dmanifest directory and download
     with open(confirmation, "w") as fh:

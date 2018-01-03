@@ -557,7 +557,7 @@ if config.get("perform_genome_binning", True):
         log:
             "logs/initialize_checkm.log"
         shell:
-            "python initialize_checkm.py {params.database_dir} output.touch_output {log}"
+            "python rules/initialize_checkm.py {params.database_dir} output.touch_output {log}"
 
 
     rule run_checkm_lineage_wf:
