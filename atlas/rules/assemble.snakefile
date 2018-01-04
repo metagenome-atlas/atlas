@@ -191,13 +191,13 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs=lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if paired_end else "--read {0}".format(*input)
+            inputs = lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if PAIRED_END else "--read {0}".format(*input)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
-            mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
+            mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """megahit --continue \
                     {params.inputs} \
@@ -237,7 +237,7 @@ else:
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
         params:
-            inputs=lambda wc, input: "-1 {0} -2 {1} -s {2}".format(*input) if paired_end else "-s {0}".format(*input),
+            inputs = lambda wc, input: "-1 {0} -2 {1} -s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
             #min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
@@ -253,7 +253,8 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} 2> >(tee {log}) """
+            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} 2> >(tee {log})
+            """
 
 
     rule rename_spades_output:
