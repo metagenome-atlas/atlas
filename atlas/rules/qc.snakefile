@@ -415,7 +415,8 @@ if PAIRED_END:
         params:
             kmer = config.get("merging_k", MERGING_K),
             extend2 = config.get("merging_extend2", MERGING_EXTEND2),
-            flags = 'loose ecct'
+            flags = 'loose ecct',
+            minprob = config.get("bbmerge_minprob", "0.8")
         shell:
             """
             bbmerge.sh -Xmx{resources.mem}G threads={threads} \
@@ -423,7 +424,9 @@ if PAIRED_END:
                 {params.flags} k={params.kmer} \
                 extend2={params.extend2} \
                 ihist={output.ihist} merge=f \
-                mininsert0=35 minoverlap0=8 2> >(tee {log})
+                mininsert0=35 minoverlap0=8 \
+                prealloc=t prefilter=t \
+                minprob={params.minprob} 2> >(tee {log})
 
             readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
             """
