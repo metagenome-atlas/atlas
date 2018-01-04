@@ -66,14 +66,11 @@ def get_ribosomal_rna_input(wildcards):
 def get_finalize_qc_input(wildcards):
     inputs = get_quality_controlled_reads(wildcards)
     try:
-        inputs["decontaminated_seqs"] = rules.decontamination.output.contaminants
+        # FIXME: 'decontaminated_seqs': ['{sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz'...
+        # inputs["decontaminated_seqs"] = rules.decontamination.output.contaminants
         inputs["decontaminated_stats"] = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt".format(sample=wildcards.sample)
     except AttributeError:
         pass
-    inputs["quality_filtering_stats"] = "{sample}/logs/{sample}_quality_filtering_stats.txt".format(sample=wildcards.sample)
-    inputs["reads_stats_zip"] = expand("{sample}/sequence_quality_control/read_stats/{step}.zip", sample=wildcards.sample, step=PROCESSED_STEPS)
-    inputs["read_count_files"] = expand("{sample}/sequence_quality_control/read_stats/{step}_read_counts.tsv", sample=wildcards.sample, step=PROCESSED_STEPS)
-    inputs["read_length_hist"] = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt".format(sample=wildcards.sample)
     return inputs
 
 
@@ -535,24 +532,28 @@ rule combine_read_counts:
 
 rule finalize_QC:
     input:
-        unpack(get_finalize_qc_input)
+        unpack(get_finalize_qc_input),
+        quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
+        reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
+        read_count_files = expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=PROCESSED_STEPS),
+        read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
         read_stats = "{sample}/sequence_quality_control/read_stats/read_counts.tsv"
     run:
         import pandas as pd
 
-        print("Finished QC for sample {sample}\n".format(**wildcards))
         all_read_counts = pd.DataFrame()
         for read_stats_file in input.read_count_files:
             d = pd.read_table(read_stats_file, index_col=[0, 1])
             all_read_counts = all_read_counts.append(d)
         all_read_counts.to_csv(output.read_stats, sep='\t')
+        print("Finished QC for sample {sample}\n".format(**wildcards))
 
 
 rule QC_report:
     input:
-        expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
+        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
         "stats/read_counts.tsv",
         read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv'
     output:
