@@ -538,16 +538,16 @@ rule finalize_QC:
         unpack(get_finalize_qc_input)
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
-        read_stats = "{sample}/sequence_quality_control/read_stats/read_counts.tsv" # exists alredy before
+        read_stats = "{sample}/sequence_quality_control/read_stats/read_counts.tsv"
     run:
         import pandas as pd
 
         print("Finished QC for sample {sample}\n".format(**wildcards))
-        All_read_counts= pd.DataFrame()
+        all_read_counts = pd.DataFrame()
         for read_stats_file in input.read_count_files:
-            d= pd.read_table(read_stats_file,index_col=[0,1])
-            All_read_counts= All_read_counts.append(d)
-        All_read_counts.to_csv(output.read_stats,sep='\t')
+            d = pd.read_table(read_stats_file, index_col=[0, 1])
+            all_read_counts = all_read_counts.append(d)
+        all_read_counts.to_csv(output.read_stats, sep='\t')
 
 
 rule QC_report:
