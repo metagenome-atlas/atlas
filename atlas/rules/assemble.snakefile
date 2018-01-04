@@ -51,20 +51,20 @@ rule normalize_coverage_across_kmers:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
         temp(expand("{{sample}}/assembly/reads/normalized_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS))
+            fraction=MULTIFILE_FRACTIONS))
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-        input_single = lambda wc, input: "in=%s" % input.se if hasattr(input,'se') else "null",
-        extra_single = lambda wc, input: "extra=%s,%s" % (input.R1, input.R2) if hasattr(input,'R1') else "",
-        has_paired_end_files= lambda wc, input: "t" if hasattr(input,'R1') else "f",
-        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input,'R1') else "null",
-        extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input,'se') else "",
-        output_single = lambda wc,output,input: "out=%s" % output[2] if hasattr(input,'R1') else "out=%s" % output[0],
-        output_paired = lambda wc,output,input: "out=%s out2=%s" % (output[0],output[1]) if hasattr(input,'R1') else "null",
+        input_single = lambda wc, input: "in=%s" % input.se if hasattr(input, 'se') else "null",
+        extra_single = lambda wc, input: "extra=%s,%s" % (input.R1, input.R2) if hasattr(input, 'R1') else "",
+        has_paired_end_files = lambda wc, input: "t" if hasattr(input, 'R1') else "f",
+        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input, 'R1') else "null",
+        extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input, 'se') else "",
+        output_single = lambda wc, output, input: "out=%s" % output[2] if hasattr(input, 'R1') else "out=%s" % output[0],
+        output_paired = lambda wc, output, input: "out=%s out2=%s" % (output[0], output[1]) if hasattr(input, 'R1') else "null",
         interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
@@ -76,27 +76,27 @@ rule normalize_coverage_across_kmers:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
         """
-            if [ {params.input_single} != "null" ];
-            then
-                bbnorm.sh {params.input_single} \
-                    {params.extra_single} \
-                    {params.output_single} \
-                    k={params.k} t={params.t} \
-                    interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-                    threads={threads} \
-                    -Xmx{resources.mem}G 2> {log}
-            fi
+        if [ {params.input_single} != "null" ];
+        then
+            bbnorm.sh {params.input_single} \
+                {params.extra_single} \
+                {params.output_single} \
+                k={params.k} t={params.t} \
+                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                threads={threads} \
+                -Xmx{resources.mem}G 2> {log}
+        fi
 
-            if [ {params.has_paired_end_files} = "t" ];
-            then
-                bbnorm.sh {params.input_paired} \
-                    {params.extra_paired} \
-                    {params.output_paired} \
-                    k={params.k} t={params.t} \
-                    interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
-                    threads={threads} \
-                    -Xmx{resources.mem}G 2>> {log}
-            fi
+        if [ {params.has_paired_end_files} = "t" ];
+        then
+            bbnorm.sh {params.input_paired} \
+                {params.extra_paired} \
+                {params.output_paired} \
+                k={params.k} t={params.t} \
+                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                threads={threads} \
+                -Xmx{resources.mem}G 2>> {log}
+        fi
         """
 
 
@@ -116,19 +116,19 @@ rule error_correction:
     resources:
         mem = config.get("java_mem", JAVA_MEM)
     params:
-        inputs=lambda wc, input: "in1={0},{2} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
-        outputs=lambda wc, output: "out1={0},{2} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output)
+        inputs = lambda wc, input: "in1={0},{2} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
+        outputs = lambda wc, output: "out1={0},{2} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output)
     threads:
         config.get("threads", 1)
     shell:
         """
-            tadpole.sh -Xmx{resources.mem}G \
-               prealloc=1 \
-               {params.inputs} \
-               {params.outputs} \
-               mode=correct \
-               threads={threads} \
-               ecc=t ecco=t 2>> {log}
+        tadpole.sh -Xmx{resources.mem}G \
+            prealloc=1 \
+            {params.inputs} \
+            {params.outputs} \
+            mode=correct \
+            threads={threads} \
+            ecc=t ecco=t 2>> {log}
         """
 
 
@@ -156,15 +156,16 @@ rule merge_pairs:
         extend2 = config.get("merging_extend2", MERGING_EXTEND2),
         flags = config.get("merging_flags", MERGING_FLAGS)
     shell:
-        """bbmerge.sh -Xmx{resources.mem}G threads={threads} \
-               in1={input[0]} in2={input[1]} \
-               outmerged={wildcards.sample}_merged_pairs.fastq.gz \
-               outu={output[0]} outu2={output[1]} \
-               {params.flags} k={params.kmer} \
-               extend2={params.extend2} 2> {log}
+        """
+        bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+            in1={input[0]} in2={input[1]} \
+            outmerged={wildcards.sample}_merged_pairs.fastq.gz \
+            outu={output[0]} outu2={output[1]} \
+            {params.flags} k={params.kmer} \
+            extend2={params.extend2} 2> {log}
 
-           cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} \
-               > {output[2]} 2>> {log}
+        cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} \
+            > {output[2]} 2>> {log}
         """
 
 
@@ -180,7 +181,7 @@ if config.get("assembler", "megahit") == "megahit":
         shadow:
             "full"
         log:
-             "{sample}/logs/{sample}_megahit.log"
+            "{sample}/logs/{sample}_megahit.log"
         params:
             min_count = config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
             k_min = config.get("megahit_k_min", MEGAHIT_K_MIN),
@@ -199,21 +200,22 @@ if config.get("assembler", "megahit") == "megahit":
         resources:
             mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """megahit --continue \
-                    {params.inputs} \
-                   --tmp-dir {TMPDIR} \
-                   --num-cpu-threads {threads} \
-                   --k-min {params.k_min} \
-                   --k-max {params.k_max} \
-                   --k-step {params.k_step} \
-                   --out-dir {params.outdir} \
-                   --out-prefix {wildcards.sample}_prefilter \
-                   --min-contig-len {params.min_contig_len} \
-                   --min-count {params.min_count} \
-                   --merge-level {params.merge_level} \
-                   --prune-level {params.prune_level} \
-                   --low-local-ratio {params.low_local_ratio} \
-                   --memory {resources.mem}000000000  2> >(tee {log})
+            """
+            megahit --continue \
+                {params.inputs} \
+                --tmp-dir {TMPDIR} \
+                --num-cpu-threads {threads} \
+                --k-min {params.k_min} \
+                --k-max {params.k_max} \
+                --k-step {params.k_step} \
+                --out-dir {params.outdir} \
+                --out-prefix {wildcards.sample}_prefilter \
+                --min-contig-len {params.min_contig_len} \
+                --min-count {params.min_count} \
+                --merge-level {params.merge_level} \
+                --prune-level {params.prune_level} \
+                --low-local-ratio {params.low_local_ratio} \
+                --memory {resources.mem}000000000  2> >(tee {log})
             """
 
 
@@ -230,8 +232,8 @@ else:
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                   fraction=MULTIFILE_FRACTIONS,
-                   assembly_preprocessing_steps=assembly_preprocessing_steps)
+                fraction=MULTIFILE_FRACTIONS,
+                assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
         benchmark:
