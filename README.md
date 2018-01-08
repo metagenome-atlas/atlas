@@ -12,17 +12,17 @@
 # Install
 
 All dependencies are installed via [conda](https://www.continuum.io/downloads) using the [bioconda](https://github.com/bioconda/bioconda-recipes) channel.
-The workflow and some dependencies require Python 3.5.
+The workflow and some dependencies require Python 3.
 
 The intended usage requires `conda`.
 
 With `conda`, execute:
 
 ```
-conda install -c bioconda python=3.5 snakemake bbmap=37.17 click
+conda install -c bioconda python=3.6 snakemake bbmap=37.17 click
 ```
 
-Using Python 3.5, install `atlas`:
+Using Python 3.6, install `atlas`:
 
 ```
 pip install -U pnnl-atlas
