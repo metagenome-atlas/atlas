@@ -7,7 +7,7 @@ Initialize CheckM.
 import argparse
 import logging
 import os
-import shutil
+import sys
 from subprocess import Popen, PIPE
 
 
@@ -63,6 +63,9 @@ def run_popen(cmd, response, stderr=None):
 def main(db_dir, confirmation, log):
     with open(log, "w") as errlog:
         logging.info("Updating CheckM's data directory.")
+        # if checkm has never been run before it prompts for a directory
+        # prior to running anything. And then it runs the update code and
+        # requires a second input (of the same thing)
         run_popen(["checkm", "data", "setRoot"], [db_dir, db_dir], stderr=errlog)
         # logging.info("Downloading CheckM reference data.")
         # run_popen(["checkm", "data", "update"], ["y", "y"], stderr=errlog)
