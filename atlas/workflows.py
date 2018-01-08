@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+from atlas.conf import validate_config
 
 
 def get_snakefile():
@@ -40,6 +41,7 @@ def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     if not os.path.exists(config):
         logging.critical("Config not found: %s" % config)
         sys.exit(1)
+    validate_config(config)
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake --snakefile {snakefile} --directory {out_dir} "
            "--printshellcmds --jobs {jobs} --rerun-incomplete "

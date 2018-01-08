@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import os
+import sys
 import tempfile
 import yaml
 from collections import OrderedDict
@@ -160,3 +161,35 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     with open(config, "w") as f:
         print(yaml.dump(conf, default_flow_style=False), file=f)
     logging.info("Configuration file written to %s" % config)
+
+
+def log_exception(msg):
+    logging.critical(msg)
+    logging.info("Documentation is available at: https://pnnl-atlas.readthedocs.io")
+    logging.info("Issues can be raised at: https://github.com/pnnl/atlas/issues")
+    sys.exit(1)
+
+
+def validate_sample_defs(config):
+    if "samples" not in config.keys():
+        log_exception("'samples' are not defined in the configuration")
+    if len(config["samples"]) == 0:
+        log_exception("No samples are defined under 'samples'")
+    for sample in config["samples"]:
+        if "fastq" not in config["samples"][sample]:
+            log_exception("'fastq' must be defined per sample")
+        # single- or paired-end and user added appropriately as list
+        if isinstance(config["samples"][sample]["fastq"], list):
+            for fq in config["samples"][sample]["fastq"]:
+                if not os.path.exists(fq):
+                    log_exception("%s does not exist" % fq)
+        # single-end and user defined as string
+        else:
+            if not os.path.exists(config["samples"][sample]["fastq"]):
+                log_exception("%s does not exist" % config["samples"][sample]["fastq"])
+
+
+def validate_config(config):
+    conf = load_configfile(config)
+    validate_sample_defs(conf)
+    # could later add more validation steps
