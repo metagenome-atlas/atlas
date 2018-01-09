@@ -124,14 +124,14 @@ if config.get("workflow") != "download":
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
     SAMPLES = [i for i in config["samples"].keys()]
 
+# quality control of sequences only
+if config.get("workflow", "complete") == "qc":
     # define paired end or not
     PAIRED_END = all([config["samples"][s].get("paired", False) \
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-# quality control of sequences only
-if config.get("workflow", "complete") == "qc":
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
@@ -141,6 +141,12 @@ if config.get("workflow", "complete") == "qc":
 
 # quality control, assembly, annotation, and quantification
 elif config.get("workflow", "complete") == "complete":
+    # define paired end or not
+    PAIRED_END = all([config["samples"][s].get("paired", False) \
+                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
+    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
