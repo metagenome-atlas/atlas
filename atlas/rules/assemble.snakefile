@@ -671,7 +671,7 @@ rule find_counts_per_region:
         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
         paired_only= "-B" if config.get('contig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
         paired_mode = "-p" if PAIRED_END else "",
-        multi_mapping = "-M −−fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
+        multi_mapping = "-M --fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
         feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
     log:
         "{sample}/logs/counts_per_region.log"
@@ -680,13 +680,14 @@ rule find_counts_per_region:
     threads:
         config.get("threads", 1)
     shell:
-        """featureCounts {params.paired_mode} \
-                −−minOverlap {params.min_read_overlap}\
-                {params.paired_only}\
-               -F gtf \
+        """featureCounts \
+                --minOverlap {params.min_read_overlap} \
+                {params.paired_mode} \
+                {params.paired_only} \
+               -F GTF \
                -T {threads} \
                {params.multi_mapping} \
-               {params.feature_counts_allow_overlap}\
+               {params.feature_counts_allow_overlap} \
                -t CDS \
                -g ID \
                -a {input.gtf} \
