@@ -73,7 +73,8 @@ rule normalize_coverage_across_kmers:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     shell:
         """
         if [ {params.input_single} != "null" ];
@@ -84,7 +85,7 @@ rule normalize_coverage_across_kmers:
                 k={params.k} t={params.t} \
                 interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
                 threads={threads} \
-                -Xmx{resources.mem}G 2> {log}
+                -Xmx{resources.java_mem}G 2> {log}
         fi
 
         if [ {params.has_paired_end_files} = "t" ];
@@ -95,7 +96,7 @@ rule normalize_coverage_across_kmers:
                 k={params.k} t={params.t} \
                 interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
                 threads={threads} \
-                -Xmx{resources.mem}G 2>> {log}
+                -Xmx{resources.java_mem}G 2>> {log}
         fi
         """
 
@@ -114,7 +115,8 @@ rule error_correction:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     params:
         inputs = lambda wc, input: "in1={0},{2} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
         outputs = lambda wc, output: "out1={0},{2} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output)
@@ -122,7 +124,7 @@ rule error_correction:
         config.get("threads", 1)
     shell:
         """
-        tadpole.sh -Xmx{resources.mem}G \
+        tadpole.sh -Xmx{resources.java_mem}G \
             prealloc=1 \
             {params.inputs} \
             {params.outputs} \
@@ -142,7 +144,8 @@ rule merge_pairs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     conda:
         "%s/required_packages.yaml" % CONDAENV
     log:
@@ -157,7 +160,7 @@ rule merge_pairs:
         flags = config.get("merging_flags", MERGING_FLAGS)
     shell:
         """
-        bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+        bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
             outmerged={wildcards.sample}_merged_pairs.fastq.gz \
             outu={output[0]} outu2={output[1]} \
@@ -290,9 +293,10 @@ rule calculate_contigs_stats:
     threads:
         1
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     shell:
-        "stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
+        "stats.sh in={input} format=3 -Xmx{resources.java_mem}G > {output}"
 
 
 rule combine_sample_contig_stats:
@@ -332,14 +336,15 @@ rule calculate_prefiltered_contig_coverage_stats:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     shell:
         """bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
                interleaved={params.interleaved} threads={threads} \
-            -Xmx{resources.mem}G append out={output.sam} 2> {log}
+            -Xmx{resources.java_mem}G append out={output.sam} 2> {log}
 
             pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
-            -Xmx{resources.mem}G covstats={output.covstats} physcov 2>> {log}
+            -Xmx{resources.java_mem}G covstats={output.covstats} physcov 2>> {log}
         """
 
 
@@ -363,7 +368,8 @@ rule filter_by_coverage:
     threads:
         1
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     shell:
         """filterbycoverage.sh in={input.fasta} \
                cov={input.covstats} \
@@ -374,7 +380,7 @@ rule filter_by_coverage:
                minr={params.minr} \
                minl={params.minl} \
                trim={params.trim} \
-               -Xmx{resources.mem}G 2> {log}"""
+               -Xmx{resources.java_mem}G 2> {log}"""
 
 
 rule finalize_contigs:
@@ -414,7 +420,8 @@ rule align_reads_to_final_contigs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     shell:
         """bbwrap.sh nodisk=t \
                ref={input.fasta} \
@@ -434,7 +441,7 @@ rule align_reads_to_final_contigs:
                secondary=t \
                ssao=t \
                maxsites={params.maxsites} \
-               -Xmx{resources.mem}G \
+               -Xmx{resources.java_mem}G \
                2> {log}
         """
 
@@ -461,11 +468,12 @@ rule pileup:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION
     shell:
         """pileup.sh ref={input.fasta} in={input.sam} \
                threads={threads} \
-               -Xmx{resources.mem}G \
+               -Xmx{resources.java_mem}G \
                covstats={output.covstats} \
                hist={output.covhist} \
                basecov={output.basecov}\
