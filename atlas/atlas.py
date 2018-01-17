@@ -202,6 +202,28 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
+@cli.command("QC", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
+@click.argument("config")
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
+@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+    """Runs the ATLAS Quality control protocol, the first step of the 'assemble' protocol.
+
+    A skeleton configuration file can be generated with defaults using:
+
+        \b
+        atlas make-config
+
+    For more details, see: http://pnnl-atlas.readthedocs.io/
+    """
+    qc(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
+
+
+
+
 @cli.command("assemble", context_settings=dict(ignore_unknown_options=True), short_help="assembly workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
