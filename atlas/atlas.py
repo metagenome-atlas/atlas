@@ -7,7 +7,7 @@ from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
-from atlas.workflows import annotate, assemble, download
+from atlas.workflows import annotate, assemble, download, qc
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s %(levelname)s] %(message)s")
