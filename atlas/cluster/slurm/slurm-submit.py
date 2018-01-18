@@ -83,7 +83,7 @@ if "resources" in job_properties:
         elif "walltime" in resources:
             arg_dict["time"] = resources["walltime"]
     if "mem" in resources and arg_dict["mem"] is None:
-        arg_dict["mem"] = resources["mem"]
+        arg_dict["mem"] = resources["mem"]*1e9
 
 # Threads
 if "threads" in job_properties:
@@ -96,13 +96,13 @@ opt_keys = ["array", "account", "begin", "cpus_per_task",
 
 # Set default partition
 if arg_dict["partition"] is None:
-    if not "{{cookiecutter.partition}}":
+    if not "":
         # partitions and SLURM - If not specified, the default behavior is to
         # allow the slurm controller to select the default partition as
         # designated by the system administrator.
         opt_keys.remove("partition")
     else:
-        arg_dict["partition"] = "{{cookiecutter.partition}}"
+        arg_dict["partition"] = ""
 
 opts = ""
 for k, v in arg_dict.items():
