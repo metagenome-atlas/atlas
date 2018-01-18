@@ -8,7 +8,7 @@ from default_values import *
 
 
 # required snakemake version
-min_version("3.4")
+min_version("4.3")
 
 
 def get_conda_envs_dir():
