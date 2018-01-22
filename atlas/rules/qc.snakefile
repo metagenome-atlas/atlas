@@ -266,7 +266,8 @@ rule quality_filter:
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
         # we require the user to reformat to R1 and R2, non-interleaved files
         interleaved = "f",
-        maxns = config.get("max_ns", PREPROCESS_MAX_NS),
+        maxns = config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
+        prealloc = config.get("preallocate_ram", PREALLOCATE_RAM),
         inputs = lambda wc, input:"in={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
         outputs = lambda wc, output:"out={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
     log:
@@ -298,7 +299,7 @@ rule quality_filter:
             maxns={params.maxns} \
             minbasefrequency={params.minbasefrequency} \
             ecco={params.error_correction_pe} \
-            prealloc=t \
+            prealloc={params.prealloc} \
             -Xmx{resources.mem}G 2> {log}
         """
 
