@@ -254,9 +254,9 @@ rule quality_filter:
     benchmark:
         "logs/benchmarks/quality_filter/{sample}.txt"
     params:
-        lref = "lref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
-        rref = "rref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
-        mink = "" if not config.get("preprocess_adapters") else "mink=%d" % config.get("preprocess_adapter_min_k", 8),
+        ref = "ref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
+        mink = "" if not config.get("preprocess_adapters") else "mink=%d" % config.get("preprocess_adapter_min_k", PREPROCESS_ADAPTER_MIN_K),
+        ktrim = "" if not config.get("preprocess_adapters") else "ktrim=%s" % config.get("preprocess_kmer_trim", PREPROCESS_KMER_TRIM),
         trimq = config.get("preprocess_minimum_base_quality", PREPROCESS_MINIMUM_BASE_QUALITY),
         hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
         k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
@@ -264,9 +264,12 @@ rule quality_filter:
         error_correction_pe = "t" if PAIRED_END and config.get('error_correction_overlapping_pairs',True) else "f",
         minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
         minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
-        interleaved = "t" if PAIRED_END else "f",
-        inputs = lambda wc, input:"in1={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
-        outputs = lambda wc, output:"out1={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
+        # we require the user to reformat to R1 and R2, non-interleaved files
+        interleaved = "f",
+        maxns = config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
+        prealloc = config.get("preallocate_ram", PREALLOCATE_RAM),
+        inputs = lambda wc, input:"in={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
+        outputs = lambda wc, output:"out={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
     log:
         "{sample}/logs/{sample}_quality_filter.log"
     conda:
@@ -277,17 +280,26 @@ rule quality_filter:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
         """
-        bbduk2.sh {params.inputs} \
+        bbduk.sh {params.inputs} \
+            {params.ref} \
+            interleaved={params.interleaved} \
             {params.outputs} \
-            {params.rref} {params.lref} \
-            {params.mink} qout=33 stats={output.stats} \
-            {params.hdist} {params.k} trimq={params.trimq} \
-            qtrim={params.qtrim} threads={threads} \
-            minlength={params.minlength} trd=t \
-            minbasefrequency={params.minbasefrequency} \
-            interleaved={params.interleaved}\
+            stats={output.stats} \
             overwrite=true \
+            qout=33 \
+            trd=t \
+            {params.hdist} \
+            {params.k} \
+            {params.ktrim} \
+            {params.mink} \
+            trimq={params.trimq} \
+            qtrim={params.qtrim} \
+            threads={threads} \
+            minlength={params.minlength} \
+            maxns={params.maxns} \
+            minbasefrequency={params.minbasefrequency} \
             ecco={params.error_correction_pe} \
+            prealloc={params.prealloc} \
             -Xmx{resources.mem}G 2> {log}
         """
 

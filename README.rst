@@ -24,7 +24,7 @@ With ``conda``, execute:
 
 ::
 
-    conda install -c bioconda python=3.6 snakemake bbmap=37.17 click
+    conda install -c bioconda python=3.6 snakemake bbmap=37.78 click
 
 Using Python 3.6, install ``atlas``:
 
