@@ -12,7 +12,7 @@ def get_snakefile():
     return sf
 
 
-def run_(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow):
+def run_workflow(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow):
     if not os.path.exists(config):
         logging.critical("Config not found: %s" % config)
         sys.exit(1)
@@ -39,14 +39,6 @@ def run_(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow):
         logging.critical(e)
 
 
-def annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    run_(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="annotate")
-
-def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    run_(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="assemble")
-
-def qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    run_(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="qc")
 
 
 
