@@ -96,7 +96,8 @@ rule init_QC:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", 5)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
     shell:
         """reformat.sh {params.inputs} \
         interleaved={params.interleaved} \
@@ -107,7 +108,7 @@ rule init_QC:
         addslash=t \
         trimreaddescription=t \
         threads={threads} \
-        -Xmx{resources.mem}G 2> {log}
+        -Xmx{resources.java_mem}G 2> {log}
         """
 
 
@@ -129,7 +130,8 @@ rule read_stats:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     params:
         folder = lambda wc, output: os.path.splitext(output[0])[0],
         single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
@@ -158,7 +160,7 @@ rule read_stats:
                     -Xmx{mem}G \
                     2> >(tee -a {log} {tmp_file} )
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
-                            threads=threads, mem=resources.mem,tmp_file=tmp_file))
+                            threads=threads, mem=resources.java_mem,tmp_file=tmp_file))
             content = open(tmp_file).read()
             pos = content.find('Input:')
             if pos == -1:
@@ -224,7 +226,8 @@ if config.get('deduplicate', True):
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM)
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
             """
             clumpify.sh \
@@ -235,7 +238,7 @@ if config.get('deduplicate', True):
                 dupesubs={params.dupesubs} \
                 optical={params.only_optical}\
                 threads={threads} \
-                -Xmx{resources.mem}G 2> {log}
+                -Xmx{resources.java_mem}G 2> {log}
             """
 
 
@@ -276,7 +279,8 @@ rule quality_filter:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     shell:
         """
         bbduk.sh {params.inputs} \
@@ -299,7 +303,7 @@ rule quality_filter:
             minbasefrequency={params.minbasefrequency} \
             ecco={params.error_correction_pe} \
             prealloc={params.prealloc} \
-            -Xmx{resources.mem}G 2> {log}
+            -Xmx{resources.java_mem}G 2> {log}
         """
 
 
@@ -313,7 +317,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM)
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         log:
             "logs/build_decontamination_db.log"
         conda:
@@ -322,7 +327,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
         shell:
-            """bbsplit.sh -Xmx{resources.mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
+            """bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
 
 
     rule decontamination:
@@ -356,7 +361,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM)
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
             """
             if [ "{params.paired}" = true ] ; then
@@ -366,7 +372,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
                     maxindel={params.maxindel} minratio={params.minratio} \
                     minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
                     threads={threads} k={params.k} local=t \
-                    -Xmx{resources.mem}G 2> {log}
+                    -Xmx{resources.java_mem}G 2> {log}
             fi
 
             bbsplit.sh in={params.input_single}  \
@@ -375,7 +381,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
                 maxindel={params.maxindel} minratio={params.minratio} \
                 minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
                 interleaved=f threads={threads} k={params.k} local=t \
-                -Xmx{resources.mem}G 2>> {log}
+                -Xmx{resources.java_mem}G 2>> {log}
             """
 
 
@@ -410,7 +416,8 @@ if PAIRED_END:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM)
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
@@ -424,7 +431,7 @@ if PAIRED_END:
             minprob = config.get("bbmerge_minprob", "0.8")
         shell:
             """
-            bbmerge.sh -Xmx{resources.mem}G threads={threads} \
+            bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
                 in1={input.R1} in2={input.R2} \
                 {params.flags} k={params.kmer} \
                 extend2={params.extend2} \
@@ -448,7 +455,8 @@ else:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM)
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:

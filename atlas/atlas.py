@@ -7,7 +7,7 @@ from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
-from atlas.workflows import annotate, assemble, download
+from atlas.workflows import download, run_workflow
 
 
 logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s %(levelname)s] %(message)s")
@@ -202,6 +202,29 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
+@cli.command("QC", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
+@click.argument("config")
+@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
+@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
+@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
+@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+    """Runs the ATLAS Quality control protocol, the first step of the workflow.
+
+    A skeleton configuration file can be generated with defaults using:
+
+        \b
+        atlas make-config
+
+    For more details, see: http://pnnl-atlas.readthedocs.io/
+    """
+    run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="qc")
+
+
+
+
+
 @cli.command("assemble", context_settings=dict(ignore_unknown_options=True), short_help="assembly workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
@@ -220,7 +243,9 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
-    assemble(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
+    run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="complete")
+
+
 
 
 @cli.command("annotate", context_settings=dict(ignore_unknown_options=True), short_help="annotation workflow")
@@ -241,7 +266,7 @@ def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
-    annotate(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args)
+    run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="annotate")
 
 
 @cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")

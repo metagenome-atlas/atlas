@@ -12,32 +12,7 @@ def get_snakefile():
     return sf
 
 
-def annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    if not os.path.exists(config):
-        logging.critical("Config not found: %s" % config)
-        sys.exit(1)
-    out_dir = os.path.realpath(out_dir)
-    cmd = ("snakemake --snakefile {snakefile} --directory {out_dir} "
-           "--printshellcmds --jobs {jobs} --rerun-incomplete "
-           "--configfile '{config}' --nolock {conda} {dryrun} "
-           "--config workflow=annotate {add_args} "
-           "{args}").format(snakefile=get_snakefile(),
-                            out_dir=out_dir,
-                            jobs=jobs,
-                            config=config,
-                            conda="" if no_conda else "--use-conda",
-                            dryrun="--dryrun" if dryrun else "",
-                            add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
-                            args=" ".join(snakemake_args))
-    logging.info("Executing: %s" % cmd)
-    try:
-        subprocess.check_call(cmd, shell=True)
-    except subprocess.CalledProcessError as e:
-        # removes the traceback
-        logging.critical(e)
-
-
-def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+def run_workflow(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow):
     if not os.path.exists(config):
         logging.critical("Config not found: %s" % config)
         sys.exit(1)
@@ -46,7 +21,7 @@ def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     cmd = ("snakemake --snakefile {snakefile} --directory {out_dir} "
            "--printshellcmds --jobs {jobs} --rerun-incomplete "
            "--configfile '{config}' --nolock {conda} {dryrun} "
-           "--config workflow=complete {add_args} "
+           "--config workflow={workflow} {add_args} "
            "{args}").format(snakefile=get_snakefile(),
                             out_dir=out_dir,
                             jobs=jobs,
@@ -54,13 +29,18 @@ def assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
                             conda="" if no_conda else "--use-conda",
                             dryrun="--dryrun" if dryrun else "",
                             add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
-                            args=" ".join(snakemake_args))
+                            args=" ".join(snakemake_args),
+                            workflow=workflow)
     logging.info("Executing: %s" % cmd)
     try:
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError as e:
         # removes the traceback
         logging.critical(e)
+
+
+
+
 
 
 def download(jobs, out_dir, snakemake_args):
