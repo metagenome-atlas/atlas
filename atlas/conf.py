@@ -3,11 +3,15 @@ import multiprocessing
 import os
 import sys
 import tempfile
-import yaml
+#import yaml
+from ruaml.yaml import YAML
 from collections import OrderedDict
 from snakemake.io import load_configfile
 # default globals
 from atlas.default_values import *
+
+
+writer= YAML()
 
 
 def get_sample_files(path, data_type):
@@ -49,34 +53,15 @@ def get_sample_files(path, data_type):
     return samples
 
 
-def make_config(config, path, data_type, database_dir, threads, assembler):
-    """Write the file `config` and complete the sample names and paths for all
-    files in `path`.
 
-    Args:
-        config (str): output file path for yaml
-        path (str): fastq/fasta data directory
-        data_type (str): this is either metagenome or metatranscriptome
-        database_dir (str): location of downloaded databases
-        threads (int): number of threads per node to utilize
-        assembler (str): either spades or megahit
+def make_default_config():
+    """ generates a dict with all the default values, if they exist
     """
-    config = os.path.realpath(os.path.expanduser(config))
-    os.makedirs(os.path.dirname(config), exist_ok=True)
 
-    represent_dict_order = lambda self, data: self.represent_mapping('tag:yaml.org,2002:map', data.items())
-    yaml.add_representer(OrderedDict, represent_dict_order)
-    path = os.path.realpath(os.path.expanduser(path))
-    database_dir = os.path.realpath(os.path.expanduser(database_dir))
-
-    conf = OrderedDict()
-    samples = get_sample_files(path, data_type)
-    logging.info("Found %d samples under %s" % (len(samples), path))
-    conf["samples"] = samples
+    conf = {}
     conf["tmpdir"] = tempfile.gettempdir()
-    conf["threads"] = multiprocessing.cpu_count() if not threads else threads
+    conf["threads"] = multiprocessing.cpu_count()
     conf["java_mem"] = JAVA_MEM
-    conf["preprocess_adapters"] = os.path.join(database_dir, ADAPTERS)
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
     conf["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
@@ -88,8 +73,6 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["error_correction_overlapping_pairs"] = True
     conf["merge_pairs_before_assembly"] = True
 
-    conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
-                                      "PhiX":os.path.join(database_dir, PHIX)}
     conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     conf["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
     conf["contaminant_kmer_length"] = CONTAMINANT_KMER_LENGTH
@@ -107,7 +90,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["merging_extend2"] = MERGING_EXTEND2
     conf["merging_flags"]  = MERGING_FLAGS
 
-    conf["assembler"] = assembler
+    conf["assembler"] = 'megahit'
     conf["assembly_memory"] = ASSEMBLY_MEMORY
     conf["assembly_threads"] = ASSEMBLY_THREADS
     conf["megahit_min_count"] = MEGAHIT_MIN_COUNT
@@ -142,9 +125,6 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["maxbin_min_contig_length"] = MAXBIN_MIN_CONTIG_LENGTH
     conf["maxbin_prob_threshold"] = MAXBIN_PROB_THRESHOLD
 
-    conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
-    conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
-    conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
     conf["diamond_run_mode"] = "fast"
     conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
     conf["diamond_e_value"] = DIAMOND_E_VALUE
@@ -158,8 +138,55 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["aggregation_method"] = AGGREGATION_METHOD
     conf["majority_threshold"] = MAJORITY_THRESHOLD
 
+    return conf
+
+def make_config(config, path, data_type, database_dir, threads, assembler):
+    """
+    Reads template config file with comments from ./template_config.yaml
+    updates it by the parameters provided.
+    Write the file `config` and complete the sample names and paths for all
+    files in `path`.
+
+    Args:
+        config (str): output file path for yaml
+        path (str): fastq/fasta data directory
+        data_type (str): this is either metagenome or metatranscriptome
+        database_dir (str): location of downloaded databases
+        threads (int): number of threads per node to utilize
+        assembler (str): either spades or megahit
+    """
+
+    config = os.path.realpath(os.path.expanduser(config))
+    os.makedirs(os.path.dirname(config), exist_ok=True)
+
+
+    path = os.path.realpath(os.path.expanduser(path))
+    database_dir = os.path.realpath(os.path.expanduser(database_dir))
+
+    yaml = YAML()
+
+    with open("template_config.yaml") as template_config:
+        conf = yaml.load(template_config)
+
+
+    samples = get_sample_files(path, data_type)
+    logging.info("Found %d samples under %s" % (len(samples), path))
+
+    conf["samples"] = samples
+    conf["tmpdir"] = tempfile.gettempdir()
+    conf["threads"] = multiprocessing.cpu_count() if not threads else threads
+    conf["preprocess_adapters"] = os.path.join(database_dir, ADAPTERS)
+    conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, RRNA),
+                                      "PhiX":os.path.join(database_dir, PHIX)}
+
+    conf["assembler"] = assembler
+
+    conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
+    conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
+    conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
+
     with open(config, "w") as f:
-        print(yaml.dump(conf, default_flow_style=False), file=f)
+        yaml.dump(config, f)
     logging.info("Configuration file written to %s" % config)
 
 
