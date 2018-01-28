@@ -5,7 +5,9 @@ import tempfile
 from snakemake.utils import logger, min_version
 
 from default_values import *
+from conf import make_default_config
 
+upadate config
 
 # required snakemake version
 min_version("4.3")
