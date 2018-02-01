@@ -1,0 +1,11 @@
+channels:
+    - bioconda
+    - conda-forge
+    - defaults
+    - liulab # for cufflinks
+dependencies:
+    - python=3.6
+    - pandas=0.20.3
+    - plotly=2.2.2
+    - cufflinks=2.2.1
+
