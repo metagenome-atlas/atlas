@@ -7,9 +7,13 @@ from snakemake.utils import logger, min_version, update_config
 from default_values import *
 from conf import make_default_config
 
+<<<<<<< HEAD
 # get default values and update them with values specified in config file
 default_config= make_default_config()
 config= update_config(default_config,config)
+=======
+upadate config
+>>>>>>> d1829fe6ac427aab8f0b29e530c370c308609c91
 
 # required snakemake version
 min_version("4.3")
