@@ -3,15 +3,13 @@ import multiprocessing
 import os
 import sys
 import tempfile
-#import yaml
 from ruamel.yaml import YAML
-from collections import OrderedDict
 from snakemake.io import load_configfile
 # default globals
 from atlas.default_values import *
 
 
-writer= YAML()
+writer = YAML()
 
 
 def get_sample_files(path, data_type):
@@ -167,11 +165,11 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     yaml.version = (1, 1)
     yaml.default_flow_style = False
 
-    template_conf_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"template_config.yaml")
+    template_conf_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      "template_config.yaml")
 
     with open(template_conf_file) as template_config:
         conf = yaml.load(template_config)
-
 
     samples = get_sample_files(path, data_type)
     logging.info("Found %d samples under %s" % (len(samples), path))
