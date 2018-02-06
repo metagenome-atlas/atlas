@@ -591,13 +591,13 @@ rule convert_sam_to_bam:
     threads:
         config.get("threads", 1)
     resources:
-        mem=10
+        mem=config.get("threads", 1)
     shell:
         """samtools view \
-               -m {resources.mem}G \
+               -m 1G \
                -@ {threads} \
                -bSh1 {input} | samtools sort \
-                                   -m {resources.mem}G \
+                                   -m 1G \
                                    -@ {threads} \
                                    -T {TMPDIR}/{wildcards.file}_tmp \
                                    -o {output} \
