@@ -4,11 +4,7 @@ import os
 import sys
 import tempfile
 #import yaml
-<<<<<<< HEAD
 from ruamel.yaml import YAML
-=======
-from ruaml.yaml import YAML
->>>>>>> d1829fe6ac427aab8f0b29e530c370c308609c91
 from collections import OrderedDict
 from snakemake.io import load_configfile
 # default globals
@@ -19,7 +15,7 @@ writer= YAML()
 
 
 def get_sample_files(path, data_type):
-    samples = OrderedDict()
+    samples = dict()
     seen = set()
     for dir_name, sub_dirs, files in os.walk(path):
         for fname in files:
@@ -168,8 +164,12 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     database_dir = os.path.realpath(os.path.expanduser(database_dir))
 
     yaml = YAML()
+    yaml.version = (1, 1)
+    yaml.default_flow_style = False
 
-    with open("template_config.yaml") as template_config:
+    template_conf_file = os.path.join(os.path.dirname(os.path.abspath(__file__)),"template_config.yaml")
+
+    with open(template_conf_file) as template_config:
         conf = yaml.load(template_config)
 
 
@@ -190,7 +190,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
 
     with open(config, "w") as f:
-        yaml.dump(config, f)
+        yaml.dump(conf, f)
     logging.info("Configuration file written to %s" % config)
 
 
