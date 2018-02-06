@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 #import yaml
-from ruaml.yaml import YAML
+from ruamel.yaml import YAML
 from collections import OrderedDict
 from snakemake.io import load_configfile
 # default globals

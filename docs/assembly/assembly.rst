@@ -1,3 +1,30 @@
+Pre-Assambly-processing
+=======================
+
+Normalization Parameters
+------------------------
+
+To improve assembly time and often assemblies themselves, coverage is
+normalized across kmers to a target depth and can be set using::
+
+    # kmer length over which we calculated coverage
+    normalization_kmer_length: 21
+    # the normalized target coverage across kmers
+    normalization_target_depth: 100
+    # reads must have at least this many kmers over min depth to be retained
+    normalization_minimum_kmers: 8
+
+
+
+Error Correction
+----------------
+
+Optionally perform error correction using ``tadpole.sh`` from BBTools::
+
+    perform_error_correction: true
+
+
+
 Assembly Parameters
 ===================
 

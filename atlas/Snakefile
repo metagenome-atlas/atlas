@@ -2,12 +2,14 @@ import os
 import re
 import sys
 import tempfile
-from snakemake.utils import logger, min_version
+from snakemake.utils import logger, min_version, update_config
 
 from default_values import *
 from conf import make_default_config
 
-upadate config
+# get default values and update them with values specified in config file
+default_config= make_default_config()
+config= update_config(default_config,config)
 
 # required snakemake version
 min_version("4.3")

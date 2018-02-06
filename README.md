@@ -10,7 +10,7 @@
 [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
 
 # Install
-
+## In one line using conda
 All dependencies are installed via [conda](https://www.continuum.io/downloads) using the [bioconda](https://github.com/bioconda/bioconda-recipes) channel.
 The workflow and some dependencies require Python 3.
 
