@@ -10,11 +10,18 @@
 [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
 
 # Install
-## In one line using conda
+
 All dependencies are installed via [conda](https://www.continuum.io/downloads) using the [bioconda](https://github.com/bioconda/bioconda-recipes) channel.
 The workflow and some dependencies require Python 3.
 
 The intended usage requires `conda`.
+
+Further dependencies will be installed on the first execution of the assembly
+or annotation protocol and re-used on subsequent executions of the protocols.
+
+For more information related to bioconda, see: https://bioconda.github.io/
+
+## As a New Environment
 
 With `conda`, execute:
 
@@ -22,17 +29,24 @@ With `conda`, execute:
 conda create -n atlas -c bioconda python=3.6 snakemake bbmap=37.78 click
 ```
 
-Using Python 3.6, install `atlas`:
+Load the environment:
+
+```
+source activate atlas
+```
+
+Install `atlas`:
 
 ```
 pip install -U pnnl-atlas
 ```
 
-Further dependencies will be installed on the first execution of the assembly
-or annotation protocol and re-used on subsequent executions of the protocols.
+## In the Same Environment
 
-For more information related to bioconda, see: https://bioconda.github.io/
-
+```
+conda install -c bioconda python=3.6 snakemake bbmap=37.78 click
+pip install -U pnnl-atlas
+```
 
 # Getting Started
 
