@@ -5,7 +5,6 @@ import tempfile
 from snakemake.utils import logger, min_version, update_config
 
 from default_values import *
-from conf import make_default_config
 
 # get default values and update them with values specified in config file
 default_config = make_default_config()
