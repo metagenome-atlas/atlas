@@ -590,11 +590,14 @@ rule convert_sam_to_bam:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem=config.get("threads", 1)
     shell:
         """samtools view \
+               -m 1G \
                -@ {threads} \
                -bSh1 {input} | samtools sort \
-                                   -m 1536M \
+                                   -m 1G \
                                    -@ {threads} \
                                    -T {TMPDIR}/{wildcards.file}_tmp \
                                    -o {output} \
