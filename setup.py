@@ -34,6 +34,7 @@ setup(
                        'atlas/rules/qc.snakefile',
                        'atlas/envs/optional_genome_binning.yaml',
                        'atlas/envs/required_packages.yaml',
+                       'atlas/template_config.yaml'
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
