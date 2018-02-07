@@ -390,7 +390,7 @@ PROCESSED_STEPS.append("QC")
 
 rule postprocess_after_decontamination:
     input:
-        unpack(get_ribosomal_rna_input) 
+        unpack(get_ribosomal_rna_input)
     output:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=PROCESSED_STEPS[-1],fraction=MULTIFILE_FRACTIONS)
     threads:
@@ -570,15 +570,15 @@ rule finalize_QC:
 rule QC_report:
     input:
         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-        "stats/read_counts.tsv",
+        read_counts= "stats/read_counts.tsv",
         read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv'
     output:
-        touch("finished_QC")
-    shell:
-        """
-        if [ -d ref ]; then
-            rm -r ref
-        fi
-        """
+        touch("finished_QC"),
+        report = "reports/QC_report.html"
+    conda:
+        "%s/report.yaml" % CONDAENV
+    script:
+        "scripts/qc_report.py"
+
 
 # aggregate stats reports ...
