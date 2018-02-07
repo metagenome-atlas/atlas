@@ -1,0 +1,150 @@
+###################################################################
+###################################################################
+####                 _______   _                    _____      ####
+####         /\     |__   __| | |          /\      / ____|     ####
+####        /  \       | |    | |         /  \    | (___       ####
+####       / /\ \      | |    | |        / /\ \    \___ \      ####
+####      / ____ \     | |    | |____   / ____ \   ____) |     ####
+####     /_/    \_\    |_|    |______| /_/    \_\ |_____/      ####
+####                                                           ####
+###################################################################
+#  For more details about the config values see:
+#  https://pnnl-atlas.readthedocs.io
+###################################################################
+
+########################
+# Excution parameters
+########################
+threads: 32                       # max cores per process
+java_mem: 32                      # Memory for most jobs especially from BBtools, which are memory demanding
+assembly_threads: 8               # can be a subset of threads if RAM is limiting factor
+assembly_memory: 50               # in GB
+tmpdir: /tmp                      # Local directory for temp files, usefull for cluster execution without shared file system
+
+
+########################
+# Quality control
+########################
+deduplicate: true                                       # remove (PCR)-duplicated reads using clumpify
+# duplicates_only_optical: false
+# duplicates_allow_substitutions: 2
+preprocess_adapters: /path/to/databases/adapters.fa     # used to trim adapters from reads and read ends
+preprocess_minimum_base_quality: 10
+preprocess_minimum_passing_read_length: 51
+preprocess_minimum_base_frequency: 0.05                 # 0.05 requires at least 5 percent of each nucleotide per sequence
+# preprocess_adapter_min_k: 8
+# preprocess_allowable_kmer_mismatches: 1
+# preprocess_reference_kmer_match_length: 27
+# error_correction_overlapping_pairs: true              # error correction where PE reads overlap
+contaminant_references:
+  rRNA: /path/to/databases/silva_rfam_all_rRNAs.fa
+  PhiX: /path/to/databases/phiX174_virus.fa
+  #key: /path/to/fasta
+contaminant_max_indel: 20                               # We won't allow large indels
+# contaminant_min_ratio: 0.65
+# contaminant_kmer_length: 13
+# contaminant_minimum_hits: 1
+# contaminant_ambiguous: best
+
+
+########################
+# Pre-assembly-processing
+########################
+normalization_target_depth: 100       # target kmer depth
+# normalization_kmer_length: 21
+# normalization_minimum_kmers: 15
+merge_pairs_before_assembly: true     # join R1 and R2 at overlap; unjoined reads are still utilized
+merging_extend2: 50                   # extend reads while merging to this many nucleotides
+# merging_flags: ecct vstrict
+# merging_k: 62
+
+
+########################
+# Assembly
+########################
+assembler: megahit                # [megahit, spades]
+
+# Megahit
+#-----------
+megahit_min_count: 2              # 2 is fo rmetagenomes, 3 for genomes with 30x coverage
+megahit_k_min: 21
+megahit_k_max: 121
+megahit_k_step: 20
+megahit_merge_level: 20,0.98
+megahit_prune_level: 2
+megahit_low_local_ratio: 0.2
+
+# Spades
+#------------
+spades_k: auto
+
+# Filtering
+#------------
+contig_trim_bp: 100                      # trim contig tips
+prefilter_minimum_contig_length: 500     # filter out assembled noise
+minimum_average_coverage: 5              # require contigs to have read support
+minimum_percent_covered_bases: 40
+minimum_mapped_reads: 0
+minimum_contig_length: 2200              # after filtering
+
+
+########################
+# Quantification
+########################
+
+# Mapping reads to contigs
+#--------------------------
+contig_min_id: 0.76
+contig_map_paired_only: true
+contig_max_distance_between_pairs: 1000
+maximum_counted_map_sites: 10
+
+# Feature count
+#-----------------
+contig_count_multi_mapped_reads: false
+minimum_region_overlap: 1                  # bp overlap of sequence to predicted gene
+feature_counts_allow_overlap: true
+
+
+########################
+# Binning
+########################
+perform_genome_binning: true
+maxbin_max_iteration: 50
+maxbin_min_contig_length: 200
+maxbin_prob_threshold: 0.9
+
+
+########################
+# Annotation
+########################
+translation_table: 11
+diamond_db: /path/to/databases/refseq.dmnd
+diamond_run_mode: fast
+diamond_top_seqs: 2
+diamond_e_value: 1.0e-06
+diamond_min_identity: 50
+diamond_query_coverage: 60
+# diamond_gap_open: 11
+# diamond_gap_extend: 1
+# diamond_block_size: 2
+# diamond_index_chunks: 4
+
+# LCA taxonomic annotation
+#--------------------------
+refseq_namemap: /path/to/databases/refseq.db
+refseq_tree: /path/to/databases/refseq.tree
+summary_method: lca
+aggregation_method: lca-majority
+majority_threshold: 0.51
+
+
+########################
+# SAMPLES
+########################
+samples:
+  sample1:
+    fastq:
+    - /path/to/sample1_R1.fastq.gz
+    - /path/to/sample1_R1.fastq.gz
+    type: metagenome                   # [metagenome, metatranscriptome]

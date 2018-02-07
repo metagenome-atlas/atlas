@@ -34,10 +34,15 @@ setup(
                        'atlas/rules/qc.snakefile',
                        'atlas/envs/optional_genome_binning.yaml',
                        'atlas/envs/required_packages.yaml',
+                       'atlas/template_config.yaml'
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
-    install_requires=[],
+    install_requires=[
+      'snakemake>=4.3'
+      'bbmap==37.78'
+      'click',
+      'ruamel.yaml'],
     entry_points={
           'console_scripts': [
               'atlas = atlas.atlas:cli'
