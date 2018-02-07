@@ -39,7 +39,6 @@ setup(
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
     install_requires=[
-      'python>=3.5.1',
       'snakemake>=4.3'
       'bbmap==37.78'
       'click',
