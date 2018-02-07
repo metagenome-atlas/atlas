@@ -9,7 +9,7 @@ from conf import make_default_config
 
 # get default values and update them with values specified in config file
 default_config = make_default_config()
-config = update_config(default_config, config)
+update_config(default_config, config)
 
 # required snakemake version
 min_version("4.3")
