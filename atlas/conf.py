@@ -6,10 +6,7 @@ import tempfile
 from ruamel.yaml import YAML
 from snakemake.io import load_configfile
 # default globals
-from atlas.default_values import *
-
-
-writer = YAML()
+from default_values import *
 
 
 def get_sample_files(path, data_type):
