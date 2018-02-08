@@ -8,23 +8,31 @@ from default_values import *
 
 combined_contigs_folder='combined'
 
-#rule all:
-#    input:
-#            combined_contigs_stats="{folder}/combined_contigs_stats.txt".format(folder=combined_contigs_folder),
-#            combined_contigs="{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
-#            bam=expand("{folder}/sequence_alignment_{Reference}/{sample}/{sample}.bam",sample=SAMPLES,Reference='combined_contigs',folder=combined_contigs_folder),
-#            gc_stats = "{folder}/combined_contigs_stats_gc.tsv".format(folder=combined_contigs_folder),
-#            binned_coverage = "{folder}/sequence_alignment_{Reference}/combined_coverage_binned.tsv.gz".format(Reference='combined_contigs',folder=combined_contigs_folder),
-#            concoct="{folder}/binning/{file}".format(folder=combined_contigs_folder,file='means_gt2500.csv')           
+rule combine_contigs_report:
+   input:
+           combined_contigs_stats="{folder}/combined_contigs_stats.txt".format(folder=combined_contigs_folder),
+           combined_contigs="{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
+           bam=expand("{folder}/sequence_alignment_{Reference}/{sample}/{sample}.bam",sample=SAMPLES,Reference='combined_contigs',folder=combined_contigs_folder),
+           gc_stats = "{folder}/combined_contigs_stats_gc.tsv".format(folder=combined_contigs_folder),
+           binned_coverage = "{folder}/sequence_alignment_{Reference}/combined_coverage_binned.tsv.gz".format(Reference='combined_contigs',folder=combined_contigs_folder),
+           concoct="{folder}/binning/{file}".format(folder=combined_contigs_folder,file='means_gt2500.csv')
+
+include: 'assemble.snakefile'
 
 
 #### combine contigs
 
-
+config['combine_contigs']=dict(min_overlap = 200,
+                               max_substitutions=4,
+                               dont_allow_N=True,
+                               remove_cycles=True,
+                               trim_contradictions=True, #False
+                               binner='concoct'
+                               )
 
 rule combine_contigs:
     input:
-        expand("{sample}/{sample}_contigs.fasta",sample=SAMPLES)
+        expand("{sample}/assembly/{sample}_prefilter.contigs.fa",sample=SAMPLES)
     output:
         combined_contigs=temp("{folder}/combined_contigs_oldnames.fasta"),
         cluster_stats="{folder}/combined_contigs_kmerfreq.txt",
@@ -42,11 +50,11 @@ rule combine_contigs:
     params:
        input=lambda wc,input: ','.join(input),
        min_length=config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
-       min_overlap=200,
-       max_substitutions=4,
-       dont_allow_N='t',
-       remove_cycles='t',
-       trim_contradictions='f'
+       min_overlap=config['combine_contigs']['min_overlap'],
+       max_substitutions=config['combine_contigs']['max_substitutions'],
+       dont_allow_N= 't' if config['combine_contigs']['dont_allow_N'] else 'f',
+       remove_cycles='t' if config['combine_contigs']['remove_cycles'] else 'f',
+       trim_contradictions='t' if config['combine_contigs']['trim_contradictions'] else 'f'
 
     shell:
         """
@@ -65,7 +73,8 @@ rule combine_contigs:
             -Xmx{resources.mem}G 2> >(tee {log})
         """
 
-#dot -Tpdf combined_contigs_graph.dot -o combined_clusters.pdf
+# vizualize dot, takes enormous times
+# dot -Tpdf combined_contigs_graph.dot -o combined_clusters.pdf
 
 localrules: rename_combined_contigs
 
@@ -97,11 +106,6 @@ rule combined_contigs_stats:
     shell:
         "{SHPFXS} stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
 
-
-
-
-# TODO:  max insertsize per sample
-# Max insertzize and readlen per sample and also for combined. !! 
 
 rule align_reads_to_combined_contigs:
     input:
@@ -149,8 +153,8 @@ rule align_reads_to_combined_contigs:
                maxsites={params.maxsites} \
                -Xmx{resources.mem}G \
                2> {log}
-               
-               #max_distance_between_pairs : pairlen=32000           Set max allowed distance between paired reads.  
+
+               #max_distance_between_pairs : pairlen=32000           Set max allowed distance between paired reads.
                #(insert size)=(pairlen)+(read1 length)+(read2 length)
         """
 rule pileup_combined_contigs:
@@ -195,7 +199,7 @@ rule store_bam:
         mem = config.get("java_mem", JAVA_MEM)
     shell:
         """
-        reformat.sh in={input} out={output} -Xmx{resources.mem}G threads={threads} 
+        reformat.sh in={input} out={output} -Xmx{resources.mem}G threads={threads}
         """
 
 
@@ -252,7 +256,7 @@ rule combine_bined_coverages_of_combined_contigs:
             sample= os.path.split(cov_file)[-1].split('_')[0]
 
             binCov[sample] = pd.read_table(cov_file,compression='gzip',comment='#',header=None,index_col=[0,2],usecols=[0,1,2],squeeze=True)
-        
+
         binCov = pd.DataFrame(binCov)
         binCov.index.names=['Contig','Position']
         binCov.to_csv(output[0],sep='\t',compression='gzip')
@@ -261,39 +265,46 @@ rule combine_bined_coverages_of_combined_contigs:
 
 #TODO parameters are not generalized
 
-rule run_concoct:
-    input:
-        coverage= "{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
-        fasta= "{folder}/{Reference}.fasta".format(Reference='combined_contigs',folder=combined_contigs_folder)
-    output:
-        expand("{folder}/binning/{file}",folder=combined_contigs_folder,file=['means_gt2500.csv','PCA_components_data_gt2500.csv','original_data_gt2500.csv','PCA_transformed_data_gt2500.csv','pca_means_gt2500.csv','args.txt','responsibilities.csv']),
-    params:
-        basename= lambda wc,output: os.path.dirname(output[0]),
-        Nexpected_clusters=100, 
-        read_length=250,
-        min_length=config.get("concoct_min_contig_length",2500),
-        niterations=config.get("concoct_niterations",500)
-    benchmark:
-        "logs/benchmarks/binning/concoct.txt"
-    log:
-        "{folder}/binning/log.txt".format(folder=combined_contigs_folder)
-    conda:
-        "%s/concoct.yaml" % CONDAENV
-    threads:
-        10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177 
-    resources:
-        mem = config.get("java_mem", JAVA_MEM)
-    shell:
-        """
-            concoct -c {params.Nexpected_clusters}\
-            --coverage_file {input.coverage}\
-            --composition_file {input.fasta}\
-            --basename {params.basename}\
-            --read_length {params.read_length} \
-            --length_threshold {params.min_length}\
-            --converge_out \
-            --iterations {params.niterations}
-        """
+if config['combine_contigs']['binner']=='concoct':
+
+    rule run_concoct:
+        input:
+            coverage= "{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
+            fasta= "{folder}/{Reference}.fasta".format(Reference='combined_contigs',folder=combined_contigs_folder)
+        output:
+            expand("{folder}/binning/{file}",folder=combined_contigs_folder,file=['means_gt2500.csv','PCA_components_data_gt2500.csv','original_data_gt2500.csv','PCA_transformed_data_gt2500.csv','pca_means_gt2500.csv','args.txt','responsibilities.csv']),
+        params:
+            basename= lambda wc,output: os.path.dirname(output[0]),
+            Nexpected_clusters=100,
+            read_length=250,
+            min_length=config.get("concoct_min_contig_length",2500),
+            niterations=config.get("concoct_niterations",500)
+        benchmark:
+            "logs/benchmarks/binning/concoct.txt"
+        log:
+            "{folder}/binning/log.txt".format(folder=combined_contigs_folder)
+        conda:
+            "%s/concoct.yaml" % CONDAENV
+        threads:
+            10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
+        resources:
+            mem = config.get("java_mem", JAVA_MEM)
+        shell:
+            """
+                concoct -c {params.Nexpected_clusters}\
+                --coverage_file {input.coverage}\
+                --composition_file {input.fasta}\
+                --basename {params.basename}\
+                --read_length {params.read_length} \
+                --length_threshold {params.min_length}\
+                --converge_out \
+                --iterations {params.niterations}
+            """
+else:
+    raise NotImplementedError("We don't have implemented the binning method: {}\ntry 'concoct'".format(config['combine_contigs']['binner']))
+
+# TODO: predict genes on all contigs
+# HACK: treat 'combined' as a sample name.
 
 localrules: merge_combined_contig_tables
 rule merge_combined_contig_tables:
@@ -308,5 +319,3 @@ rule merge_combined_contig_tables:
              {input.prokka} \
              {input.refseq} \
              {output}"
-
-
