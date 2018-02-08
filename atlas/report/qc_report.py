@@ -2,7 +2,7 @@
 read_counts = snakemake.input.read_counts
 report_out = snakemake.output.report
 
-
+import pandas as pd
 from plotly import offline
 from cufflinks import iplot
 from snakemake.utils import report
