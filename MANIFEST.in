@@ -8,3 +8,4 @@ include atlas/envs/optional_genome_binning.yaml
 include atlas/envs/required_packages.yaml
 include atlas/envs/report.yaml
 include atlas/template_config.yaml
+include atlas/report/qc_report.py

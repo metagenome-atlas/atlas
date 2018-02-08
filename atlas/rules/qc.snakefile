@@ -578,7 +578,7 @@ rule QC_report:
     conda:
         "%s/report.yaml" % CONDAENV
     script:
-        "scripts/qc_report.py"
+        "../report/qc_report.py"
 
 
 # aggregate stats reports ...
