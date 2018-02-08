@@ -397,12 +397,11 @@ rule postprocess_after_decontamination:
         1
     run:
         import shutil
-        data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
         for i in range(len(MULTIFILE_FRACTIONS)):
             with open(output[i], 'wb') as outFile:
                 with open(input.clean_reads[i], 'rb') as infile1:
                     shutil.copyfileobj(infile1, outFile)
-                    if data_type == "metagenome" and hasattr(input, 'rrna_reads'):
+                    if hasattr(input, 'rrna_reads'):
                         with open(input.rrna_reads[i], 'rb') as infile2:
                             shutil.copyfileobj(infile2, outFile)
 
