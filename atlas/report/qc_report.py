@@ -58,6 +58,18 @@ report("""
                 {Total_Reads}
             </embed>
 
+        Legend:
+
+        ============   ===========================================
+        Step           Output
+        ============   ===========================================
+        raw            this are the raw reads given to Atlas
+        deduplicated   deduplicated reads are removed (optional)
+        filtered       low quality reads are filtered out
+        clean          contaminants are removed
+        QC             For metagenomic samples 16S reads are added again. This are the final QC reads.
+        ============   ===========================================
+
         Total bases per sample
         ----------------------
         .. raw:: html
