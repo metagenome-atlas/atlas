@@ -2,6 +2,8 @@
 read_counts = snakemake.input.read_counts
 report_out = snakemake.output.report
 
+
+
 import pandas as pd
 from plotly import offline
 from cufflinks import iplot
@@ -10,6 +12,8 @@ import cufflinks as cf
 import os, shutil
 cf.set_config_file(offline=True, world_readable=True, theme='white')
 
+folder= os.path.abspath(os.path.dirname(__file__))
+stylesheet = os.path.join(folder,'report.css')
 
 import plotly.graph_objs as go
 layout_x_45 = go.Layout(
@@ -66,7 +70,7 @@ report("""
 
 
         for details see Table T1_.
-        """, report_out, T1=read_counts)
+        """, report_out, stylesheet= stylesheet ,T1=read_counts)
 
 
 
