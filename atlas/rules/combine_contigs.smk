@@ -264,44 +264,44 @@ rule combine_bined_coverages_of_combined_contigs:
 
 
 #TODO parameters are not generalized
+if config.get("perform_genome_binning", True):
+  if config['combine_contigs']['binner']=='concoct':
 
-if config['combine_contigs']['binner']=='concoct':
-
-    rule run_concoct:
-        input:
-            coverage= "{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
-            fasta= "{folder}/{Reference}.fasta".format(Reference='combined_contigs',folder=combined_contigs_folder)
-        output:
-            expand("{folder}/binning/{file}",folder=combined_contigs_folder,file=['means_gt2500.csv','PCA_components_data_gt2500.csv','original_data_gt2500.csv','PCA_transformed_data_gt2500.csv','pca_means_gt2500.csv','args.txt','responsibilities.csv']),
-        params:
-            basename= lambda wc,output: os.path.dirname(output[0]),
-            Nexpected_clusters=100,
-            read_length=250,
-            min_length=config.get("concoct_min_contig_length",2500),
-            niterations=config.get("concoct_niterations",500)
-        benchmark:
-            "logs/benchmarks/binning/concoct.txt"
-        log:
-            "{folder}/binning/log.txt".format(folder=combined_contigs_folder)
-        conda:
-            "%s/concoct.yaml" % CONDAENV
-        threads:
-            10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
-        resources:
-            mem = config.get("java_mem", JAVA_MEM)
-        shell:
-            """
-                concoct -c {params.Nexpected_clusters}\
-                --coverage_file {input.coverage}\
-                --composition_file {input.fasta}\
-                --basename {params.basename}\
-                --read_length {params.read_length} \
-                --length_threshold {params.min_length}\
-                --converge_out \
-                --iterations {params.niterations}
-            """
-else:
-    raise NotImplementedError("We don't have implemented the binning method: {}\ntry 'concoct'".format(config['combine_contigs']['binner']))
+      rule run_concoct:
+          input:
+              coverage= "{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
+              fasta= "{folder}/{Reference}.fasta".format(Reference='combined_contigs',folder=combined_contigs_folder)
+          output:
+              expand("{folder}/binning/{file}",folder=combined_contigs_folder,file=['means_gt2500.csv','PCA_components_data_gt2500.csv','original_data_gt2500.csv','PCA_transformed_data_gt2500.csv','pca_means_gt2500.csv','args.txt','responsibilities.csv']),
+          params:
+              basename= lambda wc,output: os.path.dirname(output[0]),
+              Nexpected_clusters=100,
+              read_length=250,
+              min_length=config.get("concoct_min_contig_length",2500),
+              niterations=config.get("concoct_niterations",500)
+          benchmark:
+              "logs/benchmarks/binning/concoct.txt"
+          log:
+              "{folder}/binning/log.txt".format(folder=combined_contigs_folder)
+          conda:
+              "%s/concoct.yaml" % CONDAENV
+          threads:
+              10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
+          resources:
+              mem = config.get("java_mem", JAVA_MEM)
+          shell:
+              """
+                  concoct -c {params.Nexpected_clusters}\
+                  --coverage_file {input.coverage}\
+                  --composition_file {input.fasta}\
+                  --basename {params.basename}\
+                  --read_length {params.read_length} \
+                  --length_threshold {params.min_length}\
+                  --converge_out \
+                  --iterations {params.niterations}
+              """
+  else:
+      raise NotImplementedError("We don't have implemented the binning method: {}\ntry 'concoct'".format(config['combine_contigs']['binner']))
 
 # TODO: predict genes on all contigs
 # HACK: treat 'combined' as a sample name.
