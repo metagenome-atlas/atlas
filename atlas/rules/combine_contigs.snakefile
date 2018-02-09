@@ -22,6 +22,7 @@ include: 'assemble.snakefile'
 
 #### combine contigs
 
+#TODO: put in conf values
 config['combine_contigs']=dict(min_overlap = 200,
                                max_substitutions=4,
                                dont_allow_N=True,
@@ -303,19 +304,19 @@ if config.get("perform_genome_binning", True):
   else:
       raise NotImplementedError("We don't have implemented the binning method: {}\ntry 'concoct'".format(config['combine_contigs']['binner']))
 
-# TODO: predict genes on all contigs
-# HACK: treat 'combined' as a sample name.
-
-localrules: merge_combined_contig_tables
-rule merge_combined_contig_tables:
-    input:
-        prokka = "{sample}/annotation/prokka/{sample}_plus.tsv".format(sample='combined'),
-        refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv".format(sample='combined'),
-        #counts = "{sample}/annotation/feature_counts/{sample}_counts.txt".format(sample='combined') # runMaxbin not suported as there is not one profile, but one per sample
-    output:
-        "{sample}/{sample}_annotations.txt".format(sample='combined')
-    shell:
-        "  atlas merge-tables \
-             {input.prokka} \
-             {input.refseq} \
-             {output}"
+# # TODO: predict genes on all contigs
+# # HACK: treat 'combined' as a sample name.
+#
+# localrules: merge_combined_contig_tables
+# rule merge_combined_contig_tables:
+#     input:
+#         prokka = "{sample}/annotation/prokka/{sample}_plus.tsv".format(sample='combined'),
+#         refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv".format(sample='combined'),
+#         #counts = "{sample}/annotation/feature_counts/{sample}_counts.txt".format(sample='combined') # runMaxbin not suported as there is not one profile, but one per sample
+#     output:
+#         "{sample}/{sample}_annotations.txt".format(sample='combined')
+#     shell:
+#         "  atlas merge-tables \
+#              {input.prokka} \
+#              {input.refseq} \
+#              {output}"
