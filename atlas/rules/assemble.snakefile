@@ -88,7 +88,7 @@ rule normalize_coverage_across_kmers:
                 -Xmx{resources.java_mem}G 2> {log}
         fi
 
-        if [ {params.has_paired_end_files} == "t" ];
+        if [ {params.has_paired_end_files} = "t" ];
         then
             bbnorm.sh {params.input_paired} \
                 {params.extra_paired} \
