@@ -139,6 +139,9 @@ if config.get("workflow", "complete") == "qc":
 
     include: "rules/qc.snakefile"
 
+
+
+
 # quality control, assembly, annotation, and quantification
 elif config.get("workflow", "complete") == "complete":
     # define paired end or not
@@ -156,10 +159,13 @@ elif config.get("workflow", "complete") == "complete":
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES),
 #            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
-            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
+            #expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
+            "Combined_contigs_done"
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
+    include: "rulse/combine_contigs.snakefile"
+
 
 elif config.get("workflow") == "download":
 
