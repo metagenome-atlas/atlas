@@ -1,4 +1,4 @@
-__version__ = "1.0.25"
+__version__ = "1.0.26"
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 BLAST6 = ["qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart",
           "qend", "sstart", "send", "evalue", "bitscore"]
