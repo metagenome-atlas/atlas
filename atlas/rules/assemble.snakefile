@@ -664,9 +664,9 @@ rule update_prokka_tsv:
 
 rule convert_gff_to_gtf:
     input:
-        "{sample}/annotation/prokka/{sample}.gff"
+        "{file}.gff"
     output:
-        "{sample}/annotation/prokka/{sample}.gtf"
+        "{file}.gtf"
     run:
         gff_to_gtf(input[0], output[0])
 
