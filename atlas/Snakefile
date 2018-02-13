@@ -150,6 +150,8 @@ elif config.get("workflow", "complete") == "complete":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
+    COMBINED_CONTIGS="contigs/combined_contigs.fasta"
+
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
@@ -162,9 +164,12 @@ elif config.get("workflow", "complete") == "complete":
             #expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
             "Combined_contigs_done"
 
+
     include: "rules/assemble.snakefile"
+    include: "rules/combine_contigs.snakefile"
     include: "rules/qc.snakefile"
-    include: "rulse/combine_contigs.snakefile"
+
+#COMBINED_CONTIGS= "{folder}/combined_contigs.fasta".format(folder=combined_contigs_folder)
 
 
 elif config.get("workflow") == "download":
