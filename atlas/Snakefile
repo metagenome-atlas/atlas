@@ -2,14 +2,18 @@ import os
 import re
 import sys
 import tempfile
-from snakemake.utils import logger, min_version
+from snakemake.utils import logger, min_version, update_config
 
 from default_values import *
 
+# get default values and update them with values specified in config file
+default_config = make_default_config()
+update_config(default_config, config)
 
 # required snakemake version
 min_version("4.3")
-
+shell.executable("/bin/bash")
+shell.prefix("set -o pipefail; ")
 
 def get_conda_envs_dir():
     if config.get("yaml_dir"):

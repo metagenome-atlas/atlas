@@ -20,24 +20,43 @@ workflow and some dependencies require Python 3.
 
 The intended usage requires ``conda``.
 
-With ``conda``, execute:
-
-::
-
-    conda install -c bioconda python=3.6 snakemake bbmap=37.78 click
-
-Using Python 3.6, install ``atlas``:
-
-::
-
-    pip install -U pnnl-atlas
-
 Further dependencies will be installed on the first execution of the
 assembly or annotation protocol and re-used on subsequent executions of
 the protocols.
 
 For more information related to bioconda, see:
 https://bioconda.github.io/
+
+As a New Environment
+--------------------
+
+With ``conda``, execute:
+
+::
+
+    conda create -n atlas -c bioconda python=3.6 \
+        snakemake bbmap=37.78 click ruamel.yaml
+
+Load the environment:
+
+::
+
+    source activate atlas
+
+Install ``atlas``:
+
+::
+
+    pip install -U pnnl-atlas
+
+In the Same Environment
+-----------------------
+
+::
+
+    conda install -c bioconda python=3.6 \
+        snakemake bbmap=37.78 click ruamel.yaml
+    pip install -U pnnl-atlas
 
 Getting Started
 ===============
@@ -71,6 +90,8 @@ config.yaml. This `YAML <http://www.yaml.org/start.html>`__ file can be
 updated with any text editor.
 
 Sample names should be A-Z characters and can be dash ("-") delimited.
+
+For complete documentation, please see: |Documentation Status|
 
 Assembly
 --------
