@@ -22,16 +22,17 @@ rule combine_contigs_report:
     output:
         touch("Combined_contigs_done")
 
-#### combine contigs
+  conf["combine_contigs"] = True
+  config["combine_contigs_params"]=dict(min_overlap = 200,
+                                 max_substitutions=4,
+                                 dont_allow_N=True,
+                                 remove_cycles=True,
+                                 trim_contradictions=True, #False
+                                 binner='concoct'
+                                 )
 
-#TODO: put in conf values
-config['combine_contigs']=dict(min_overlap = 200,
-                               max_substitutions=4,
-                               dont_allow_N=True,
-                               remove_cycles=True,
-                               trim_contradictions=True, #False
-                               binner='concoct'
-                               )
+
+#### combine contigs
 
 config['perform_genome_binning']= False
 
@@ -55,11 +56,11 @@ rule combine_contigs:
     params:
        input=lambda wc,input: ','.join(input),
        min_length=config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
-       min_overlap=config['combine_contigs']['min_overlap'],
-       max_substitutions=config['combine_contigs']['max_substitutions'],
-       dont_allow_N= 't' if config['combine_contigs']['dont_allow_N'] else 'f',
-       remove_cycles='t' if config['combine_contigs']['remove_cycles'] else 'f',
-       trim_contradictions='t' if config['combine_contigs']['trim_contradictions'] else 'f'
+       min_overlap=config['combine_contigs_params']['min_overlap'],
+       max_substitutions=config['combine_contigs_params']['max_substitutions'],
+       dont_allow_N= 't' if config['combine_contigs_params']['dont_allow_N'] else 'f',
+       remove_cycles='t' if config['combine_contigs_params']['remove_cycles'] else 'f',
+       trim_contradictions='t' if config['combine_contigs_params']['trim_contradictions'] else 'f'
 
     shell:
         """
@@ -295,7 +296,7 @@ rule combine_bined_coverages_of_combined_contigs:
 
 #TODO parameters are not generalized
 if config.get("perform_genome_binning", True):
-  if config['combine_contigs']['binner']=='concoct':
+  if config['combine_contigs_params']['binner']=='concoct':
 
       rule run_concoct:
           input:
@@ -331,7 +332,7 @@ if config.get("perform_genome_binning", True):
                   --iterations {params.niterations}
               """
   else:
-      raise NotImplementedError("We don't have implemented the binning method: {}\ntry 'concoct'".format(config['combine_contigs']['binner']))
+      raise NotImplementedError("We don't have implemented the binning method: {}\ntry 'concoct'".format(config['combine_contigs_params']['binner']))
 
 else:
 
