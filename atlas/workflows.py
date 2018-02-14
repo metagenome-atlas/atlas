@@ -12,11 +12,11 @@ def get_snakefile():
     return sf
 
 
-def run_workflow(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflow):
+def run_workflow(config, jobs, out_dir, no_conda, dryrun, snakemake_args, workflow):
     if not os.path.exists(config):
         logging.critical("Config not found: %s" % config)
         sys.exit(1)
-    validate_config(config)
+    validate_config(config, workflow)
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake --snakefile {snakefile} --directory {out_dir} "
            "--printshellcmds --jobs {jobs} --rerun-incomplete "

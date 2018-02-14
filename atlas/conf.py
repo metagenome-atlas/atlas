@@ -108,14 +108,14 @@ def log_exception(msg):
     sys.exit(1)
 
 
-def validate_sample_defs(config):
+def validate_sample_defs(config, workflow):
     if "samples" not in config.keys():
         log_exception("'samples' are not defined in the configuration")
     if len(config["samples"]) == 0:
         log_exception("No samples are defined under 'samples'")
     for sample in config["samples"]:
         # annotation workflow
-        if config.get("workflow") == "annotate":
+        if workflow == "annotate":
             if "fasta" not in config["samples"][sample]:
                 log_exception("'fasta' must be defined per sample")
             continue
@@ -133,7 +133,7 @@ def validate_sample_defs(config):
                 log_exception("%s does not exist" % config["samples"][sample]["fastq"])
 
 
-def validate_config(config):
+def validate_config(config, workflow):
     conf = load_configfile(config)
-    validate_sample_defs(conf)
+    validate_sample_defs(conf, workflow)
     # could later add more validation steps
