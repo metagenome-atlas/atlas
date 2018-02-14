@@ -114,6 +114,12 @@ def validate_sample_defs(config):
     if len(config["samples"]) == 0:
         log_exception("No samples are defined under 'samples'")
     for sample in config["samples"]:
+        # annotation workflow
+        if config.get("workflow") == "annotate":
+            if "fasta" not in config["samples"][sample]:
+                log_exception("'fasta' must be defined per sample")
+            continue
+        # other workflows
         if "fastq" not in config["samples"][sample]:
             log_exception("'fastq' must be defined per sample")
         # single- or paired-end and user added appropriately as list

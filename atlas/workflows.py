@@ -39,10 +39,6 @@ def run_workflow(config, jobs, out_dir, no_conda, dryrun, snakemake_args,workflo
         logging.critical(e)
 
 
-
-
-
-
 def download(jobs, out_dir, snakemake_args):
     out_dir = os.path.realpath(out_dir)
     cmd = ("snakemake --snakefile {snakefile} --directory {parent_dir} "
