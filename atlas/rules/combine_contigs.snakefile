@@ -12,7 +12,7 @@ rule combine_contigs_report:
     input:
         combined_contigs= COMBINED_CONTIGS,
         combined_contigs_stats="contigs/combined_contigs_stats.txt",
-        gene_counts= 'contigs/comined_gene_counts.tsv',
+        gene_counts= 'contigs/combined_gene_counts.tsv', gene_info= 'contigs/combined_gene_info.tsv',
         # annotation= "contigs/annotations.txt",
         #median_coverage="{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs',folder=combined_contigs_folder),
         #gc_stats = "{folder}/combined_contigs_stats_gc.tsv".format(folder=combined_contigs_folder),
@@ -341,7 +341,7 @@ else:
             bam = "{folder}/sequence_alignment_{Reference}/{sample}/{sample}.bam"
         output:
             summary = "{folder}/sequence_alignment_{Reference}/{sample}/feature_counts/{sample}_counts.txt.summary",
-            counts = temp("{folder}/sequence_alignment_{Reference}/{sample}/feature_counts/{sample}_counts.txt")
+            counts = "{folder}/sequence_alignment_{Reference}/{sample}/feature_counts/{sample}_counts.txt"
         params:
             min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
             paired_only= "-B" if config.get('contig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
@@ -371,10 +371,30 @@ else:
 
 rule combine_gene_counts:
     input:
-        covstats = expand("{folder}/sequence_alignment_{Reference}/{sample}/feature_counts/{sample}_counts.txt",
+        expand("{folder}/sequence_alignment_{Reference}/{sample}/feature_counts/{sample}_counts.txt",
             sample=SAMPLES,Reference='combined_contigs',folder=combined_contigs_folder)
     output:
-        touch('contigs/comined_gene_counts.tsv')
+        'contigs/combined_gene_counts.tsv',
+        'contigs/combined_gene_info.tsv'
+    run:
+        import pandas as pd
+        import os
+        C= {}
+
+
+
+        for file in input:
+            D= pd.read_table(file,index_col=0,comment='#')
+            # contigs/sequence_alignment_combined_contigs/S1/S1.bam
+            sample= D.columns[-1].split('/')[-2]
+            C[sample]= D.iloc[:,-1]
+        C= pd.DataFrame(C)
+        C.to_csv(output[0],sep='\t')
+
+        D.iloc[:,:-1].to_csv(output[1],sep='\t')
+
+
+
 
 
 # # TODO: predict genes on all contigs
