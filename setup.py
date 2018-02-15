@@ -39,7 +39,9 @@ setup(
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
-    install_requires=[],
+    install_requires=[
+        'ruamel.yaml==0.15.35'
+    ],
     entry_points={
           'console_scripts': [
               'atlas = atlas.atlas:cli'

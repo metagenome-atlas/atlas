@@ -59,10 +59,8 @@ rule run_prokka_annotation:
         ffn = "{sample}/prokka/{sample}.ffn",
         fna = "{sample}/prokka/{sample}.fna",
         fsa = "{sample}/prokka/{sample}.fsa",
-        gbk = "{sample}/prokka/{sample}.gbk",
         gff = "{sample}/prokka/{sample}.gff",
         log = "{sample}/prokka/{sample}.log",
-        sqn = "{sample}/prokka/{sample}.sqn",
         tbl = "{sample}/prokka/{sample}.tbl",
         tsv = "{sample}/prokka/{sample}.tsv",
         txt = "{sample}/prokka/{sample}.txt"
