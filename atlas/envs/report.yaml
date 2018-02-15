@@ -3,6 +3,7 @@ channels:
     - conda-forge
     - defaults
 dependencies:
+    - numpy=1.13.1
     - python=3.6
     - pandas=0.20.3
     - plotly=2.2.2
