@@ -1,0 +1,14 @@
+channels:
+    - bioconda
+    - conda-forge
+    - defaults
+dependencies:
+    - numpy=1.13.1
+    - python=3.6
+    - pandas=0.20.3
+    - plotly=2.2.2
+    - ipython=6.2.1
+    - seaborn=0.8
+    - pip
+    - pip:
+      - cufflinks==0.12.1
