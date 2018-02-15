@@ -110,8 +110,6 @@ Report_numbers =\
 
     {div[Total_Reads]}
 
-    Legend:
-
     ============   ===========================================
     Step           Output
     ============   ===========================================
@@ -127,7 +125,7 @@ Report_numbers =\
 
     {div[Total_Bases]}
 
-    for details see Table T1_.
+    For details see Table T1_.
     """
 report_params['T1'] = read_counts
 Report_read_quality_qc=\
