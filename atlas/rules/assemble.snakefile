@@ -293,10 +293,9 @@ rule calculate_contigs_stats:
     threads:
         1
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = 1
     shell:
-        "stats.sh in={input} format=3 -Xmx{resources.java_mem}G > {output}"
+        "stats.sh in={input} format=3 > {output}"
 
 
 rule combine_sample_contig_stats:
