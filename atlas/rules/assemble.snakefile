@@ -51,7 +51,7 @@ rule normalize_coverage_across_kmers:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
         temp(expand("{{sample}}/assembly/reads/normalized_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS))
+            fraction=MULTIFILE_FRACTIONS)) 
     benchmark:
         "logs/benchmarks/normalization/{sample}.txt"
     params:
@@ -65,7 +65,6 @@ rule normalize_coverage_across_kmers:
         extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input, 'se') else "",
         output_single = lambda wc, output, input: "out=%s" % output[2] if hasattr(input, 'R1') else "out=%s" % output[0],
         output_paired = lambda wc, output, input: "out=%s out2=%s" % (output[0], output[1]) if hasattr(input, 'R1') else "null",
-        interleaved = "f" #lambda wc, input: "t" if (wc.fraction=='pe') else "f"   # I don't know how to handle interleaved files at this stage
     log:
         "{sample}/logs/{sample}_normalization.log"
     conda:
@@ -82,8 +81,8 @@ rule normalize_coverage_across_kmers:
             bbnorm.sh {params.input_single} \
                 {params.extra_single} \
                 {params.output_single} \
-                k={params.k} t={params.t} \
-                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                k={params.k} target={params.t} \
+                minkmers={params.minkmers} prefilter=t \
                 threads={threads} \
                 -Xmx{resources.java_mem}G 2> {log}
         fi
@@ -93,8 +92,8 @@ rule normalize_coverage_across_kmers:
             bbnorm.sh {params.input_paired} \
                 {params.extra_paired} \
                 {params.output_paired} \
-                k={params.k} t={params.t} \
-                interleaved={params.interleaved} minkmers={params.minkmers} prefilter=t \
+                k={params.k} target={params.t} \
+                minkmers={params.minkmers} prefilter=t \
                 threads={threads} \
                 -Xmx{resources.java_mem}G 2>> {log}
         fi
