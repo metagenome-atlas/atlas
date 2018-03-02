@@ -11,20 +11,6 @@ localrules: postprocess_after_decontamination, initialize_checkm, \
             combine_insert_stats, combine_read_counts
 
 
-def get_line_from_file(file, line_start):
-    "function to extract line after string name, eg in datafile with average in comments #Avg: 123"
-
-    with open(file) as f:
-        for line in f:
-            if line.startswith(line_start):
-                break
-
-    if not line.startswith(line_start):
-        raise Exception("Didn't find {name} in file ({file}):\n\n".format(name=name,file=file))
-    else:
-        return line[len(line_start):].strip()
-
-
 def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
     "parse comments at begin of file #Avg: 123"
     Parsed = {}
@@ -87,7 +73,7 @@ rule init_QC:
     params:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
-        outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
+        outputs = lambda wc, output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
         verifypaired = "t" if PAIRED_END else "f"
     log:
         "{sample}/logs/{sample}_init.log"
@@ -99,16 +85,17 @@ rule init_QC:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
     shell:
-        """reformat.sh {params.inputs} \
-        interleaved={params.interleaved} \
-        {params.outputs} \
-        qout=33 \
-        overwrite=true \
-        verifypaired={params.verifypaired} \
-        addslash=t \
-        trimreaddescription=t \
-        threads={threads} \
-        -Xmx{resources.java_mem}G 2> {log}
+        """
+        reformat.sh {params.inputs} \
+            interleaved={params.interleaved} \
+            {params.outputs} \
+            qout=33 \
+            overwrite=true \
+            verifypaired={params.verifypaired} \
+            addslash=t \
+            trimreaddescription=t \
+            threads={threads} \
+            -Xmx{resources.java_mem}G 2> {log}
         """
 
 
