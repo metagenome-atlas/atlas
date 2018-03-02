@@ -89,6 +89,8 @@ rule init_QC:
         reformat.sh {params.inputs} \
             interleaved={params.interleaved} \
             {params.outputs} \
+            iupacToN=t \
+            touppercase=t \
             qout=33 \
             overwrite=true \
             verifypaired={params.verifypaired} \
