@@ -1,0 +1,8 @@
+channels:
+    - bioconda
+    - conda-forge
+    - defaults
+    - r
+dependencies:
+    - eggnog-mapper=1.0.3
+    - python=2
