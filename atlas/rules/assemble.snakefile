@@ -590,9 +590,9 @@ rule convert_sam_to_bam:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        5
     resources:
-        mem=config.get("threads", 1)
+        mem=10
     shell:
         """samtools view \
                -m 1G \
