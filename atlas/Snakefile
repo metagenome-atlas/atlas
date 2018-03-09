@@ -145,6 +145,9 @@ if config.get("workflow", "complete") == "qc":
 
     include: "rules/qc.snakefile"
 
+
+
+
 # quality control, assembly, annotation, and quantification
 elif config.get("workflow", "complete") == "complete":
     # define paired end or not
@@ -153,19 +156,33 @@ elif config.get("workflow", "complete") == "complete":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
+    COMBINED_CONTIGS="contigs/combined_contigs.fasta"
+
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
             "finished_QC",
+#            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
+            #expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
+            assembly= ["Combined_contigs_done", 'finished_assembly'] if config.get('combine_contigs',False) else  'finished_assembly'
+
+    rule check_assembly:
+        input:
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
-                sample=SAMPLES),
-#            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
-            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
+                sample=SAMPLES)
+        output:
+            touch('finished_assembly')
+
+
 
     include: "rules/assemble.snakefile"
+    include: "rules/combine_contigs.snakefile"
     include: "rules/qc.snakefile"
+
+#COMBINED_CONTIGS= "{folder}/combined_contigs.fasta".format(folder=combined_contigs_folder)
+
 
 elif config.get("workflow") == "download":
 
