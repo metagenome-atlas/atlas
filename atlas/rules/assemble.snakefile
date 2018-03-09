@@ -600,7 +600,6 @@ rule convert_sam_to_bam:
                -bSh1 {input} | samtools sort \
                                    -m 1G \
                                    -@ {threads} \
-                                   -T {TMPDIR}/{wildcards.file}_tmp \
                                    -o {output} \
                                    -O bam -"""
 
