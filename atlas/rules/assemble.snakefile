@@ -587,18 +587,21 @@ rule convert_sam_to_bam:
         "{file}.sam"
     output:
         "{file}.bam"
+    params:
+        tmp_dir= lambda wc, output: os.path.dirname(output[0])
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
-        5
+        config.get("threads", 1)
     resources:
-        mem=10
+        mem= 2* config.get("threads", 1)
     shell:
         """samtools view \
                -m 1G \
                -@ {threads} \
                -bSh1 {input} | samtools sort \
                                    -m 1G \
+                                   -T {params.tmp_dir} \
                                    -@ {threads} \
                                    -o {output} \
                                    -O bam -"""
