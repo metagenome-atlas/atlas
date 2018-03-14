@@ -51,16 +51,16 @@ plotly_params = dict(include_plotlyjs=False,
 
 checkm =pd.DataFrame()
 for i in range(len(completeness_files)):
-    
+
     comp_= pd.read_table(completeness_files[i],index_col=0)[['Completeness','Contamination','Strain heterogeneity']]
     tax_= pd.read_table(taxonomy_files[i],index_col=0)[['# unique markers (of 43)', '# multi-copy', 'Insertion branch UID',
        'Taxonomy (contained)', 'Taxonomy (sister lineage)', 'GC',
        'Genome size (Mbp)', 'Gene count', 'Coding density']]
-    
-    checkm=checkm.append(pd.concat((comp_,tax_),axis=1))
-    
 
-checkm.to_csv(table_of_bins,sep='\t')    
+    checkm=checkm.append(pd.concat((comp_,tax_),axis=1))
+
+
+checkm.to_csv(table_of_bins,sep='\t')
 
 checkm['Sample']=checkm.index.map(lambda s:s.split('.')[0])
 
@@ -71,10 +71,10 @@ dev= plotly_embed_div(offline.plot(
                     {
                         'x': checkm[checkm['Sample']==sample]['Completeness'],
                         'y': checkm[checkm['Sample']==sample]['Contamination'],
-                        'name': sample, 
+                        'name': sample,
                         'mode': 'markers',
                         'text': checkm.index[checkm['Sample']==sample],
-                        
+
                         'hoverinfo' : 'text',
                         'showlegend' : False
                     } for sample in checkm.Sample.unique()
@@ -102,7 +102,7 @@ Report_figure = \
 S= checkm[(checkm.Contamination<=5) &(checkm.Completeness>=90)].copy()
 
 
-S=S[['Completeness','Contamination', 
+S=S[['Completeness','Contamination',
      'Taxonomy (contained)','Taxonomy (sister lineage)','GC','Genome size (Mbp)', 'Gene count']]
 
 
@@ -111,7 +111,7 @@ S['Taxonomy (sister lineage)']=S['Taxonomy (sister lineage)'].apply(lambda s: ';
 
 
 with pd.option_context('display.precision', 3):
-    
+
     table="""
 <style>
 table {{
@@ -143,20 +143,20 @@ Report_table=\
     """
     Genomes with > 90% completeness and <5% contamination
     -----------------------------------------------------
-    
+
         .. raw:: html
 
             <embed>
                 {table}
             </embed>
-            
+
     More infmation can be found here:
-    
+
     contigs: {{out_dir}}/{{sample}}/genomic_bins/{{bin}}.fasta
-    
+
     genes:   {{out_dir}}/{{sample}}/genomic_bins/checkm/bins/{{bin}}/genes.faa
 
-            
+
     """
 
 
@@ -167,6 +167,6 @@ Combined_report = \
     ####################
 
     """+Report_figure+Report_table
-    
+
 report(Combined_report,
-    report_out,T1= table_of_bins)
+    report_out,T1= table_of_bins,stylesheet=stylesheet)

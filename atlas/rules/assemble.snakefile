@@ -463,7 +463,7 @@ rule pileup:
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
     log:
-        "{sample}/assembly/logs/contig_coverage_stats.log"
+        "{sample}/logs/assembly/pilup_final_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -481,7 +481,7 @@ rule pileup:
                concise=t \
                physcov=t \
                secondary={params.pileup_secondary} \
-               bincov={output.bincov} 2>> {log}"""
+               bincov={output.bincov} 2> {log}"""
 
 
 if config.get("perform_genome_binning", True):
