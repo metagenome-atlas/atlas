@@ -138,10 +138,13 @@ if config.get("workflow", "complete") == "qc":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
+    REPORTS= ["reports/qc_report.html"]
+
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-            "finished_QC"
+            "finished_QC",
+            REPORTS
 
     include: "rules/qc.snakefile"
 
@@ -153,6 +156,10 @@ elif config.get("workflow", "complete") == "complete":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
+    REPORTS= ["reports/qc_report.html"]
+
+    if config.get("perform_genome_binning", True): REPORTS += ["reports/bin_report.html"]
+
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
@@ -161,8 +168,8 @@ elif config.get("workflow", "complete") == "complete":
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES),
-#            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
-            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
+            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
+            REPORTS
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"

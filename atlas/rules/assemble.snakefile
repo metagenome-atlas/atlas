@@ -582,6 +582,21 @@ if config.get("perform_genome_binning", True):
                    {params.output_dir}"""
 
 
+rule bin_report:
+    input:
+        completeness_files= expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
+        taxonomy_files= expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES),
+    output:
+        report = "reports/bin_report.html",
+        bin_table = "Bins.tsv"
+    params:
+        samples = SAMPLES
+    conda:
+        "%s/report.yaml" % CONDAENV
+    script:
+        "../report/bin_report.py"
+
+
 rule convert_sam_to_bam:
     input:
         "{file}.sam"
@@ -829,7 +844,7 @@ else:
         input:
             prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
         output:
             "{sample}/{sample}_annotations.txt"
         shell:
