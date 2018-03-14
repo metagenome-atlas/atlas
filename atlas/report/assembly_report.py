@@ -1,15 +1,9 @@
 #! /bin/env python
 # handle matplotlib backend
-import matplotlib.pylab as plt
-plt.switch_backend('agg')
 import cufflinks as cf
 import os
 import pandas as pd
 import plotly.graph_objs as go
-import numpy as np
-import seaborn as sns
-import shutil
-import zipfile
 from plotly import offline
 from cufflinks import iplot
 from snakemake.utils import report
@@ -19,9 +13,7 @@ cf.set_config_file(offline=True, world_readable=True, theme='white')
 
 logfiles = snakemake.input.mapping_log_files
 gene_tables = snakemake.input.gene_tables
-contig_stats= snakemake.input.contig_stats
-
-
+contig_stats = snakemake.input.contig_stats
 report_out = snakemake.output.report
 combined_contig_stats = snakemake.output.combined_contig_stats
 

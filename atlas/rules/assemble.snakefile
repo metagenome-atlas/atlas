@@ -220,7 +220,7 @@ if config.get("assembler", "megahit") == "megahit":
                 --merge-level {params.merge_level} \
                 --prune-level {params.prune_level} \
                 --low-local-ratio {params.low_local_ratio} \
-                --memory {resources.mem}000000000  2> >(tee {log})
+                --memory {resources.mem}000000000 > {log} 2>&1
             """
 
 
@@ -246,8 +246,7 @@ else:
         params:
             inputs = lambda wc, input: "-1 {0} -2 {1} -s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            #min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
+            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
         log:
             "{sample}/logs/{sample}_spades.log"
         shadow:
@@ -260,7 +259,8 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} 2> >(tee {log})
+            spades.py --threads {threads} --memory {resources.mem} \
+                -o {params.outdir} --meta {params.inputs} > {log} 2>&1
             """
 
 
@@ -593,8 +593,8 @@ rule bin_report:
         samples = SAMPLES
     conda:
         "%s/report.yaml" % CONDAENV
-    script:
-        "../report/bin_report.py"
+    shell:
+        "python %s/report/bin_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 rule convert_sam_to_bam:
@@ -857,9 +857,11 @@ else:
 
 rule assembly_report:
     input:
-        contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt",sample=SAMPLES),
-        gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv",sample=SAMPLES),
-        mapping_log_files = expand("{sample}/assembly/logs/contig_coverage_stats.log",sample=SAMPLES),
+        contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv", sample=SAMPLES),
+        mapping_log_files = expand("{sample}/assembly/logs/contig_coverage_stats.log", sample=SAMPLES),
+        # mapping logs will be incomplete unless we wait on alignment to finish
+        bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:
         report = "reports/assembly_report.html",
         combined_contig_stats = 'stats/combined_contig_stats.tsv'
@@ -867,17 +869,16 @@ rule assembly_report:
         samples = SAMPLES
     conda:
         "%s/report.yaml" % CONDAENV
-    script:
-        "../report/assembly_report.py"
+    shell:
+        "python %s/report/assembly_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 
-
-combined_contig_stats = 'Atlas/combined_contig_stats.tsv'
-
-SAMPLES = ['S002','S004','S005']#snakemake.params.samples
-#folder = os.path.abspath(os.path.dirname(__file__))
-stylesheet = None #os.path.join(folder, 'report.css')
+# combined_contig_stats = 'Atlas/combined_contig_stats.tsv'
+#
+# SAMPLES = ['S002','S004','S005']#snakemake.params.samples
+# #folder = os.path.abspath(os.path.dirname(__file__))
+# stylesheet = None #os.path.join(folder, 'report.css')
 
 
 # rule assembly_report:

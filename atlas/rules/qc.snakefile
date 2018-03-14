@@ -568,8 +568,8 @@ rule QC_report:
         samples = SAMPLES
     conda:
         "%s/report.yaml" % CONDAENV
-    script:
-        "../report/qc_report.py"
+    shell:
+        "python %s/report/qc_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 # aggregate stats reports ...
