@@ -67,12 +67,13 @@ assembler: megahit                # [megahit, spades]
 # Megahit
 #-----------
 megahit_min_count: 2              # 2 is fo rmetagenomes, 3 for genomes with 30x coverage
-megahit_k_min: 21
-megahit_k_max: 121
-megahit_k_step: 20
-megahit_merge_level: 20,0.98
-megahit_prune_level: 2
-megahit_low_local_ratio: 0.2
+megahit_preset: "default"         # ['default','meta-large','meta-sensitive'] diferent presets
+# megahit_k_min: 21
+# megahit_k_max: 121
+# megahit_k_step: 20
+# megahit_merge_level: 20,0.98
+# megahit_prune_level: 2
+# megahit_low_local_ratio: 0.2
 
 # Spades
 #------------
