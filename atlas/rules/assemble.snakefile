@@ -855,6 +855,31 @@ else:
                  {output}"
 
 
+rule assembly_report:
+    input:
+        contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt",sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv",sample=SAMPLES),
+        mapping_log_files = expand("{sample}/assembly/logs/contig_coverage_stats.log",sample=SAMPLES),
+    output:
+        report = "reports/assembly_report.html",
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    params:
+        samples = SAMPLES
+    conda:
+        "%s/report.yaml" % CONDAENV
+    script:
+        "../report/assembly_report.py"
+
+
+
+
+combined_contig_stats = 'Atlas/combined_contig_stats.tsv'
+
+SAMPLES = ['S002','S004','S005']#snakemake.params.samples
+#folder = os.path.abspath(os.path.dirname(__file__))
+stylesheet = None #os.path.join(folder, 'report.css')
+
+
 # rule assembly_report:
 #
 #     input:

@@ -156,7 +156,7 @@ elif config.get("workflow", "complete") == "complete":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-    REPORTS= ["reports/qc_report.html"]
+    REPORTS= ["reports/qc_report.html","reports/assembly_report.html"]
 
     if config.get("perform_genome_binning", True): REPORTS += ["reports/bin_report.html"]
 
@@ -198,7 +198,8 @@ elif config.get("workflow") == "annotate":
     rule all:
         input:
             expand("{sample}_annotations.txt", sample=SAMPLES),
-            expand("{sample}/contig_stats.txt", sample=SAMPLES)
+            expand("{sample}/contig_stats.txt", sample=SAMPLES),
+            #"reports/assembly_report.html" # not tested yet, but should work
 
     include: "rules/annotate.snakefile"
 

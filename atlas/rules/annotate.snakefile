@@ -318,3 +318,19 @@ else:
             "{sample}_annotations.txt"
         shell:
             "atlas merge-tables {input.prokka} {input.refseq} {output}"
+
+
+rule assembly_report:
+    input:
+        contig_stats = expand("{sample}/contig_stats.txt",sample=SAMPLES),
+        gene_tables = expand("{sample}/prokka/{sample}_fixed.tsv",sample=SAMPLES),
+        mapping_log_files = expand("{sample}/sequence_alignment/align_reads.log",sample=SAMPLES),
+    output:
+        report = "reports/assembly_report.html",
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    params:
+        samples = SAMPLES
+    conda:
+        "%s/report.yaml" % CONDAENV
+    script:
+        "../report/assembly_report.py"
