@@ -1,6 +1,4 @@
-#! /bin/env python
-# handle matplotlib backend
-import cufflinks as cf
+import argparse
 import os
 import pandas as pd
 import plotly.graph_objs as go
@@ -8,122 +6,183 @@ from plotly import offline
 from cufflinks import iplot
 from snakemake.utils import report
 
-cf.set_config_file(offline=True, world_readable=True, theme='white')
+PLOTLY_PARAMS = dict(
+    include_plotlyjs=False, show_link=False, output_type="div", image_height=700
+)
 
 
-logfiles = snakemake.input.mapping_log_files
-gene_tables = snakemake.input.gene_tables
-contig_stats = snakemake.input.contig_stats
-report_out = snakemake.output.report
-combined_contig_stats = snakemake.output.combined_contig_stats
-
-SAMPLES = snakemake.params.samples
-folder = os.path.abspath(os.path.dirname(__file__))
-stylesheet = os.path.join(folder, 'report.css')
-
-
-
-
-plotly_embed_div = \
-    """
-        .. raw:: html
-
-            <embed>
-                <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-                {}
-            </embed>
-    """.format
-div = {}
-report_params = {}
-plotly_params = dict(include_plotlyjs=False,
-                     show_link=False,
-                     output_type='div',
-                     image_height=700)
-
-
-
-
-def parse_log_file(log_file,keyword,expect_one_value=True):
-
+def parse_log_file(log_file, keyword, expect_one_value=True):
     content = open(log_file).read()
-
     pos = content.find(keyword)
     if pos == -1:
-        raise Exception("Didn't find {} in file:\n\n{}".format(keyword, content))
+        raise Exception("Didn't find {} in file:\n\n{}".format(keyword, log_file))
+
     else:
         if expect_one_value:
             return content[pos:].split()[2]
+
         else:
             return content[pos:].split()[2:]
 
 
+def parse_map_stats(sample_data, out_tsv):
+    stats_df = pd.DataFrame()
+    for sample in sample_data.keys():
+        df = pd.read_table(sample_data[sample]["contig_stats"])
+        assert df.shape[0] == 1, "Assumed only one row in file {}; found {}".format(
+            sample_data[sample]["contig_stats"], df.iloc[0]
+        )
+        df = df.iloc[0]
+        df.name = sample
+        genes_df = pd.read_table(sample_data[sample]["gene_table"], index_col=0)
+        df["N_Predicted_Genes"] = genes_df.shape[0]
+        df["Assembled_Reads"] = parse_log_file(
+            sample_data[sample]["mapping_log"], "Mapped reads"
+        )
+        df["Percent_Assembled_Reads"] = parse_log_file(
+            sample_data[sample]["mapping_log"], "Percent mapped"
+        )
+        stats_df = stats_df.append(df)
+    stats_df = stats_df.loc[:, ~ stats_df.columns.str.startswith("scaf_")]
+    stats_df.columns = stats_df.columns.str.replace("ctg_", "")
+    stats_df.to_csv(out_tsv, sep="\t")
+    return stats_df
 
 
-stats =pd.DataFrame()
-for i,s in enumerate(SAMPLES):
+def main(samples, contig_stats, gene_tables, mapping_logs, report_out, combined_stats):
+    sample_data = {}
+    for sample in samples:
+        sample_data[sample] = {}
+        for c_stat in contig_stats:
+            # underscore version was for simplified local testing
+            # if "%s_" % sample in c_stat:
+            if "%s/" % sample in c_stat:
+                sample_data[sample]["contig_stats"] = c_stat
+        for g_table in gene_tables:
+            # if "%s_" % sample in g_table:
+            if "%s/" % sample in g_table:
+                sample_data[sample]["gene_table"] = g_table
+        for mapping_log in mapping_logs:
+            # if "%s_" % sample in mapping_log:
+            if "%s/" % sample in mapping_log:
+                sample_data[sample]["mapping_log"] = mapping_log
+    df = parse_map_stats(sample_data, combined_stats)
+    stylesheet = os.path.join(os.path.abspath(os.path.dirname(__file__)), "report.css")
+    div = {}
+    labels = {
+        "Percent_Assembled_Reads": "Percent of Assembled Reads",
+        "contig_bp": "Total BP",
+        "n_contigs": "Contigs (count)",
+        "N_Predicted_Genes": "Predicted Genes (count)",
+    }
+    for variable in [
+        "Percent_Assembled_Reads", "contig_bp", "n_contigs", "N_Predicted_Genes"
+    ]:
+        y_axis_label = labels[variable]
+        div[variable] = offline.plot(
+            df[variable].iplot(
+                asFigure=True,
+                kind="bar",
+                xTitle="Samples",
+                layout=go.Layout(
+                    xaxis=dict(tickangle=45), yaxis=dict(title=y_axis_label)
+                ),
+            ),
+            **PLOTLY_PARAMS,
+        )
+    div["N50"] = offline.plot(
+        df[["N50", "N90"]].iplot(
+            asFigure=True,
+            kind="bar",
+            xTitle="Samples",
+            layout=go.Layout(xaxis=dict(tickangle=45), yaxis=(dict(title="Bases"))),
+        ),
+        **PLOTLY_PARAMS,
+    )
+    report_str = """
 
-    d_ = pd.read_table(contig_stats[i])
-    assert d_.shape[0]==1, "assumed only one row in file {}. foud {}".format(contig_stats[i],d_.iloc[0])
-    d_= d_.iloc[0]
-    d_.name= s
+.. raw:: html
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 
-    genes= pd.read_table(gene_tables[i],index_col=0)
-    d_['n_predicted_genes']= genes.shape[0]
+=============================================================
+ATLAS_ - Assembly Summary
+=============================================================
 
-    d_['Assembled_reads']=parse_log_file(logfiles[i],'Mapped reads')
-    d_['Percent_assembled_reads']=parse_log_file(logfiles[i],'Percent mapped')
+.. _ATLAS: https://github.com/pnnl/atlas
 
-
-    stats= stats.append(d_)
-
-
-stats=stats.loc[:,~stats.columns.str.startswith('scaf_')]
-stats.columns= stats.columns.str.replace('ctg_','')
-stats.to_csv(combined_contig_stats,sep='\t')
+.. contents::
+    :backlinks: none
 
 
+Summary
+-------
 
+N50
+***
 
-div={}
-
-for variable in ['Percent_assembled_reads','contig_bp','n_contigs','n_predicted_genes']:
-
-    div[variable] = plotly_embed_div(offline.plot(stats[variable].iplot(asFigure=True, kind='bar',
-                                                             xTitle='Samples',
-                                                             layout=go.Layout(xaxis=dict(tickangle=45),yaxis=dict(title=variable.replace('_',' ')))),
-                                                  **plotly_params))
-
-
-
-
-div['N50'] = plotly_embed_div(offline.plot(stats[['N50','N90']].iplot(asFigure=True, kind='bar',
-                                                         xTitle='Samples',
-                                                         layout=go.Layout(xaxis=dict(tickangle=45))),
-                                              **plotly_params))
-
-
-
-Combined_report = \
-    """
-    #####################
-    ATLAS assembly report
-    #####################
-
+.. raw:: html
 
     {div[N50]}
 
+
+Assembly Length
+***************
+
+.. raw:: html
+
     {div[contig_bp]}
+
+
+Number of Contigs
+*****************
+
+.. raw:: html
 
     {div[n_contigs]}
 
-    {div[n_predicted_genes]}
 
-    {div[Percent_assembled_reads]}
+Number of Predicted Genes
+*************************
 
-    More information T1_
+.. raw:: html
 
-    """
+    {div[N_Predicted_Genes]}
 
-report(Combined_report,
-    report_out,T1= combined_contig_stats,stylesheet=stylesheet)
+
+Percent of Assembled Reads
+**************************
+
+.. raw:: html
+
+    {div[Percent_Assembled_Reads]}
+
+
+For more information see Table_1_
+
+
+Downloads
+---------
+
+"""
+    report(report_str, report_out, Table_1=combined_stats, stylesheet=stylesheet)
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("--samples", nargs="+")
+    p.add_argument("--contig-stats", nargs="+")
+    p.add_argument("--gene-tables", nargs="+")
+    p.add_argument("--mapping-logs", nargs="+")
+    p.add_argument("--report-out")
+    p.add_argument("--combined-stats")
+    args = p.parse_args()
+    main(
+        args.samples,
+        args.contig_stats,
+        args.gene_tables,
+        args.mapping_logs,
+        args.report_out,
+        args.combined_stats,
+    )

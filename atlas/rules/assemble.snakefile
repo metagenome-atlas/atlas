@@ -854,6 +854,7 @@ else:
                  {input.refseq} \
                  {output}"
 
+/pic/projects/mint/callister/wsu/results/bsel/BSEL-pool1/assembly/logs/contig_coverage_stats.log
 
 rule assembly_report:
     input:
@@ -866,11 +867,19 @@ rule assembly_report:
         report = "reports/assembly_report.html",
         combined_contig_stats = 'stats/combined_contig_stats.tsv'
     params:
-        samples = SAMPLES
+        samples = " ".join(SAMPLES)
     conda:
         "%s/report.yaml" % CONDAENV
     shell:
-        "python %s/report/assembly_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
+        """
+        python %s/report/assembly_report.py \
+            --samples {samples} \
+            --contig-stats {input.contigs_stats} \
+            --gene-tables {input.gene_tables} \
+            --mapping-logs {input.mapping_log_files} \
+            --report-out {output.report} \
+            --combined-stats {output.combined_contig_stats}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 # rule assembly_report:
