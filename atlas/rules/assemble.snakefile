@@ -861,7 +861,6 @@ else:
                  {input.refseq} \
                  {output}"
 
-/pic/projects/mint/callister/wsu/results/bsel/BSEL-pool1/assembly/logs/contig_coverage_stats.log
 
 rule assembly_report:
     input:
