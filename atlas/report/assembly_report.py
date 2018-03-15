@@ -67,7 +67,6 @@ def main(samples, contig_stats, gene_tables, mapping_logs, report_out, combined_
             if "%s/" % sample in mapping_log:
                 sample_data[sample]["mapping_log"] = mapping_log
     df = parse_map_stats(sample_data, combined_stats)
-    stylesheet = os.path.join(os.path.abspath(os.path.dirname(__file__)), "report.css")
     div = {}
     labels = {
         "Percent_Assembled_Reads": "Percent of Assembled Reads",
@@ -166,7 +165,7 @@ Downloads
 ---------
 
 """
-    report(report_str, report_out, Table_1=combined_stats, stylesheet=stylesheet)
+    report(report_str, report_out, Table_1=combined_stats, stylesheet=os.path.join(os.path.abspath(os.path.dirname(__file__)), "report.css"))
 
 
 if __name__ == "__main__":

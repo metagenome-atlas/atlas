@@ -584,17 +584,24 @@ if config.get("perform_genome_binning", True):
 
 rule bin_report:
     input:
-        completeness_files= expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
-        taxonomy_files= expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES),
+        completeness_files = expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
+        taxonomy_files = expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES)
     output:
         report = "reports/bin_report.html",
-        bin_table = "Bins.tsv"
+        bin_table = "genomic_bins.tsv"
     params:
-        samples = SAMPLES
+        samples = " ".join(SAMPLES)
     conda:
         "%s/report.yaml" % CONDAENV
     shell:
-        "python %s/report/bin_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
+        """
+        python %s/report/bin_report.py \
+            --samples {params.samples} \
+            --completeness {input.completeness_files} \
+            --taxonomy {input.taxonomy_files} \
+            --report-out {output.report} \
+            --bin-table {output.bin_table}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 rule convert_sam_to_bam:
@@ -873,7 +880,7 @@ rule assembly_report:
     shell:
         """
         python %s/report/assembly_report.py \
-            --samples {samples} \
+            --samples {params.samples} \
             --contig-stats {input.contigs_stats} \
             --gene-tables {input.gene_tables} \
             --mapping-logs {input.mapping_log_files} \
