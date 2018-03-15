@@ -873,14 +873,6 @@ rule assembly_report:
         "python %s/report/assembly_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
-
-# combined_contig_stats = 'Atlas/combined_contig_stats.tsv'
-#
-# SAMPLES = ['S002','S004','S005']#snakemake.params.samples
-# #folder = os.path.abspath(os.path.dirname(__file__))
-# stylesheet = None #os.path.join(folder, 'report.css')
-
-
 # rule assembly_report:
 #
 #     input:
