@@ -345,7 +345,7 @@ rule calculate_prefiltered_contig_coverage_stats:
             -Xmx{resources.java_mem}G append out={output.sam} 2> {log}
 
             pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
-            -Xmx{resources.java_mem}G covstats={output.covstats} physcov 2>> {log}
+            -Xmx{resources.java_mem}G covstats={output.covstats} 2>> {log}
         """
 
 
@@ -459,7 +459,8 @@ rule pileup:
         bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
         #gene_coverage="{sample}/assembly/contig_stats/postfilter_gene_coverage.txt.gz", add: outorf={output.gene_coverage}
     params:
-        pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
+        pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f',
+        physcov = 't' if not config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
     log:
@@ -479,7 +480,7 @@ rule pileup:
                hist={output.covhist} \
                basecov={output.basecov}\
                concise=t \
-               physcov=t \
+               physcov={params.physcov} \
                secondary={params.pileup_secondary} \
                bincov={output.bincov} 2>> {log}"""
 
