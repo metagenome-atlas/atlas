@@ -340,12 +340,26 @@ rule calculate_prefiltered_contig_coverage_stats:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     shell:
-        """bbwrap.sh nodisk=t ref={input.fasta} {params.input} fast=t \
-               interleaved={params.interleaved} threads={threads} \
-            -Xmx{resources.java_mem}G append out={output.sam} 2> {log}
+        """bbwrap.sh \
+               nodisk=t \
+               ref={input.fasta} \
+               {params.input} \
+               fast=t \
+               interleaved={params.interleaved} \
+               threads={threads} \
+               ambigous=all \
+               secondary=t \
+               -Xmx{resources.java_mem}G \
+               append \
+               out={output.sam} 2> {log}
 
-            pileup.sh ref={input.fasta} in={output.sam} threads={threads} \
-            -Xmx{resources.java_mem}G covstats={output.covstats} 2>> {log}
+            pileup.sh \
+            ref={input.fasta} \
+            in={output.sam} \
+            threads={threads} \
+            secondary=t \
+            -Xmx{resources.java_mem}G \
+            covstats={output.covstats} 2>> {log}
         """
 
 
