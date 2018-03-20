@@ -54,8 +54,8 @@ normalization_target_depth: 100       # target kmer depth
 # normalization_kmer_length: 21
 # normalization_minimum_kmers: 15
 merge_pairs_before_assembly: true     # join R1 and R2 at overlap; unjoined reads are still utilized
-merging_extend2: 50                   # extend reads while merging to this many nucleotides
-merging_flags: ecct
+merging_extend2: 40                   # extend reads while merging to this many nucleotides
+merging_flags: ecct iterations=5      # Itteration is done until extend2 x itterations 
 # merging_k: 62
 
 
