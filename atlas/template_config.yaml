@@ -80,12 +80,12 @@ spades_k: auto
 
 # Filtering
 #------------
-contig_trim_bp: 0                        # trim contig tips
+contig_trim_bp: 20                       # trim contig tips
 prefilter_minimum_contig_length: 200     # filter out assembled noise
 minimum_average_coverage: 1              # require contigs to have read support
 minimum_percent_covered_bases: 95
 minimum_mapped_reads: 0
-minimum_contig_length: 200              # after filtering
+minimum_contig_length: 200               # after filtering
 
 
 ########################
