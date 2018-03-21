@@ -347,7 +347,7 @@ rule calculate_prefiltered_contig_coverage_stats:
                fast=t \
                interleaved={params.interleaved} \
                threads={threads} \
-               ambigous=all \
+               ambiguous=all \
                secondary=t \
                -Xmx{resources.java_mem}G \
                append \
