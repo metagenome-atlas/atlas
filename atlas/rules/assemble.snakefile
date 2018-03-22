@@ -324,7 +324,7 @@ rule calculate_prefiltered_contig_coverage_stats:
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     output: # bbwrap gives output statistics only for single ended
         covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
-        sam = temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam")
+        sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
