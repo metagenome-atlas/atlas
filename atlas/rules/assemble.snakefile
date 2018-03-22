@@ -329,7 +329,12 @@ rule calculate_prefiltered_contig_coverage_stats:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
-        interleaved = "auto"
+        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
+        max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+        paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
+        min_id = config.get('contig_min_id', CONTIG_MIN_ID),
+        maxindel = 100,
+        #ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best'
     log:
         "{sample}/assembly/logs/prefiltered_contig_coverage_stats.log"
     conda:
@@ -345,12 +350,18 @@ rule calculate_prefiltered_contig_coverage_stats:
                ref={input.fasta} \
                {params.input} \
                fast=t \
-               interleaved={params.interleaved} \
                threads={threads} \
                ambiguous=all \
-               secondary=t \
+              pairlen={params.max_distance_between_pairs} \
+              pairedonly={params.paired_only} \
+              mdtag=t \
+              xstag=fs \
+              nmtag=t \
+              local=t \
+              secondary=t \
+              ssao=t \
+              maxsites={params.maxsites} \
                -Xmx{resources.java_mem}G \
-               append \
                out={output.sam} 2> {log}
 
             pileup.sh \
