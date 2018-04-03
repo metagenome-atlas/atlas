@@ -7,7 +7,7 @@ import warnings
 
 
 localrules: postprocess_after_decontamination, initialize_checkm, \
-            finalize_QC, QC_report, combine_read_length_stats, \
+            finalize_QC, build_qc_report, combine_read_length_stats, \
             combine_insert_stats, combine_read_counts
 
 
@@ -571,4 +571,4 @@ rule build_qc_report:
         "python %s/report/qc_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
-# aggregate stats reports ...
+
