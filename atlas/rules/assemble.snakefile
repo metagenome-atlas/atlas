@@ -580,9 +580,9 @@ if config.get("perform_genome_binning", True):
                    --out_format 2 \
                    --file {params.output_dir}/taxonomy.tsv \
                    {params.output_dir}"""
+localrules: build_bin_report
 
-
-rule bin_report:
+rule build_bin_report:
     input:
         completeness_files = expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
         taxonomy_files = expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES)
@@ -861,8 +861,8 @@ else:
                  {input.refseq} \
                  {output}"
 
-
-rule assembly_report:
+localrules: build_assembly_report
+rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv", sample=SAMPLES),
