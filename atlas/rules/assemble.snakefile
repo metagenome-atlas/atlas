@@ -880,7 +880,7 @@ rule assembly_report:
         """
         python %s/report/assembly_report.py \
             --samples {params.samples} \
-            --contig-stats {input.contigs_stats} \
+            --contig-stats {input.contig_stats} \
             --gene-tables {input.gene_tables} \
             --mapping-logs {input.mapping_log_files} \
             --report-out {output.report} \
