@@ -135,9 +135,11 @@ def make_default_config():
     conf["megahit_merge_level"] = MEGAHIT_MERGE_LEVEL
     conf["megahit_prune_level"] = MEGAHIT_PRUNE_LEVEL
     conf["megahit_low_local_ratio"] = MEGAHIT_LOW_LOCAL_RATIO
+    conf["megahit_preset"] = 'default'
     conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
+    conf["spades_preset"] = 'meta'
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
     conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
     conf["minimum_mapped_reads"] = MINIMUM_MAPPED_READS

@@ -176,6 +176,8 @@ rule merge_pairs:
 
 
 if config.get("assembler", "megahit") == "megahit":
+    assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
+
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -198,7 +200,9 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs = lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if PAIRED_END else "--read {0}".format(*input)
+            inputs = lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if PAIRED_END else "--read {0}".format(*input),
+            preset = assembly_params['megahit'][config['megahit_preset']]
+
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -221,7 +225,8 @@ if config.get("assembler", "megahit") == "megahit":
                 --merge-level {params.merge_level} \
                 --prune-level {params.prune_level} \
                 --low-local-ratio {params.low_local_ratio} \
-                --memory {resources.mem}000000000 > {log} 2>&1
+                --memory {resources.mem}000000000  \
+                {params.preset} > {log} 2>&1
             """
 
 
@@ -235,6 +240,8 @@ if config.get("assembler", "megahit") == "megahit":
 
 
 else:
+    assembly_params['spades'] = {'meta':'--meta','normal':''}
+
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -247,7 +254,9 @@ else:
         params:
             inputs = lambda wc, input: "-1 {0} -2 {1} -s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
+            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
+            preset = assembly_params['spades'][config['spades_preset']]
+            # min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
         log:
             "{sample}/logs/{sample}_spades.log"
         # shadow:
@@ -261,7 +270,7 @@ else:
         shell:
             """
             spades.py --threads {threads} --memory {resources.mem} \
-                -o {params.outdir} --meta {params.inputs} > {log} 2>&1
+                -o {params.outdir} {params.preset} {params.inputs} > {log} 2>&1
             """
 
 
