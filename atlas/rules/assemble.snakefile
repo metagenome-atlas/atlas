@@ -159,17 +159,18 @@ rule merge_pairs:
     params:
         kmer = config.get("merging_k", MERGING_K),
         extend2 = config.get("merging_extend2", MERGING_EXTEND2),
-        flags = config.get("merging_flags", MERGING_FLAGS)
+        flags = config.get("merging_flags", MERGING_FLAGS),
+        outmerged = lambda wc, output: os.path.join(os.path.dirname(output[0]), "%s_merged_pairs.fastq.gz" % wc.sample)
     shell:
         """
         bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
-            outmerged={wildcards.sample}_merged_pairs.fastq.gz \
+            outmerged={params.outmerged} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
 
-        cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} \
+        cat {params.outmerged} {input[2]} \
             > {output[2]} 2>> {log}
         """
 
@@ -183,8 +184,8 @@ if config.get("assembler", "megahit") == "megahit":
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
-        shadow:
-            "full"
+        # shadow:
+        #     "full"
         log:
             "{sample}/logs/{sample}_megahit.log"
         params:
@@ -249,8 +250,8 @@ else:
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample)
         log:
             "{sample}/logs/{sample}_spades.log"
-        shadow:
-            "full"
+        # shadow:
+        #     "full"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -614,7 +615,7 @@ rule convert_sam_to_bam:
     threads:
         config.get("threads", 1)
     resources:
-        mem=config.get("threads", 1)
+        mem = config.get("threads", 1)
     shell:
         """samtools view \
                -m 1G \
@@ -622,9 +623,10 @@ rule convert_sam_to_bam:
                -bSh1 {input} | samtools sort \
                                    -m 1G \
                                    -@ {threads} \
-                                   -T {TMPDIR}/{wildcards.file}_tmp \
+                                   -T {wildcards.file}_tmp \
                                    -o {output} \
-                                   -O bam -"""
+                                   -O bam -
+        """
 
 
 rule create_bam_index:
