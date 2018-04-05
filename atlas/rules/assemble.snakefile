@@ -7,7 +7,7 @@ import warnings
 
 
 localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
-            finalize_contigs
+            finalize_contigs, build_bin_report
 
 
 def get_preprocessing_steps(config):
@@ -872,7 +872,7 @@ else:
                  {input.refseq} \
                  {output}"
 
-localrules: build_assembly_report
+
 rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
@@ -897,87 +897,3 @@ rule build_assembly_report:
             --report-out {output.report} \
             --combined-stats {output.combined_contig_stats}
         """ % os.path.dirname(os.path.abspath(workflow.snakefile))
-
-
-# rule assembly_report:
-#
-#     input:
-#         contig_stats = "{sample}/assembly/contig_stats/final_contig_stats.txt",
-#         base_comp = "{sample}/assembly/contig_stats/postfilter_base_composition.txt"
-#         # css = os.path.join(workflow.basedir, "resources", "report.css")
-#     output:
-#         html = "{sample}/{sample}_assembly_README.html"
-#     shadow:
-#         "shallow"
-#     run:
-#         import pandas as pd
-#         # contig stats table
-#         df = pd.read_csv(input.contig_stats, sep="\t")
-#         contig_stats_csv = "contig_stats.csv"
-#         df.to_csv(contig_stats_csv,
-#                   columns=["n_contigs", "contig_bp", "ctg_N50", "ctg_N90", "ctg_max", "gc_avg"],
-#                   index=False)
-#
-#         # read base composition across final contigs
-#         df = pd.read_csv(input.base_comp, sep="\t")
-#         base_composition_positions = "['%s']" % "', '".join(map(str, df["#Pos"]))
-#         base_composition_a = "[%s]" % ", ".join(map(str, df["A"]))
-#         base_composition_c = "[%s]" % ", ".join(map(str, df["C"]))
-#         base_composition_g = "[%s]" % ", ".join(map(str, df["G"]))
-#         base_composition_t = "[%s]" % ", ".join(map(str, df["T"]))
-#         base_composition_n = "[%s]" % ", ".join(map(str, df["N"]))
-#
-#         report("""
-#
-# ===========================================================================================
-# Sample Report - Sample: {wildcards.sample}
-# ===========================================================================================
-#
-# .. raw:: html
-#
-#     body{font-family:Helvetica,arial,sans-serif;font-size:14px;line-height:1.6;background-color:#fff;padding:30px;color:#333}body > :first-child{margin-top:0!important}body > :last-child{margin-bottom:0!important}a{color:#4183C4;text-decoration:none}a.absent{color:#c00}a.anchor{display:block;padding-left:30px;margin-left:-30px;cursor:pointer;position:absolute;top:0;left:0;bottom:0}h1,h2,h3,h4,h5,h6{margin:20px 0 10px;padding:0;font-weight:700;-webkit-font-smoothing:antialiased;cursor:text;position:relative}h2:first-child,h1:first-child,h1:first-child + h2,h3:first-child,h4:first-child,h5:first-child,h6:first-child{margin-top:0;padding-top:0}h1:hover a.anchor,h2:hover a.anchor,h3:hover a.anchor,h4:hover a.anchor,h5:hover a.anchor,h6:hover a.anchor{text-decoration:none}h1 tt,h1 code{font-size:inherit}h2 tt,h2 code{font-size:inherit}h3 tt,h3 code{font-size:inherit}h4 tt,h4 code{font-size:inherit}h5 tt,h5 code{font-size:inherit}h6 tt,h6 code{font-size:inherit}h1{font-size:28px;color:#000}h2{font-size:24px;border-bottom:1px solid #ccc;color:#000}h3{font-size:18px}h4{font-size:16px}h5{font-size:14px}h6{color:#777;font-size:14px}p,blockquote,ul,ol,dl,li,table,pre{margin:15px 0}hr{background:transparent url(http://tinyurl.com/bq5kskr) repeat-x 0 0;border:0 none;color:#ccc;height:4px;padding:0}body > h2:first-child{margin-top:0;padding-top:0}body > h1:first-child{margin-top:0;padding-top:0}body > h1:first-child + h2{margin-top:0;padding-top:0}body > h3:first-child,body > h4:first-child,body > h5:first-child,body > h6:first-child{margin-top:0;padding-top:0}a:first-child h1,a:first-child h2,a:first-child h3,a:first-child h4,a:first-child h5,a:first-child h6{margin-top:0;padding-top:0}h1 p,h2 p,h3 p,h4 p,h5 p,h6 p{margin-top:0}li p.first{display:inline-block}ul,ol{padding-left:30px}ul :first-child,ol :first-child{margin-top:0}ul :last-child,ol :last-child{margin-bottom:0}dl{padding:0}dl dt{font-size:14px;font-weight:700;font-style:italic;padding:0;margin:15px 0 5px}dl dt:first-child{padding:0}dl dt > :first-child{margin-top:0}dl dt > :last-child{margin-bottom:0}dl dd{margin:0 0 15px;padding:0 15px}dl dd > :first-child{margin-top:0}dl dd > :last-child{margin-bottom:0}blockquote{border-left:4px solid #ddd;padding:0 15px;color:#777}blockquote > :first-child{margin-top:0}blockquote > :last-child{margin-bottom:0}table{padding:0;border-spacing:0;border-collapse:collapse}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0;padding:0}table tr:nth-child(2n){background-color:#f8f8f8}table tr th{font-weight:700;border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td{border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr th :first-child,table tr td :first-child{margin-top:0}table tr th :last-child,table tr td :last-child{margin-bottom:0}img{max-width:100%}span.frame{display:block;overflow:hidden}span.frame > span{border:1px solid #ddd;display:block;float:left;overflow:hidden;margin:13px 0 0;padding:7px;width:auto}span.frame span img{display:block;float:left}span.frame span span{clear:both;color:#333;display:block;padding:5px 0 0}span.align-center{display:block;overflow:hidden;clear:both}span.align-center > span{display:block;overflow:hidden;margin:13px auto 0;text-align:center}span.align-center span img{margin:0 auto;text-align:center}span.align-right{display:block;overflow:hidden;clear:both}span.align-right > span{display:block;overflow:hidden;margin:13px 0 0;text-align:right}span.align-right span img{margin:0;text-align:right}span.float-left{display:block;margin-right:13px;overflow:hidden;float:left}span.float-left span{margin:13px 0 0}span.float-right{display:block;margin-left:13px;overflow:hidden;float:right}span.float-right > span{display:block;overflow:hidden;margin:13px auto 0;text-align:right}code,tt{margin:0 2px;padding:0 5px;white-space:nowrap;border:1px solid #eaeaea;background-color:#f8f8f8;border-radius:3px}pre code{margin:0;padding:0;white-space:pre;border:none;background:transparent}.highlight pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre code,pre tt{background-color:transparent;border:none}div#metadata{text-align:right}
-#
-#     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-#     <script src="https://code.highcharts.com/highcharts.js"></script>
-#     <script src="https://code.highcharts.com/modules/exporting.js"></script>
-#     <script type="text/javascript">
-#
-#     $(function () {{
-#         $('#read_composition').highcharts({{
-#             title: {{text: 'Read Base Composition by Position'}},
-#             xAxis: {{title: {{text: "Position"}}, categories: {base_composition_positions}}},
-#             yAxis: {{min: 0, title: {{text: 'Fraction'}}}},
-#             tooltip: {{}},
-#             credits: {{enabled: false}},
-#             legend: {{layout: 'vertical', align: 'right', verticalAlign: 'middle', borderWidth: 0}},
-#             plotOptions: {{series: {{ marker: {{ enabled: false }} }}, column: {{pointPadding: 0.2, borderWidth: 0}}}},
-#             series: [{{name: 'A', data: {base_composition_a}}},
-#                      {{name: 'C', data: {base_composition_c}}},
-#                      {{name: 'G', data: {base_composition_g}}},
-#                      {{name: 'T', data: {base_composition_t}}},
-#                      {{name: 'N', data: {base_composition_n}}}]
-#             }});
-#     }});
-#     </script>
-#
-# .. contents:: Contents
-#     :backlinks: none
-#
-# Read Summary
-# ------------
-#
-# .. raw:: html
-#
-#     <div id="read_composition" style="min-width: 310px; height: 500px; margin: 0 auto"></div>
-#
-#
-# Contig Summary
-# --------------
-#
-# .. csv-table::
-#     :header-rows: 1
-#     :file: {contig_stats_csv}
-#
-#
-#                """, output.html, metadata="Author: " + config.get("author", "ATLAS"),
-#                stylesheet=None, contig_stats=input.contig_stats)
