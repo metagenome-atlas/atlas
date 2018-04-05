@@ -156,14 +156,17 @@ elif config.get("workflow", "complete") == "complete":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-    REPORTS= ["reports/QC_report.html", "reports/assembly_report.html"]
+    # REPORTS = ["reports/QC_report.html", "reports/assembly_report.html"]
+    REPORTS = ["reports/assembly_report.html"]
 
-    if config.get("perform_genome_binning", True): REPORTS += ["reports/bin_report.html"]
+    if config.get("perform_genome_binning", True):
+        REPORTS.append("reports/bin_report.html")
 
     rule all:
         input:
-            expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-            "finished_QC",
+            expand("{sample}/sequence_quality_control/finished_QC",
+                sample=SAMPLES),
+            # "finished_QC",
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
