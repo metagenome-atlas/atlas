@@ -615,7 +615,7 @@ rule convert_sam_to_bam:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("threads", 1)
+        mem = 2 * config.get("threads", 1)
     shell:
         """samtools view \
                -m 1G \
