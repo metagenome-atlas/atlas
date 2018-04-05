@@ -225,25 +225,35 @@ rule align_reads_to_renamed_contigs:
                maxsites={params.maxsites} 2> {log}"""
 
 
-rule convert_alignment_sam_to_bam:
+rule convert_sam_to_bam:
     input:
-        "{sample}/sequence_alignment/{sample}.sam"
+        "{file}.sam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.bam")
+        "{file}.bam"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("threads", 1)
     shell:
-        """samtools view -@ {threads} -bSh1 {input} \
-               | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+        """samtools view \
+               -m 1G \
+               -@ {threads} \
+               -bSh1 {input} | samtools sort \
+                                   -m 1G \
+                                   -@ {threads} \
+                                   -T {wildcards.file}_tmp \
+                                   -o {output} \
+                                   -O bam -
+        """
 
 
 rule create_bam_index:
     input:
-        "{sample}/sequence_alignment/{sample}.bam"
+        "{file}.bam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.bam.bai")
+        "{file}.bam.bai"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -318,3 +328,19 @@ else:
             "{sample}_annotations.txt"
         shell:
             "atlas merge-tables {input.prokka} {input.refseq} {output}"
+
+
+rule assembly_report:
+    input:
+        contig_stats = expand("{sample}/contig_stats.txt",sample=SAMPLES),
+        gene_tables = expand("{sample}/prokka/{sample}_fixed.tsv",sample=SAMPLES),
+        mapping_log_files = expand("{sample}/sequence_alignment/align_reads.log",sample=SAMPLES),
+    output:
+        report = "reports/assembly_report.html",
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    params:
+        samples = SAMPLES
+    conda:
+        "%s/report.yaml" % CONDAENV
+    script:
+        "../report/assembly_report.py"
