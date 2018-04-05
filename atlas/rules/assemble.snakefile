@@ -159,17 +159,18 @@ rule merge_pairs:
     params:
         kmer = config.get("merging_k", MERGING_K),
         extend2 = config.get("merging_extend2", MERGING_EXTEND2),
-        flags = config.get("merging_flags", MERGING_FLAGS)
+        flags = config.get("merging_flags", MERGING_FLAGS),
+        outmerged = lambda wc, output: os.path.join(os.path.dirname(output[0]), "%s_merged_pairs.fastq.gz" % wc.sample)
     shell:
         """
         bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
-            outmerged={wildcards.sample}_merged_pairs.fastq.gz \
+            outmerged={params.outmerged} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
 
-        cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} \
+        cat {params.outmerged} {input[2]} \
             > {output[2]} 2>> {log}
         """
 
@@ -185,8 +186,8 @@ if config.get("assembler", "megahit") == "megahit":
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
-        shadow:
-            "full"
+        # shadow:
+        #     "full"
         log:
             "{sample}/logs/{sample}_megahit.log"
         params:
@@ -225,7 +226,7 @@ if config.get("assembler", "megahit") == "megahit":
                 --prune-level {params.prune_level} \
                 --low-local-ratio {params.low_local_ratio} \
                 --memory {resources.mem}000000000  \
-                {params.preset} 2> >(tee {log})
+                {params.preset} > {log} 2>&1
             """
 
 
@@ -255,11 +256,11 @@ else:
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
             preset = assembly_params['spades'][config['spades_preset']]
-            #min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
+            # min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
         log:
             "{sample}/logs/{sample}_spades.log"
-        shadow:
-            "full"
+        # shadow:
+        #     "full"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -268,7 +269,8 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} {params.preset} {params.inputs} 2> >(tee {log})
+            spades.py --threads {threads} --memory {resources.mem} \
+                -o {params.outdir} {params.preset} {params.inputs} > {log} 2>&1
             """
 
 
@@ -332,7 +334,7 @@ rule calculate_prefiltered_contig_coverage_stats:
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     output: # bbwrap gives output statistics only for single ended
         covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
-        sam = temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam")
+        sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
@@ -471,7 +473,7 @@ rule pileup:
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
     log:
-        "{sample}/assembly/logs/contig_coverage_stats.log"
+        "{sample}/logs/assembly/pilup_final_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -489,7 +491,7 @@ rule pileup:
                concise=t \
                physcov=t \
                secondary={params.pileup_secondary} \
-               bincov={output.bincov} 2>> {log}"""
+               bincov={output.bincov} 2> {log}"""
 
 
 if config.get("perform_genome_binning", True):
@@ -588,6 +590,28 @@ if config.get("perform_genome_binning", True):
                    --out_format 2 \
                    --file {params.output_dir}/taxonomy.tsv \
                    {params.output_dir}"""
+localrules: build_bin_report
+
+rule build_bin_report:
+    input:
+        completeness_files = expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
+        taxonomy_files = expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES)
+    output:
+        report = "reports/bin_report.html",
+        bin_table = "genomic_bins.tsv"
+    params:
+        samples = " ".join(SAMPLES)
+    conda:
+        "%s/report.yaml" % CONDAENV
+    shell:
+        """
+        python %s/report/bin_report.py \
+            --samples {params.samples} \
+            --completeness {input.completeness_files} \
+            --taxonomy {input.taxonomy_files} \
+            --report-out {output.report} \
+            --bin-table {output.bin_table}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 rule convert_sam_to_bam:
@@ -600,7 +624,7 @@ rule convert_sam_to_bam:
     threads:
         config.get("threads", 1)
     resources:
-        mem=config.get("threads", 1)
+        mem = 2 * config.get("threads", 1)
     shell:
         """samtools view \
                -m 1G \
@@ -608,9 +632,10 @@ rule convert_sam_to_bam:
                -bSh1 {input} | samtools sort \
                                    -m 1G \
                                    -@ {threads} \
-                                   -T {TMPDIR}/{wildcards.file}_tmp \
+                                   -T {wildcards.file}_tmp \
                                    -o {output} \
-                                   -O bam -"""
+                                   -O bam -
+        """
 
 
 rule create_bam_index:
@@ -837,7 +862,7 @@ else:
         input:
             prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
         output:
             "{sample}/{sample}_annotations.txt"
         shell:
@@ -846,6 +871,32 @@ else:
                  {input.prokka} \
                  {input.refseq} \
                  {output}"
+
+localrules: build_assembly_report
+rule build_assembly_report:
+    input:
+        contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv", sample=SAMPLES),
+        mapping_log_files = expand("{sample}/assembly/logs/contig_coverage_stats.log", sample=SAMPLES),
+        # mapping logs will be incomplete unless we wait on alignment to finish
+        bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
+    output:
+        report = "reports/assembly_report.html",
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    params:
+        samples = " ".join(SAMPLES)
+    conda:
+        "%s/report.yaml" % CONDAENV
+    shell:
+        """
+        python %s/report/assembly_report.py \
+            --samples {params.samples} \
+            --contig-stats {input.contig_stats} \
+            --gene-tables {input.gene_tables} \
+            --mapping-logs {input.mapping_log_files} \
+            --report-out {output.report} \
+            --combined-stats {output.combined_contig_stats}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 # rule assembly_report:
