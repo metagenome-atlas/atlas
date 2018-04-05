@@ -7,7 +7,7 @@ import warnings
 
 
 localrules: postprocess_after_decontamination, initialize_checkm, \
-            finalize_QC, QC_report, combine_read_length_stats, \
+            finalize_QC, build_qc_report, combine_read_length_stats, \
             combine_insert_stats, combine_read_counts
 
 
@@ -62,8 +62,7 @@ def get_finalize_qc_input(wildcards):
 PROCESSED_STEPS = ['raw']
 
 
-# controls files and deinterlevves them, for the pipeline all files have the same format
-rule init_QC:
+rule initialize_qc:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
@@ -101,7 +100,7 @@ rule init_QC:
         """
 
 
-rule read_stats:
+rule get_read_stats:
     # TODO: remove run block in favor of script or alternate cli
     # see http://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-external-scripts
     input:
@@ -194,7 +193,7 @@ rule read_stats:
 
 if config.get('deduplicate', True):
     PROCESSED_STEPS.append("deduplicated")
-    rule deduplicate:
+    rule deduplicate_reads:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=PROCESSED_STEPS[-2], fraction=RAW_INPUT_FRACTIONS)
@@ -234,7 +233,7 @@ if config.get('deduplicate', True):
 PROCESSED_STEPS.append("filtered")
 
 
-rule quality_filter:
+rule apply_quality_filter:
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2])
@@ -319,7 +318,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             """bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
 
 
-    rule decontamination:
+    rule run_decontamination:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=PROCESSED_STEPS[-2], fraction=MULTIFILE_FRACTIONS),
@@ -534,7 +533,7 @@ rule combine_read_counts:
         stats.to_csv(output[0], sep='\t')
 
 
-rule finalize_QC:
+rule finalize_sample_qc:
     input:
         unpack(get_finalize_qc_input),
         quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
@@ -555,21 +554,18 @@ rule finalize_QC:
         print("Finished QC for sample {sample}\n".format(**wildcards))
 
 
-rule QC_report:
-    input:
-        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-        read_counts= "stats/read_counts.tsv",
-        read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
-        zipfiles = expand('{sample}/sequence_quality_control/read_stats/{step}.zip',sample=SAMPLES,step=['raw','QC'])
-    output:
-        touch("finished_QC"),
-        report = "reports/QC_report.html"
-    params:
-        samples = SAMPLES
-    conda:
-        "%s/report.yaml" % CONDAENV
-    script:
-        "../report/qc_report.py"
-
-
-# aggregate stats reports ...
+# rule build_qc_report:
+#     input:
+#         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
+#         read_counts = "stats/read_counts.tsv",
+#         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
+#         zipfiles = expand('{sample}/sequence_quality_control/read_stats/{step}.zip', sample=SAMPLES, step=['raw', 'QC'])
+#     output:
+#         touch("finished_QC"),
+#         report = "reports/QC_report.html"
+#     params:
+#         samples = SAMPLES
+#     conda:
+#         "%s/report.yaml" % CONDAENV
+#     shell:
+#         "python %s/report/qc_report.py" % os.path.dirname(os.path.abspath(workflow.snakefile))

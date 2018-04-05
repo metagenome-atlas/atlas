@@ -1,0 +1,149 @@
+java -Djava.library.path=/dtemp/mscfcons/brow015/conda/8f4ab83e/opt/bbmap-37.78/jni/ -ea -Xmx85G -cp /dtemp/mscfcons/brow015/conda/8f4ab83e/opt/bbmap-37.78/current/ align2.BBWrap build=1 overwrite=true fastareadlen=500 nodisk=t ref=KE/KE_contigs.fasta in1=KE/sequence_quality_control/KE_QC_R1.fastq.gz,KE/sequence_quality_control/KE_QC_se.fastq.gz in2=KE/sequence_quality_control/KE_QC_R2.fastq.gz,null trimreaddescriptions=t outm=KE/sequence_alignment/KE.sam outu1=KE/assembly/unmapped_post_filter/KE_unmapped_R1.fastq.gz,KE/assembly/unmapped_post_filter/KE_unmapped_se.fastq.gz outu2=KE/assembly/unmapped_post_filter/KE_unmapped_R2.fastq.gz,null threads=16 pairlen=1000 pairedonly=t mdtag=t xstag=fs nmtag=t sam=1.3 local=t ambiguous=best secondary=t ssao=t maxsites=10 -Xmx85G
+Executing align2.BBWrap [build=1, overwrite=true, fastareadlen=500, nodisk=t, ref=KE/KE_contigs.fasta, in1=KE/sequence_quality_control/KE_QC_R1.fastq.gz,KE/sequence_quality_control/KE_QC_se.fastq.gz, in2=KE/sequence_quality_control/KE_QC_R2.fastq.gz,null, trimreaddescriptions=t, outm=KE/sequence_alignment/KE.sam, outu1=KE/assembly/unmapped_post_filter/KE_unmapped_R1.fastq.gz,KE/assembly/unmapped_post_filter/KE_unmapped_se.fastq.gz, outu2=KE/assembly/unmapped_post_filter/KE_unmapped_R2.fastq.gz,null, threads=16, pairlen=1000, pairedonly=t, mdtag=t, xstag=fs, nmtag=t, sam=1.3, local=t, ambiguous=best, secondary=t, ssao=t, maxsites=10, -Xmx85G]
+
+Executing align2.BBMap [build=1, overwrite=true, fastareadlen=500, nodisk=t, trimreaddescriptions=t, threads=16, pairlen=1000, pairedonly=t, mdtag=t, xstag=fs, nmtag=t, sam=1.3, local=t, ambiguous=best, secondary=t, ssao=t, maxsites=10, ref=KE/KE_contigs.fasta, in=KE/sequence_quality_control/KE_QC_R1.fastq.gz, outu=KE/assembly/unmapped_post_filter/KE_unmapped_R1.fastq.gz, outm=KE/sequence_alignment/KE.sam, in2=KE/sequence_quality_control/KE_QC_R2.fastq.gz, outu2=KE/assembly/unmapped_post_filter/KE_unmapped_R2.fastq.gz]
+Version 37.78 [build=1, overwrite=true, fastareadlen=500, nodisk=t, trimreaddescriptions=t, threads=16, pairlen=1000, pairedonly=t, mdtag=t, xstag=fs, nmtag=t, sam=1.3, local=t, ambiguous=best, secondary=t, ssao=t, maxsites=10, ref=KE/KE_contigs.fasta, in=KE/sequence_quality_control/KE_QC_R1.fastq.gz, outu=KE/assembly/unmapped_post_filter/KE_unmapped_R1.fastq.gz, outm=KE/sequence_alignment/KE.sam, in2=KE/sequence_quality_control/KE_QC_R2.fastq.gz, outu2=KE/assembly/unmapped_post_filter/KE_unmapped_R2.fastq.gz]
+
+Set threads to 16
+Retaining first best site only for ambiguous mappings.
+Executing dna.FastaToChromArrays2 [KE/KE_contigs.fasta, 1, writeinthread=false, genscaffoldinfo=true, retain, waitforwriting=false, gz=true, maxlen=536670912, writechroms=false, minscaf=1, midpad=300, startpad=8000, stoppad=8000, nodisk=true]
+
+Set genScaffoldInfo=true
+Set genome to 1
+
+Loaded Reference:	0.010 seconds.
+Loading index for chunk 1-1, build 1
+Indexing threads started for block 0-1
+Indexing threads finished for block 0-1
+Generated Index:	0.824 seconds.
+Analyzed Index:   	2.684 seconds.
+Started output stream:	0.023 seconds.
+Started output stream:	0.005 seconds.
+Cleared Memory:    	0.265 seconds.
+Processing reads in paired-ended mode.
+Started read stream.
+Started 16 mapping threads.
+Detecting finished threads: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+
+   ------------------   Results   ------------------   
+
+Genome:                	1
+Key Length:            	13
+Max Indel:             	16000
+Minimum Score Ratio:  	0.56
+Mapping Mode:         	normal
+Reads Used:           	5089480	(502679899 bases)
+
+Mapping:          	142.604 seconds.
+Reads/sec:       	35689.48
+kBases/sec:      	3524.99
+
+
+Pairing data:   	pct pairs	num pairs 	pct bases	   num bases
+
+mated pairs:     	 72.7363% 	  1850950 	 72.9308% 	   366608360
+bad pairs:       	  0.0000% 	        0 	  0.0000% 	           0
+insert size avg: 	  278.64
+
+
+Read 1 data:      	pct reads	num reads 	pct bases	   num bases
+
+mapped:          	 72.7363% 	  1850950 	 72.6820% 	   183304180
+unambiguous:     	 72.6034% 	  1847569 	 72.5489% 	   182968498
+ambiguous:       	  0.1329% 	     3381 	  0.1331% 	      335682
+low-Q discards:  	  0.0000% 	        0 	  0.0000% 	           0
+
+perfect best site:	 70.9191% 	  1804706 	 70.8686% 	   178730715
+semiperfect site:	 71.0366% 	  1807698 	 70.9863% 	   179027490
+rescued:         	  0.4897% 	    12461
+
+Match Rate:      	      NA 	       NA 	 98.7144% 	   182728624
+Error Rate:      	  2.2533% 	    42449 	  1.1840% 	     2191656
+Sub Rate:        	  1.9639% 	    36997 	  0.1953% 	      361600
+Del Rate:        	  0.7503% 	    14135 	  0.9746% 	     1804129
+Ins Rate:        	  0.4389% 	     8268 	  0.0140% 	       25927
+N Rate:          	  0.9369% 	    17650 	  0.1016% 	      188029
+
+
+Read 2 data:      	pct reads	num reads 	pct bases	   num bases
+
+mapped:          	 72.7363% 	  1850950 	 72.5361% 	   181688264
+unambiguous:     	 72.6020% 	  1847531 	 72.4011% 	   181350117
+ambiguous:       	  0.1344% 	     3419 	  0.1350% 	      338147
+low-Q discards:  	  0.0000% 	        0 	  0.0000% 	           0
+
+perfect best site:	 70.8965% 	  1804132 	 70.6915% 	   177067948
+semiperfect site:	 71.0264% 	  1807437 	 70.8220% 	   177394757
+rescued:         	  0.6224% 	    15838
+
+Match Rate:      	      NA 	       NA 	 98.7271% 	   181105965
+Error Rate:      	  2.2577% 	    42636 	  1.1642% 	     2135708
+Sub Rate:        	  1.9619% 	    37050 	  0.1957% 	      359023
+Del Rate:        	  0.7539% 	    14238 	  0.9554% 	     1752638
+Ins Rate:        	  0.4211% 	     7953 	  0.0131% 	       24047
+N Rate:          	  0.9504% 	    17949 	  0.1086% 	      199229
+
+Total time:     	146.658 seconds.
+Executing align2.BBMap [build=1, overwrite=true, fastareadlen=500, nodisk=t, trimreaddescriptions=t, threads=16, pairlen=1000, pairedonly=t, mdtag=t, xstag=fs, nmtag=t, sam=1.3, local=t, ambiguous=best, secondary=t, ssao=t, maxsites=10, indexloaded=t, in=KE/sequence_quality_control/KE_QC_se.fastq.gz, outu=KE/assembly/unmapped_post_filter/KE_unmapped_se.fastq.gz, in2=, outu2=]
+Version 37.78 [build=1, overwrite=true, fastareadlen=500, nodisk=t, trimreaddescriptions=t, threads=16, pairlen=1000, pairedonly=t, mdtag=t, xstag=fs, nmtag=t, sam=1.3, local=t, ambiguous=best, secondary=t, ssao=t, maxsites=10, indexloaded=t, in=KE/sequence_quality_control/KE_QC_se.fastq.gz, outu=KE/assembly/unmapped_post_filter/KE_unmapped_se.fastq.gz, in2=, outu2=]
+
+Set threads to 16
+Retaining first best site only for ambiguous mappings.
+Started output stream:	0.003 seconds.
+Cleared Memory:    	0.132 seconds.
+Processing reads in single-ended mode.
+Started read stream.
+Started 16 mapping threads.
+Detecting finished threads: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+
+   ------------------   Results   ------------------   
+
+Genome:                	1
+Key Length:            	13
+Max Indel:             	16000
+Minimum Score Ratio:  	0.56
+Mapping Mode:         	normal
+Reads Used:           	143545	(13550575 bases)
+
+Mapping:          	2.621 seconds.
+Reads/sec:       	54766.03
+kBases/sec:      	5169.89
+
+
+Read 1 data:      	pct reads	num reads 	pct bases	   num bases
+
+mapped:          	 73.3470% 	   105286 	 72.6415% 	     9843346
+unambiguous:     	 72.9492% 	   104715 	 72.2519% 	     9790549
+ambiguous:       	  0.3978% 	      571 	  0.3896% 	       52797
+low-Q discards:  	  0.0000% 	        0 	  0.0000% 	           0
+
+perfect best site:	 69.9829% 	   100457 	 69.2506% 	     9383857
+semiperfect site:	 70.1473% 	   100693 	 69.4176% 	     9406486
+
+Match Rate:      	      NA 	       NA 	 93.4563% 	     9801116
+Error Rate:      	  4.0590% 	     4493 	  6.4190% 	      673183
+Sub Rate:        	  3.2243% 	     3569 	  0.2391% 	       25071
+Del Rate:        	  1.3036% 	     1443 	  6.1410% 	      644028
+Ins Rate:        	  1.2187% 	     1349 	  0.0389% 	        4084
+N Rate:          	  1.3831% 	     1531 	  0.1247% 	       13075
+
+Total time:     	2.760 seconds.
+java -ea -Xmx85G -cp /dtemp/mscfcons/brow015/conda/8f4ab83e/opt/bbmap-37.78/current/ jgi.CoveragePileup ref=KE/KE_contigs.fasta in=KE/sequence_alignment/KE.sam threads=16 -Xmx85G covstats=KE/assembly/contig_stats/postfilter_coverage_stats.txt hist=KE/assembly/contig_stats/postfilter_coverage_histogram.txt basecov=KE/assembly/contig_stats/postfilter_base_coverage.txt.gz concise=t physcov=t secondary=f bincov=KE/assembly/contig_stats/postfilter_coverage_binned.txt
+Executing jgi.CoveragePileup [ref=KE/KE_contigs.fasta, in=KE/sequence_alignment/KE.sam, threads=16, -Xmx85G, covstats=KE/assembly/contig_stats/postfilter_coverage_stats.txt, hist=KE/assembly/contig_stats/postfilter_coverage_histogram.txt, basecov=KE/assembly/contig_stats/postfilter_base_coverage.txt.gz, concise=t, physcov=t, secondary=f, bincov=KE/assembly/contig_stats/postfilter_coverage_binned.txt]
+
+Set threads to 16
+COUNT_GC disabled for physical coverage mode.
+Reads:                               	3715534
+Mapped reads:                        	1850956
+Mapped bases:                        	154270
+Ref scaffolds:                       	417
+Ref bases:                           	7110191
+
+Percent mapped:                      	49.817
+Percent proper pairs:                	49.816
+Average coverage:                    	0.022
+Standard deviation:                    	60.506
+Percent scaffolds with any coverage: 	100.00
+Percent of reference bases covered:  	99.98
+
+Time: 	3.781 seconds.
