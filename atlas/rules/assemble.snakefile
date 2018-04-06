@@ -7,7 +7,7 @@ import warnings
 
 
 localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
-            finalize_contigs, build_bin_report
+            finalize_contigs, build_bin_report, build_assembly_report
 
 
 def get_preprocessing_steps(config):
@@ -590,7 +590,7 @@ if config.get("perform_genome_binning", True):
                    --out_format 2 \
                    --file {params.output_dir}/taxonomy.tsv \
                    {params.output_dir}"""
-localrules: build_bin_report
+
 
 rule build_bin_report:
     input:
@@ -736,6 +736,7 @@ rule find_counts_per_region:
                -a {input.gtf} \
                -o {output.counts} \
                {input.bam} 2> {log}"""
+
 
 rule run_diamond_blastp:
     input:
