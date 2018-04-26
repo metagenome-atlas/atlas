@@ -174,7 +174,7 @@ rule merge_pairs:
             > {output[2]} 2>> {log}
         """
 
-
+assembly_params={}
 if config.get("assembler", "megahit") == "megahit":
     assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
 
