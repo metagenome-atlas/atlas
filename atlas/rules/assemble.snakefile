@@ -460,20 +460,18 @@ rule align_reads_to_final_contigs:
 rule pileup:
     input:
         fasta = "{sample}/{sample}_contigs.fasta",
-        sam = "{sample}/sequence_alignment/{sample}.sam"
-        #predicted_genes="{folder}/predicted_genes/{Reference}_genes.fna"
+        sam = "{sample}/sequence_alignment/{sample}.sam",
     output:
         basecov = temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
         covhist = "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
         covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
         bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
-        #gene_coverage="{sample}/assembly/contig_stats/postfilter_gene_coverage.txt.gz", add: outorf={output.gene_coverage}
     params:
         pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
     log:
-        "{sample}/logs/assembly/pilup_final_contigs.log"
+        "{sample}/logs/assembly/pilup_final_contigs.log" # this file is udes for assembly report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -878,7 +876,7 @@ rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv", sample=SAMPLES),
-        mapping_log_files = expand("{sample}/assembly/logs/contig_coverage_stats.log", sample=SAMPLES),
+        mapping_log_files = expand("{sample}/logs/assembly/pilup_final_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:
