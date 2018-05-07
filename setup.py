@@ -35,7 +35,10 @@ setup(
                        'atlas/envs/optional_genome_binning.yaml',
                        'atlas/envs/required_packages.yaml',
                        'atlas/template_config.yaml',
-                       'atlas/report/qc_report.py'
+                       'atlas/report/qc_report.py',
+                       'atlas/report/assembly_report.py',
+                       'atlas/report/bin_report.py',
+                       'report.css'
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
