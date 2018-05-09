@@ -443,6 +443,7 @@ rule align_reads_to_final_contigs:
                threads={threads} \
                pairlen={params.max_distance_between_pairs} \
                pairedonly={params.paired_only} \
+               minid={params.min_id} \
                mdtag=t \
                xstag=fs \
                nmtag=t \
