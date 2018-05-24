@@ -12,10 +12,10 @@ localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
 
 def get_preprocessing_steps(config):
     preprocessing_steps = ["normalized"]
-    if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
-        preprocessing_steps.append("merged")
     if config.get("error_correction_overlapping_pairs", True):
         preprocessing_steps.append("errorcorr")
+    if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
+        preprocessing_steps.append("merged")
     return ".".join(preprocessing_steps)
 
 
@@ -111,9 +111,9 @@ rule error_correction:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS))
     benchmark:
-        "logs/benchmarks/assembly/pre_process/error_correction/{sample}.{previous_steps}.txt"
+        "logs/benchmarks/assembly/pre_process/error_correction_{previous_steps}/{sample}.txt"
     log:
-        "{sample}/logs/assembly/pre_process/error_correction.{previous_steps}.log"
+        "{sample}/logs/assembly/pre_process/error_correction_{previous_steps}.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
@@ -151,9 +151,9 @@ rule merge_pairs:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     log:
-        "{sample}/logs/assembly/pre_process/merge_pairs.{previous_steps}.log"
+        "{sample}/logs/assembly/pre_process/merge_pairs_{previous_steps}.log"
     benchmark:
-        "logs/benchmarks/assembly/pre_process/merge_pairs/{sample}.{previous_steps}.txt"
+        "logs/benchmarks/assembly/pre_process/merge_pairs_{previous_steps}/{sample}.txt"
     shadow:
         "shallow"
     params:
@@ -183,11 +183,11 @@ if config.get("assembler", "megahit") == "megahit":
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
-            temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
+            temp("{sample}/assembly/megahit/{sample}_prefilter.contigs.fa")
         benchmark:
             "logs/benchmarks/assembly/megahit/{sample}.txt"
-        # shadow:
-        #     "full"
+#        shadow:
+#            "shallow" #needs to be shallow to find input files
         log:
             "{sample}/logs/assembly/megahit.log"
         params:
@@ -211,7 +211,8 @@ if config.get("assembler", "megahit") == "megahit":
             mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            megahit --continue \
+                rm -r {params.outdir} 2> {log}
+                megahit \
                 {params.inputs} \
                 --tmp-dir {TMPDIR} \
                 --num-cpu-threads {threads} \
@@ -226,13 +227,13 @@ if config.get("assembler", "megahit") == "megahit":
                 --prune-level {params.prune_level} \
                 --low-local-ratio {params.low_local_ratio} \
                 --memory {resources.mem}000000000  \
-                {params.preset} > {log} 2>&1
+                {params.preset} >> {log} 2>&1
             """
 
 
     rule rename_megahit_output:
         input:
-            "{sample}/assembly/{sample}_prefilter.contigs.fa"
+            "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
@@ -530,7 +531,8 @@ if config.get("perform_genome_binning", True):
                    -min_contig_length {params.mcl} \
                    -thread {threads} \
                    -prob_threshold {params.pt} \
-                   -max_iteration {params.mi} > {log}"""
+                   -max_iteration {params.mi} > {log}
+            """
 
 
     rule initialize_checkm:
