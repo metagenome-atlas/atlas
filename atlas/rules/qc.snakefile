@@ -552,14 +552,14 @@ rule finalize_sample_qc:
         print("Finished QC for sample {sample}\n".format(**wildcards))
 
 
-# rule build_qc_report:
-#     input:
-#         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-#         read_counts = "stats/read_counts.tsv",
-#         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
-#         zipfiles = expand('{sample}/sequence_quality_control/read_stats/{step}.zip', sample=SAMPLES, step=['raw', 'QC'])
-#     output:
-#         touch("finished_QC"),
+rule build_qc_report:
+     input:
+         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
+         read_counts = "stats/read_counts.tsv",
+         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
+         zipfiles = expand('{sample}/sequence_quality_control/read_stats/{step}.zip', sample=SAMPLES, step=['raw', 'QC'])
+     output:
+         touch("finished_QC"),
 #         report = "reports/QC_report.html"
 #     params:
 #         samples = SAMPLES
