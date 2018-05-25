@@ -38,7 +38,7 @@ def get_stats_from_zips(zips):
 
 def get_pe_read_quality_plot(df,quality_range, **kwargs):
 
-    #import pdb; pdb.set_trace()
+
 
 
     fig = tools.make_subplots(rows=1, cols=2, shared_yaxes=True)
@@ -98,14 +98,7 @@ def draw_se_read_quality(df,quality_range,**kwargs):
                     )
 
 
-    # f, ax = plt.subplots(1, 1)
-    # Quality_se.plot(legend=False, ax=ax)
-    # ax.set_ylabel('Quality score')
-    # ax.set_xlabel('Postition')
-    # ax.set_ylim(quality_range)
-    # # again, kwargs should be added to this function
-    # return offline.plot_mpl(f, resize=True, **PLOTLY_PARAMS)
-    return ""
+
 
 def main(samples, report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
     div = {}
@@ -113,7 +106,7 @@ def main(samples, report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality
     # N reads / N bases
     df = pd.read_table(read_counts, index_col=[0, 1])
     for variable in ['Total_Reads','Total_Bases']:
-        data = df[variable].unstack()[df.loc[df.index[0][0]].index]
+        data = df[variable].unstack()[df.loc[df.index[0][0]].index.drop('clean')]
         div[variable] = offline.plot(
                 data.iplot(
                     asFigure=True,
@@ -141,8 +134,7 @@ Step           Output
 raw            the input reads
 deduplicated   after (optional) deduplication step
 filtered       trimmed, PhiX filtered
-clean          contaminants removed
-qc             passing reads (metag includes SSU)
+qc             passing reads
 ============   ===================================
 
 ### Total bases per sample
