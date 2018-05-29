@@ -36,24 +36,36 @@ def get_stats_from_zips(zips):
     return quality_pe, quality_se
 
 
-def get_pe_read_quality_plot(df,quality_range, **kwargs):
+def get_pe_read_quality_plot(df,quality_range,colorscale='Viridis', **kwargs):
 
-
-
+    N= len(df["mean_1"].columns)
+    c= ['hsl('+str(h)+',50%'+',50%)' for h in np.linspace(0, 360, N+1)]
 
     fig = tools.make_subplots(rows=1, cols=2, shared_yaxes=True)
 
-    for sample in df["mean_1"].columns:
-        fig.append_trace({'x': df.index, 'y': df["mean_1"][sample].values,
-                          'type': 'scatter', 'name': sample}, 1, 1)
+    for i,sample in enumerate(df["mean_1"].columns):
+        fig.append_trace(dict(x= df.index,
+                          y = df["mean_1"][sample].values,
+                          type = 'scatter',
+                          name = sample,
+                          legendgroup =sample,
+                          marker = dict(color=c[i])
+                          ),
+                         1, 1)
 
-    for sample in df["mean_2"].columns:
-        fig.append_trace({'x': df.index, 'y': df["mean_2"][sample].values,
-                          'type': 'scatter', 'name': sample}, 1, 2)
+        fig.append_trace(dict(x = df.index,
+                          y = df["mean_2"][sample].values,
+                          type = 'scatter',
+                          name = sample,
+                          legendgroup = sample,
+                          showlegend = False,
+                          marker = dict( color = c[i])
+                          ),
+                         1, 2)
 
 
     fig['layout'].update(
-                     yaxis = dict(range=quality_range, autorange=True, title="Quality score"),
+                     yaxis = dict(range=quality_range, autorange=True, title="Average quality score"),
                      xaxis1 = dict(title='Position forward read'),
                      xaxis2 = dict(autorange='reversed',title='Position reverse read')
                      )
@@ -90,7 +102,7 @@ def draw_se_read_quality(df,quality_range,**kwargs):
             asFigure=True,
             kind="line",
             layout = go.Layout(
-                yaxis = dict(range=quality_range, autorange=True, title="Quality score"),
+                yaxis = dict(range=quality_range, autorange=True, title="Average quality score"),
                 xaxis = dict(title='Position read'),
                             )
                     ),**kwargs,**PLOTLY_PARAMS
@@ -121,8 +133,8 @@ def main(samples, report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality
 
     Report_numbers = """
 
-### Total reads per sample
-
+Total reads per sample
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
@@ -137,8 +149,8 @@ filtered       trimmed, PhiX filtered
 qc             passing reads
 ============   ===================================
 
-### Total bases per sample
-
+Total bases per sample
+~~~~~~~~~~~~~~~~~~~~~~
 .. raw:: html
 
     {div[Total_Bases]}
@@ -148,8 +160,8 @@ For details see Table Table1_.
 
     Report_read_quality_qc = """
 
-### Reads quality after QC
-
+Reads quality after QC
+~~~~~~~~~~~~~~~~~~~~~~
 """
 
     Quality_pe, Quality_se = get_stats_from_zips(zipfiles_QC)
@@ -157,14 +169,14 @@ For details see Table Table1_.
     if Quality_pe.shape[0] > 0:
         div['quality_qc_pe'] = get_pe_read_quality_plot(Quality_pe,[min_quality,max_quality])
         Report_read_quality_qc += """
-#### Paired end
-
+Paired end
+**********
 .. raw:: html
 
     {div[quality_qc_pe]}
 
-#### Single end
-
+Single end
+**********
 
 Paired end reads that lost their mate during filtering.
 
@@ -178,8 +190,8 @@ Paired end reads that lost their mate during filtering.
 """
     Report_read_quality_raw = """
 
-### Reads quality before QC
-
+Reads quality before QC
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. raw:: html
 
