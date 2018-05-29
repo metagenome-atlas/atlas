@@ -369,7 +369,6 @@ rule calculate_prefiltered_contig_coverage_stats:
               nmtag=t \
               local=t \
               secondary=t \
-              ssao=t \
               maxsites={params.maxsites} \
                -Xmx{resources.java_mem}G \
                out={output.sam} 2> {log}
