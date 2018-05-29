@@ -65,7 +65,7 @@ rule run_prokka_annotation:
         tsv = "{sample}/prokka/{sample}.tsv",
         txt = "{sample}/prokka/{sample}.txt"
     benchmark:
-        "benchmarks/prokka/{sample}.txt"
+        "benchmarks/annotate/prokka/{sample}.txt"
     params:
         outdir = "{sample}/prokka",
         kingdom = config.get("prokka_kingdom", "Bacteria"),
@@ -106,7 +106,7 @@ rule run_diamond_blastp:
     output:
         "{sample}/refseq/{sample}_hits.tsv"
     benchmark:
-        "benchmarks/diamond_alignments/{sample}.txt"
+        "benchmarks/annotate/diamond_alignments/{sample}.txt"
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = config.get("diamond_top_seqs", 2),
@@ -205,13 +205,13 @@ rule align_reads_to_renamed_contigs:
         statsfile = "{sample}/contig_stats/mapping_stats.txt",
         covstats = "{sample}/contig_stats/coverage_stats.txt"
     benchmark:
-        "benchmarks/bbmap_alignment/{sample}.txt"
+        "benchmarks/annotate/bbmap_alignment/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
         maxsites = config.get("maximum_counted_map_sites", 10)
     log:
-        "{sample}/sequence_alignment/align_reads.log"
+        "{sample}/annotate/sequence_alignment/align_reads.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -270,11 +270,11 @@ rule remove_pcr_duplicates:
         bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
         txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
-        "benchmarks/picard_mark_duplicates/{sample}.txt"
+        "benchmarks/annotate/picard_mark_duplicates/{sample}.txt"
     resources:
         mem = int(config.get("java_mem", "32"))
     log:
-        "{sample}/sequence_alignment/remove_pcr_duplicates.log"
+        "{sample}/annotate/sequence_alignment/remove_pcr_duplicates.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     shell:
@@ -297,7 +297,7 @@ rule counts_per_region:
         multi_mapping = "-M" if config.get("count_multi_mapped_reads", False) else "",
         primary_only = "--primary" if config.get("primary_only", False) else ""
     log:
-        "{sample}/feature_counts/feature_counts.log"
+        "{sample}/annotate/feature_counts/feature_counts.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
