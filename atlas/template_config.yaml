@@ -89,6 +89,8 @@ megahit_k_step: 20
 megahit_merge_level: 20,0.98
 megahit_prune_level: 2
 megahit_low_local_ratio: 0.2
+# ['default','meta-large','meta-sensitive']
+megahit_preset: default
 
 # Spades
 #------------

@@ -7,7 +7,7 @@ import warnings
 
 
 localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
-            finalize_contigs
+            finalize_contigs, build_bin_report, build_assembly_report
 
 
 def get_preprocessing_steps(config):
@@ -159,22 +159,25 @@ rule merge_pairs:
     params:
         kmer = config.get("merging_k", MERGING_K),
         extend2 = config.get("merging_extend2", MERGING_EXTEND2),
-        flags = config.get("merging_flags", MERGING_FLAGS)
+        flags = config.get("merging_flags", MERGING_FLAGS),
+        outmerged = lambda wc, output: os.path.join(os.path.dirname(output[0]), "%s_merged_pairs.fastq.gz" % wc.sample)
     shell:
         """
         bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
-            outmerged={wildcards.sample}_merged_pairs.fastq.gz \
+            outmerged={params.outmerged} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
 
-        cat {wildcards.sample}_merged_pairs.fastq.gz {input[2]} \
+        cat {params.outmerged} {input[2]} \
             > {output[2]} 2>> {log}
         """
 
-
+assembly_params={}
 if config.get("assembler", "megahit") == "megahit":
+    assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
+
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -183,8 +186,8 @@ if config.get("assembler", "megahit") == "megahit":
             temp("{sample}/assembly/{sample}_prefilter.contigs.fa")
         benchmark:
             "logs/benchmarks/assembly/{sample}.txt"
-        shadow:
-            "full"
+        # shadow:
+        #     "full"
         log:
             "{sample}/logs/{sample}_megahit.log"
         params:
@@ -197,7 +200,9 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs = lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if PAIRED_END else "--read {0}".format(*input)
+            inputs = lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if PAIRED_END else "--read {0}".format(*input),
+            preset = assembly_params['megahit'][config['megahit_preset']]
+
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -220,7 +225,8 @@ if config.get("assembler", "megahit") == "megahit":
                 --merge-level {params.merge_level} \
                 --prune-level {params.prune_level} \
                 --low-local-ratio {params.low_local_ratio} \
-                --memory {resources.mem}000000000  2> >(tee {log})
+                --memory {resources.mem}000000000  \
+                {params.preset} > {log} 2>&1
             """
 
 
@@ -234,6 +240,8 @@ if config.get("assembler", "megahit") == "megahit":
 
 
 else:
+    assembly_params['spades'] = {'meta':'--meta','normal':''}
+
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -247,11 +255,12 @@ else:
             inputs = lambda wc, input: "-1 {0} -2 {1} -s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            #min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
+            preset = assembly_params['spades'][config['spades_preset']]
+            # min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
         log:
             "{sample}/logs/{sample}_spades.log"
-        shadow:
-            "full"
+        # shadow:
+        #     "full"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -260,7 +269,8 @@ else:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             """
-            spades.py --threads {threads} --memory {resources.mem} -o {params.outdir} --meta {params.inputs} 2> >(tee {log})
+            spades.py --threads {threads} --memory {resources.mem} \
+                -o {params.outdir} {params.preset} {params.inputs} > {log} 2>&1
             """
 
 
@@ -324,7 +334,7 @@ rule calculate_prefiltered_contig_coverage_stats:
         fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
     output: # bbwrap gives output statistics only for single ended
         covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
-        sam = temp("{sample}/sequence_alignment/alignement_to_prefilter_contigs.sam")
+        sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
     benchmark:
         "logs/benchmarks/calculate_prefiltered_contig_coverage_stats/{sample}.txt"
     params:
@@ -458,6 +468,7 @@ rule align_reads_to_final_contigs:
                threads={threads} \
                pairlen={params.max_distance_between_pairs} \
                pairedonly={params.paired_only} \
+               minid={params.min_id} \
                mdtag=t \
                xstag=fs \
                nmtag=t \
@@ -475,21 +486,19 @@ rule align_reads_to_final_contigs:
 rule pileup:
     input:
         fasta = "{sample}/{sample}_contigs.fasta",
-        sam = "{sample}/sequence_alignment/{sample}.sam"
-        #predicted_genes="{folder}/predicted_genes/{Reference}_genes.fna"
+        sam = "{sample}/sequence_alignment/{sample}.sam",
     output:
         basecov = temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
         covhist = "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
         covstats = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
         bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
-        #gene_coverage="{sample}/assembly/contig_stats/postfilter_gene_coverage.txt.gz", add: outorf={output.gene_coverage}
     params:
         pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f',
         physcov = 't' if not config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
     benchmark:
         "logs/benchmarks/align_reads_to_filtered_contigs/{sample}_pileup.txt"
     log:
-        "{sample}/assembly/logs/contig_coverage_stats.log"
+        "{sample}/logs/assembly/pilup_final_contigs.log" # this file is udes for assembly report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -507,7 +516,7 @@ rule pileup:
                concise=t \
                physcov={params.physcov} \
                secondary={params.pileup_secondary} \
-               bincov={output.bincov} 2>> {log}"""
+               bincov={output.bincov} 2> {log}"""
 
 
 if config.get("perform_genome_binning", True):
@@ -608,6 +617,28 @@ if config.get("perform_genome_binning", True):
                    {params.output_dir}"""
 
 
+rule build_bin_report:
+    input:
+        completeness_files = expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
+        taxonomy_files = expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES)
+    output:
+        report = "reports/bin_report.html",
+        bin_table = "genomic_bins.tsv"
+    params:
+        samples = " ".join(SAMPLES)
+    conda:
+        "%s/report.yaml" % CONDAENV
+    shell:
+        """
+        python %s/report/bin_report.py \
+            --samples {params.samples} \
+            --completeness {input.completeness_files} \
+            --taxonomy {input.taxonomy_files} \
+            --report-out {output.report} \
+            --bin-table {output.bin_table}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
+
+
 rule convert_sam_to_bam:
     input:
         "{file}.sam"
@@ -618,7 +649,7 @@ rule convert_sam_to_bam:
     threads:
         config.get("threads", 1)
     resources:
-        mem=config.get("threads", 1)
+        mem = 2 * config.get("threads", 1)
     shell:
         """samtools view \
                -m 1G \
@@ -626,9 +657,10 @@ rule convert_sam_to_bam:
                -bSh1 {input} | samtools sort \
                                    -m 1G \
                                    -@ {threads} \
-                                   -T {TMPDIR}/{wildcards.file}_tmp \
+                                   -T {wildcards.file}_tmp \
                                    -o {output} \
-                                   -O bam -"""
+                                   -O bam -
+        """
 
 
 rule create_bam_index:
@@ -729,6 +761,7 @@ rule find_counts_per_region:
                -a {input.gtf} \
                -o {output.counts} \
                {input.bam} 2> {log}"""
+
 
 rule run_diamond_blastp:
     input:
@@ -855,7 +888,7 @@ else:
         input:
             prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
         output:
             "{sample}/{sample}_annotations.txt"
         shell:
@@ -866,85 +899,27 @@ else:
                  {output}"
 
 
-# rule assembly_report:
-#
-#     input:
-#         contig_stats = "{sample}/assembly/contig_stats/final_contig_stats.txt",
-#         base_comp = "{sample}/assembly/contig_stats/postfilter_base_composition.txt"
-#         # css = os.path.join(workflow.basedir, "resources", "report.css")
-#     output:
-#         html = "{sample}/{sample}_assembly_README.html"
-#     shadow:
-#         "shallow"
-#     run:
-#         import pandas as pd
-#         # contig stats table
-#         df = pd.read_csv(input.contig_stats, sep="\t")
-#         contig_stats_csv = "contig_stats.csv"
-#         df.to_csv(contig_stats_csv,
-#                   columns=["n_contigs", "contig_bp", "ctg_N50", "ctg_N90", "ctg_max", "gc_avg"],
-#                   index=False)
-#
-#         # read base composition across final contigs
-#         df = pd.read_csv(input.base_comp, sep="\t")
-#         base_composition_positions = "['%s']" % "', '".join(map(str, df["#Pos"]))
-#         base_composition_a = "[%s]" % ", ".join(map(str, df["A"]))
-#         base_composition_c = "[%s]" % ", ".join(map(str, df["C"]))
-#         base_composition_g = "[%s]" % ", ".join(map(str, df["G"]))
-#         base_composition_t = "[%s]" % ", ".join(map(str, df["T"]))
-#         base_composition_n = "[%s]" % ", ".join(map(str, df["N"]))
-#
-#         report("""
-#
-# ===========================================================================================
-# Sample Report - Sample: {wildcards.sample}
-# ===========================================================================================
-#
-# .. raw:: html
-#
-#     body{font-family:Helvetica,arial,sans-serif;font-size:14px;line-height:1.6;background-color:#fff;padding:30px;color:#333}body > :first-child{margin-top:0!important}body > :last-child{margin-bottom:0!important}a{color:#4183C4;text-decoration:none}a.absent{color:#c00}a.anchor{display:block;padding-left:30px;margin-left:-30px;cursor:pointer;position:absolute;top:0;left:0;bottom:0}h1,h2,h3,h4,h5,h6{margin:20px 0 10px;padding:0;font-weight:700;-webkit-font-smoothing:antialiased;cursor:text;position:relative}h2:first-child,h1:first-child,h1:first-child + h2,h3:first-child,h4:first-child,h5:first-child,h6:first-child{margin-top:0;padding-top:0}h1:hover a.anchor,h2:hover a.anchor,h3:hover a.anchor,h4:hover a.anchor,h5:hover a.anchor,h6:hover a.anchor{text-decoration:none}h1 tt,h1 code{font-size:inherit}h2 tt,h2 code{font-size:inherit}h3 tt,h3 code{font-size:inherit}h4 tt,h4 code{font-size:inherit}h5 tt,h5 code{font-size:inherit}h6 tt,h6 code{font-size:inherit}h1{font-size:28px;color:#000}h2{font-size:24px;border-bottom:1px solid #ccc;color:#000}h3{font-size:18px}h4{font-size:16px}h5{font-size:14px}h6{color:#777;font-size:14px}p,blockquote,ul,ol,dl,li,table,pre{margin:15px 0}hr{background:transparent url(http://tinyurl.com/bq5kskr) repeat-x 0 0;border:0 none;color:#ccc;height:4px;padding:0}body > h2:first-child{margin-top:0;padding-top:0}body > h1:first-child{margin-top:0;padding-top:0}body > h1:first-child + h2{margin-top:0;padding-top:0}body > h3:first-child,body > h4:first-child,body > h5:first-child,body > h6:first-child{margin-top:0;padding-top:0}a:first-child h1,a:first-child h2,a:first-child h3,a:first-child h4,a:first-child h5,a:first-child h6{margin-top:0;padding-top:0}h1 p,h2 p,h3 p,h4 p,h5 p,h6 p{margin-top:0}li p.first{display:inline-block}ul,ol{padding-left:30px}ul :first-child,ol :first-child{margin-top:0}ul :last-child,ol :last-child{margin-bottom:0}dl{padding:0}dl dt{font-size:14px;font-weight:700;font-style:italic;padding:0;margin:15px 0 5px}dl dt:first-child{padding:0}dl dt > :first-child{margin-top:0}dl dt > :last-child{margin-bottom:0}dl dd{margin:0 0 15px;padding:0 15px}dl dd > :first-child{margin-top:0}dl dd > :last-child{margin-bottom:0}blockquote{border-left:4px solid #ddd;padding:0 15px;color:#777}blockquote > :first-child{margin-top:0}blockquote > :last-child{margin-bottom:0}table{padding:0;border-spacing:0;border-collapse:collapse}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0;padding:0}table tr:nth-child(2n){background-color:#f8f8f8}table tr th{font-weight:700;border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td{border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr th :first-child,table tr td :first-child{margin-top:0}table tr th :last-child,table tr td :last-child{margin-bottom:0}img{max-width:100%}span.frame{display:block;overflow:hidden}span.frame > span{border:1px solid #ddd;display:block;float:left;overflow:hidden;margin:13px 0 0;padding:7px;width:auto}span.frame span img{display:block;float:left}span.frame span span{clear:both;color:#333;display:block;padding:5px 0 0}span.align-center{display:block;overflow:hidden;clear:both}span.align-center > span{display:block;overflow:hidden;margin:13px auto 0;text-align:center}span.align-center span img{margin:0 auto;text-align:center}span.align-right{display:block;overflow:hidden;clear:both}span.align-right > span{display:block;overflow:hidden;margin:13px 0 0;text-align:right}span.align-right span img{margin:0;text-align:right}span.float-left{display:block;margin-right:13px;overflow:hidden;float:left}span.float-left span{margin:13px 0 0}span.float-right{display:block;margin-left:13px;overflow:hidden;float:right}span.float-right > span{display:block;overflow:hidden;margin:13px auto 0;text-align:right}code,tt{margin:0 2px;padding:0 5px;white-space:nowrap;border:1px solid #eaeaea;background-color:#f8f8f8;border-radius:3px}pre code{margin:0;padding:0;white-space:pre;border:none;background:transparent}.highlight pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre{background-color:#f8f8f8;border:1px solid #ccc;font-size:13px;line-height:19px;overflow:auto;padding:6px 10px;border-radius:3px}pre code,pre tt{background-color:transparent;border:none}div#metadata{text-align:right}
-#
-#     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-#     <script src="https://code.highcharts.com/highcharts.js"></script>
-#     <script src="https://code.highcharts.com/modules/exporting.js"></script>
-#     <script type="text/javascript">
-#
-#     $(function () {{
-#         $('#read_composition').highcharts({{
-#             title: {{text: 'Read Base Composition by Position'}},
-#             xAxis: {{title: {{text: "Position"}}, categories: {base_composition_positions}}},
-#             yAxis: {{min: 0, title: {{text: 'Fraction'}}}},
-#             tooltip: {{}},
-#             credits: {{enabled: false}},
-#             legend: {{layout: 'vertical', align: 'right', verticalAlign: 'middle', borderWidth: 0}},
-#             plotOptions: {{series: {{ marker: {{ enabled: false }} }}, column: {{pointPadding: 0.2, borderWidth: 0}}}},
-#             series: [{{name: 'A', data: {base_composition_a}}},
-#                      {{name: 'C', data: {base_composition_c}}},
-#                      {{name: 'G', data: {base_composition_g}}},
-#                      {{name: 'T', data: {base_composition_t}}},
-#                      {{name: 'N', data: {base_composition_n}}}]
-#             }});
-#     }});
-#     </script>
-#
-# .. contents:: Contents
-#     :backlinks: none
-#
-# Read Summary
-# ------------
-#
-# .. raw:: html
-#
-#     <div id="read_composition" style="min-width: 310px; height: 500px; margin: 0 auto"></div>
-#
-#
-# Contig Summary
-# --------------
-#
-# .. csv-table::
-#     :header-rows: 1
-#     :file: {contig_stats_csv}
-#
-#
-#                """, output.html, metadata="Author: " + config.get("author", "ATLAS"),
-#                stylesheet=None, contig_stats=input.contig_stats)
+rule build_assembly_report:
+    input:
+        contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv", sample=SAMPLES),
+        mapping_log_files = expand("{sample}/logs/assembly/pilup_final_contigs.log", sample=SAMPLES),
+        # mapping logs will be incomplete unless we wait on alignment to finish
+        bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
+    output:
+        report = "reports/assembly_report.html",
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    params:
+        samples = " ".join(SAMPLES)
+    conda:
+        "%s/report.yaml" % CONDAENV
+    shell:
+        """
+        python %s/report/assembly_report.py \
+            --samples {params.samples} \
+            --contig-stats {input.contig_stats} \
+            --gene-tables {input.gene_tables} \
+            --mapping-logs {input.mapping_log_files} \
+            --report-out {output.report} \
+            --combined-stats {output.combined_contig_stats}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
