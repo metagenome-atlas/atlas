@@ -106,7 +106,7 @@ def make_default_config():
 
     conf["deduplicate"] = True
     conf["error_correction_overlapping_pairs"] = True
-    conf["merge_pairs_before_assembly"] = True
+
 
     conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     conf["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
@@ -117,10 +117,15 @@ def make_default_config():
     conf["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
     conf["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
 
+
+    conf["normalize_reads_before_assembly"] = True
     conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
     conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
 
+    conf["error_correction_before_assembly"] =  True
+    
+    conf["merge_pairs_before_assembly"] =  True
     conf["merging_k"] = MERGING_K
     conf["merging_extend2"] = MERGING_EXTEND2
     conf["merging_flags"]  = MERGING_FLAGS
@@ -140,6 +145,7 @@ def make_default_config():
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
     conf["spades_preset"] = 'meta'
+    conf["spades_skip_BayesHammer"] = False
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
     conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
     conf["minimum_mapped_reads"] = MINIMUM_MAPPED_READS

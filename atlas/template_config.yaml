@@ -60,12 +60,17 @@ contaminant_ambiguous: best
 ########################
 # Pre-assembly-processing
 ########################
+
+normalize_reads_before_assembly : true
 # target kmer depth
 normalization_target_depth: 100
 normalization_kmer_length: 21
 normalization_minimum_kmers: 15
+
+error_correction_before_assembly : true
+
 # join R1 and R2 at overlap; unjoined reads are still utilized
-merge_pairs_before_assembly: true
+merge_pairs_before_assembly : true
 # extend reads while merging to this many nucleotides
 merging_extend2: 40
 # Iterations are performed until extend2 x iterations
@@ -94,6 +99,7 @@ megahit_preset: default
 
 # Spades
 #------------
+spades_skip_BayesHammer: False
 spades_k: auto
 
 # Filtering

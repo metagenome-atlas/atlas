@@ -9,13 +9,21 @@ import warnings
 localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
             finalize_contigs, build_bin_report, build_assembly_report
 
+ASSEMBLY_FRACTIONS = MULTIFILE_FRACTIONS
+if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
+    ASSEMBLY_FRACTIONS += ['me']
 
 def get_preprocessing_steps(config):
-    preprocessing_steps = ["normalized"]
-    if config.get("error_correction_overlapping_pairs", True):
+    preprocessing_steps = []
+    if config.get("normalize_reads_before_assembly", True):
+        preprocessing_steps.append("normalized")
+
+    if config.get("error_correction_before_assembly", True):
         preprocessing_steps.append("errorcorr")
+
     if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
         preprocessing_steps.append("merged")
+
     return ".".join(preprocessing_steps)
 
 
@@ -142,7 +150,7 @@ rule merge_pairs:
             fraction=MULTIFILE_FRACTIONS)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS))
+            fraction=ASSEMBLY_FRACTIONS))
     threads:
         config.get("threads", 1)
     resources:
@@ -159,24 +167,38 @@ rule merge_pairs:
     params:
         kmer = config.get("merging_k", MERGING_K),
         extend2 = config.get("merging_extend2", MERGING_EXTEND2),
-        flags = config.get("merging_flags", MERGING_FLAGS),
-        outmerged = lambda wc, output: os.path.join(os.path.dirname(output[0]), "%s_merged_pairs.fastq.gz" % wc.sample)
+        flags = config.get("merging_flags", MERGING_FLAGS)
     shell:
         """
         bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
-            outmerged={params.outmerged} \
+            outmerged={output[3]} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
 
-        cat {params.outmerged} {input[2]} \
-            > {output[2]} 2>> {log}
+        cp {input[2]} {output[2]} 2>> {log}
         """
 
 assembly_params={}
 if config.get("assembler", "megahit") == "megahit":
     assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
+
+    if PAIRED_END and config.get("merge_pairs_before_assembly", True):
+
+        localrules: merge_se_me_for_megahit
+        rule merge_se_me_for_megahit:
+            input:
+                expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                fraction=['se','me'], assembly_preprocessing_steps=assembly_preprocessing_steps)
+            output:
+                temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                            fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
+            shell:
+                "zcat {input} > {output}"
+
+        ASSEMBLY_FRACTIONS = ['R1','R2','co']
+
 
     rule run_megahit:
         input:
@@ -200,9 +222,8 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs = lambda wc, input: "-1 {0} -2 {1} --read {2}".format(*input) if PAIRED_END else "--read {0}".format(*input),
-            preset = assembly_params['megahit'][config['megahit_preset']]
-
+            inputs = lambda wc, input: "-1 {0} -2 {1} ".format(*input) if PAIRED_END else "--read {0}".format(*input),
+            preset = assembly_params['megahit'][config['megahit_preset']],
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -212,6 +233,7 @@ if config.get("assembler", "megahit") == "megahit":
         shell:
             """
                 rm -r {params.outdir} 2> {log}
+                
                 megahit \
                 {params.inputs} \
                 --tmp-dir {TMPDIR} \
@@ -246,18 +268,19 @@ else:
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS,
+                fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/contigs.fasta")
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
-            inputs = lambda wc, input: "-1 {0} -2 {1} -s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            inputs = lambda wc, input: "-pe1-1 {0} -pe1-2 {1} -pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            input_merged = lambda wc, input: "pe1-m {3}".format(*input) if len(input) == 4 else "",
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            preset = assembly_params['spades'][config['spades_preset']]
-            # min_length=config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH)
+            preset = assembly_params['spades'][config['spades_preset']],
+            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else "f"
         log:
             "{sample}/logs/assembly/spades.log"
         # shadow:
@@ -269,10 +292,15 @@ else:
         resources:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """
-            spades.py --threads {threads} --memory {resources.mem} \
-                -o {params.outdir} {params.preset} {params.inputs} > {log} 2>&1
-            """
+            "spades.py"
+            "--threads {threads}"
+            "--memory {resources.mem}"
+            "-o {params.outdir}"
+            "{params.preset}"
+            "{params.inputs} {params.input_merged}"
+            "{params.skip_error_correction}"
+            "> {log} 2>&1"
+
 
 
     rule rename_spades_output:
