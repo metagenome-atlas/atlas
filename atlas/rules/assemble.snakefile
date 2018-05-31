@@ -4,12 +4,12 @@ import sys
 from glob import glob
 from snakemake.utils import report
 import warnings
-
+from copy import copy
 
 localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
             finalize_contigs, build_bin_report, build_assembly_report
 
-ASSEMBLY_FRACTIONS = MULTIFILE_FRACTIONS
+ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
 if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
     ASSEMBLY_FRACTIONS += ['me']
 
@@ -233,7 +233,7 @@ if config.get("assembler", "megahit") == "megahit":
         shell:
             """
                 rm -r {params.outdir} 2> {log}
-                
+
                 megahit \
                 {params.inputs} \
                 --tmp-dir {TMPDIR} \
@@ -275,12 +275,12 @@ else:
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
-            inputs = lambda wc, input: "-pe1-1 {0} -pe1-2 {1} -pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            input_merged = lambda wc, input: "pe1-m {3}".format(*input) if len(input) == 4 else "",
+            inputs = lambda wc, input: "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            input_merged = lambda wc, input: "--pe1-m {3}".format(*input) if len(input) == 4 else "",
             k = config.get("spades_k", SPADES_K),
             outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
             preset = assembly_params['spades'][config['spades_preset']],
-            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else "f"
+            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
         log:
             "{sample}/logs/assembly/spades.log"
         # shadow:
@@ -292,14 +292,14 @@ else:
         resources:
             mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            "spades.py"
-            "--threads {threads}"
-            "--memory {resources.mem}"
-            "-o {params.outdir}"
-            "{params.preset}"
-            "{params.inputs} {params.input_merged}"
-            "{params.skip_error_correction}"
-            "> {log} 2>&1"
+            "spades.py "
+            " --threads {threads} "
+            " --memory {resources.mem} "
+            " -o {params.outdir} "
+            " {params.preset} "
+            " {params.inputs} {params.input_merged} "
+            " {params.skip_error_correction} "
+            " > {log} 2>&1 "
 
 
 
