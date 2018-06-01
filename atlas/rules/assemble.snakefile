@@ -356,107 +356,118 @@ rule combine_sample_contig_stats:
 
         c.to_csv(output[0], sep='\t')
 
+if config['filter_contigs']:
 
-rule calculate_prefiltered_contig_coverage_stats:
-    input:
-        unpack(get_quality_controlled_reads),
-        fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
-    output: # bbwrap gives output statistics only for single ended
-        covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
-        sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
-    benchmark:
-        "logs/benchmarks/assembly/post_process/align_reads_to_prefiltered_contigs/{sample}.txt"
-    params:
-        input = lambda wc, input : input_params_for_bbwrap(wc, input),
-        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-        max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
-        paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
-        min_id = config.get('contig_min_id', CONTIG_MIN_ID),
-        maxindel = 100,
-        #ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best'
-    log:
-        "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-    shell:
-        """bbwrap.sh \
-               nodisk=t \
-               ref={input.fasta} \
-               {params.input} \
-               fast=t \
-               threads={threads} \
-               ambiguous=all \
-              pairlen={params.max_distance_between_pairs} \
-              pairedonly={params.paired_only} \
-              mdtag=t \
-              xstag=fs \
-              nmtag=t \
-              local=t \
-              secondary=t \
-              maxsites={params.maxsites} \
-               -Xmx{resources.java_mem}G \
-               out={output.sam} 2> {log}
+    rule calculate_prefiltered_contig_coverage_stats:
+        input:
+            unpack(get_quality_controlled_reads),
+            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+        output: # bbwrap gives output statistics only for single ended
+            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+            sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
+        benchmark:
+            "logs/benchmarks/assembly/post_process/align_reads_to_prefiltered_contigs/{sample}.txt"
+        params:
+            input = lambda wc, input : input_params_for_bbwrap(wc, input),
+            maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
+            max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+            paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
+            min_id = config.get('contig_min_id', CONTIG_MIN_ID),
+            maxindel = 100,
+            #ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best'
+        log:
+            "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        shell:
+            """bbwrap.sh \
+                   nodisk=t \
+                   ref={input.fasta} \
+                   {params.input} \
+                   fast=t \
+                   threads={threads} \
+                   ambiguous=all \
+                  pairlen={params.max_distance_between_pairs} \
+                  pairedonly={params.paired_only} \
+                  mdtag=t \
+                  xstag=fs \
+                  nmtag=t \
+                  local=t \
+                  secondary=t \
+                  maxsites={params.maxsites} \
+                   -Xmx{resources.java_mem}G \
+                   out={output.sam} 2> {log}
 
-            pileup.sh \
-            ref={input.fasta} \
-            in={output.sam} \
-            threads={threads} \
-            secondary=t \
-            -Xmx{resources.java_mem}G \
-            covstats={output.covstats} 2>> {log}
-        """
-
-
-rule filter_by_coverage:
-    input:
-        fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
-        covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
-    output:
-        fasta = temp("{sample}/assembly/{sample}_final_contigs.fasta"),
-        removed_names = "{sample}/assembly/{sample}_discarded_contigs.fasta"
-    params:
-        minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
-        minp = config.get("minimum_percent_covered_bases", MINIMUM_PERCENT_COVERED_BASES),
-        minr = config.get("minimum_mapped_reads", MINIMUM_MAPPED_READS),
-        minl = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
-        trim = config.get("contig_trim_bp", CONTIG_TRIM_BP)
-    log:
-        "{sample}/logs/assembly/post_process/filter_by_coverage.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        1
-    resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-    shell:
-        """filterbycoverage.sh in={input.fasta} \
-               cov={input.covstats} \
-               out={output.fasta} \
-               outd={output.removed_names} \
-               minc={params.minc} \
-               minp={params.minp} \
-               minr={params.minr} \
-               minl={params.minl} \
-               trim={params.trim} \
-               -Xmx{resources.java_mem}G 2> {log}"""
+                pileup.sh \
+                ref={input.fasta} \
+                in={output.sam} \
+                threads={threads} \
+                secondary=t \
+                -Xmx{resources.java_mem}G \
+                covstats={output.covstats} 2>> {log}
+            """
 
 
-rule finalize_contigs:
-    input:
-        "{sample}/assembly/{sample}_final_contigs.fasta"
-    output:
-        "{sample}/{sample}_contigs.fasta"
-    threads:
-        1
-    shell:
-        "cp {input} {output}"
+    rule filter_by_coverage:
+        input:
+            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
+            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
+        output:
+            fasta = temp("{sample}/assembly/{sample}_final_contigs.fasta"),
+            removed_names = "{sample}/assembly/{sample}_discarded_contigs.fasta"
+        params:
+            minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
+            minp = config.get("minimum_percent_covered_bases", MINIMUM_PERCENT_COVERED_BASES),
+            minr = config.get("minimum_mapped_reads", MINIMUM_MAPPED_READS),
+            minl = config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
+            trim = config.get("contig_trim_bp", CONTIG_TRIM_BP)
+        log:
+            "{sample}/logs/assembly/post_process/filter_by_coverage.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            1
+        resources:
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        shell:
+            """filterbycoverage.sh in={input.fasta} \
+                   cov={input.covstats} \
+                   out={output.fasta} \
+                   outd={output.removed_names} \
+                   minc={params.minc} \
+                   minp={params.minp} \
+                   minr={params.minr} \
+                   minl={params.minl} \
+                   trim={params.trim} \
+                   -Xmx{resources.java_mem}G 2> {log}"""
 
+
+    rule finalize_contigs:
+        input:
+            "{sample}/assembly/{sample}_final_contigs.fasta"
+        output:
+            "{sample}/{sample}_contigs.fasta"
+        threads:
+            1
+        shell:
+            "cp {input} {output}"
+
+else: # no filter
+    rule finalize_contigs:
+        input:
+            "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+        output:
+            "{sample}/{sample}_contigs.fasta"
+        threads:
+            1
+        shell:
+            "cp {input} {output}"
 
 rule align_reads_to_final_contigs:
     input:

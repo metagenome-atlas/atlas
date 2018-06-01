@@ -63,9 +63,9 @@ contaminant_ambiguous: best
 
 normalize_reads_before_assembly : true
 # target kmer depth
-normalization_target_depth: 100
+normalization_target_depth: 10000
 normalization_kmer_length: 21
-normalization_minimum_kmers: 15
+normalization_minimum_kmers: 3
 
 error_correction_before_assembly : true
 
@@ -104,16 +104,18 @@ spades_k: auto
 
 # Filtering
 #------------
-# trim contig tips
-contig_trim_bp: 20
-# filter out assembled noise
 prefilter_minimum_contig_length: 200
+# filter out assembled noise
+# this is more important for assemblys from megahit
+filter_contigs: true
+# trim contig tips
+contig_trim_bp: 0
 # require contigs to have read support
 minimum_average_coverage: 1
-minimum_percent_covered_bases: 40
+minimum_percent_covered_bases: 20
 minimum_mapped_reads: 0
 # after filtering
-minimum_contig_length: 200
+minimum_contig_length: 300
 
 
 ########################
