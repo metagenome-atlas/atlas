@@ -14,7 +14,7 @@ if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
     ASSEMBLY_FRACTIONS += ['me']
 
 def get_preprocessing_steps(config):
-    preprocessing_steps = []
+    preprocessing_steps = ['QC']
     if config.get("normalize_reads_before_assembly", True):
         preprocessing_steps.append("normalized")
 
@@ -53,12 +53,23 @@ def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
 
 assembly_preprocessing_steps = get_preprocessing_steps(config)
 
+localrules: init_pre_assembly_processing
+rule init_pre_assembly_processing:
+    input:
+        unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
+    output:
+        temp(expand("{{sample}}/assembly/reads/QC_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS))
+    run:
+    # make symlink
+        for i in range(len(input)):
+            os.symlink(os.path.relpath(input[i],os.path.dirname(output[i])),output[i])
 
 rule normalize_coverage_across_kmers:
     input:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
-        temp(expand("{{sample}}/assembly/reads/normalized_{fraction}.fastq.gz",
+        temp(expand("{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS))
     params:
         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
@@ -447,27 +458,30 @@ if config['filter_contigs']:
                    trim={params.trim} \
                    -Xmx{resources.java_mem}G 2> {log}"""
 
-
-    rule finalize_contigs:
-        input:
-            "{sample}/assembly/{sample}_final_contigs.fasta"
-        output:
-            "{sample}/{sample}_contigs.fasta"
-        threads:
-            1
-        shell:
-            "cp {input} {output}"
-
+# HACK: this makes two copies of the same file
 else: # no filter
-    rule finalize_contigs:
+    localrules: do_not_filter_contigs
+    rule do_not_filter_contigs:
         input:
             "{sample}/assembly/{sample}_prefilter_contigs.fasta"
         output:
-            "{sample}/{sample}_contigs.fasta"
+            "{sample}/assembly/{sample}_final_contigs.fasta"
         threads:
             1
         shell:
             "cp {input} {output}"
+
+rule finalize_contigs:
+    input:
+        "{sample}/assembly/{sample}_final_contigs.fasta"
+    output:
+        "{sample}/{sample}_contigs.fasta"
+    threads:
+        1
+    run:
+        os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
+
+
 
 rule align_reads_to_final_contigs:
     input:
