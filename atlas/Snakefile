@@ -138,7 +138,7 @@ if config.get("workflow", "complete") == "qc":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-    REPORTS=  ["finished_QC"] #["reports/QC_report.html"] # TODO: not yet working
+    REPORTS=  ["reports/QC_report.html"]
 
     rule QC:
         input:
