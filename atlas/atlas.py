@@ -222,9 +222,6 @@ def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="qc")
 
 
-
-
-
 @cli.command("assemble", context_settings=dict(ignore_unknown_options=True), short_help="assembly workflow")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
@@ -244,8 +241,6 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
     run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="complete")
-
-
 
 
 @cli.command("annotate", context_settings=dict(ignore_unknown_options=True), short_help="annotation workflow")

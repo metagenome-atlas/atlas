@@ -9,6 +9,8 @@ from default_values import *
 # get default values and update them with values specified in config file
 default_config = make_default_config()
 update_config(default_config, config)
+config = default_config
+
 
 # required snakemake version
 min_version("4.3")
@@ -136,10 +138,12 @@ if config.get("workflow", "complete") == "qc":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-    rule all:
+    REPORTS=  ["reports/QC_report.html"]
+
+    rule QC:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-            "finished_QC"
+            REPORTS
 
     include: "rules/qc.snakefile"
 
@@ -151,16 +155,23 @@ elif config.get("workflow", "complete") == "complete":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
+    # REPORTS = ["reports/QC_report.html", "reports/assembly_report.html"]
+    REPORTS = ["reports/assembly_report.html"]
+
+    if config.get("perform_genome_binning", True):
+        REPORTS.append("reports/bin_report.html")
+
     rule all:
         input:
-            expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-            "finished_QC",
+            expand("{sample}/sequence_quality_control/finished_QC",
+                sample=SAMPLES),
+            # "finished_QC",
             expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES),
-#            get_bin_summary_files(config.get("perform_genome_binning", True), SAMPLES),  # this produces an error when genome binning is not active
-            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES)
+            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
+            REPORTS
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
@@ -178,7 +189,7 @@ elif config.get("workflow") == "download":
              "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
              CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
-    rule all:
+    rule download:
         input:
             expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
             "%s/taxon_marker_sets.tsv" % CHECKMDIR
@@ -186,10 +197,11 @@ elif config.get("workflow") == "download":
     include: "rules/download.snakefile"
 
 elif config.get("workflow") == "annotate":
-    rule all:
+    rule annotate:
         input:
             expand("{sample}_annotations.txt", sample=SAMPLES),
-            expand("{sample}/contig_stats.txt", sample=SAMPLES)
+            expand("{sample}/contig_stats.txt", sample=SAMPLES),
+            #"reports/assembly_report.html" # not tested yet, but should work
 
     include: "rules/annotate.snakefile"
 

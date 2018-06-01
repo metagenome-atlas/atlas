@@ -7,22 +7,8 @@ import warnings
 
 
 localrules: postprocess_after_decontamination, initialize_checkm, \
-            finalize_QC, QC_report, combine_read_length_stats, \
+            finalize_QC, build_qc_report, combine_read_length_stats, \
             combine_insert_stats, combine_read_counts
-
-
-def get_line_from_file(file, line_start):
-    "function to extract line after string name, eg in datafile with average in comments #Avg: 123"
-
-    with open(file) as f:
-        for line in f:
-            if line.startswith(line_start):
-                break
-
-    if not line.startswith(line_start):
-        raise Exception("Didn't find {name} in file ({file}):\n\n".format(name=name,file=file))
-    else:
-        return line[len(line_start):].strip()
 
 
 def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
@@ -76,8 +62,7 @@ def get_finalize_qc_input(wildcards):
 PROCESSED_STEPS = ['raw']
 
 
-# controls files and deinterlevves them, for the pipeline all files have the same format
-rule init_QC:
+rule initialize_qc:
     input:
         lambda wc: config["samples"][wc.sample]["fastq"]
     output:
@@ -87,10 +72,10 @@ rule init_QC:
     params:
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
-        outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
+        outputs = lambda wc, output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
         verifypaired = "t" if PAIRED_END else "f"
     log:
-        "{sample}/logs/{sample}_init.log"
+        "{sample}/logs/QC/init.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -99,20 +84,23 @@ rule init_QC:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
     shell:
-        """reformat.sh {params.inputs} \
-        interleaved={params.interleaved} \
-        {params.outputs} \
-        qout=33 \
-        overwrite=true \
-        verifypaired={params.verifypaired} \
-        addslash=t \
-        trimreaddescription=t \
-        threads={threads} \
-        -Xmx{resources.java_mem}G 2> {log}
+        """
+        reformat.sh {params.inputs} \
+            interleaved={params.interleaved} \
+            {params.outputs} \
+            iupacToN=t \
+            touppercase=t \
+            qout=33 \
+            overwrite=true \
+            verifypaired={params.verifypaired} \
+            addslash=t \
+            trimreaddescription=t \
+            threads={threads} \
+            -Xmx{resources.java_mem}G 2> {log}
         """
 
 
-rule read_stats:
+rule get_read_stats:
     # TODO: remove run block in favor of script or alternate cli
     # see http://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-external-scripts
     input:
@@ -124,7 +112,7 @@ rule read_stats:
     priority:
         30
     log:
-        "{sample}/logs/read_stats.log"
+        "{sample}/logs/QC/read_stats/{step}.log"
     # conda:
     #     "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -205,7 +193,7 @@ rule read_stats:
 
 if config.get('deduplicate', True):
     PROCESSED_STEPS.append("deduplicated")
-    rule deduplicate:
+    rule deduplicate_reads:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=PROCESSED_STEPS[-2], fraction=RAW_INPUT_FRACTIONS)
@@ -213,14 +201,14 @@ if config.get('deduplicate', True):
             temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
         benchmark:
-            "logs/benchmarks/deduplicate/{sample}.txt"
+            "logs/benchmarks/QC/deduplicate/{sample}.txt"
         params:
             inputs = lambda wc, input: "in=%s in2=%s" % (input[0], input[1]) if PAIRED_END else "in=%s" % input[0],
             outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
             dupesubs = config.get('duplicates_allow_substitutions', DUPLICATES_ALLOW_SUBSTITUTIONS),
             only_optical = 't' if config.get('duplicates_only_optical', DUPLICATES_ONLY_OPTICAL) else 'f'
         log:
-            "{sample}/logs/{sample}_deduplicate.log"
+            "{sample}/logs/QC/deduplicate.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -245,7 +233,7 @@ if config.get('deduplicate', True):
 PROCESSED_STEPS.append("filtered")
 
 
-rule quality_filter:
+rule apply_quality_filter:
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2])
@@ -254,7 +242,7 @@ rule quality_filter:
             fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
         stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
     benchmark:
-        "logs/benchmarks/quality_filter/{sample}.txt"
+        "logs/benchmarks/QC/quality_filter/{sample}.txt"
     params:
         ref = "ref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
         mink = "" if not config.get("preprocess_adapters") else "mink=%d" % config.get("preprocess_adapter_min_k", PREPROCESS_ADAPTER_MIN_K),
@@ -273,7 +261,7 @@ rule quality_filter:
         inputs = lambda wc, input:"in={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
         outputs = lambda wc, output:"out={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
     log:
-        "{sample}/logs/{sample}_quality_filter.log"
+        "{sample}/logs/QC/quality_filter.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -320,7 +308,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         log:
-            "logs/build_decontamination_db.log"
+            "logs/QC/build_decontamination_db.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         params:
@@ -330,7 +318,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             """bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
 
 
-    rule decontamination:
+    rule run_decontamination:
         input:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=PROCESSED_STEPS[-2], fraction=MULTIFILE_FRACTIONS),
@@ -343,7 +331,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
                     fraction=MULTIFILE_FRACTIONS),
             stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt"
         benchmark:
-            "logs/benchmarks/decontamination/{sample}.txt"
+            "logs/benchmarks/QC/decontamination/{sample}.txt"
         params:
             contaminant_folder = lambda wc, output: os.path.dirname(output.contaminants[0]),
             maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
@@ -355,7 +343,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             input_single= lambda wc,input: input[2] if PAIRED_END else input[0],
             output_single= lambda wc,output: output[2] if PAIRED_END else output[0]
         log:
-            "{sample}/logs/{sample}_decontamination.log"
+            "{sample}/logs/QC/decontamination.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -390,19 +378,18 @@ PROCESSED_STEPS.append("QC")
 
 rule postprocess_after_decontamination:
     input:
-        unpack(get_ribosomal_rna_input) 
+        unpack(get_ribosomal_rna_input)
     output:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=PROCESSED_STEPS[-1],fraction=MULTIFILE_FRACTIONS)
     threads:
         1
     run:
         import shutil
-        data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
         for i in range(len(MULTIFILE_FRACTIONS)):
             with open(output[i], 'wb') as outFile:
                 with open(input.clean_reads[i], 'rb') as infile1:
                     shutil.copyfileobj(infile1, outFile)
-                    if data_type == "metagenome" and hasattr(input, 'rrna_reads'):
+                    if hasattr(input, 'rrna_reads'):
                         with open(input.rrna_reads[i], 'rb') as infile2:
                             shutil.copyfileobj(infile2, outFile)
 
@@ -421,9 +408,7 @@ if PAIRED_END:
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
-            "{sample}/logs/{sample}_calculate_insert_size.log"
-        benchmark:
-            "logs/benchmarks/merge_pairs/{sample}_insert_size.txt"
+            "{sample}/logs/QC/stats/calculate_insert_size.log"
         params:
             kmer = config.get("merging_k", MERGING_K),
             extend2 = config.get("merging_extend2", MERGING_EXTEND2),
@@ -460,7 +445,7 @@ else:
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
-            "{sample}/logs/{sample}_calculate_read_length.log"
+            "{sample}/logs/QC/stats/calculate_read_length.log"
         shell:
             """
             readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
@@ -546,7 +531,7 @@ rule combine_read_counts:
         stats.to_csv(output[0], sep='\t')
 
 
-rule finalize_QC:
+rule finalize_sample_qc:
     input:
         unpack(get_finalize_qc_input),
         quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
@@ -567,18 +552,27 @@ rule finalize_QC:
         print("Finished QC for sample {sample}\n".format(**wildcards))
 
 
-rule QC_report:
-    input:
-        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-        "stats/read_counts.tsv",
-        read_length_stats= ['stats/insert_stats.tsv','stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv'
-    output:
-        touch("finished_QC")
-    shell:
-        """
-        if [ -d ref ]; then
-            rm -r ref
-        fi
-        """
-
-# aggregate stats reports ...
+rule build_qc_report:
+     input:
+         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
+         read_counts = "stats/read_counts.tsv",
+         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
+         zipfiles_QC = expand('{sample}/sequence_quality_control/read_stats/QC.zip', sample=SAMPLES),
+         zipfiles_raw = expand('{sample}/sequence_quality_control/read_stats/raw.zip', sample=SAMPLES),
+     output:
+         touch("finished_QC"),
+         report = "reports/QC_report.html"
+     params:
+         samples = SAMPLES,
+         min_quality = config["preprocess_minimum_base_quality"],
+         snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
+     conda:
+         "%s/report.yaml" % CONDAENV
+     shell:
+         " python {params.snakefile_folder}/report/qc_report.py"
+         " --samples {params.samples} "
+         " --report_out {output.report}"
+         " --zipfiles_QC {input.zipfiles_QC} "
+         " --zipfiles_raw {input.zipfiles_raw} "
+         " --min_quality {params.min_quality}"
+         " --read_counts {input.read_counts} "

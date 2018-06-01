@@ -59,15 +59,13 @@ rule run_prokka_annotation:
         ffn = "{sample}/prokka/{sample}.ffn",
         fna = "{sample}/prokka/{sample}.fna",
         fsa = "{sample}/prokka/{sample}.fsa",
-        gbk = "{sample}/prokka/{sample}.gbk",
         gff = "{sample}/prokka/{sample}.gff",
         log = "{sample}/prokka/{sample}.log",
-        sqn = "{sample}/prokka/{sample}.sqn",
         tbl = "{sample}/prokka/{sample}.tbl",
         tsv = "{sample}/prokka/{sample}.tsv",
         txt = "{sample}/prokka/{sample}.txt"
     benchmark:
-        "benchmarks/prokka/{sample}.txt"
+        "benchmarks/annotate/prokka/{sample}.txt"
     params:
         outdir = "{sample}/prokka",
         kingdom = config.get("prokka_kingdom", "Bacteria"),
@@ -108,7 +106,7 @@ rule run_diamond_blastp:
     output:
         "{sample}/refseq/{sample}_hits.tsv"
     benchmark:
-        "benchmarks/diamond_alignments/{sample}.txt"
+        "benchmarks/annotate/diamond_alignments/{sample}.txt"
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = config.get("diamond_top_seqs", 2),
@@ -207,13 +205,13 @@ rule align_reads_to_renamed_contigs:
         statsfile = "{sample}/contig_stats/mapping_stats.txt",
         covstats = "{sample}/contig_stats/coverage_stats.txt"
     benchmark:
-        "benchmarks/bbmap_alignment/{sample}.txt"
+        "benchmarks/annotate/bbmap_alignment/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
         maxsites = config.get("maximum_counted_map_sites", 10)
     log:
-        "{sample}/sequence_alignment/align_reads.log"
+        "{sample}/annotate/sequence_alignment/align_reads.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -227,25 +225,35 @@ rule align_reads_to_renamed_contigs:
                maxsites={params.maxsites} 2> {log}"""
 
 
-rule convert_alignment_sam_to_bam:
+rule convert_sam_to_bam:
     input:
-        "{sample}/sequence_alignment/{sample}.sam"
+        "{file}.sam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.bam")
+        "{file}.bam"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        mem = config.get("threads", 1)
     shell:
-        """samtools view -@ {threads} -bSh1 {input} \
-               | samtools sort -m 1536M -@ {threads} -T {TMPDIR}/{wildcards.sample}_tmp -o {output} -O bam -"""
+        """samtools view \
+               -m 1G \
+               -@ {threads} \
+               -bSh1 {input} | samtools sort \
+                                   -m 1G \
+                                   -@ {threads} \
+                                   -T {wildcards.file}_tmp \
+                                   -o {output} \
+                                   -O bam -
+        """
 
 
 rule create_bam_index:
     input:
-        "{sample}/sequence_alignment/{sample}.bam"
+        "{file}.bam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.bam.bai")
+        "{file}.bam.bai"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -262,11 +270,11 @@ rule remove_pcr_duplicates:
         bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
         txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
-        "benchmarks/picard_mark_duplicates/{sample}.txt"
+        "benchmarks/annotate/picard_mark_duplicates/{sample}.txt"
     resources:
         mem = int(config.get("java_mem", "32"))
     log:
-        "{sample}/sequence_alignment/remove_pcr_duplicates.log"
+        "{sample}/annotate/sequence_alignment/remove_pcr_duplicates.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     shell:
@@ -289,7 +297,7 @@ rule counts_per_region:
         multi_mapping = "-M" if config.get("count_multi_mapped_reads", False) else "",
         primary_only = "--primary" if config.get("primary_only", False) else ""
     log:
-        "{sample}/feature_counts/feature_counts.log"
+        "{sample}/annotate/feature_counts/feature_counts.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -320,3 +328,19 @@ else:
             "{sample}_annotations.txt"
         shell:
             "atlas merge-tables {input.prokka} {input.refseq} {output}"
+
+
+rule assembly_report:
+    input:
+        contig_stats = expand("{sample}/contig_stats.txt",sample=SAMPLES),
+        gene_tables = expand("{sample}/prokka/{sample}_fixed.tsv",sample=SAMPLES),
+        mapping_log_files = expand("{sample}/sequence_alignment/align_reads.log",sample=SAMPLES),
+    output:
+        report = "reports/assembly_report.html",
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    params:
+        samples = SAMPLES
+    conda:
+        "%s/report.yaml" % CONDAENV
+    script:
+        "../report/assembly_report.py"

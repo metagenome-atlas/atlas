@@ -34,11 +34,17 @@ setup(
                        'atlas/rules/qc.snakefile',
                        'atlas/envs/optional_genome_binning.yaml',
                        'atlas/envs/required_packages.yaml',
-                       'atlas/template_config.yaml'
+                       'atlas/template_config.yaml',
+                       'atlas/report/qc_report.py',
+                       'atlas/report/assembly_report.py',
+                       'atlas/report/bin_report.py',
+                       'report.css'
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
-    install_requires=[],
+    install_requires=[
+        'ruamel.yaml==0.15.35'
+    ],
     entry_points={
           'console_scripts': [
               'atlas = atlas.atlas:cli'
