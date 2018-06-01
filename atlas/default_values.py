@@ -80,9 +80,6 @@ MIN_BITSCORE = 0
 MIN_LENGTH = 20
 MAX_HITS = 100
 
-ADAPTERS = "adapters.fa"
-RRNA = "silva_rfam_all_rRNAs.fa"
-PHIX = "phiX174_virus.fa"
 
 import multiprocessing
 import os

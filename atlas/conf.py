@@ -6,6 +6,9 @@ import tempfile
 from ruamel.yaml import YAML
 from snakemake.io import load_configfile
 # default globals
+ADAPTERS = "adapters.fa"
+RRNA = "silva_rfam_all_rRNAs.fa"
+PHIX = "phiX174_virus.fa"
 
 
 def get_sample_files(path, data_type):
