@@ -138,12 +138,11 @@ if config.get("workflow", "complete") == "qc":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-    REPORTS= ["reports/QC_report.html"]
+    REPORTS=  ["reports/QC_report.html"]
 
-    rule all:
+    rule QC:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
-            "finished_QC",
             REPORTS
 
     include: "rules/qc.snakefile"
@@ -190,7 +189,7 @@ elif config.get("workflow") == "download":
              "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
              CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
-    rule all:
+    rule download:
         input:
             expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
             "%s/taxon_marker_sets.tsv" % CHECKMDIR
@@ -198,7 +197,7 @@ elif config.get("workflow") == "download":
     include: "rules/download.snakefile"
 
 elif config.get("workflow") == "annotate":
-    rule all:
+    rule annotate:
         input:
             expand("{sample}_annotations.txt", sample=SAMPLES),
             expand("{sample}/contig_stats.txt", sample=SAMPLES),

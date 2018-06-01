@@ -27,8 +27,11 @@ DUPLICATES_ONLY_OPTICAL = False
 DUPLICATES_ALLOW_SUBSTITUTIONS = 2
 
 NORMALIZATION_KMER_LENGTH = 21
-NORMALIZATION_TARGET_DEPTH = 100
-NORMALIZATION_MINIMUM_KMERS = 15
+
+# almost no filtering unless grossly over-represented
+NORMALIZATION_TARGET_DEPTH = 10000 #500
+# allow very low represented kmers to remain
+NORMALIZATION_MINIMUM_KMERS = 3 #15
 
 ASSEMBLY_MEMORY = 50
 ASSEMBLY_THREADS = 8
@@ -40,13 +43,16 @@ MEGAHIT_MERGE_LEVEL = "20,0.98"
 MEGAHIT_PRUNE_LEVEL = 2
 MEGAHIT_LOW_LOCAL_RATIO = 0.2
 SPADES_K = "auto"
-PREFILTER_MINIMUM_CONTIG_LENGTH = 500
-MINIMUM_CONTIG_LENGTH = 2200
+# basically no filtering after assembly
+PREFILTER_MINIMUM_CONTIG_LENGTH = 200 #500
+# this is bumped up slightly to filter non-merged R1 and R2 sequences
+MINIMUM_CONTIG_LENGTH = 300 #2200
 
-MINIMUM_AVERAGE_COVERAGE = 5
-MINIMUM_PERCENT_COVERED_BASES = 40
+# leave all contigs
+MINIMUM_AVERAGE_COVERAGE = 1 #5
+MINIMUM_PERCENT_COVERED_BASES = 20 #40
 MINIMUM_MAPPED_READS = 0
-CONTIG_TRIM_BP = 100
+CONTIG_TRIM_BP = 0  #100
 
 # bases
 MINIMUM_REGION_OVERLAP = 1
@@ -80,9 +86,6 @@ MIN_BITSCORE = 0
 MIN_LENGTH = 20
 MAX_HITS = 100
 
-ADAPTERS = "adapters.fa"
-RRNA = "silva_rfam_all_rRNAs.fa"
-PHIX = "phiX174_virus.fa"
 
 import multiprocessing
 import os
@@ -106,7 +109,7 @@ def make_default_config():
 
     conf["deduplicate"] = True
     conf["error_correction_overlapping_pairs"] = True
-    conf["merge_pairs_before_assembly"] = True
+
 
     conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     conf["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
@@ -117,10 +120,15 @@ def make_default_config():
     conf["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
     conf["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
 
+
+    conf["normalize_reads_before_assembly"] = True
     conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
     conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
 
+    conf["error_correction_before_assembly"] =  True
+
+    conf["merge_pairs_before_assembly"] =  True
     conf["merging_k"] = MERGING_K
     conf["merging_extend2"] = MERGING_EXTEND2
     conf["merging_flags"]  = MERGING_FLAGS
@@ -140,6 +148,8 @@ def make_default_config():
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
     conf["spades_preset"] = 'meta'
+    conf["spades_skip_BayesHammer"] = False
+    conf["filter_contigs"] = True
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
     conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
     conf["minimum_mapped_reads"] = MINIMUM_MAPPED_READS
