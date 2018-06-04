@@ -547,7 +547,6 @@ rule pileup:
         bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
     params:
         pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f',
-        physcov = 't' if not config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
@@ -567,7 +566,6 @@ rule pileup:
                hist={output.covhist} \
                basecov={output.basecov}\
                concise=t \
-               physcov={params.physcov} \
                secondary={params.pileup_secondary} \
                bincov={output.bincov} 2> {log}"""
 
