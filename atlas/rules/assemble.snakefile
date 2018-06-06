@@ -429,7 +429,7 @@ if config['filter_contigs']:
             fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
             covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
         output:
-            fasta = temp("{sample}/assembly/{sample}_final_contigs.fasta"),
+            fasta = "{sample}/assembly/{sample}_final_contigs.fasta",
             removed_names = "{sample}/assembly/{sample}_discarded_contigs.fasta"
         params:
             minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
