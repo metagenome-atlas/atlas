@@ -429,7 +429,7 @@ if config['filter_contigs']:
             fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
             covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
         output:
-            fasta = temp("{sample}/assembly/{sample}_final_contigs.fasta"),
+            fasta = "{sample}/assembly/{sample}_final_contigs.fasta",
             removed_names = "{sample}/assembly/{sample}_discarded_contigs.fasta"
         params:
             minc = config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
@@ -547,6 +547,10 @@ rule pileup:
         bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
     params:
         pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f',
+<<<<<<< HEAD
+=======
+        physcov = 't' if not config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
+>>>>>>> 502d0cb5f2cac814cbf978f0b99c31fdfe00858d
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
@@ -566,6 +570,10 @@ rule pileup:
                hist={output.covhist} \
                basecov={output.basecov}\
                concise=t \
+<<<<<<< HEAD
+=======
+               physcov={params.physcov} \
+>>>>>>> 502d0cb5f2cac814cbf978f0b99c31fdfe00858d
                secondary={params.pileup_secondary} \
                bincov={output.bincov} 2> {log}"""
 
