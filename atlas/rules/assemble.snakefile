@@ -58,12 +58,11 @@ rule init_pre_assembly_processing:
     input:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
-        temp(expand("{{sample}}/assembly/reads/QC_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS))
+         temp("{sample}/assembly/reads/QC_{fraction}.fastq.gz")
     run:
     # make symlink
-        for i in range(len(input)):
-            os.symlink(os.path.relpath(input[i],os.path.dirname(output[i])),output[i])
+        fraction = wildcards.fraction
+        os.symlink(os.path.relpath(input[fraction],os.path.dirname(output[0])),output[0])
 
 rule normalize_coverage_across_kmers:
     input:
