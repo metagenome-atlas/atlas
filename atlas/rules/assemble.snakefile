@@ -565,7 +565,7 @@ rule pileup:
                covstats={output.covstats} \
                hist={output.covhist} \
                basecov={output.basecov}\
-               concise=t, 
+               concise=t \
                secondary={params.pileup_secondary} \
                bincov={output.bincov} 2> {log}"""
 
