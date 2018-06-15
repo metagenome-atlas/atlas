@@ -76,13 +76,13 @@ def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregatio
 @click.option("--feature-type", default="CDS", show_default=True, help="feature type in GFF annotation to print")
 def run_gff_to_tsv(gff, output, feature_type):
     import re
-    locus_tag_re = re.compile(r"locus_tag=(.*?)(?:;|$)")
+    id_re = re.compile(r"ID=(.*?)(?:;|$)")
     ec_re = re.compile(r"eC_number=(.*?)(?:;|$)")
     gene_re = re.compile(r"gene=(.*?)(?:;|$)")
     product_re = re.compile(r"product=(.*?)(?:;|$)")
 
     # print the header into the output file
-    print("contig_id", "locus_tag", "ftype", "gene", "EC_number", "product", sep="\t", file=output)
+    print("contig_id", "gene_id", "ftype", "gene", "EC_number", "product", sep="\t", file=output)
 
     with open(gff) as gff_fh:
         for line in gff_fh:
@@ -94,11 +94,11 @@ def run_gff_to_tsv(gff, output, feature_type):
             if not toks[2] == feature_type:
                 continue
             try:
-                locus_tag = locus_tag_re.findall(toks[-1])[0]
+                id = id_re.findall(toks[-1])[0]
             except IndexError:
-                locus_tag = ""
-            if not locus_tag:
-                logging.critical("Unable to locate a locus tag in [%s]" % toks[-1])
+                id = ""
+            if not id:
+                logging.critical("Unable to locate an ID in [%s]" % toks[-1])
                 sys.exit(1)
             try:
                 gene = gene_re.findall(toks[-1])[0]
@@ -112,7 +112,7 @@ def run_gff_to_tsv(gff, output, feature_type):
                 product = product_re.findall(toks[-1])[0]
             except IndexError:
                 product = ""
-            print(toks[0], locus_tag, toks[2], gene, ec_number, product, sep="\t", file=output)
+            print(toks[0], id, toks[2], gene, ec_number, product, sep="\t", file=output)
 
 
 @cli.command("munge-blast", short_help="adds contig ID to prokka annotated ORFs")
