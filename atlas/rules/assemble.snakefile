@@ -730,7 +730,7 @@ rule create_bam_index:
 if config.get("perform_genome_binning", True):
     rule merge_sample_tables:
         input:
-            prokka = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
+            predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
             counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
             completeness = "{sample}/genomic_bins/checkm/completeness.tsv",
@@ -745,7 +745,7 @@ if config.get("perform_genome_binning", True):
                  --completeness {input.completeness} \
                  --taxonomy {input.taxonomy} \
                  --fasta {params.fastas} \
-                 {input.prokka} \
+                 {input.predicted_genes} \
                  {input.refseq} \
                  {output}"
 
@@ -753,7 +753,7 @@ if config.get("perform_genome_binning", True):
 else:
     rule merge_sample_tables:
         input:
-            prokka = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
+            predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
             counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
         output:
@@ -761,7 +761,7 @@ else:
         shell:
             "atlas merge-tables \
                  --counts {input.counts} \
-                 {input.prokka} \
+                 {input.predicted_genes} \
                  {input.refseq} \
                  {output}"
 

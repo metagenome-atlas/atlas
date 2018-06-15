@@ -72,11 +72,17 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
                 prodigal -i {input} -o {output.gff} -d {output.fna} -a {output.faa} -p meta -f gff 2> >(tee {log})
             """
     localrules: get_contigs_from_gene_names
-    rule rename_genes:
+    rule get_contigs_from_gene_names:
         input:
             faa = "{sample}/annotation/predicted_genes/{sample}_ambigous_names.faa"
+            tsv= "{sample}/annotation/predicted_genes/{sample}_plus.tsv"
+    rule rename_genes:
+        input:
+            faa = "{sample}/annotation/predicted_genes/{sample}_ambigous_names.faa",
+            fna = "{sample}/annotation/predicted_genes/{sample}_ambigous_names.fna"
         output:
             faa = "{sample}/annotation/predicted_genes/{sample}.faa",
+            fna = "{sample}/annotation/predicted_genes/{sample}.faa",
             tsv= "{sample}/annotation/predicted_genes/{sample}_plus.tsv"
         run:
 
