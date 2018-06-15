@@ -27,20 +27,6 @@ def get_preprocessing_steps(config):
     return ".".join(preprocessing_steps)
 
 
-def gff_to_gtf(gff_in, gtf_out):
-    # orf_re = re.compile(r"ID=(.*?)\;")
-    with open(gtf_out, "w") as fh, open(gff_in) as gff:
-        for line in gff:
-            if line.startswith("##FASTA"): break
-            if line.startswith("#"): continue
-            # convert:
-            # ID=POMFPAEF_00802;inference=ab initio prediction:Prodigal:2.60;
-            # to
-            # ID POMFPAEF_00802; inference ab initio prediction:Prodigal:2.60;
-            toks = line.strip().split("\t")
-            toks[-1] = toks[-1].replace("=", " ").replace(";", "; ")
-            print(*toks, sep="\t", file=fh)
-
 
 def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
     with open(tsv_in) as fi, open(tsv_out, "w") as fo:
