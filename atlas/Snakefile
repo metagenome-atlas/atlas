@@ -122,8 +122,9 @@ def input_params_for_bbwrap(wildcards, input):
 
 
 CONDAENV = get_conda_envs_dir()
+EGGNOG_DIR  = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "eggNOG")
 
-localrules: all
+localrules: all, QC, annotate,download
 if config.get("workflow") != "download":
     config = update_config_file_paths(config)
     TMPDIR = get_temp_dir(config)
@@ -175,6 +176,7 @@ elif config.get("workflow", "complete") == "complete":
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
+    include: "rules/gene_annotation.snakefile"
 
 elif config.get("workflow") == "download":
 
@@ -192,7 +194,8 @@ elif config.get("workflow") == "download":
     rule download:
         input:
             expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
-            "%s/taxon_marker_sets.tsv" % CHECKMDIR
+            "%s/taxon_marker_sets.tsv" % CHECKMDIR,
+            "%s/download_eggnog_data.sucess" % EGGNOG_DIR
 
     include: "rules/download.snakefile"
 

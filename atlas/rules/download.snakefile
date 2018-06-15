@@ -67,6 +67,25 @@ rule extract_checkm_data:
         "tar -zxf {input} --directory {params.path}"
 
 
+localrules: download_eggnog_data
+rule download_eggnog_data:
+    output:
+        touch("%s/download_eggnog_data.sucess" % EGGNOG_DIR)
+    params:
+        dbs = "none",
+        data_dir = EGGNOG_DIR
+    threads:
+        2
+    conda:
+        "%s/eggNOG.yaml" % CONDAENV
+    log:
+        "logs/download/download_eggnog_data.log"
+    shell:
+        """
+            download_eggnog_data.py -y -f -q --data_dir {params.data_dir} {params.dbs}
+        """
+
+
 onsuccess:
     print(("All databases have downloaded and validated successfully.\nWhen generating your "
            "configuration file, use '--database-dir %s'") % config["db_dir"])
