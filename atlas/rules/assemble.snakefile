@@ -58,12 +58,11 @@ rule init_pre_assembly_processing:
     input:
         unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
     output:
-        temp(expand("{{sample}}/assembly/reads/QC_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS))
+         temp("{sample}/assembly/reads/QC_{fraction}.fastq.gz")
     run:
     # make symlink
-        for i in range(len(input)):
-            os.symlink(os.path.relpath(input[i],os.path.dirname(output[i])),output[i])
+        fraction = wildcards.fraction
+        os.symlink(os.path.relpath(input[fraction],os.path.dirname(output[0])),output[0])
 
 rule normalize_coverage_across_kmers:
     input:
@@ -547,7 +546,6 @@ rule pileup:
         bincov = "{sample}/assembly/contig_stats/postfilter_coverage_binned.txt"
     params:
         pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f',
-        physcov = 't' if not config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f'
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
@@ -567,7 +565,6 @@ rule pileup:
                hist={output.covhist} \
                basecov={output.basecov}\
                concise=t \
-               physcov={params.physcov} \
                secondary={params.pileup_secondary} \
                bincov={output.bincov} 2> {log}"""
 

@@ -95,7 +95,7 @@ def get_quality_controlled_reads(wildcards):
                         or config["samples"][wildcards.sample].get("paired", False) \
                         else ['se']
         fastq = dict(zip(fractions, expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
-                                           fraction=fractions, **wildcards)))
+                                           fraction=fractions, sample=wildcards.sample)))
     return fastq
 
 
