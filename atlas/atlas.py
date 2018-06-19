@@ -75,14 +75,38 @@ def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregatio
 @click.argument("output", type=click.File("w", atomic=True))
 @click.option("--feature-type", default="CDS", show_default=True, help="feature type in GFF annotation to print")
 def run_gff_to_tsv(gff, output, feature_type):
-    import re
-    id_re = re.compile(r"ID=(.*?)(?:;|$)")
-    ec_re = re.compile(r"eC_number=(.*?)(?:;|$)")
-    gene_re = re.compile(r"gene=(.*?)(?:;|$)")
-    product_re = re.compile(r"product=(.*?)(?:;|$)")
+    import re, pandas as pd
 
-    # print the header into the output file
-    print("contig_id", "gene_id", "ftype", "gene", "EC_number", "product", sep="\t", file=output)
+    res = dict(
+
+    gene_id = re.compile(r"ID=(.*?)(?:;|$)"),
+    EC_number = re.compile(r"eC_number=(.*?)(?:;|$)"),
+    gene = re.compile(r"gene=(.*?)(?:;|$)"),
+    product = re.compile(r"product=(.*?)(?:;|$)"),
+    partial = re.compile(r"partial=(.*?)(?:;|$)"),
+    rbs_motif = re.compile(r"rbs_motif=(.*?)(?:;|$)"),
+    gc_cont = re.compile(r"gc_cont=(.*?)(?:;|$)"),
+    confidence = re.compile(r"conf=(.*?)(?:;|$)")
+    )
+
+
+    def parse_gff_annotation(toks):
+        parsed= {}
+        for key in res:
+            try:
+                parsed[key] = res[key].findall(toks[-1])[0]
+            except IndexError:
+                if key == "gene_id":
+                    logging.critical("Unable to locate an ID in [%s]" % toks[-1])
+                    sys.exit(1)
+                else:
+                    pass
+                    # do not add empty values
+        return parsed
+
+# TODO: add hearder from prodigal ID=3_1;partial=10;start_type=Edge;rbs_motif=None;rbs_spacer=None;gc_cont=0.549;conf=100.00;score=45.34;cscore=42.12;sscore=3.22;rscore=0.00;uscore=0.00;tscore=3.22
+
+    parsed_df={}
 
     with open(gff) as gff_fh:
         for line in gff_fh:
@@ -90,29 +114,22 @@ def run_gff_to_tsv(gff, output, feature_type):
                 break
             if line.startswith("#"):
                 continue
+
             toks = line.strip().split("\t")
             if not toks[2] == feature_type:
                 continue
-            try:
-                id = id_re.findall(toks[-1])[0]
-            except IndexError:
-                id = ""
-            if not id:
-                logging.critical("Unable to locate an ID in [%s]" % toks[-1])
-                sys.exit(1)
-            try:
-                gene = gene_re.findall(toks[-1])[0]
-            except IndexError:
-                gene = ""
-            try:
-                ec_number = ec_re.findall(toks[-1])[0]
-            except IndexError:
-                ec_number = ""
-            try:
-                product = product_re.findall(toks[-1])[0]
-            except IndexError:
-                product = ""
-            print(toks[0], id, toks[2], gene, ec_number, product, sep="\t", file=output)
+
+            parsed_line = parse_gff_annotation(toks)
+
+            parsed_line['feature_type'] = toks[2]
+
+            parsed_df[toks[0]] = parsed_line
+
+    parsed_df = pd.DataFrame(parsed_df)
+
+    parsed_df.to_csv(output,sep='\t')
+
+
 
 
 @cli.command("munge-blast", short_help="adds contig ID to prokka annotated ORFs")
@@ -167,13 +184,14 @@ def run_munge_blast(tsv, gff, output, gene_id):
 @click.argument("refseqtsv", type=click.Path(exists=True))
 @click.argument("output")
 @click.option("--counts", type=click.Path(exists=True), help="Feature Counts result TSV")
+@click.option("--eggNOG", type=click.Path(exists=True), help="Gene annotations from eggNOG-mapper")
 @click.option("--completeness", type=click.Path(exists=True), help="CheckM completeness TSV")
 @click.option("--taxonomy", type=click.Path(exists=True), help="CheckM taxonomy TSV")
 @click.option("--fasta", multiple=True, type=click.Path(exists=True), help="Bin fasta file path; can be specified multiple times")
 def run_merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta):
-    """Combines Prokka TSV, RefSeq TSV, and Counts TSV into a single table, merging on locus tag.
+    """Combines gne annotations TSV, RefSeq TSV, and Counts TSV into a single table, merging on "gene_id" tag.
     """
-    merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta)
+    merge_tables(prokkatsv, refseqtsv, output, counts, eggNOG ,completeness, taxonomy, fasta)
 
 
 @cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")

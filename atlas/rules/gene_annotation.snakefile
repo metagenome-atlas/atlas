@@ -324,32 +324,45 @@ rule eggNOG_annotation:
 
 
 
-# M.columns ['query_name',
-#  'seed_eggNOG_ortholog',
-#  'seed_ortholog_evalue',
-#  'seed_ortholog_score',
-#  'predicted_gene_name',
-#  'GO_terms',
-#  'KEGG_KO',
-#  'BiGG_Reactions',
-#  'Annotation_tax_scope',
-#  'Matching_OGs',
-#  'best_OG|evalue|score',
-#  'categories',
-#  'eggNOG_HMM_model_annotation']
+# This could go in the main Snakefile
+if config.get("perform_genome_binning", True):
+    rule merge_sample_tables:
+        input:
+            predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
+            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+            eggNOG = rules.renameeggNOG_annotation.output,
+            completeness = "{sample}/genomic_bins/checkm/completeness.tsv",
+            taxonomy = "{sample}/genomic_bins/checkm/taxonomy.tsv"
+        output:
+            "{sample}/{sample}_annotations.txt"
+        params:
+            fastas = lambda wc: " --fasta ".join(glob("{sample}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample)))
+        shell:
+            "atlas merge-tables \
+                 --counts {input.counts} \
+                 --completeness {input.completeness} \
+                 --taxonomy {input.taxonomy} \
+                 --fasta {params.fastas} \
+                 --eggNOG {input.eggNOG} \
+                 {input.predicted_genes} \
+                 {input.refseq} \
+                 {output}"
 
-# This file provides final annotations of each query. Tab-delimited columns in the file are:
 
-# query_name: query sequence name
-# seed_eggNOG_ortholog: best protein match in eggNOG
-# seed_ortholog_evalue: best protein match (e-value)
-# seed_ortholog_score: best protein match (bit-score)
-# predicted_gene_name: Predicted gene name for query sequences
-# GO_terms: Comma delimited list of predicted Gene Ontology terms
-# KEGG_KO: Comma delimited list of predicted KEGG KOs
-# BiGG_Reactions: Comma delimited list of predicted BiGG metabolic reactions
-# Annotation_tax_scope: The taxonomic scope used to annotate this query sequence
-# Matching_OGs: Comma delimited list of matching eggNOG Orthologous Groups
-# best_OG|evalue|score: Best matching Orthologous Groups (only in HMM mode)
-# COG functional categories: COG functional category inferred from best matching OG
-# eggNOG_HMM_model_annotation: eggNOG functional description inferred from best matching OG
+else:
+    rule merge_sample_tables:
+        input:
+            predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
+            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+            eggNOG = rules.renameeggNOG_annotation.output
+        output:
+            "{sample}/{sample}_annotations.txt"
+        shell:
+            "atlas merge-tables \
+                 --counts {input.counts} \
+                 --eggNOG {input.eggNOG} \
+                 {input.predicted_genes} \
+                 {input.refseq} \
+                 {output}"
