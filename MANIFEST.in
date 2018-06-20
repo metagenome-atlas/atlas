@@ -2,12 +2,14 @@ include atlas/Snakefile
 include atlas/rules/assemble.snakefile
 include atlas/rules/annotate.snakefile
 include atlas/rules/download.snakefile
+include atlas/rules/gene_annotation.snakefile
 include atlas/rules/initialize_checkm.py
 include atlas/rules/qc.snakefile
 include atlas/envs/optional_genome_binning.yaml
 include atlas/envs/required_packages.yaml
 include atlas/envs/report.yaml
 include atlas/template_config.yaml
+include atlas/envs/eggNOG.yaml
 include atlas/report/qc_report.py
 include atlas/report/report.css
 include atlas/report/assembly_report.py
