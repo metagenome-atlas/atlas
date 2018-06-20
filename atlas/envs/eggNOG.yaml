@@ -6,3 +6,4 @@ channels:
 dependencies:
     - eggnog-mapper=1.0.3
     - python=2
+    - wget # to download_eggnog_data
