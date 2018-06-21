@@ -514,7 +514,6 @@ rule align_reads_to_final_contigs:
                local=t \
                ambiguous={params.ambiguous} \
                secondary=t \
-               ssao=t \
                maxsites={params.maxsites} \
                -Xmx{resources.java_mem}G \
                2> {log}

@@ -221,7 +221,7 @@ rule align_reads_to_renamed_contigs:
                out={output.sam} mappedonly=t threads={threads} bhist={output.bhist} \
                bqhist={output.bqhist} mhist={output.mhist} gchist={output.gchist} \
                statsfile={output.statsfile} covstats={output.covstats} mdtag=t xstag=fs nmtag=t \
-               sam=1.3 local=t ambiguous=all interleaved={params.interleaved} secondary=t ssao=t \
+               sam=1.3 local=t ambiguous=all interleaved={params.interleaved} secondary=t \
                maxsites={params.maxsites} 2> {log}"""
 
 
