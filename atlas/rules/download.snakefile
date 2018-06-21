@@ -87,11 +87,14 @@ rule download_eggnog_data:
             download_eggnog_data.py -y -f -q --data_dir {params.data_dir} {params.dbs}
         """
 
-rule unzip:
+rule unzip_egg_nog:
     input:
-        "{file}.gz"
+        "%s/{file}.gz" % EGGNOG_DIR
     output:
-        "{file}"
+        "%s/{file}" % EGGNOG_DIR
+    wildcard_constraints:
+        file="^((?!.gz).)*$"
+    threads : 1
     shell:
         "gunzip {input}"
 
