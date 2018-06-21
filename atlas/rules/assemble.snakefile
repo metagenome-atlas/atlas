@@ -515,7 +515,7 @@ rule align_reads_to_final_contigs:
                ref={input.fasta} \
                {params.input} \
                trimreaddescriptions=t \
-               outm={output.sam} \
+               out={output.sam} \
                {params.unmapped} \
                threads={threads} \
                pairlen={params.max_distance_between_pairs} \
@@ -528,6 +528,8 @@ rule align_reads_to_final_contigs:
                local=t \
                ambiguous={params.ambiguous} \
                secondary=t \
+               append=t \
+               machineout=t \
                maxsites={params.maxsites} \
                -Xmx{resources.java_mem}G \
                2> {log}
