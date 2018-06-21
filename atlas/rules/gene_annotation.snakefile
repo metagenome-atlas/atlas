@@ -50,6 +50,27 @@ if config.get('gene_predicter','prodigal')=='prokka':
             """atlas gff2tsv {input} {output}"""
 
 
+    rule add_contig_metadata:
+        input:
+            hits = "{sample}/annotation/refseq/{sample}_hits.tsv",
+            gff = "{sample}/annotation/predicted_genes/{sample}.gff"
+        output:
+            temp("{sample}/annotation/refseq/{sample}_hits_plus.tsv")
+        shell:
+            "atlas munge-blast {input.hits} {input.gff} {output}"
+
+
+    rule sort_munged_blast_hits:
+        # ensure blast hits are grouped by contig, ORF, and then decreasing by bitscore
+        input:
+            "{sample}/annotation/refseq/{sample}_hits_plus.tsv"
+        output:
+            "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
+        shell:
+            "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
+
+
+
 elif config.get('gene_predicter','prodigal')=='prodigal':
 
     rule predict_genes:
@@ -116,6 +137,26 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
                             i+=1
 
 
+    rule add_contig_metadata:
+        input:
+            hits = "{sample}/annotation/refseq/{sample}_hits.tsv",
+            tsv = "{sample}/annotation/predicted_genes/{sample}.tsv"
+        output:
+            "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
+        run:
+            import pandas as pd
+
+            tsv = pd.read_table(input.tsv,index_col=0,usecols=[0,1],squeeze=True)
+            hits= pd.read_table(input.hits, header=None)
+
+
+            contigs= tsv.loc[hits.iloc[:,0]]
+
+            hits.insert(0,contigs.name, contigs.values)
+
+            hits.sort_values([contigs.name,0,2], inplace=True)
+
+            hits.to_csv(output[0],sep='\t',index=False,header=False)
 
 
 
@@ -219,24 +260,6 @@ rule run_diamond_blastp:
                --index-chunks {params.index_chunks}"""
 
 
-rule add_contig_metadata:
-    input:
-        hits = "{sample}/annotation/refseq/{sample}_hits.tsv",
-        gff = "{sample}/annotation/prokka/{sample}.gff"
-    output:
-        temp("{sample}/annotation/refseq/{sample}_hits_plus.tsv")
-    shell:
-        "atlas munge-blast {input.hits} {input.gff} {output}"
-
-
-rule sort_munged_blast_hits:
-    # ensure blast hits are grouped by contig, ORF, and then decreasing by bitscore
-    input:
-        "{sample}/annotation/refseq/{sample}_hits_plus.tsv"
-    output:
-        "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
-    shell:
-        "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
 
 rule parse_blastp:
