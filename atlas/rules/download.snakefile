@@ -71,8 +71,8 @@ localrules: download_eggnog_data
 rule download_eggnog_data:
     output:
         touch("%s/download_eggnog_data.sucess" % EGGNOG_DIR),
-        expand("{eggnog_dir}/{file}.gz", eggnog_dir=EGGNOG_DIR,
-               file =["OG_fasta.tar","eggnog.db", "og2level.tsv","eggnog_proteins.dmnd"])
+        expand("{eggnog_dir}/{file}", eggnog_dir=EGGNOG_DIR,
+               file =["OG_fasta.tar.gz","eggnog.db", "og2level.tsv.gz","eggnog_proteins.dmnd"])
     params:
         dbs = "none",
         data_dir = EGGNOG_DIR
@@ -87,16 +87,6 @@ rule download_eggnog_data:
             download_eggnog_data.py -y -f -q --data_dir {params.data_dir} {params.dbs}
         """
 
-rule unzip_egg_nog:
-    input:
-        "%s/{file}.gz" % EGGNOG_DIR
-    output:
-        "%s/{file}" % EGGNOG_DIR
-    wildcard_constraints:
-        file="^((?!.gz).)*$"
-    threads : 1
-    shell:
-        "gunzip {input}"
 
 
 onsuccess:
