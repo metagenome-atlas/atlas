@@ -70,7 +70,9 @@ rule extract_checkm_data:
 localrules: download_eggnog_data
 rule download_eggnog_data:
     output:
-        touch("%s/download_eggnog_data.sucess" % EGGNOG_DIR)
+        touch("%s/download_eggnog_data.sucess" % EGGNOG_DIR),
+        expand("{eggnog_dir}/{file}.gz", eggnog_dir=EGGNOG_DIR,
+               file =["OG_fasta.tar","eggnog.db", "og2level.tsv","eggnog_proteins.dmnd"])
     params:
         dbs = "none",
         data_dir = EGGNOG_DIR
@@ -84,6 +86,14 @@ rule download_eggnog_data:
         """
             download_eggnog_data.py -y -f -q --data_dir {params.data_dir} {params.dbs}
         """
+
+rule unzip:
+    input:
+        "{file}.gz"
+    output:
+        "{file}"
+    shell:
+        "gunzip {input}"
 
 
 onsuccess:
