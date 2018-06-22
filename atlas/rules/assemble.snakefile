@@ -306,6 +306,7 @@ else:
             " --threads {threads} "
             " --memory {resources.mem} "
             " -o {params.outdir} "
+            " -k {params.k}"
             " {params.preset} "
             " {params.inputs} {params.input_merged} "
             " {params.skip_error_correction} "

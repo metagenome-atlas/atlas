@@ -100,7 +100,9 @@ megahit_preset: default
 # Spades
 #------------
 spades_skip_BayesHammer: False
+#Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order).
 spades_k: auto
+
 
 # Filtering
 #------------
