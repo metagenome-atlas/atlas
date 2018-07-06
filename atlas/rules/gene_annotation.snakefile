@@ -376,10 +376,9 @@ rule add_eggNOG_header:
     run:
             import pandas as pd
 
-            D = pd.read_table(input[0],index_col=0,header=None)
+            D = pd.read_table(input[0],header=None)
 
-            D.columns =['query_name',
-            'seed_eggNOG_ortholog',
+            D.columns =[ 'query_name','seed_eggNOG_ortholog',
             'seed_ortholog_evalue',
             'seed_ortholog_score',
             'predicted_gene_name',
@@ -389,10 +388,12 @@ rule add_eggNOG_header:
             'Annotation_tax_scope',
             'Matching_OGs',
             'best_OG|evalue|score',
-            'categories'
-            #'eggNOG_HMM_model_annotation'
+            'categories',
+            'eggNOG_HMM_model_annotation'
             ]
-            D.to_tsv(output[0])
+
+
+            D.to_csv(output[0],sep='\t',index=False)
 
 
 
