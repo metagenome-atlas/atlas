@@ -182,19 +182,19 @@ def run_munge_blast(tsv, gff, output, gene_id):
             print(*toks, sep="\t", file=output)
 
 
-@cli.command("merge-tables", short_help="merge Prokka TSV, Counts, and Taxonomy")
+@cli.command("merge-tables", short_help="merge genepredictions TSV, Counts, and Taxonomy")
 @click.argument("prokkatsv", type=click.Path(exists=True))
 @click.argument("refseqtsv", type=click.Path(exists=True))
 @click.argument("output")
 @click.option("--counts", type=click.Path(exists=True), help="Feature Counts result TSV")
-@click.option("--eggNOG", type=click.Path(exists=True), help="Gene annotations from eggNOG-mapper")
+@click.option("--eggnog", type=click.Path(exists=True), help="Gene annotations from eggNOG-mapper")
 @click.option("--completeness", type=click.Path(exists=True), help="CheckM completeness TSV")
 @click.option("--taxonomy", type=click.Path(exists=True), help="CheckM taxonomy TSV")
 @click.option("--fasta", multiple=True, type=click.Path(exists=True), help="Bin fasta file path; can be specified multiple times")
-def run_merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta):
+def run_merge_tables(prokkatsv, refseqtsv, output, counts, eggnog ,completeness, taxonomy, fasta):
     """Combines gne annotations TSV, RefSeq TSV, and Counts TSV into a single table, merging on "gene_id" tag.
     """
-    merge_tables(prokkatsv, refseqtsv, output, counts, eggNOG ,completeness, taxonomy, fasta)
+    merge_tables(prokkatsv, refseqtsv, output, counts, eggnog ,completeness, taxonomy, fasta)
 
 
 @cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")

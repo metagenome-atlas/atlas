@@ -1,5 +1,4 @@
 
-#eggNOG_DATABASES =  ["none"] #bact arch viruses none for only diamond " ".join(config.get("eggNOG_databases", eggNOG_DATABASES))
 
 def gff_to_gtf(gff_in, gtf_out):
     # orf_re = re.compile(r"ID=(.*?)\;")
@@ -86,7 +85,7 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
             "{sample}/{sample}_contigs.fasta"
         output:
             fna = "{sample}/annotation/predicted_genes/{sample}.fna",
-            faa = temp("{sample}/annotation/predicted_genes/{sample}.faa"),
+            faa = "{sample}/annotation/predicted_genes/{sample}.faa",
             gff = "{sample}/annotation/predicted_genes/{sample}.gff"
         conda:
             "%s/required_packages.yaml" % CONDAENV
@@ -122,28 +121,30 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
     #                         fout.write(line)
 
 
-    # rule get_contigs_from_gene_names:
-    #     input:
-    #         faa = "{sample}/annotation/predicted_genes/{sample}.faa",
-    #     output:
-    #         tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
-    #     run:
-    #         with open(output.tsv,'w') as tsv:
-    #             tsv.write('\t'.join(['gene_id','Contig','Gene_nr','Start','Stop','Strand','Annotation'])+'\n')
-    #             with open(input.faa) as fin :
-    #                 i=0
-    #                 for line in fin:
-    #                     if line[0]=='>':
-    #
-    #                         text= line[1:].strip().split(' # ')
-    #                         old_gene_name= text[0]
-    #                         text.remove(old_gene_name)
-    #                         sample, contig_nr, gene_nr= old_gene_name.split('_')
-    #
-    #
-    #                         tsv.write("{sample}_{i}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(\
-    #                                             text='\t'.join(text),i=i,sample= sample, gene_nr= gene_nr, contig_nr=contig_nr))
-    #                         i+=1
+    rule get_contigs_from_gene_names:
+        input:
+            faa = "{sample}/annotation/predicted_genes/{sample}.faa",
+        output:
+            tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
+        run:
+            with open(output.tsv,'w') as tsv:
+                tsv.write('\t'.join(['gene_id','Contig','Gene_nr','Start','Stop','Strand','Annotation'])+'\n')
+                with open(input.faa) as fin :
+                    i=0
+                    for line in fin:
+                        if line[0]=='>':
+
+                            text= line[1:].strip().split(' # ')
+                            old_gene_name= text[0]
+                            text.remove(old_gene_name)
+                            sample, contig_nr, gene_nr= old_gene_name.split('_')
+
+
+                            tsv.write("{gene_id}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(\
+                                                text='\t'.join(text),
+                                                gene_id= old_gene_name,
+                                                i=i,sample= sample, gene_nr= gene_nr, contig_nr=contig_nr))
+                            i+=1
 
 
     rule add_contig_metadata:
@@ -190,7 +191,7 @@ rule convert_gff_to_tsv:
 localrules: renameeggNOG_annotation
 rule renameeggNOG_annotation:
     input:
-        "{sample}/annotation/predicted_genes/{sample}.emapper.annotations"
+        "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
     output:
         "{sample}/annotation/eggNOG.tsv"
     shell:
@@ -367,6 +368,32 @@ rule eggNOG_annotation:
         """
 
 
+rule add_eggNOG_header:
+    input:
+        "{folder}/{prefix}.emapper.annotations"
+    output:
+        "{folder}/{prefix}.emapper.tsv"
+    run:
+            import pandas as pd
+
+            D = pd.read_table(input[0],index_col=0,header=None)
+
+            D.columns =['query_name',
+            'seed_eggNOG_ortholog',
+            'seed_ortholog_evalue',
+            'seed_ortholog_score',
+            'predicted_gene_name',
+            'GO_terms',
+            'KEGG_KO',
+            'BiGG_Reactions',
+            'Annotation_tax_scope',
+            'Matching_OGs',
+            'best_OG|evalue|score',
+            'categories'
+            #'eggNOG_HMM_model_annotation'
+            ]
+            D.to_tsv(output[0])
+
 
 
 
@@ -391,7 +418,7 @@ if config.get("perform_genome_binning", True):
                  --completeness {input.completeness} \
                  --taxonomy {input.taxonomy} \
                  --fasta {params.fastas} \
-                 --eggNOG {input.eggNOG} \
+                 --eggnog {input.eggNOG} \
                  {input.predicted_genes} \
                  {input.refseq} \
                  {output}"
@@ -409,7 +436,7 @@ else:
         shell:
             "atlas merge-tables \
                  --counts {input.counts} \
-                 --eggNOG {input.eggNOG} \
+                 --eggnog {input.eggNOG} \
                  {input.predicted_genes} \
                  {input.refseq} \
                  {output}"
