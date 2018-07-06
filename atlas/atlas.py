@@ -73,7 +73,7 @@ def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregatio
 @cli.command("gff2tsv", short_help="writes version of Prokka TSV with contig as new first column")
 @click.argument("gff", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
-@click.option("--feature-type", default="CDS", show_default=True, help="feature type in GFF annotation to print")
+@click.option("--feature-type", default="all", show_default=True, help="feature type in GFF annotation to print")
 def run_gff_to_tsv(gff, output, feature_type):
     import re, pandas as pd
 
@@ -86,7 +86,8 @@ def run_gff_to_tsv(gff, output, feature_type):
     partial = re.compile(r"partial=(.*?)(?:;|$)"),
     rbs_motif = re.compile(r"rbs_motif=(.*?)(?:;|$)"),
     gc_cont = re.compile(r"gc_cont=(.*?)(?:;|$)"),
-    confidence = re.compile(r"conf=(.*?)(?:;|$)")
+    confidence = re.compile(r"conf=(.*?)(?:;|$)"),
+    start_type = re.compile(r"start_type=(.*?)(?:;|$)")
     )
 
 
@@ -104,8 +105,6 @@ def run_gff_to_tsv(gff, output, feature_type):
                     # do not add empty values
         return parsed
 
-# TODO: add hearder from prodigal ID=3_1;partial=10;start_type=Edge;rbs_motif=None;rbs_spacer=None;gc_cont=0.549;conf=100.00;score=45.34;cscore=42.12;sscore=3.22;rscore=0.00;uscore=0.00;tscore=3.22
-
     parsed_df={}
 
     with open(gff) as gff_fh:
@@ -116,17 +115,21 @@ def run_gff_to_tsv(gff, output, feature_type):
                 continue
 
             toks = line.strip().split("\t")
-            if not toks[2] == feature_type:
+            if (toks[2] != feature_type) and (feature_type !='all'):
                 continue
 
             parsed_line = parse_gff_annotation(toks)
-
             parsed_line['feature_type'] = toks[2]
+            parsed_line['contig'] = toks[0]
+            parsed_line['start'] = toks[3]
+            parsed_line['stop'] = toks[4]
+            parsed_line['strand'] = toks[6]
 
-            parsed_df[toks[0]] = parsed_line
 
-    parsed_df = pd.DataFrame(parsed_df)
+            parsed_df[parsed_line['gene_id']] = parsed_line
 
+    parsed_df = pd.DataFrame(parsed_df).T
+    parsed_df.drop('gene_id',inplace=True,axis=1)
     parsed_df.to_csv(output,sep='\t')
 
 
