@@ -1,6 +1,20 @@
 
 #eggNOG_DATABASES =  ["none"] #bact arch viruses none for only diamond " ".join(config.get("eggNOG_databases", eggNOG_DATABASES))
 
+def gff_to_gtf(gff_in, gtf_out):
+    # orf_re = re.compile(r"ID=(.*?)\;")
+    with open(gtf_out, "w") as fh, open(gff_in) as gff:
+        for line in gff:
+            if line.startswith("##FASTA"): break
+            if line.startswith("#"): continue
+            # convert:
+            # ID=POMFPAEF_00802;inference=ab initio prediction:Prodigal:2.60;
+            # to
+            # ID POMFPAEF_00802; inference ab initio prediction:Prodigal:2.60;
+            toks = line.strip().split("\t")
+            toks[-1] = toks[-1].replace("=", " ").replace(";", "; ")
+            print(*toks, sep="\t", file=fh)
+
 
 
 
@@ -37,17 +51,11 @@ if config.get('gene_predicter','prodigal')=='prokka':
                    --kingdom {params.kingdom} \
                    --metagenome \
                    --cpus {threads} \
-                   {input}"""
+                   {input}
+              """
 
 
-    # TODO: doesn't work for prodigal predictions
-    rule convert_gff_to_tsv:
-        input:
-            "{sample}/annotation/predicted_genes/{sample}.gff"
-        output:
-            "{sample}/annotation/predicted_genes/{sample}_plus.tsv"
-        shell:
-            """atlas gff2tsv {input} {output}"""
+
 
 
     rule add_contig_metadata:
@@ -77,8 +85,8 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
         input:
             "{sample}/{sample}_contigs.fasta"
         output:
-            fna = "{sample}/annotation/predicted_genes/{sample}_ambigous_names.fna",
-            faa = temp("{sample}/annotation/predicted_genes/{sample}_ambigous_names.faa"),
+            fna = "{sample}/annotation/predicted_genes/{sample}.fna",
+            faa = temp("{sample}/annotation/predicted_genes/{sample}.faa"),
             gff = "{sample}/annotation/predicted_genes/{sample}.gff"
         conda:
             "%s/required_packages.yaml" % CONDAENV
@@ -93,48 +101,49 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
                 prodigal -i {input} -o {output.gff} -d {output.fna} -a {output.faa} -p meta -f gff 2> >(tee {log})
             """
     localrules: get_contigs_from_gene_names, rename_genes
-    rule rename_genes:
-        input:
-            "{sample}/annotation/predicted_genes/{sample}_ambigous_names.{extension}",
-            tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
-        output:
-            "{sample}/annotation/predicted_genes/{sample}.{extension}"
-        wildcard_constraints:
-            extension= "faa|fna"
-        run:
-            with open(output[0],'w') as fout:
-                with open(input[0]) as fin :
-                    i=0
-                    for line in fin:
-                        if line[0]=='>':
-                            fout.write(">{sample}_{i}\n".format(i=i,**wildcards))
-                            i+=1
-                        else:
-                            fout.write(line)
+
+    # rule rename_genes:
+    #     input:
+    #         "{sample}/annotation/predicted_genes/{sample}_ambigous_names.{extension}",
+    #         tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
+    #     output:
+    #         "{sample}/annotation/predicted_genes/{sample}.{extension}"
+    #     wildcard_constraints:
+    #         extension= "faa|fna"
+    #     run:
+    #         with open(output[0],'w') as fout:
+    #             with open(input[0]) as fin :
+    #                 i=0
+    #                 for line in fin:
+    #                     if line[0]=='>':
+    #                         fout.write(">{sample}_{i}\n".format(i=i,**wildcards))
+    #                         i+=1
+    #                     else:
+    #                         fout.write(line)
 
 
-    rule get_contigs_from_gene_names:
-        input:
-            faa = "{sample}/annotation/predicted_genes/{sample}_ambigous_names.faa",
-        output:
-            tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
-        run:
-            with open(output.tsv,'w') as tsv:
-                tsv.write('\t'.join(['gene_id','Contig','Gene_nr','Start','Stop','Strand','Annotation'])+'\n')
-                with open(input.faa) as fin :
-                    i=0
-                    for line in fin:
-                        if line[0]=='>':
-
-                            text= line[1:].strip().split(' # ')
-                            old_gene_name= text[0]
-                            text.remove(old_gene_name)
-                            sample, contig_nr, gene_nr= old_gene_name.split('_')
-
-
-                            tsv.write("{sample}_{i}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(\
-                                                text='\t'.join(text),i=i,sample= sample, gene_nr= gene_nr, contig_nr=contig_nr))
-                            i+=1
+    # rule get_contigs_from_gene_names:
+    #     input:
+    #         faa = "{sample}/annotation/predicted_genes/{sample}.faa",
+    #     output:
+    #         tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
+    #     run:
+    #         with open(output.tsv,'w') as tsv:
+    #             tsv.write('\t'.join(['gene_id','Contig','Gene_nr','Start','Stop','Strand','Annotation'])+'\n')
+    #             with open(input.faa) as fin :
+    #                 i=0
+    #                 for line in fin:
+    #                     if line[0]=='>':
+    #
+    #                         text= line[1:].strip().split(' # ')
+    #                         old_gene_name= text[0]
+    #                         text.remove(old_gene_name)
+    #                         sample, contig_nr, gene_nr= old_gene_name.split('_')
+    #
+    #
+    #                         tsv.write("{sample}_{i}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(\
+    #                                             text='\t'.join(text),i=i,sample= sample, gene_nr= gene_nr, contig_nr=contig_nr))
+    #                         i+=1
 
 
     rule add_contig_metadata:
@@ -168,7 +177,14 @@ rule convert_gff_to_gtf:
     run:
         gff_to_gtf(input[0], output[0])
 
-
+# TODO: doesn't work for prodigal predictions
+rule convert_gff_to_tsv:
+    input:
+        "{sample}/annotation/predicted_genes/{sample}.gff"
+    output:
+        "{sample}/annotation/predicted_genes/{sample}_plus.tsv"
+    shell:
+        """atlas gff2tsv {input} {output}"""
 
 # this rule specifies the mmore generall eggNOG rules
 localrules: renameeggNOG_annotation
@@ -185,7 +201,7 @@ rule renameeggNOG_annotation:
 
 rule find_counts_per_region:
     input:
-        gtf = "{sample}/annotation/prokka/{sample}.gtf",
+        gtf = "{sample}/annotation/predicted_genes/{sample}.gtf",
         bam = "{sample}/sequence_alignment/{sample}.bam"
     output:
         summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
