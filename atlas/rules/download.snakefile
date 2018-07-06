@@ -72,7 +72,7 @@ rule download_eggnog_data:
     output:
         touch("%s/download_eggnog_data.sucess" % EGGNOG_DIR),
         expand("{eggnog_dir}/{file}", eggnog_dir=EGGNOG_DIR,
-               file =["OG_fasta.tar.gz","eggnog.db", "og2level.tsv.gz","eggnog_proteins.dmnd"])
+               file =["OG_fasta","eggnog.db", "og2level.tsv","eggnog_proteins.dmnd"])
     params:
         dbs = "none",
         data_dir = EGGNOG_DIR
