@@ -4,6 +4,8 @@ combined_contigs_folder=""
 CONDAENV='../envs'
 
 
+
+
 BINNING_BAMS=expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
 BINNING_CONTIGS=expand("{sample}/{sample}_contigs.fasta",sample=SAMPLES)
 
@@ -11,25 +13,55 @@ BINNING_CONTIGS=expand("{sample}/{sample}_contigs.fasta",sample=SAMPLES)
 
 
 config['binning_sensitivity'] = 'sensitive'
-config["metabat_min_contig_length"] =500
+config["binning_min_contig_length"] =500
+
+config['concoct']= {'Nexpected_clusters':200,
+                        'read_length':150,
+                        "Niterations":10}
 
 
 rule all:
     input:
         BINNING_CONTIGS,
         BINNING_BAMS,
-        expand("{folder}/binning/metabat/cluster_attribution.txt",folder=SAMPLES)
-
+        #expand("{folder}/binning/metabat/cluster_attribution.txt",folder=SAMPLES),
+        expand("{folder}/binning/concoct/responsibilities.csv",folder=SAMPLES)
 ## CONCOCT
+
+
+rule get_concoct_depth_file:
+    input:
+        covstats = expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
+            sample=SAMPLES)
+    output:
+        "{folder}/binning/concoct/median_coverage.tsv"
+    run:
+
+        import pandas as pd
+        import os
+
+        combined_cov = {}
+
+        for cov_file in input:
+
+            sample = os.path.split(cov_file)[-1].split('_')[0]
+            data = pd.read_table(cov_file, index_col=0)
+
+            data.loc[data.Median_fold < 0, 'Median_fold'] = 0
+            combined_cov[sample] = data.Median_fold
+
+
+        pd.DataFrame(combined_cov).to_csv(output[0], sep='\t')
+
+
 
 
 rule run_concoct:
     input:
-        coverage = "{folder}/sequence_alignment_{Reference}/combined_median_coverage.tsv".format(Reference='combined_contigs', folder=combined_contigs_folder),
-        fasta = "{folder}/{Reference}.fasta".format(Reference='combined_contigs', folder=combined_contigs_folder)
+        coverage = "{folder}/binning/concoct/median_coverage.tsv",
+        fasta = BINNING_CONTIGS
     output:
-        expand("{folder}/binning/{file}",
-          folder=combined_contigs_folder,
+        expand("{{folder}}/binning/concoct/{file}",
             file=['means_gt2500.csv',
                 'PCA_components_data_gt2500.csv',
                 'original_data_gt2500.csv',
@@ -40,20 +72,20 @@ rule run_concoct:
         ),
     params:
         basename= lambda wc,output: os.path.dirname(output[0]),
-          Nexpected_clusters= config['concoct']['Nexpected_clusters'],
-          read_length= config['concoct']['read_length'],
-          min_length=config["minimum_contig_length"],
-          niterations=config["concoct"]["Niterations"]
+        Nexpected_clusters= config['concoct']['Nexpected_clusters'],
+        read_length= config['concoct']['read_length'],
+        min_length=config["binning_min_contig_length"],
+        niterations=config["concoct"]["Niterations"]
     benchmark:
         "logs/benchmarks/binning/concoct.txt"
     log:
-        "{folder}/binning/log.txt".format(folder=combined_contigs_folder)
+        "{folder}/binning/concoct/log.txt"
     conda:
         "%s/concoct.yaml" % CONDAENV
     threads:
         10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["java_mem"]
     shell:
         """
         concoct -c {params.Nexpected_clusters}\
@@ -95,7 +127,7 @@ rule run_metabat:
         "{folder}/binning/metabat/cluster_attribution.txt",
     params:
           sensitivity = 500 if config['binning_sensitivity'] == 'sensitive' else 200,
-          min_contig_len = config["metabat_min_contig_length"],
+          min_contig_len = config["binning_min_contig_length"],
           output_prefix = "{folder}/binning/bins/bin"
     benchmark:
         "logs/benchmarks/binning/metabat.txt"
@@ -179,7 +211,7 @@ rule run_metabat:
 #         "logs/benchmarks/maxbin2/combined_contigs.txt"
 #     params:
 #         mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
-#         mcl = config.get("maxbin_min_contig_length", MAXBIN_MIN_CONTIG_LENGTH),
+#         mcl = config["binning_min_contig_length"],
 #         pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
 #         out_prefix = lambda wildcards, output: os.path.splitext(os.path.dirname(output.summary))[0]
 #     log:
