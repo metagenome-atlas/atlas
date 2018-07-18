@@ -386,6 +386,8 @@ if config['filter_contigs']:
             min_id = config.get('contig_min_id', CONTIG_MIN_ID),
             maxindel = 100,
             #ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best'
+        shadow:
+            "shallow"
         log:
             "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log"
         conda:
@@ -500,6 +502,8 @@ rule align_reads_to_final_contigs:
         ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
         min_id = config.get('contig_min_id', CONTIG_MIN_ID),
         maxindel = 100 # default 16000 good for genome deletions but not necessarily for alignment to contigs
+    shadow:
+        "shallow"
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}.txt"
     log:
