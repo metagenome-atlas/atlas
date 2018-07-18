@@ -369,15 +369,12 @@ rule combine_sample_contig_stats:
 
 if config['filter_contigs']:
 
-    rule calculate_prefiltered_contig_coverage_stats:
+    rule align_reads_to_prefilter_contigs:
         input:
             unpack(get_quality_controlled_reads),
             fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
-        output: # bbwrap gives output statistics only for single ended
-            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+        output:
             sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
-        benchmark:
-            "logs/benchmarks/assembly/post_process/align_reads_to_prefiltered_contigs/{sample}.txt"
         params:
             input = lambda wc, input : input_params_for_bbwrap(wc, input),
             maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
@@ -385,7 +382,7 @@ if config['filter_contigs']:
             paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
             min_id = config.get('contig_min_id', CONTIG_MIN_ID),
             maxindel = 100,
-            #ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best'
+            ambiguous = 'all'
         shadow:
             "shallow"
         log:
@@ -398,32 +395,59 @@ if config['filter_contigs']:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
-            """bbwrap.sh \
-                   nodisk=t \
+            """bbwrap.sh nodisk=t \
                    ref={input.fasta} \
                    {params.input} \
-                   fast=t \
+                   trimreaddescriptions=t \
+                   out={output.sam} \
                    threads={threads} \
-                   ambiguous=all \
-                  pairlen={params.max_distance_between_pairs} \
-                  pairedonly={params.paired_only} \
-                  mdtag=t \
-                  xstag=fs \
-                  nmtag=t \
-                  local=t \
-                  secondary=t \
-                  maxsites={params.maxsites} \
+                   pairlen={params.max_distance_between_pairs} \
+                   pairedonly={params.paired_only} \
+                   minid={params.min_id} \
+                   mdtag=t \
+                   xstag=fs \
+                   nmtag=t \
+                   sam=1.3 \
+                   local=t \
+                   ambiguous={params.ambiguous} \
+                   secondary=t \
+                   append=t \
+                   machineout=t \
+                   maxsites={params.maxsites} \
                    -Xmx{resources.java_mem}G \
-                   out={output.sam} 2> {log}
-
-                pileup.sh \
-                ref={input.fasta} \
-                in={output.sam} \
-                threads={threads} \
-                secondary=t \
-                -Xmx{resources.java_mem}G \
-                covstats={output.covstats} 2>> {log}
+                   2> {log}
             """
+
+
+    rule pileup_prefilter:
+        input:
+            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+            sam = "{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam"
+        output:
+            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+        params:
+            pileup_secondary = 't'
+        log:
+            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" # this file is udes for assembly report
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        shell:
+            """pileup.sh ref={input.fasta} in={input.sam} \
+                   threads={threads} \
+                   -Xmx{resources.java_mem}G \
+                   covstats={output.covstats} \
+                   hist={output.covhist} \
+                   basecov={output.basecov}\
+                   concise=t \
+                   secondary={params.pileup_secondary} \
+                   bincov={output.bincov} 2> {log}"""
+
+
 
 
     rule filter_by_coverage:
