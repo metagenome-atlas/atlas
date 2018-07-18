@@ -421,10 +421,10 @@ if config['filter_contigs']:
 
     rule pileup_prefilter:
         input:
-            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
             sam = "{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam"
         output:
-            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
         params:
             pileup_secondary = 't'
         log:
@@ -441,12 +441,8 @@ if config['filter_contigs']:
                    threads={threads} \
                    -Xmx{resources.java_mem}G \
                    covstats={output.covstats} \
-                   hist={output.covhist} \
-                   basecov={output.basecov}\
                    concise=t \
-                   secondary={params.pileup_secondary} \
-                   bincov={output.bincov} 2> {log}"""
-
+                   secondary={params.pileup_secondary}  2> {log}"""
 
 
 
