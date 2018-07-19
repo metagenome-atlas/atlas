@@ -6,9 +6,10 @@ CONDAENV='../envs'
 
 
 
-BINNING_BAMS=expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
-BINNING_CONTIGS=expand("{sample}/{sample}_contigs.fasta",sample=SAMPLES)
-
+BINNING_BAMS=expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES[0])
+BINNING_CONTIGS=expand("{sample}/{sample}_contigs.fasta",sample=SAMPLES[0])
+BB_COVERAGE_FILES = expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
+    sample=SAMPLES)
 
 
 
@@ -20,21 +21,51 @@ config['concoct']= {'Nexpected_clusters':200,
                         "Niterations":10}
 
 
+config["maxbin"] ={"max_iteration": 1000,
+                 "prob_threshold":0.5}
+
 rule all:
     input:
         BINNING_CONTIGS,
         BINNING_BAMS,
         #expand("{folder}/binning/metabat/cluster_attribution.txt",folder=SAMPLES),
-        expand("{folder}/binning/concoct/responsibilities.csv",folder=SAMPLES)
+        expand("{folder}/binning/concoct/cluster_attribution.tsv",folder=SAMPLES)
+
+
+localrules: make_maxbin_abundance_list
+rule get_covarage_list:
+    input:
+        coverage = BB_COVERAGE_FILES
+    output:
+        abundance_file = expand("{{folder}}/binning/contig_coverages/{sample}.tsv", sample=SAMPLES),
+        abundance_list = temp("{folder}/binning/maxbin/contig_coverage.list")
+    run:
+        with open(output.abundance_list, 'w') as outf:
+            for i in range(len(input)):
+                bb_cov_stats_to_maxbin(input.coverage[i], output.abundance_file[i])
+                outf.write(os.path.abspath(output.abundance_file[i]) + '\n')
+
+
+
+
+
+
+
 ## CONCOCT
 
+localrules: get_concoct_depth_file
 
-rule get_concoct_depth_file:
+rule get_coverage_files:
     input:
-        covstats = expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-            sample=SAMPLES)
+        covstats = BB_COVERAGE_FILES
     output:
-        "{folder}/binning/concoct/median_coverage.tsv"
+        "{folder}/binning/contig_coverage/avarage_coverage_contigs.tsv",
+        abundance_list= temp("{folder}/binning/contig_coverage/contig_coverage.list"),
+        abundance_file = temp("{{folder}}/binning/contig_coverage/{sample}.tsv")
+
+    params:
+        sample_names =
+
     run:
 
         import pandas as pd
@@ -51,6 +82,8 @@ rule get_concoct_depth_file:
             combined_cov[sample] = data.Median_fold
 
 
+
+
         pd.DataFrame(combined_cov).to_csv(output[0], sep='\t')
 
 
@@ -58,20 +91,12 @@ rule get_concoct_depth_file:
 
 rule run_concoct:
     input:
-        coverage = "{folder}/binning/concoct/median_coverage.tsv",
+        coverage = rules.get_concoct_depth_file.output,
         fasta = BINNING_CONTIGS
     output:
-        expand("{{folder}}/binning/concoct/{file}",
-            file=['means_gt2500.csv',
-                'PCA_components_data_gt2500.csv',
-                'original_data_gt2500.csv',
-                'PCA_transformed_data_gt2500.csv',
-                'pca_means_gt2500.csv',
-                'args.txt',
-                'responsibilities.csv']
-        ),
+        "{{folder}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(config["binning_min_contig_length"])
     params:
-        basename= lambda wc,output: os.path.dirname(output[0]),
+        basename= lambda wc, output: os.path.dirname(output[0]),
         Nexpected_clusters= config['concoct']['Nexpected_clusters'],
         read_length= config['concoct']['read_length'],
         min_length=config["binning_min_contig_length"],
@@ -97,7 +122,16 @@ rule run_concoct:
             --converge_out \
             --iterations {params.niterations}
         """
-
+localrules: get_cluster_attribution_concoct
+rule get_cluster_attribution_concoct:
+    input:
+        rules.run_concoct.output[0]
+    output:
+        "{folder}/binning/concoct/cluster_attribution.tsv"
+    run:
+        with open(input[0]) as fin, open(output[0],'w') as fout:
+            for line in fin:
+                fout.write(line.replace(',','\t'))
 
 ## METABAT
 
@@ -182,57 +216,41 @@ rule run_metabat:
 #
 # # https://bitbucket.org/berkeleylab/metabat/wiki/Best%20Binning%20Practices
 #
-#
-# localrules: make_maxbin_abundance_list
-# rule make_maxbin_abundance_list:
-#     input:
-#         coverage = expand("contigs/sequence_alignment_combined_contigs/{sample}/{sample}_coverage.txt",
-#             sample=SAMPLES)
-#     output:
-#         abundance_file = expand("contigs/maxbin/contig_coverage/{sample}.tsv", sample=SAMPLES),
-#         abundance_list = temp("contigs/maxbin/contig_coverage.list")
-#     run:
-#         with open(output.abundance_list, 'w') as outf:
-#             for i in range(len(input)):
-#                 bb_cov_stats_to_maxbin(input.coverage[i], output.abundance_file[i])
-#                 outf.write(os.path.abspath(output.abundance_file[i]) + '\n')
-#
-#
-# rule MAG_run_maxbin:
-#     input:
-#         fasta = COMBINED_CONTIGS,
-#         abundance_list = "contigs/maxbin/contig_coverage.list"
-#     output:
-#         # fastas will need to be dynamic if we do something with them at a later time
-#         summary = "contigs/maxbin/bins/bin.summary",
-#         marker = "contigs/maxbin/bins/bin.marker",
-#         cluster_attribution_file = "contigs/maxbin/cluster_attribution.txt"
-#     benchmark:
-#         "logs/benchmarks/maxbin2/combined_contigs.txt"
-#     params:
-#         mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
-#         mcl = config["binning_min_contig_length"],
-#         pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
-#         out_prefix = lambda wildcards, output: os.path.splitext(os.path.dirname(output.summary))[0]
-#     log:
-#         "contigs/logs/maxbin2.log"
-#     conda:
-#         "%s/optional_genome_binning.yaml" % CONDAENV
-#     threads:
-#         config.get("threads", 1)
-#     shell:
-#         """run_MaxBin.pl -contig {input.fasta} \
-#                -abund_list {input.abundance_list} \
-#                -out {params.outdir} \
-#                -min_contig_length {params.mcl} \
-#                -thread {threads} \
-#                -prob_threshold {params.pt} \
-#                -max_iteration {params.mi} > {log}
-#
-#
-#             cp {params.output_prefix}.marker {input.cluster_attribution_file} 2>> {log}
-#         """
-#
+
+
+rule run_maxbin:
+    input:
+        fasta = BINNING_CONTIGS,
+        abundance_list = rules.make_maxbin_abundance_list.output.abundance_list
+    output:
+        # fastas will need to be dynamic if we do something with them at a later time
+        summary = "{folder}/binning/maxbin/bins/bin.summary",
+        marker = "{folder}/binning/maxbin/bins/bin.marker",
+        cluster_attribution_file = "{folder}/binning/maxbin/cluster_attribution.txt"
+    params:
+        mi = config["maxbin"]["max_iteration"],
+        mcl = config["binning_min_contig_length"],
+        pt = config["maxbin"]["prob_threshold"],
+        out_prefix = lambda wildcards, output: os.path.splitext(os.path.dirname(output.summary))[0]
+    log:
+        "{folder}}/logs/maxbin2.log"
+    conda:
+        "%s/optional_genome_binning.yaml" % CONDAENV
+    threads:
+        config["threads"]
+    shell:
+        """run_MaxBin.pl -contig {input.fasta} \
+               -abund_list {input.abundance_list} \
+               -out {params.outdir} \
+               -min_contig_length {params.mcl} \
+               -thread {threads} \
+               -prob_threshold {params.pt} \
+               -max_iteration {params.mi} > {log}
+
+
+            cp {params.output_prefix}.marker {input.cluster_attribution_file} 2>> {log}
+        """
+
 #
 #
 #
