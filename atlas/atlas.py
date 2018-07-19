@@ -223,7 +223,7 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
-@cli.command("QC", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
+@cli.command("qc", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
