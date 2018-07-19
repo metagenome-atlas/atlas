@@ -12,10 +12,8 @@ update_config(default_config, config)
 config = default_config
 
 
-# required snakemake version
-min_version("4.3")
-shell.executable("/bin/bash")
-shell.prefix("set -o pipefail; ")
+# minimum required snakemake version
+min_version("5.1.3")
 
 def get_conda_envs_dir():
     if config.get("yaml_dir"):
@@ -124,7 +122,7 @@ def input_params_for_bbwrap(wildcards, input):
 CONDAENV = get_conda_envs_dir()
 EGGNOG_DIR  = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "eggNOG")
 
-localrules: all, QC, annotate,download
+
 if config.get("workflow") != "download":
     config = update_config_file_paths(config)
     TMPDIR = get_temp_dir(config)
@@ -138,12 +136,12 @@ if config.get("workflow", "complete") == "qc":
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+    REPORTS = ["reports/QC_report.html"]
 
-    REPORTS=  ["reports/QC_report.html"]
-
-    rule QC:
+    localrules: qc
+    rule qc:
         input:
-            expand("{sample}/sequence_quality_control/finished_QC",sample=SAMPLES),
+            expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
             REPORTS
 
     include: "rules/qc.snakefile"
@@ -162,6 +160,7 @@ elif config.get("workflow", "complete") == "complete":
     if config.get("perform_genome_binning", True):
         REPORTS.append("reports/bin_report.html")
 
+    localrules: all
     rule all:
         input:
             expand("{sample}/sequence_quality_control/finished_QC",
@@ -183,23 +182,29 @@ elif config.get("workflow") == "download":
     DBDIR = os.path.realpath(config["db_dir"])
     CHECKMDIR = os.path.join(DBDIR, "checkm")
     CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
+    # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
     FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
              "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
              "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
              "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
              "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
              "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
+             "OG_fasta.tar.gz": "8fc6ce2e055d1735dec654af98a641a4",
+             "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
+             "eggnog_proteins.dmnd": "5efb0eb18ed4575a20d25773092b83b9",
+             "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
              CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
+    localrules: download
     rule download:
         input:
             expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
             "%s/taxon_marker_sets.tsv" % CHECKMDIR,
-            "%s/download_eggnog_data.sucess" % EGGNOG_DIR
 
     include: "rules/download.snakefile"
 
 elif config.get("workflow") == "annotate":
+    localrules: annotate
     rule annotate:
         input:
             expand("{sample}_annotations.txt", sample=SAMPLES),
