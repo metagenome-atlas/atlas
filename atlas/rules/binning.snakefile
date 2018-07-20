@@ -1,5 +1,12 @@
 
 
+BINNING_BAM= "{sample}/sequence_alignment/{sample}.bam"
+BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
+BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
+
+
+
+
 localrules: get_contig_covarage_from_bb
 rule get_contig_covarage_from_bb:
     input:
@@ -47,9 +54,9 @@ rule run_concoct:
             --read_length {params.read_length} \
             --length_threshold {params.min_length}\
             --converge_out \
-            --iterations {params.niterations}
+            --iterations {params.niterations} &> >(tee {log}) 2>1
         """
-localrules: get_cluster_attribution_concoct
+localrules: concoct
 
 rule concoct:
     input:
@@ -90,13 +97,13 @@ rule metabat:
     output:
         "{sample}/binning/metabat/cluster_attribution.tsv",
     params:
-          sensitivity = 500 if config['binning_sensitivity'] == 'sensitive' else 200,
+          sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config["binning_min_contig_length"],
           output_prefix = "{sample}/binning/bins/bin"
     benchmark:
         "logs/benchmarks/binning/metabat/{sample}.txt"
     log:
-        "logs/binning/metabat/run_metabat.txt"
+        "{sample}/logs/binning/metabat.txt"
     conda:
         "%s/metabat.yaml" % CONDAENV
     threads:
@@ -168,7 +175,7 @@ rule maxbin:
     log:
         "{sample}/logs/maxbin2.log"
     conda:
-        "%s/optional_genome_binning.yaml" % CONDAENV
+        "%s/maxbin.yaml" % CONDAENV
     threads:
         config["threads"]
     shell:
@@ -183,3 +190,89 @@ rule maxbin:
 
             cp {params.output_prefix}.marker {output.cluster_attribution_file} 2>> {log}
         """
+
+
+
+## Checkm
+
+
+
+
+    rule initialize_checkm:
+        # input:
+        output:
+            touched_output = "logs/checkm_init.txt"
+        params:
+            database_dir = CHECKMDIR
+        conda:
+            "%s/checkm.yaml" % CONDAENV
+        log:
+            "logs/initialize_checkm.log"
+        shell:
+            "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
+
+
+    rule run_checkm_lineage_wf:
+        input:
+            touched_output = "logs/checkm_init.txt",
+            # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
+            bins = "{sample}/binning/checkm/{binner}/{sample}.marker"
+        output:
+            "{sample}/binning/checkm/{binner}/completeness.tsv"
+        params:
+            bin_dir = lambda wc, input: os.path.dirname(input.bins),
+            output_dir = lambda wc, output: os.path.dirname(output[0])
+        conda:
+            "%s/checkm.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        shell:
+            """rm -r {params.output_dir} && \
+               checkm lineage_wf \
+                   --file {params.output_dir}/completeness.tsv \
+                   --tab_table \
+                   --quiet \
+                   --extension fasta \
+                   --threads {threads} \
+                   {params.bin_dir} \
+                   {params.output_dir}"""
+
+
+    rule run_checkm_tree_qa:
+        input:
+            "{sample}/binning/checkm/{binner}/completeness.tsv"
+        output:
+            "{sample}/binning/checkm/{binner}/taxonomy.tsv"
+        params:
+            output_dir = "{sample}/binning/checkm/{binner}"
+        conda:
+            "%s/checkm.yaml" % CONDAENV
+        shell:
+            """checkm tree_qa \
+                   --tab_table \
+                   --out_format 2 \
+                   --file {params.output_dir}/taxonomy.tsv \
+                   {params.output_dir}"""
+
+
+
+rule build_bin_report:
+    input:
+        completeness_files = expand("{sample}/binning/checkm/{binner}/completeness.tsv", sample=SAMPLES),
+        taxonomy_files = expand("{sample}/binning/checkm/{binner}/taxonomy.tsv", sample=SAMPLES)
+    output:
+        report = "reports/bin_report_{binner}.html",
+        bin_table = "genomic_bins_{binner}.tsv"
+    params:
+        samples = " ".join(SAMPLES)
+    conda:
+        "%s/report.yaml" % CONDAENV
+    shell:
+        """
+        python %s/report/bin_report.py \
+            --samples {params.samples} \
+            --completeness {input.completeness_files} \
+            --taxonomy {input.taxonomy_files} \
+            --report-out {output.report} \
+            --bin-table {output.bin_table}
+        """ % os.path.dirname(os.path.abspath(workflow.snakefile))

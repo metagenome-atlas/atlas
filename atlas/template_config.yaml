@@ -142,10 +142,19 @@ feature_counts_allow_overlap: true
 ########################
 # Binning
 ########################
-perform_genome_binning: true
-maxbin_max_iteration: 50
-maxbin_min_contig_length: 200
-maxbin_prob_threshold: 0.9
+binner: ['metabat','concoct','maxbin']
+binning_min_contig_length: 1500 # metabat needs >1500
+metabat:
+  sensitivity: sensitive
+
+concoct:
+  Nexpected_clusters: 200
+  read_length: 100
+  Niterations: 500
+
+maxbin:
+  max_iteration: 50
+  prob_threshold: 0.9
 
 
 ########################
