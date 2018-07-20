@@ -228,9 +228,12 @@ elif config.get("workflow") == "binning":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
+
     rule all:
         input:
-            expand("reports/bin_report_{binner}.html", binner=config['binner'])
+            expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+                   binner=config['binner'], sample =SAMPLES)
+            #expand("reports/bin_report_{binner}.html", binner=config['binner'])
 
     include: "rules/binning.snakefile"
     include: "rules/assemble.snakefile"
