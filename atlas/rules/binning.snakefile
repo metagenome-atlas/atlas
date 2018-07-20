@@ -5,6 +5,28 @@ BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
 
 
+ruleorder: bam_2_sam > align_reads_to_final_contigs
+
+rule bam_2_sam:
+    input:
+        "{file}.bam"
+    output:
+        temp("{file}.sam")
+    threads:
+        config['threads']
+    resources:
+        mem = config["java_mem"],
+        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+    shadow:
+        "shallow"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    shell:
+        """
+            reformat.sh in={input} out={output}
+        """
+
+
 
 
 localrules: get_contig_covarage_from_bb
@@ -195,71 +217,72 @@ rule maxbin:
 
 ## Checkm
 
+# TODO generalize checkm rules
+
+
+rule initialize_checkm:
+    # input:
+    output:
+        touched_output = "logs/checkm_init.txt"
+    params:
+        database_dir = CHECKMDIR
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    log:
+        "logs/initialize_checkm.log"
+    shell:
+        "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 
-    rule initialize_checkm:
-        # input:
-        output:
-            touched_output = "logs/checkm_init.txt"
-        params:
-            database_dir = CHECKMDIR
-        conda:
-            "%s/checkm.yaml" % CONDAENV
-        log:
-            "logs/initialize_checkm.log"
-        shell:
-            "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
+
+rule run_checkm_lineage_wf:
+    input:
+        touched_output = "logs/checkm_init.txt",
+        bins = "{sample}/binning/checkm/{binner}/bins/bin{sample}.marker" # actualy path to fastas
+    output:
+        "{sample}/binning/checkm/{binner}/completeness.tsv"
+    params:
+        bin_dir = lambda wc, input: os.path.dirname(input.bins),
+        output_dir = lambda wc, output: os.path.dirname(output[0])
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """rm -r {params.output_dir} && \
+           checkm lineage_wf \
+               --file {params.output_dir}/completeness.tsv \
+               --tab_table \
+               --quiet \
+               --extension fasta \
+               --threads {threads} \
+               {params.bin_dir} \
+               {params.output_dir}"""
 
 
-    rule run_checkm_lineage_wf:
-        input:
-            touched_output = "logs/checkm_init.txt",
-            # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
-            bins = "{sample}/binning/checkm/{binner}/{sample}.marker"
-        output:
-            "{sample}/binning/checkm/{binner}/completeness.tsv"
-        params:
-            bin_dir = lambda wc, input: os.path.dirname(input.bins),
-            output_dir = lambda wc, output: os.path.dirname(output[0])
-        conda:
-            "%s/checkm.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        shell:
-            """rm -r {params.output_dir} && \
-               checkm lineage_wf \
-                   --file {params.output_dir}/completeness.tsv \
-                   --tab_table \
-                   --quiet \
-                   --extension fasta \
-                   --threads {threads} \
-                   {params.bin_dir} \
-                   {params.output_dir}"""
-
-
-    rule run_checkm_tree_qa:
-        input:
-            "{sample}/binning/checkm/{binner}/completeness.tsv"
-        output:
-            "{sample}/binning/checkm/{binner}/taxonomy.tsv"
-        params:
-            output_dir = "{sample}/binning/checkm/{binner}"
-        conda:
-            "%s/checkm.yaml" % CONDAENV
-        shell:
-            """checkm tree_qa \
-                   --tab_table \
-                   --out_format 2 \
-                   --file {params.output_dir}/taxonomy.tsv \
-                   {params.output_dir}"""
+rule run_checkm_tree_qa:
+    input:
+        "{sample}/binning/checkm/{binner}/completeness.tsv"
+    output:
+        "{sample}/binning/checkm/{binner}/taxonomy.tsv"
+    params:
+        output_dir = "{sample}/binning/checkm/{binner}"
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    shell:
+        """checkm tree_qa \
+               --tab_table \
+               --out_format 2 \
+               --file {params.output_dir}/taxonomy.tsv \
+               {params.output_dir}"""
 
 
 
 rule build_bin_report:
     input:
-        completeness_files = expand("{sample}/binning/checkm/{binner}/completeness.tsv", sample=SAMPLES),
-        taxonomy_files = expand("{sample}/binning/checkm/{binner}/taxonomy.tsv", sample=SAMPLES)
+        completeness_files = expand("{sample}/binning/checkm/{{binner}}/completeness.tsv", sample=SAMPLES),
+        taxonomy_files = expand("{sample}/binning/checkm/{{binner}}/taxonomy.tsv", sample=SAMPLES)
     output:
         report = "reports/bin_report_{binner}.html",
         bin_table = "genomic_bins_{binner}.tsv"
