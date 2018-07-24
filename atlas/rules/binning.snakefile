@@ -237,7 +237,7 @@ rule initialize_checkm:
 rule run_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = "{sample}/binning/checkm/{binner}/bins/bin.marker"
+        bins = "{sample}/binning/{binner}/bins/bin.marker"
     output:
         "{sample}/binning/checkm/{binner}/completeness.tsv"
     params:
