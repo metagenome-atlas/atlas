@@ -381,25 +381,27 @@ if config['filter_contigs']:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
-            """bbwrap.sh \
-                   nodisk=t \
-                   ref={input.fasta} \
-                   {params.input} \
-                   fast=t \
-                   threads={threads} \
-                   ambiguous=all \
-                  pairlen={params.max_distance_between_pairs} \
-                  pairedonly={params.paired_only} \
-                  mdtag=t \
-                  xstag=fs \
-                  nmtag=t \
-                  local=t \
-                  secondary=t \
-                  maxsites={params.maxsites} \
-                   -Xmx{resources.java_mem}G \
-                   out={output.sam} 2> {log}
+            """
+            bbwrap.sh \
+                nodisk=t \
+                ref={input.fasta} \
+                {params.input} \
+                fast=t \
+                threads={threads} \
+                ambiguous=all \
+                pairlen={params.max_distance_between_pairs} \
+                pairedonly={params.paired_only} \
+                mdtag=t \
+                xstag=fs \
+                nmtag=t \
+                local=t \
+                secondary=t \
+                saa=f \
+                maxsites={params.maxsites} \
+                -Xmx{resources.java_mem}G \
+                out={output.sam} 2> {log}
 
-                pileup.sh \
+            pileup.sh \
                 ref={input.fasta} \
                 in={output.sam} \
                 threads={threads} \
@@ -497,26 +499,28 @@ rule align_reads_to_final_contigs:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     shell:
-        """bbwrap.sh nodisk=t \
-               ref={input.fasta} \
-               {params.input} \
-               trimreaddescriptions=t \
-               outm={output.sam} \
-               {params.unmapped} \
-               threads={threads} \
-               pairlen={params.max_distance_between_pairs} \
-               pairedonly={params.paired_only} \
-               minid={params.min_id} \
-               mdtag=t \
-               xstag=fs \
-               nmtag=t \
-               sam=1.3 \
-               local=t \
-               ambiguous={params.ambiguous} \
-               secondary=t \
-               maxsites={params.maxsites} \
-               -Xmx{resources.java_mem}G \
-               2> {log}
+        """
+        bbwrap.sh nodisk=t \
+            ref={input.fasta} \
+            {params.input} \
+            trimreaddescriptions=t \
+            outm={output.sam} \
+            {params.unmapped} \
+            threads={threads} \
+            pairlen={params.max_distance_between_pairs} \
+            pairedonly={params.paired_only} \
+            minid={params.min_id} \
+            mdtag=t \
+            xstag=fs \
+            nmtag=t \
+            sam=1.3 \
+            local=t \
+            ambiguous={params.ambiguous} \
+            secondary=t \
+            saa=f \
+            maxsites={params.maxsites} \
+            -Xmx{resources.java_mem}G \
+            2> {log}
         """
 
 
@@ -554,103 +558,102 @@ rule pileup:
                bincov={output.bincov} 2> {log}"""
 
 
-if config.get("perform_genome_binning", True):
-    rule make_maxbin_abundance_file:
-        input:
-            "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
-        output:
-            "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
-        run:
-            bb_cov_stats_to_maxbin(input[0], output[0])
+rule make_maxbin_abundance_file:
+    input:
+        "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
+    output:
+        "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
+    run:
+        bb_cov_stats_to_maxbin(input[0], output[0])
 
 
-    rule run_maxbin:
-        input:
-            fasta = "{sample}/{sample}_contigs.fasta",
-            abundance = "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
-        output:
-            # fastas will need to be dynamic if we do something with them at a later time
-            summary = "{sample}/genomic_bins/{sample}.summary",
-            marker = "{sample}/genomic_bins/{sample}.marker"
-        benchmark:
-            "logs/benchmarks/binning/maxbin2/{sample}.txt"
-        params:
-            mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
-            mcl = config.get("maxbin_min_contig_length", MAXBIN_MIN_CONTIG_LENGTH),
-            pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
-            outdir = lambda wildcards, output: os.path.join(os.path.dirname(output.summary), wildcards.sample)
-        log:
-            "{sample}/logs/binning/maxbin2.log"
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        shell:
-            """run_MaxBin.pl -contig {input.fasta} \
-                   -abund {input.abundance} \
-                   -out {params.outdir} \
-                   -min_contig_length {params.mcl} \
-                   -thread {threads} \
-                   -prob_threshold {params.pt} \
-                   -max_iteration {params.mi} > {log}
-            """
+rule run_maxbin:
+    input:
+        fasta = "{sample}/{sample}_contigs.fasta",
+        abundance = "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
+    output:
+        # fastas will need to be dynamic if we do something with them at a later time
+        summary = "{sample}/genomic_bins/{sample}.summary",
+        marker = "{sample}/genomic_bins/{sample}.marker"
+    benchmark:
+        "logs/benchmarks/binning/maxbin2/{sample}.txt"
+    params:
+        mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
+        mcl = config.get("maxbin_min_contig_length", MAXBIN_MIN_CONTIG_LENGTH),
+        pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
+        outdir = lambda wildcards, output: os.path.join(os.path.dirname(output.summary), wildcards.sample)
+    log:
+        "{sample}/logs/binning/maxbin2.log"
+    conda:
+        "%s/optional_genome_binning.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """run_MaxBin.pl -contig {input.fasta} \
+               -abund {input.abundance} \
+               -out {params.outdir} \
+               -min_contig_length {params.mcl} \
+               -thread {threads} \
+               -prob_threshold {params.pt} \
+               -max_iteration {params.mi} > {log}
+        """
 
 
-    rule initialize_checkm:
-        # input:
-        output:
-            touched_output = "logs/checkm_init.txt"
-        params:
-            database_dir = CHECKMDIR
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        log:
-            "logs/initialize_checkm.log"
-        shell:
-            "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
+rule initialize_checkm:
+    # input:
+    output:
+        touched_output = "logs/checkm_init.txt"
+    params:
+        database_dir = CHECKMDIR
+    conda:
+        "%s/optional_genome_binning.yaml" % CONDAENV
+    log:
+        "logs/initialize_checkm.log"
+    shell:
+        "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
-    rule run_checkm_lineage_wf:
-        input:
-            touched_output = "logs/checkm_init.txt",
-            # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
-            bins = "{sample}/genomic_bins/{sample}.marker"
-        output:
-            "{sample}/genomic_bins/checkm/completeness.tsv"
-        params:
-            bin_dir = lambda wc, input: os.path.dirname(input.bins),
-            output_dir = lambda wc, output: os.path.dirname(output[0])
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        shell:
-            """rm -r {params.output_dir} && \
-               checkm lineage_wf \
-                   --file {params.output_dir}/completeness.tsv \
-                   --tab_table \
-                   --quiet \
-                   --extension fasta \
-                   --threads {threads} \
-                   {params.bin_dir} \
-                   {params.output_dir}"""
+rule run_checkm_lineage_wf:
+    input:
+        touched_output = "logs/checkm_init.txt",
+        # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
+        bins = "{sample}/genomic_bins/{sample}.marker"
+    output:
+        "{sample}/genomic_bins/checkm/completeness.tsv"
+    params:
+        bin_dir = lambda wc, input: os.path.dirname(input.bins),
+        output_dir = lambda wc, output: os.path.dirname(output[0])
+    conda:
+        "%s/optional_genome_binning.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """rm -r {params.output_dir} && \
+           checkm lineage_wf \
+               --file {params.output_dir}/completeness.tsv \
+               --tab_table \
+               --quiet \
+               --extension fasta \
+               --threads {threads} \
+               {params.bin_dir} \
+               {params.output_dir}"""
 
 
-    rule run_checkm_tree_qa:
-        input:
-            "{sample}/genomic_bins/checkm/completeness.tsv"
-        output:
-            "{sample}/genomic_bins/checkm/taxonomy.tsv"
-        params:
-            output_dir = "{sample}/genomic_bins/checkm"
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        shell:
-            """checkm tree_qa \
-                   --tab_table \
-                   --out_format 2 \
-                   --file {params.output_dir}/taxonomy.tsv \
-                   {params.output_dir}"""
+rule run_checkm_tree_qa:
+    input:
+        "{sample}/genomic_bins/checkm/completeness.tsv"
+    output:
+        "{sample}/genomic_bins/checkm/taxonomy.tsv"
+    params:
+        output_dir = "{sample}/genomic_bins/checkm"
+    conda:
+        "%s/optional_genome_binning.yaml" % CONDAENV
+    shell:
+        """checkm tree_qa \
+               --tab_table \
+               --out_format 2 \
+               --file {params.output_dir}/taxonomy.tsv \
+               {params.output_dir}"""
 
 
 rule build_bin_report:
