@@ -219,7 +219,7 @@ rule initialize_checkm:
     output:
         touched_output = "logs/checkm_init.txt"
     params:
-        database_dir = CHECKMDIR
+        database_dir = CHECKMDIR,
         script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/checkm.yaml" % CONDAENV
@@ -288,7 +288,7 @@ rule build_bin_report:
         report = "reports/bin_report_{binner}.html",
         bin_table = "genomic_bins_{binner}.tsv"
     params:
-        samples = " ".join(SAMPLES)
+        samples = " ".join(SAMPLES),
         script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/report.yaml" % CONDAENV
