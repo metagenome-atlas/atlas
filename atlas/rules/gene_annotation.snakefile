@@ -397,7 +397,7 @@ if config.get("perform_genome_binning", True):
             predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
             counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-            eggNOG = rules.renameeggNOG_annotation.output,
+            eggNOG = rules.rename_eggNOG_annotation.output,
             completeness = "{sample}/genomic_bins/checkm/completeness.tsv",
             taxonomy = "{sample}/genomic_bins/checkm/taxonomy.tsv"
         output:
@@ -422,7 +422,7 @@ else:
             predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
             counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-            eggNOG = rules.renameeggNOG_annotation.output
+            eggNOG = rules.rename_eggNOG_annotation.output
         output:
             "{sample}/{sample}_annotations.txt"
         shell:
