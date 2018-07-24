@@ -180,7 +180,7 @@ rule metabat:
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
-        covarage = rules.get_contig_covarage_from_bb.output
+        covarage = rules.get_contig_coverage_from_bb.output
     output:
         # fastas will need to be dynamic if we do something with them at a later time
         summary = "{sample}/binning/maxbin/bins/bin.summary",
