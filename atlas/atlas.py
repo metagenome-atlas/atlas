@@ -73,16 +73,39 @@ def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregatio
 @cli.command("gff2tsv", short_help="writes version of Prokka TSV with contig as new first column")
 @click.argument("gff", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
-@click.option("--feature-type", default="CDS", show_default=True, help="feature type in GFF annotation to print")
+@click.option("--feature-type", default="all", show_default=True, help="feature type in GFF annotation to print")
 def run_gff_to_tsv(gff, output, feature_type):
-    import re
-    locus_tag_re = re.compile(r"locus_tag=(.*?)(?:;|$)")
-    ec_re = re.compile(r"eC_number=(.*?)(?:;|$)")
-    gene_re = re.compile(r"gene=(.*?)(?:;|$)")
-    product_re = re.compile(r"product=(.*?)(?:;|$)")
+    import re, pandas as pd
 
-    # print the header into the output file
-    print("contig_id", "locus_tag", "ftype", "gene", "EC_number", "product", sep="\t", file=output)
+    res = dict(
+
+    gene_id = re.compile(r"ID=(.*?)(?:;|$)"),
+    EC_number = re.compile(r"eC_number=(.*?)(?:;|$)"),
+    gene = re.compile(r"gene=(.*?)(?:;|$)"),
+    product = re.compile(r"product=(.*?)(?:;|$)"),
+    partial = re.compile(r"partial=(.*?)(?:;|$)"),
+    rbs_motif = re.compile(r"rbs_motif=(.*?)(?:;|$)"),
+    gc_cont = re.compile(r"gc_cont=(.*?)(?:;|$)"),
+    confidence = re.compile(r"conf=(.*?)(?:;|$)"),
+    start_type = re.compile(r"start_type=(.*?)(?:;|$)")
+    )
+
+
+    def parse_gff_annotation(toks):
+        parsed= {}
+        for key in res:
+            try:
+                parsed[key] = res[key].findall(toks[-1])[0]
+            except IndexError:
+                if key == "gene_id":
+                    logging.critical("Unable to locate an ID in [%s]" % toks[-1])
+                    sys.exit(1)
+                else:
+                    pass
+                    # do not add empty values
+        return parsed
+
+    parsed_df={}
 
     with open(gff) as gff_fh:
         for line in gff_fh:
@@ -90,29 +113,26 @@ def run_gff_to_tsv(gff, output, feature_type):
                 break
             if line.startswith("#"):
                 continue
+
             toks = line.strip().split("\t")
-            if not toks[2] == feature_type:
+            if (toks[2] != feature_type) and (feature_type !='all'):
                 continue
-            try:
-                locus_tag = locus_tag_re.findall(toks[-1])[0]
-            except IndexError:
-                locus_tag = ""
-            if not locus_tag:
-                logging.critical("Unable to locate a locus tag in [%s]" % toks[-1])
-                sys.exit(1)
-            try:
-                gene = gene_re.findall(toks[-1])[0]
-            except IndexError:
-                gene = ""
-            try:
-                ec_number = ec_re.findall(toks[-1])[0]
-            except IndexError:
-                ec_number = ""
-            try:
-                product = product_re.findall(toks[-1])[0]
-            except IndexError:
-                product = ""
-            print(toks[0], locus_tag, toks[2], gene, ec_number, product, sep="\t", file=output)
+
+            parsed_line = parse_gff_annotation(toks)
+            parsed_line['feature_type'] = toks[2]
+            parsed_line['contig'] = toks[0]
+            parsed_line['start'] = toks[3]
+            parsed_line['stop'] = toks[4]
+            parsed_line['strand'] = toks[6]
+
+
+            parsed_df[parsed_line['gene_id']] = parsed_line
+
+    parsed_df = pd.DataFrame(parsed_df).T
+    parsed_df.drop('gene_id',inplace=True,axis=1)
+    parsed_df.to_csv(output,sep='\t')
+
+
 
 
 @cli.command("munge-blast", short_help="adds contig ID to prokka annotated ORFs")
@@ -162,18 +182,19 @@ def run_munge_blast(tsv, gff, output, gene_id):
             print(*toks, sep="\t", file=output)
 
 
-@cli.command("merge-tables", short_help="merge Prokka TSV, Counts, and Taxonomy")
+@cli.command("merge-tables", short_help="merge genepredictions TSV, Counts, and Taxonomy")
 @click.argument("prokkatsv", type=click.Path(exists=True))
 @click.argument("refseqtsv", type=click.Path(exists=True))
 @click.argument("output")
 @click.option("--counts", type=click.Path(exists=True), help="Feature Counts result TSV")
+@click.option("--eggnog", type=click.Path(exists=True), help="Gene annotations from eggNOG-mapper")
 @click.option("--completeness", type=click.Path(exists=True), help="CheckM completeness TSV")
 @click.option("--taxonomy", type=click.Path(exists=True), help="CheckM taxonomy TSV")
 @click.option("--fasta", multiple=True, type=click.Path(exists=True), help="Bin fasta file path; can be specified multiple times")
-def run_merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta):
-    """Combines Prokka TSV, RefSeq TSV, and Counts TSV into a single table, merging on locus tag.
+def run_merge_tables(prokkatsv, refseqtsv, output, counts, eggnog ,completeness, taxonomy, fasta):
+    """Combines gne annotations TSV, RefSeq TSV, and Counts TSV into a single table, merging on "gene_id" tag.
     """
-    merge_tables(prokkatsv, refseqtsv, output, counts, completeness, taxonomy, fasta)
+    merge_tables(prokkatsv, refseqtsv, output, counts, eggnog ,completeness, taxonomy, fasta)
 
 
 @cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")
@@ -202,7 +223,7 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
-@cli.command("QC", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
+@cli.command("qc", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
 @click.argument("config")
 @click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
 @click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")

@@ -34,7 +34,7 @@ With ``conda``, execute:
 
 ::
 
-    conda create -n atlas -c bioconda python=3.6 \
+    conda create -n atlas -c bioconda python>=3.6 \
         snakemake bbmap=37.78 click ruamel.yaml
 
 Load the environment:
@@ -54,7 +54,7 @@ In the Same Environment
 
 ::
 
-    conda install -c bioconda python=3.6 \
+    conda install -c bioconda python>=3.6 \
         snakemake bbmap=37.78 click ruamel.yaml
     pip install -U pnnl-atlas
 
@@ -73,7 +73,7 @@ To download the databases and their respective metadata databases:
 
     atlas download -o ~/databases
 
-The downloads use approximately 30 GB of disk space.
+The downloads use approximately 40 GB of disk space.
 
 Configuration File
 ------------------

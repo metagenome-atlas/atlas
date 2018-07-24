@@ -10,23 +10,66 @@ from atlas.utils import touch
 from atlas.parsers import read_fasta
 
 
-PROKKA_TSV_HEADER = ["contig_id", "locus_tag", "ftype", "gene", "EC_number",
+PROKKA_TSV_HEADER = ["contig_id", "gene_id", "ftype", "gene", "EC_number",
                      "product"]
 REFSEQ_TSV_HEADER = ["contig", "orf", "taxonomy", "erfc", "orf_taxonomy",
                      "refseq_product", "refseq_evalue", "refseq_bitscore"]
+
+EGGNOG_HEADER = ['query_name',
+ 'seed_eggNOG_ortholog',
+ 'seed_ortholog_evalue',
+ 'seed_ortholog_score',
+ 'predicted_gene_name',
+ 'GO_terms',
+ 'KEGG_KO',
+ 'BiGG_Reactions',
+ 'Annotation_tax_scope',
+ 'Matching_OGs',
+ #'best_OG|evalue|score',
+ 'categories',
+ #'eggNOG_HMM_model_annotation'
+ ]
+
+
+# This file provides final annotations of each query. Tab-delimited columns in the file are:
+
+# query_name: query sequence name
+# seed_eggNOG_ortholog: best protein match in eggNOG
+# seed_ortholog_evalue: best protein match (e-value)
+# seed_ortholog_score: best protein match (bit-score)
+# predicted_gene_name: Predicted gene name for query sequences
+# GO_terms: Comma delimited list of predicted Gene Ontology terms
+# KEGG_KO: Comma delimited list of predicted KEGG KOs
+# BiGG_Reactions: Comma delimited list of predicted BiGG metabolic reactions
+# Annotation_tax_scope: The taxonomic scope used to annotate this query sequence
+# Matching_OGs: Comma delimited list of matching eggNOG Orthologous Groups
+# #best_OG|evalue|score: Best matching Orthologous Groups (only in HMM mode)
+# COG functional categories: COG functional category inferred from best matching OG
+# eggNOG_HMM_model_annotation: eggNOG functional description inferred from best matching OG
+
+
 # minus the sam/bam file name which is the last column
 COUNTS_HEADER = ["Geneid", "Chr", "Start", "End", "Strand", "Length"]
-MERGED_HEADER = ["contig_id", "locus_tag", "ftype", "Length", "gene",
+MERGED_HEADER = ["contig_id", "gene_id", "ftype", "Length", "gene",
                  "EC_number", "product", "orf_taxonomy", "taxonomy", "erfc",
-                 "count"]
-ANNOTATE_HEADER = ["contig_id", "locus_tag", "ftype", "gene", "EC_number",
+                 "count",
+                 'seed_eggNOG_ortholog',
+                 'seed_ortholog_score',
+                 'predicted_gene_name',
+                 'GO_terms',
+                 'KEGG_KO',
+                 'BiGG_Reactions',
+                 'Matching_OGs',
+                 'categories']
+ANNOTATE_HEADER = ["contig_id", "gene_id", "ftype", "gene", "EC_number",
                    "product", "orf_taxonomy", "taxonomy", "erfc"]
-BINNED_HEADER = ["contig_id", "locus_tag", "ftype", "Length", "gene",
-                 "EC_number", "product", "orf_taxonomy", "taxonomy", "erfc",
-                 "count", "bin_id", "checkm_bin_taxonomy_contained",
+
+
+BINNED_HEADER = MERGED_HEADER + ["bin_id", "checkm_bin_taxonomy_contained",
                  "checkm_bin_taxonomy_sister_lineage",
                  "checkm_bin_number_unique_markers", "checkm_bin_completeness",
                  "checkm_bin_contamination"]
+
 
 
 def get_valid_dataframe(file_path, expected_cols, **kwargs):
@@ -55,8 +98,38 @@ def get_valid_dataframe(file_path, expected_cols, **kwargs):
         raise ValueError("%s missing required columns: %s" % (file_path, ", ".join(missing_cols)))
     return df
 
+## this is duplicated
+# def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None):
+#     """Reads input files, creates temporary dataframes, and performs the merge."""
+#     logging.info("Parsing Prokka TSV: %s" % prokka_tsv)
+#     prokka_df = get_valid_dataframe(prokka_tsv, PROKKA_TSV_HEADER, sep="\t")
+#
+#     if counts_tsv:
+#         logging.info("Parsing Counts TSV: %s" % counts_tsv)
+#         counts_df = get_valid_dataframe(counts_tsv, COUNTS_HEADER, sep="\t",
+#                         comment="#")
+#         counts_df.rename(columns={counts_df.columns.tolist()[-1]:"count"},
+#             inplace=True)
+#
+#         # merge prokka and counts
+#         merged = pd.merge(left=counts_df, right=prokka_df, how="left",
+#                      left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
+#
+#     logging.info("Parsing RefSeq file: %s" % refseq_tsv)
+#     refseq_df = get_valid_dataframe(refseq_tsv, REFSEQ_TSV_HEADER, sep="\t")
+#
+#     if counts_tsv:
+#         # merge in refseq data
+#         merged = pd.merge(left=merged, right=refseq_df, how="left",
+#                      left_on=COUNTS_HEADER[0], right_on=REFSEQ_TSV_HEADER[1])
+#     else:
+#         merged = pd.merge(left=prokka_df, right=refseq_df, how="left",
+#                      left_on=PROKKA_TSV_HEADER[1],
+#                      right_on=REFSEQ_TSV_HEADER[1])
+#     return merged
 
-def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None):
+
+def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None,eggNOG=None):
     """Reads input files, creates temporary dataframes, and performs the merge."""
     logging.info("Parsing Prokka TSV: %s" % prokka_tsv)
     prokka_df = get_valid_dataframe(prokka_tsv, PROKKA_TSV_HEADER, sep="\t")
@@ -69,38 +142,18 @@ def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None):
             inplace=True)
 
         # merge prokka and counts
-        merged = pd.merge(left=counts_df, right=prokka_df, how="left",
+        merged = pd.merge(left=counts_df, right=merged, how="left",
                      left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
 
-    logging.info("Parsing RefSeq file: %s" % refseq_tsv)
-    refseq_df = get_valid_dataframe(refseq_tsv, REFSEQ_TSV_HEADER, sep="\t")
+    if eggNOG:
+        logging.info("Parsing eggNOG TSV: %s" % counts_tsv)
+        eggNOG_df = get_valid_dataframe(eggNOG, EGGNOG_HEADER, sep="\t")
 
-    if counts_tsv:
-        # merge in refseq data
-        merged = pd.merge(left=merged, right=refseq_df, how="left",
-                     left_on=COUNTS_HEADER[0], right_on=REFSEQ_TSV_HEADER[1])
-    else:
-        merged = pd.merge(left=prokka_df, right=refseq_df, how="left",
-                     left_on=PROKKA_TSV_HEADER[1],
-                     right_on=REFSEQ_TSV_HEADER[1])
-    return merged
-
-
-def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None):
-    """Reads input files, creates temporary dataframes, and performs the merge."""
-    logging.info("Parsing Prokka TSV: %s" % prokka_tsv)
-    prokka_df = get_valid_dataframe(prokka_tsv, PROKKA_TSV_HEADER, sep="\t")
-
-    if counts_tsv:
-        logging.info("Parsing Counts TSV: %s" % counts_tsv)
-        counts_df = get_valid_dataframe(counts_tsv, COUNTS_HEADER, sep="\t",
-                        comment="#")
-        counts_df.rename(columns={counts_df.columns.tolist()[-1]:"count"},
-            inplace=True)
 
         # merge prokka and counts
-        merged = pd.merge(left=counts_df, right=prokka_df, how="left",
-                     left_on=COUNTS_HEADER[0], right_on=PROKKA_TSV_HEADER[1])
+        merged = pd.merge(left=eggNOG_df, right=merged, how="left",
+                     left_on='query_name', right_on=PROKKA_TSV_HEADER[1])
+
 
     logging.info("Parsing RefSeq file: %s" % refseq_tsv)
     refseq_df = get_valid_dataframe(refseq_tsv, REFSEQ_TSV_HEADER, sep="\t")
@@ -148,7 +201,7 @@ def merge_bin_data(df, completeness_tsv, taxonomy_tsv, fasta_files):
     return merged
 
 
-def merge_tables(prokka_tsv, refseq_tsv, output, counts_tsv=None,
+def merge_tables(prokka_tsv, refseq_tsv, output,counts_tsv=None, eggNOG= None,
     completeness=None, taxonomy=None, fastas=None):
     """
 
@@ -160,12 +213,12 @@ def merge_tables(prokka_tsv, refseq_tsv, output, counts_tsv=None,
         orf2     1   601  900      +    300               300
         orf3     1  1201 1500      +    300               200
     """
-    if counts_tsv and completeness and taxonomy and fastas:
-        df = do_merge(prokka_tsv, refseq_tsv, counts_tsv)
+    if counts_tsv and eggNOG and  completeness and taxonomy and fastas:
+        df = do_merge(prokka_tsv, refseq_tsv, counts_tsv,eggNOG)
         df = merge_bin_data(df, completeness, taxonomy, fastas)
         df.to_csv(output, sep="\t", columns=BINNED_HEADER, index=False)
     else:
-        df = do_merge(prokka_tsv, refseq_tsv, counts_tsv)
+        df = do_merge(prokka_tsv, refseq_tsv, counts_tsv, eggNOG)
         if counts_tsv:
             df.to_csv(output, sep="\t", columns=MERGED_HEADER, index=False)
         else:

@@ -3,6 +3,7 @@ import os
 
 
 ZENODO_ARCHIVE = "1134890"
+EGGNOG_VERSION = "4.5.1"
 
 
 def md5(fname):
@@ -20,9 +21,28 @@ rule transfer_files:
     output:
         "%s/{filename}" % DBDIR
     run:
-        shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
-        if not FILES[wildcards.filename] == md5(output[0]):
-            raise OSError(2, "Invalid checksum", output[0])
+        eggnog_files = {"OG_fasta.tar.gz": "OG_fasta.tar.gz",
+            "eggnog.db": "eggnog.db.gz",
+            "og2level.tsv": "og2level.tsv.gz",
+            "eggnog_proteins.dmnd": "eggnog_proteins.dmnd.gz",
+        }
+
+        if wildcards.filename in eggnog_files:
+            dl_filename = eggnog_files[wildcards.filename]
+            dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
+            shell("curl 'http://eggnogdb.embl.de/download/emapperdb-%s/%s' -s > %s" % (EGGNOG_VERSION, dl_filename, dl_output))
+            # validate the download
+            if not FILES[wildcards.filename] == md5(dl_output):
+                raise OSError(2, "Invalid checksum", dl_output)
+            # handle extraction/decompression
+            if dl_output.endswith(".tar.gz"):
+                shell("tar -zxf %s --directory {DBDIR}" % dl_output)
+            else:
+                shell("gunzip %s" % dl_output)
+        else:
+            shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
+            if not FILES[wildcards.filename] == md5(output[0]):
+                raise OSError(2, "Invalid checksum", output[0])
 
 
 rule extract_checkm_data:
@@ -74,4 +94,5 @@ onsuccess:
 
 onerror:
     print("An error occurred while downloading reference databases.")
-    print("Databases can be manually downloaded from: https://zenodo.org/record/%s" % ZENODO_ARCHIVE)
+    print("ATLAS databases can be manually downloaded from: https://zenodo.org/record/%s" % ZENODO_ARCHIVE)
+    print("eggNOG databases can be manually downloaded from: http://eggnogdb.embl.de/download/emapperdb-%s" % EGGNOG_VERSION)
