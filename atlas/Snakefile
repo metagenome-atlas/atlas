@@ -158,7 +158,12 @@ elif config.get("workflow", "complete") == "complete":
     REPORTS = ["reports/assembly_report.html"]
 
     if config.get("perform_genome_binning", True):
-        REPORTS.append("reports/bin_report.html")
+        # later update to include others as well as integrate concoct and metabat
+        REPORTS.append("reports/bin_report_maxbin.html")
+        # include this?
+        # expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+        #        binner=config['binner'], sample =SAMPLES)
+        include: "rules/binning.snakefile"
 
     localrules: all
     rule all:
@@ -176,6 +181,67 @@ elif config.get("workflow", "complete") == "complete":
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
     include: "rules/gene_annotation.snakefile"
+
+    if config.get("perform_genome_binning", True):
+
+
+        rule merge_sample_tables:
+            input:
+                prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
+                refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+                counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+                completeness = "{sample}/binning/checkm/maxbin/completeness.tsv",
+                taxonomy = "{sample}/binning/checkm/maxbin/taxonomy.tsv"
+            output:
+                "{sample}/{sample}_annotations.txt"
+            params:
+                fastas = lambda wc: " --fasta ".join(glob("{sample}/binning/checkm/maxbin/{sample}.*.fasta".format(sample=wc.sample)))
+            shell:
+                "atlas merge-tables \
+                     --counts {input.counts} \
+                     --completeness {input.completeness} \
+                     --taxonomy {input.taxonomy} \
+                     --fasta {params.fastas} \
+                     {input.prokka} \
+                     {input.refseq} \
+                     {output}"
+
+
+    else:
+        rule merge_sample_tables:
+            input:
+                prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
+                refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+                counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+            output:
+                "{sample}/{sample}_annotations.txt"
+            shell:
+                "atlas merge-tables \
+                     --counts {input.counts} \
+                     {input.prokka} \
+                     {input.refseq} \
+                     {output}"
+
+
+
+elif config.get("workflow") == "binning":
+
+    # define paired end or not
+    PAIRED_END = all([config["samples"][s].get("paired", False) \
+                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
+    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+
+
+    rule all:
+        input:
+            expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+                   binner=config['binner'], sample=SAMPLES)
+            #expand("reports/bin_report_{binner}.html", binner=config['binner'])
+
+    include: "rules/binning.snakefile"
+    include: "rules/assemble.snakefile"
+
 
 elif config.get("workflow") == "download":
 
