@@ -251,7 +251,7 @@ rule get_bins:
     output:
         directory("{sample}/binning/{binner}/bins")
     params:
-        prefix="{sample}/binning/{binner}/{sample}"
+        prefix= lambda wc, output: os.path.join(output[0],wc.sample)
     conda:
         "%s/sequence_utils.yaml" % CONDAENV
     script:

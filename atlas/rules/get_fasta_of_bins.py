@@ -2,8 +2,8 @@
 import pandas as pd
 from Bio import SeqIO
 
-import argparse, os, shutils
-
+import argparse, os, shutil
+import warnings
 
 
 def get_fasta_of_bins(cluster_attribution,contigs,out_prefix):
@@ -18,28 +18,47 @@ def get_fasta_of_bins(cluster_attribution,contigs,out_prefix):
     """
     # create outdir
     out_folder= os.path.dirname(out_prefix)
-    if os.path.exists(out_folder): shutils.rmtree(out_folder)
-        os.makedirs(out_folder)
+    if os.path.exists(out_folder):
+        shutil.rmtree(out_folder)
+    os.makedirs(out_folder)
 
 
-    CA = pd.read_table(cluster_attribution,header=None)
+    CA = pd.read_table(cluster_attribution,header=None, index_col=1)
+
+    assert CA.shape[1] == 1, "File should have only two columns "+cluster_attribution
+    CA = CA.iloc[:,0]
+    CA.index = CA.index.astype('str')
 
     contigs = SeqIO.to_dict(SeqIO.parse(contigs,'fasta'))
 
     for id in CA.index.unique():
 
-        bin_contigs = [contigs[c] for c in CA.loc[id]]
+        bin_contig_names= CA.loc[id]
+        out_file = "{prefix}.{id}.fasta".format(prefix=out_prefix,id=id)
 
-        out_file = out_prefix+ srt(id) + '.fasta'
+        if type(bin_contig_names) == str:
+            warnings.warn("single contig bin Bin: "+out_file)
+
+            bin_contig_names = [bin_contig_names]
+
+        bin_contigs = [contigs[c] for c in bin_contig_names]
+
+
 
         SeqIO.write(bin_contigs,out_file,'fasta')
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--cluster-attribution")
-    p.add_argument("--contigs")
-    p.add_argument("--out-prefix")
-    args = vars(p.parse_args())
 
-    get_fasta_of_bins(**args)
+    if snakemake is not None:
+
+        get_fasta_of_bins(snakemake.input.cluster_attribution, snakemake.input.contigs, snakemake.params.prefix)
+    else:
+
+        p = argparse.ArgumentParser()
+        p.add_argument("--cluster-attribution")
+        p.add_argument("--contigs")
+        p.add_argument("--out-prefix")
+        args = vars(p.parse_args())
+
+        get_fasta_of_bins(**args)
