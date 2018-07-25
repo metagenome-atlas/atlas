@@ -216,6 +216,7 @@ rule maxbin:
                mv {params.output_prefix}.log {output[0]}/..  2>> {log}
 
         """
+localrules: get_maxbin_cluster_attribution, get_bins
 
 rule get_maxbin_cluster_attribution:
     input:
@@ -225,24 +226,21 @@ rule get_maxbin_cluster_attribution:
     params:
         file_name = lambda wc,input: "{folder}/{sample}.{{binid}}.fasta".format(folder= input[0],**wc)
     run:
-        Bin_ids, = glob_wildcards(file_name)
+        Bin_ids, = glob_wildcards(params.file_name)
         print("found {} bins".format(len(Bin_ids)))
 
         with open(output[0],'w') as out_file:
 
             for binid in Bin_ids:
 
-                with open(file_name.format(binid=binid)) as bin_file:
-                    for line in file:
+                with open(params.file_name.format(binid=binid)) as bin_file:
+                    for line in bin_file:
                         if line[0] =='>':
                             fasta_header = line[1:].strip().split()[0]
 
-                            out_file.write("{binid}/t{fasta_header}\n")
+                            out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header = fasta_header))
 
 
-
-
-localrules: get_bins
 
 rule get_bins:
     input:
@@ -344,6 +342,7 @@ rule build_bin_report:
         """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 # not working correctly https://github.com/cmks/DAS_Tool/issues/13
+
 rule run_das_tool:
     input:
         cluster_attribution= expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
