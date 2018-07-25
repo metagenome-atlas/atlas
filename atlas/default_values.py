@@ -67,7 +67,7 @@ CONTIG_COUNT_MULTI_MAPPED_READS = False
 PROKKA_KINGDOM = "Bacteria"
 
 MAXBIN_MAX_ITERATION = 50
-MAXBIN_MIN_CONTIG_LENGTH = 200
+MAXBIN_MIN_CONTIG_LENGTH = 1000
 MAXBIN_PROB_THRESHOLD = 0.9
 
 DIAMOND_TOP_SEQS = 2
@@ -167,10 +167,32 @@ def make_default_config():
 
 
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
+
+    # binning
     conf["perform_genome_binning"] = True
-    conf["maxbin_max_iteration"] = MAXBIN_MAX_ITERATION
-    conf["maxbin_min_contig_length"] = MAXBIN_MIN_CONTIG_LENGTH
-    conf["maxbin_prob_threshold"] = MAXBIN_PROB_THRESHOLD
+
+    conf["binner"] = ['metabat','concoct','maxbin']
+
+    conf["metabat"] = {"sensitivity":"sensitive",
+                       "min_contig_length" : 1500}
+
+    conf["concoct"]= {
+    "Nexpected_clusters": 200 ,          # important parameter
+    "read_length": 100,                  # change this parameter !
+    "Niterations": 500,
+    "min_contig_length" : 1000}
+
+    conf["maxbin"] = {'max_iteration': MAXBIN_MAX_ITERATION,
+     "prob_threshold": MAXBIN_PROB_THRESHOLD,
+     "min_contig_length": MAXBIN_MIN_CONTIG_LENGTH}
+
+    conf["DASTool"]= {
+    "search_engine": 'diamond',
+    "score_threshold": 0.5,
+    "duplicate_penalty" :0.6,
+    "megabin_penalty": 0.5
+    }
+
 
     conf["diamond_run_mode"] = "fast"
     conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS

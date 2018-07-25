@@ -57,7 +57,7 @@ rule run_concoct:
         basename= lambda wc, output: os.path.dirname(output[0]),
         Nexpected_clusters= config['concoct']['Nexpected_clusters'],
         read_length= config['concoct']['read_length'],
-        min_length=config["binning_min_contig_length"],
+        min_length=config['concoct']["min_contig_length"],
         niterations=config["concoct"]["Niterations"]
     log:
         "{sample}/logs/binning/concoct/log.txt"
@@ -120,7 +120,7 @@ rule metabat:
         "{sample}/binning/metabat/cluster_attribution.tsv",
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
-          min_contig_len = config["binning_min_contig_length"],
+          min_contig_len = config['metabat']["min_contig_length"],
           output_prefix = "{sample}/binning/bins/bin"
     benchmark:
         "logs/benchmarks/binning/metabat/{sample}.txt"
@@ -179,39 +179,83 @@ rule metabat:
 # # https://bitbucket.org/berkeleylab/metabat/wiki/Best%20Binning%20Practices
 #
 
+ruleorder: maxbin > get_bins
 
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
         covarage = rules.get_contig_covarage_from_bb.output
     output:
-        # fastas will need to be dynamic if we do something with them at a later time
-        summary = "{sample}/binning/maxbin/bins/bin.summary",
-        marker = "{sample}/binning/maxbin/bins/bin.marker",
-        cluster_attribution_file = "{sample}/binning/maxbin/cluster_attribution.tsv"
+        directory("{sample}/binning/maxbin/bins")
+
     params:
         mi = config["maxbin"]["max_iteration"],
-        mcl = config["binning_min_contig_length"],
+        mcl = config["maxbin"]["min_contig_length"],
         pt = config["maxbin"]["prob_threshold"],
-        output_prefix = lambda wildcards, output: os.path.splitext(output.summary)[0]
+        output_prefix = lambda wc,output: os.path.join(output[0],wc.sample)
     log:
-        "{sample}/logs/maxbin2.log"
+        "{sample}/logs/binning/maxbin.log"
     conda:
         "%s/maxbin.yaml" % CONDAENV
     threads:
         config["threads"]
     shell:
-        """run_MaxBin.pl -contig {input.fasta} \
-               -abund {input.covarage} \
+        """
+            mkdir {output[0]} 2> {log}
+            run_MaxBin.pl -contig {input.fasta} \
+              -abund {input.covarage} \
                -out {params.output_prefix} \
                -min_contig_length {params.mcl} \
                -thread {threads} \
                -prob_threshold {params.pt} \
-               -max_iteration {params.mi} > {log}
+               -max_iteration {params.mi} >> {log}
 
+               mv {params.output_prefix}.summary {output[0]}/.. 2>> {log}
+               mv {params.output_prefix}.marker {output[0]}/..  2>> {log}
+               mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/..  2>> {log}
+               mv {params.output_prefix}.log {output[0]}/..  2>> {log}
 
-            cp {params.output_prefix}.marker {output.cluster_attribution_file} 2>> {log}
         """
+
+rule get_maxbin_cluster_attribution:
+    input:
+        directory("{sample}/binning/maxbin/bins")
+    output:
+        "{sample}/binning/maxbin/cluster_attribution.tsv"
+    params:
+        file_name = lambda wc,input: "{folder}/{sample}.{{binid}}.fasta".format(folder= input[0],**wc)
+    run:
+        Bin_ids, = glob_wildcards(file_name)
+        print("found {} bins".format(len(Bin_ids)))
+
+        with open(output[0],'w') as out_file:
+
+            for binid in Bin_ids:
+
+                with open(file_name.format(binid=binid)) as bin_file:
+                    for line in file:
+                        if line[0] =='>':
+                            fasta_header = line[1:].strip().split()[0]
+
+                            out_file.write("{binid}/t{fasta_header}\n")
+
+
+
+
+localrules: get_bins
+
+rule get_bins:
+    input:
+        cluster_attribution = "{sample}/binning/{binner}/cluster_attribution.tsv",
+        contigs= BINNING_CONTIGS
+    output:
+        directory("{sample}/binning/{binner}/bins")
+    params:
+        prefix="{sample}/binning/{binner}/{sample}"
+    conda:
+        "%s/sequence_utils.yaml" % CONDAENV
+    script:
+        "get_fasta_of_bins.py"
 
 
 
@@ -239,11 +283,10 @@ rule initialize_checkm:
 rule run_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = "{sample}/binning/checkm/{binner}/bins/bin{sample}.marker" # actualy path to fastas
+        bins = directory("{sample}/binning/{binner}/bins") # actualy path to fastas
     output:
-        "{sample}/binning/checkm/{binner}/completeness.tsv"
+        "{sample}/binning/{binner}/checkm/completeness.tsv"
     params:
-        bin_dir = lambda wc, input: os.path.dirname(input.bins),
         output_dir = lambda wc, output: os.path.dirname(output[0])
     conda:
         "%s/checkm.yaml" % CONDAENV
@@ -257,17 +300,17 @@ rule run_checkm_lineage_wf:
                --quiet \
                --extension fasta \
                --threads {threads} \
-               {params.bin_dir} \
+               {input.bins} \
                {params.output_dir}"""
 
 
 rule run_checkm_tree_qa:
     input:
-        "{sample}/binning/checkm/{binner}/completeness.tsv"
+        "{sample}/binning/{binner}/checkm/completeness.tsv"
     output:
-        "{sample}/binning/checkm/{binner}/taxonomy.tsv"
+        "{sample}/binning/{binner}/checkm/taxonomy.tsv"
     params:
-        output_dir = "{sample}/binning/checkm/{binner}"
+        output_dir = lambda wc,output: os.path.dirname(output[0])
     conda:
         "%s/checkm.yaml" % CONDAENV
     shell:
@@ -281,11 +324,11 @@ rule run_checkm_tree_qa:
 
 rule build_bin_report:
     input:
-        completeness_files = expand("{sample}/binning/checkm/{{binner}}/completeness.tsv", sample=SAMPLES),
-        taxonomy_files = expand("{sample}/binning/checkm/{{binner}}/taxonomy.tsv", sample=SAMPLES)
+        completeness_files = expand("{sample}/binning/{{binner}}/checkm/completeness.tsv", sample=SAMPLES),
+        taxonomy_files = expand("{sample}/binning/{{binner}}/checkm/taxonomy.tsv", sample=SAMPLES)
     output:
         report = "reports/bin_report_{binner}.html",
-        bin_table = "genomic_bins_{binner}.tsv"
+        bin_table = "reports/genomic_bins_{binner}.tsv"
     params:
         samples = " ".join(SAMPLES)
     conda:
@@ -299,3 +342,44 @@ rule build_bin_report:
             --report-out {output.report} \
             --bin-table {output.bin_table}
         """ % os.path.dirname(os.path.abspath(workflow.snakefile))
+
+# not working correctly https://github.com/cmks/DAS_Tool/issues/13
+rule run_das_tool:
+    input:
+        cluster_attribution= expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
+               binner=config['binner']),
+        contigs = BINNING_CONTIGS,
+        proteins= "{sample}/annotation/predicted_genes/{sample}.faa"
+    output:
+        expand("{{sample}}/binning/DASTool/{{sample}}{postfix}",
+               postfix= [ "_summary.txt","_hqBins.pdf", "_scores.pdf" ]),
+        cluster_attribution= "{sample}/binning/DASTool/cluster_attribution.tsv"
+#        [method].eval
+    threads:
+        config['threads']
+    log:
+        "{sample}/logs/binning/DASTool.log"
+    conda:
+        "%s/DASTool.yaml" % CONDAENV
+    params:
+        binner_names= ",".join(config['binner']),
+        scaffolds2bin= lambda wc, input: ",".join(input.cluster_attribution),
+        output_prefix= "{sample}/binning/DASTool/{sample}",
+        score_threshold = config['DASTool']['score_threshold'],
+        megabin_penalty = config['DASTool']['megabin_penalty'],
+        duplicate_penalty = config['DASTool']['duplicate_penalty']
+
+    shell:
+        " DAS_Tool --outputbasename {params.output_prefix} "
+        " --bins {params.scaffolds2bin} "
+        " --labels {params.binner_names} "
+        " --contigs {input.contigs} "
+        " --search_engine diamond "
+        " --proteins {input.proteins} "
+        " --write_bin_evals 1 "
+        " --create_plots 1 --write_bin_evals 1 "
+        " --megabin_penalty {params.megabin_penalty}"
+        " --duplicate_penalty {params.duplicate_penalty} "
+        " --threads {threads} "
+        " --score_threshold {params.score_threshold} &> >(tee {log}) "
+        " ; mv {params.output_prefix}_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"

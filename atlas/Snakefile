@@ -13,7 +13,7 @@ config = default_config
 
 
 # minimum required snakemake version
-min_version("5.1.3")
+min_version("5.1.4")
 
 def get_conda_envs_dir():
     if config.get("yaml_dir"):
@@ -129,14 +129,16 @@ if config.get("workflow") != "download":
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
     SAMPLES = [i for i in config["samples"].keys()]
 
-# quality control of sequences only
-if config.get("workflow", "complete") == "qc":
-    # define paired end or not
     PAIRED_END = all([config["samples"][s].get("paired", False) \
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
     REPORTS = ["reports/QC_report.html"]
+
+# quality control of sequences only
+if config.get("workflow", "complete") == "qc":
+    # define paired end or not
+
 
     localrules: qc
     rule qc:
@@ -148,14 +150,8 @@ if config.get("workflow", "complete") == "qc":
 
 # quality control, assembly, annotation, and quantification
 elif config.get("workflow", "complete") == "complete":
-    # define paired end or not
-    PAIRED_END = all([config["samples"][s].get("paired", False) \
-                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
-    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
-
     # REPORTS = ["reports/QC_report.html", "reports/assembly_report.html"]
-    REPORTS = ["reports/assembly_report.html"]
+    REPORTS += ["reports/assembly_report.html"]
 
     if config.get("perform_genome_binning", True):
         REPORTS.append("reports/bin_report_maxbin.html")
@@ -223,21 +219,18 @@ elif config.get("workflow", "complete") == "complete":
 
 elif config.get("workflow") == "binning":
 
-    # define paired end or not
-    PAIRED_END = all([config["samples"][s].get("paired", False) \
-                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
-    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
-
 
     rule all:
         input:
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-                   binner=config['binner'], sample =SAMPLES)
-            #expand("reports/bin_report_{binner}.html", binner=config['binner'])
+                   binner=config['binner'], sample =SAMPLES),
+            expand("{sample}/annotation/predicted_genes/{sample}.faa",
+                   sample =SAMPLES),
+            expand("reports/bin_report_{binner}.html", binner=config['binner'])
 
     include: "rules/binning.snakefile"
     include: "rules/assemble.snakefile"
+    include: "rules/gene_annotation.snakefile"
 
 
 elif config.get("workflow") == "download":
