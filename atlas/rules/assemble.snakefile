@@ -395,27 +395,28 @@ if config['filter_contigs']:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
-            """bbwrap.sh nodisk=t \
-                   ref={input.fasta} \
-                   {params.input} \
-                   trimreaddescriptions=t \
-                   out={output.sam} \
-                   threads={threads} \
-                   pairlen={params.max_distance_between_pairs} \
-                   pairedonly={params.paired_only} \
-                   minid={params.min_id} \
-                   mdtag=t \
-                   xstag=fs \
-                   nmtag=t \
-                   sam=1.3 \
-                   local=t \
-                   ambiguous={params.ambiguous} \
-                   secondary=t \
-                   append=t \
-                   machineout=t \
-                   maxsites={params.maxsites} \
-                   -Xmx{resources.java_mem}G \
-                   2> {log}
+            """
+            bbwrap.sh nodisk=t \
+                ref={input.fasta} \
+                {params.input} \
+                trimreaddescriptions=t \
+                out={output.sam} \
+                threads={threads} \
+                pairlen={params.max_distance_between_pairs} \
+                pairedonly={params.paired_only} \
+                minid={params.min_id} \
+                mdtag=t \
+                xstag=fs \
+                nmtag=t \
+                sam=1.3 \
+                local=t \
+                ambiguous={params.ambiguous} \
+                secondary=t \
+                saa=f \
+                append=t \
+                machineout=t \
+                maxsites={params.maxsites} \
+                -Xmx{resources.java_mem}G 2> {log}
             """
 
 
@@ -428,7 +429,7 @@ if config['filter_contigs']:
         params:
             pileup_secondary = 't'
         log:
-            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" # this file is udes for assembly report
+            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" # this file is used for assembly report
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -437,13 +438,14 @@ if config['filter_contigs']:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
-            """pileup.sh ref={input.fasta} in={input.sam} \
-                   threads={threads} \
-                   -Xmx{resources.java_mem}G \
-                   covstats={output.covstats} \
-                   concise=t \
-                   secondary={params.pileup_secondary}  2> {log}"""
-
+            """
+            pileup.sh ref={input.fasta} in={input.sam} \
+                threads={threads} \
+                -Xmx{resources.java_mem}G \
+                covstats={output.covstats} \
+                concise=t \
+                secondary={params.pileup_secondary} 2> {log}
+            """
 
 
     rule filter_by_coverage:
