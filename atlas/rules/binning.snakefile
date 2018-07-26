@@ -1,12 +1,9 @@
-
-
 BINNING_BAM= "{sample}/sequence_alignment/{sample}.bam"
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
 
 
 ruleorder: bam_2_sam > align_reads_to_final_contigs
-
 rule bam_2_sam:
     input:
         "{file}.bam"
@@ -23,14 +20,12 @@ rule bam_2_sam:
         "%s/required_packages.yaml" % CONDAENV
     shell:
         """
-            reformat.sh in={input} out={output}
+        reformat.sh in={input} out={output}
         """
 
 
-
-
-localrules: get_contig_covarage_from_bb
-rule get_contig_covarage_from_bb:
+localrules: get_contig_coverage_from_bb
+rule get_contig_coverage_from_bb:
     input:
         coverage = BB_COVERAGE_FILE
     output:
@@ -45,8 +40,6 @@ rule get_contig_covarage_from_bb:
 
 
 ## CONCOCT
-
-
 rule run_concoct:
     input:
         coverage = "{sample}/binning/contig_coverage.tsv",
@@ -78,8 +71,9 @@ rule run_concoct:
             --converge_out \
             --iterations {params.niterations} &> >(tee {log}) 2>1
         """
-localrules: concoct
 
+
+localrules: concoct
 rule concoct:
     input:
         rules.run_concoct.output[0]
@@ -90,8 +84,8 @@ rule concoct:
             for line in fin:
                 fout.write(line.replace(',','\t'))
 
-## METABAT
 
+## METABAT
 rule get_metabat_depth_file:
     input:
         bam = BINNING_BAM
@@ -107,9 +101,9 @@ rule get_metabat_depth_file:
         mem = config["java_mem"]
     shell:
         """
-        jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} &> >(tee {log})
+        jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
+            &> >(tee {log})
         """
-
 
 
 rule metabat:
@@ -145,8 +139,6 @@ rule metabat:
           """
 
 
-
-#
 # localrules: MAG_analyze_metabat_clusters
 # rule MAG_analyze_metabat_clusters:
 #     input:
@@ -180,19 +172,17 @@ rule metabat:
 #
 
 ruleorder: maxbin > get_bins
-
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
-        covarage = rules.get_contig_covarage_from_bb.output
+        coverage = rules.get_contig_coverage_from_bb.output
     output:
         directory("{sample}/binning/maxbin/bins")
-
     params:
         mi = config["maxbin"]["max_iteration"],
         mcl = config["maxbin"]["min_contig_length"],
         pt = config["maxbin"]["prob_threshold"],
-        output_prefix = lambda wc,output: os.path.join(output[0],wc.sample)
+        output_prefix = lambda wc, output: os.path.join(output[0], wc.sample)
     log:
         "{sample}/logs/binning/maxbin.log"
     conda:
@@ -201,45 +191,41 @@ rule maxbin:
         config["threads"]
     shell:
         """
-            mkdir {output[0]} 2> {log}
-            run_MaxBin.pl -contig {input.fasta} \
-              -abund {input.covarage} \
-               -out {params.output_prefix} \
-               -min_contig_length {params.mcl} \
-               -thread {threads} \
-               -prob_threshold {params.pt} \
-               -max_iteration {params.mi} >> {log}
+        mkdir {output[0]} 2> {log}
+        run_MaxBin.pl -contig {input.fasta} \
+            -abund {input.coverage} \
+            -out {params.output_prefix} \
+            -min_contig_length {params.mcl} \
+            -thread {threads} \
+            -prob_threshold {params.pt} \
+            -max_iteration {params.mi} >> {log}
 
-               mv {params.output_prefix}.summary {output[0]}/.. 2>> {log}
-               mv {params.output_prefix}.marker {output[0]}/..  2>> {log}
-               mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/..  2>> {log}
-               mv {params.output_prefix}.log {output[0]}/..  2>> {log}
-
+        mv {params.output_prefix}.summary {output[0]}/ 2>> {log}
+        mv {params.output_prefix}.marker {output[0]}/  2>> {log}
+        mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/  2>> {log}
+        mv {params.output_prefix}.log {output[0]}/  2>> {log}
         """
-localrules: get_maxbin_cluster_attribution, get_bins
 
+
+localrules: get_maxbin_cluster_attribution, get_bins
 rule get_maxbin_cluster_attribution:
     input:
         directory("{sample}/binning/maxbin/bins")
     output:
         "{sample}/binning/maxbin/cluster_attribution.tsv"
     params:
-        file_name = lambda wc,input: "{folder}/{sample}.{{binid}}.fasta".format(folder= input[0],**wc)
+        file_name = lambda wc, input: "{folder}/{sample}.{{binid}}.fasta".format(folder=input[0], **wc)
     run:
-        Bin_ids, = glob_wildcards(params.file_name)
-        print("found {} bins".format(len(Bin_ids)))
+        bin_ids, = glob_wildcards(params.file_name)
+        print("found {} bins".format(len(bin_ids)))
 
         with open(output[0],'w') as out_file:
-
-            for binid in Bin_ids:
-
+            for binid in bin_ids:
                 with open(params.file_name.format(binid=binid)) as bin_file:
                     for line in bin_file:
-                        if line[0] =='>':
+                        if line.startwith(">"):
                             fasta_header = line[1:].strip().split()[0]
-
-                            out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header = fasta_header))
-
+                            out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header=fasta_header))
 
 
 rule get_bins:
@@ -258,10 +244,7 @@ rule get_bins:
 
 
 ## Checkm
-
 # TODO generalize checkm rules
-
-
 rule initialize_checkm:
     # input:
     output:
@@ -274,8 +257,6 @@ rule initialize_checkm:
         "logs/initialize_checkm.log"
     shell:
         "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
-
-
 
 
 rule run_checkm_lineage_wf:
@@ -291,15 +272,17 @@ rule run_checkm_lineage_wf:
     threads:
         config.get("threads", 1)
     shell:
-        """rm -r {params.output_dir} && \
-           checkm lineage_wf \
-               --file {params.output_dir}/completeness.tsv \
-               --tab_table \
-               --quiet \
-               --extension fasta \
-               --threads {threads} \
-               {input.bins} \
-               {params.output_dir}"""
+        """
+        rm -r {params.output_dir}
+        checkm lineage_wf \
+            --file {params.output_dir}/completeness.tsv \
+            --tab_table \
+            --quiet \
+            --extension fasta \
+            --threads {threads} \
+            {input.bins} \
+            {params.output_dir}
+        """
 
 
 rule run_checkm_tree_qa:
@@ -316,8 +299,8 @@ rule run_checkm_tree_qa:
                --tab_table \
                --out_format 2 \
                --file {params.output_dir}/taxonomy.tsv \
-               {params.output_dir}"""
-
+               {params.output_dir}
+        """
 
 
 rule build_bin_report:
@@ -341,19 +324,18 @@ rule build_bin_report:
             --bin-table {output.bin_table}
         """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
-# not working correctly https://github.com/cmks/DAS_Tool/issues/13
 
+# not working correctly https://github.com/cmks/DAS_Tool/issues/13
 rule run_das_tool:
     input:
-        cluster_attribution= expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
-               binner=config['binner']),
+        cluster_attribution = expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
+            binner=config['binner']),
         contigs = BINNING_CONTIGS,
         proteins= "{sample}/annotation/predicted_genes/{sample}.faa"
     output:
         expand("{{sample}}/binning/DASTool/{{sample}}{postfix}",
-               postfix= [ "_summary.txt","_hqBins.pdf", "_scores.pdf" ]),
-        cluster_attribution= "{sample}/binning/DASTool/cluster_attribution.tsv"
-#        [method].eval
+               postfix=["_summary.txt", "_hqBins.pdf", "_scores.pdf"]),
+        cluster_attribution = "{sample}/binning/DASTool/cluster_attribution.tsv"
     threads:
         config['threads']
     log:
@@ -361,13 +343,12 @@ rule run_das_tool:
     conda:
         "%s/DASTool.yaml" % CONDAENV
     params:
-        binner_names= ",".join(config['binner']),
-        scaffolds2bin= lambda wc, input: ",".join(input.cluster_attribution),
-        output_prefix= "{sample}/binning/DASTool/{sample}",
+        binner_names = ",".join(config['binner']),
+        scaffolds2bin = lambda wc, input: ",".join(input.cluster_attribution),
+        output_prefix = "{sample}/binning/DASTool/{sample}",
         score_threshold = config['DASTool']['score_threshold'],
         megabin_penalty = config['DASTool']['megabin_penalty'],
         duplicate_penalty = config['DASTool']['duplicate_penalty']
-
     shell:
         " DAS_Tool --outputbasename {params.output_prefix} "
         " --bins {params.scaffolds2bin} "
