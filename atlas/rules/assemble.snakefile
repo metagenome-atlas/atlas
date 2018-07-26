@@ -108,7 +108,7 @@ rule error_correction:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS))
     benchmark:
-        "logs/benchmarks/assembly/pre_process/error_correction_{previous_steps}/{sample}.txt"
+        "logs/benchmarks/assembly/pre_process/{sample}_error_correction_{previous_steps}.txt"
     log:
         "{sample}/logs/assembly/pre_process/error_correction_{previous_steps}.log"
     conda:
