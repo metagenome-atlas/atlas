@@ -1,5 +1,3 @@
-
-
 def gff_to_gtf(gff_in, gtf_out):
     # orf_re = re.compile(r"ID=(.*?)\;")
     with open(gtf_out, "w") as fh, open(gff_in) as gff:
@@ -15,9 +13,7 @@ def gff_to_gtf(gff_in, gtf_out):
             print(*toks, sep="\t", file=fh)
 
 
-
-
-if config.get('gene_predicter','prodigal')=='prokka':
+if config.get('gene_predicter', 'prodigal') == 'prokka':
 
     rule run_prokka_annotation:
         input:
@@ -54,9 +50,6 @@ if config.get('gene_predicter','prodigal')=='prokka':
               """
 
 
-
-
-
     rule add_contig_metadata:
         input:
             hits = "{sample}/annotation/refseq/{sample}_hits.tsv",
@@ -75,7 +68,6 @@ if config.get('gene_predicter','prodigal')=='prokka':
             "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
         shell:
             "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
-
 
 
 elif config.get('gene_predicter','prodigal')=='prodigal':
@@ -97,8 +89,11 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
             1
         shell:
             """
-                prodigal -i {input} -o {output.gff} -d {output.fna} -a {output.faa} -p meta -f gff 2> >(tee {log})
+            prodigal -i {input} -o {output.gff} -d {output.fna} \
+                -a {output.faa} -p meta -f gff 2> >(tee {log})
             """
+
+
     localrules: get_contigs_from_gene_names, rename_genes
 
     # rule rename_genes:
@@ -127,24 +122,25 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
         output:
             tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
         run:
-            with open(output.tsv,'w') as tsv:
-                tsv.write('\t'.join(['gene_id','Contig','Gene_nr','Start','Stop','Strand','Annotation'])+'\n')
-                with open(input.faa) as fin :
-                    i=0
+            header = ['gene_id', 'Contig', 'Gene_nr', 'Start', 'Stop', 'Strand', 'Annotation']
+            with open(output.tsv, 'w') as tsv:
+                tsv.write('\t'.join([header]) + '\n')
+                with open(input.faa) as fin:
+                    gene_idx = 0
                     for line in fin:
-                        if line[0]=='>':
-
-                            text= line[1:].strip().split(' # ')
-                            old_gene_name= text[0]
+                        if line[0] == '>':
+                            text = line[1:].strip().split(' # ')
+                            old_gene_name = text[0]
                             text.remove(old_gene_name)
-                            sample, contig_nr, gene_nr= old_gene_name.split('_')
-
-
-                            tsv.write("{gene_id}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(\
-                                                text='\t'.join(text),
-                                                gene_id= old_gene_name,
-                                                i=i,sample= sample, gene_nr= gene_nr, contig_nr=contig_nr))
-                            i+=1
+                            sample, contig_nr, gene_nr = old_gene_name.split('_')
+                            tsv.write("{gene_id}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(
+                                text='\t'.join(text),
+                                gene_id=old_gene_name,
+                                i=gene_idx,
+                                sample=sample,
+                                gene_nr=gene_nr,
+                                contig_nr=contig_nr))
+                            gene_idx += 1
 
 
     rule add_contig_metadata:
@@ -156,18 +152,12 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
         run:
             import pandas as pd
 
-            tsv = pd.read_table(input.tsv,index_col=0,usecols=[0,1],squeeze=True)
-            hits= pd.read_table(input.hits, header=None)
-
-
-            contigs= tsv.loc[hits.iloc[:,0]]
-
-            hits.insert(0,contigs.name, contigs.values)
-
-            hits.sort_values([contigs.name,0,2], inplace=True)
-
-            hits.to_csv(output[0],sep='\t',index=False,header=False)
-
+            tsv = pd.read_table(input.tsv, index_col=0, usecols=[0, 1], squeeze=True)
+            hits = pd.read_table(input.hits, header=None)
+            contigs = tsv.loc[hits.iloc[:, 0]]
+            hits.insert(0, contigs.name, contigs.values)
+            hits.sort_values([contigs.name, 0, 2], inplace=True)
+            hits.to_csv(output[0], sep='\t', index=False, header=False)
 
 
 rule convert_gff_to_gtf:
@@ -187,17 +177,15 @@ rule convert_gff_to_tsv:
     shell:
         """atlas gff2tsv {input} {output}"""
 
-# this rule specifies the mmore generall eggNOG rules
-localrules: renameeggNOG_annotation
-rule renameeggNOG_annotation:
+# this rule specifies the more general eggNOG rules
+localrules: rename_eggNOG_annotation
+rule rename_eggNOG_annotation:
     input:
         "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
     output:
         "{sample}/annotation/eggNOG.tsv"
     shell:
         "cp {input} {output}"
-
-
 
 
 rule find_counts_per_region:
@@ -220,19 +208,21 @@ rule find_counts_per_region:
     threads:
         config.get("threads", 1)
     shell:
-        """featureCounts \
-                --minOverlap {params.min_read_overlap} \
-                {params.paired_mode} \
-                {params.paired_only} \
-               -F GTF \
-               -T {threads} \
-               {params.multi_mapping} \
-               {params.feature_counts_allow_overlap} \
-               -t CDS \
-               -g ID \
-               -a {input.gtf} \
-               -o {output.counts} \
-               {input.bam} 2> {log}"""
+        """
+        featureCounts \
+            --minOverlap {params.min_read_overlap} \
+            {params.paired_mode} \
+            {params.paired_only} \
+            -F GTF \
+            -T {threads} \
+            {params.multi_mapping} \
+            {params.feature_counts_allow_overlap} \
+            -t CDS \
+            -g ID \
+            -a {input.gtf} \
+            -o {output.counts} \
+            {input.bam} 2> {log}
+        """
 
 
 rule run_diamond_blastp:
@@ -259,24 +249,24 @@ rule run_diamond_blastp:
     threads:
         config.get("threads", 1)
     shell:
-        """diamond blastp \
-               --threads {threads} \
-               --outfmt 6 \
-               --out {output} \
-               --query {input.fasta} \
-               --db {input.db} \
-               --top {params.top_seqs} \
-               --evalue {params.e_value} \
-               --id {params.min_identity} \
-               --query-cover {params.query_cover} \
-               {params.run_mode} \
-               --gapopen {params.gap_open} \
-               --gapextend {params.gap_extend} \
-               {params.tmpdir} \
-               --block-size {params.block_size} \
-               --index-chunks {params.index_chunks}"""
-
-
+        """
+        diamond blastp \
+            --threads {threads} \
+            --outfmt 6 \
+            --out {output} \
+            --query {input.fasta} \
+            --db {input.db} \
+            --top {params.top_seqs} \
+            --evalue {params.e_value} \
+            --id {params.min_identity} \
+            --query-cover {params.query_cover} \
+            {params.run_mode} \
+            --gapopen {params.gap_open} \
+            --gapextend {params.gap_extend} \
+            {params.tmpdir} \
+            --block-size {params.block_size} \
+            --index-chunks {params.index_chunks}
+        """
 
 
 rule parse_blastp:
@@ -298,29 +288,29 @@ rule parse_blastp:
         max_hits = config.get("max_hits", MAX_HITS),
         top_fraction = (100 - config.get("diamond_top_seqs", 5)) * 0.01
     shell:
-        """atlas refseq \
-               --summary-method {params.summary_method} \
-               --aggregation-method {params.aggregation_method} \
-               --majority-threshold {params.majority_threshold} \
-               --min-identity {params.min_identity} \
-               --min-bitscore {params.min_bitscore} \
-               --min-length {params.min_length} \
-               --max-evalue {params.max_evalue} \
-               --max-hits {params.max_hits} \
-               --top-fraction {params.top_fraction} \
-               {input} \
-               {params.namemap} \
-               {params.treefile} \
-               {output}"""
-
-
+        """
+        atlas refseq \
+            --summary-method {params.summary_method} \
+            --aggregation-method {params.aggregation_method} \
+            --majority-threshold {params.majority_threshold} \
+            --min-identity {params.min_identity} \
+            --min-bitscore {params.min_bitscore} \
+            --min-length {params.min_length} \
+            --max-evalue {params.max_evalue} \
+            --max-hits {params.max_hits} \
+            --top-fraction {params.top_fraction} \
+            {input} \
+            {params.namemap} \
+            {params.treefile} \
+            {output}
+        """
 
 
 # TODO: make benchmark
 #HIGH troughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
-        "%s/download_eggnog_data.sucess" % EGGNOG_DIR ,
+        "%s/download_eggnog_data.success" % EGGNOG_DIR,
         faa = "{folder}/{prefix}.faa",
     output:
         temp("{folder}/{prefix}.emapper.seed_orthologs"),
@@ -337,16 +327,17 @@ rule eggNOG_homology_search:
         "{folder}/logs/{prefix}/eggNOG_homology_search_diamond.log"
     shell:
         """
-            emapper.py -m diamond --no_annot --no_file_comments --data_dir {params.data_dir} \
-            --cpu {threads} -i {input.faa} -o {params.prefix} --override 2> >(tee {log})
+        emapper.py -m diamond --no_annot --no_file_comments \
+            --data_dir {params.data_dir} --cpu {threads} -i {input.faa} \
+            -o {params.prefix} --override 2> >(tee {log})
         """
 
 
-#HIGH troughput : concat emapper.seed_orthologs chunks
+#HIGH throughput : concat emapper.seed_orthologs chunks
 # run on single machine
 rule eggNOG_annotation:
     input:
-        "%s/download_eggnog_data.sucess" % EGGNOG_DIR ,
+        "%s/download_eggnog_data.success" % EGGNOG_DIR,
         seed = rules.eggNOG_homology_search.output
     output:
         temp("{folder}/{prefix}.emapper.annotations")
@@ -363,7 +354,7 @@ rule eggNOG_annotation:
         "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log"
     shell:
         """
-            emapper.py --annotate_hits_table {input.seed} --no_file_comments \
+        emapper.py --annotate_hits_table {input.seed} --no_file_comments \
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
 
@@ -394,50 +385,3 @@ rule add_eggNOG_header:
 
 
             D.to_csv(output[0],sep='\t',index=False)
-
-
-
-
-
-# This could go in the main Snakefile
-if config.get("perform_genome_binning", True):
-    rule merge_sample_tables:
-        input:
-            predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
-            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-            eggNOG = rules.renameeggNOG_annotation.output,
-            completeness = "{sample}/genomic_bins/checkm/completeness.tsv",
-            taxonomy = "{sample}/genomic_bins/checkm/taxonomy.tsv"
-        output:
-            "{sample}/{sample}_annotations.txt"
-        params:
-            fastas = lambda wc: " --fasta ".join(glob("{sample}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample)))
-        shell:
-            "atlas merge-tables \
-                 --counts {input.counts} \
-                 --completeness {input.completeness} \
-                 --taxonomy {input.taxonomy} \
-                 --fasta {params.fastas} \
-                 --eggnog {input.eggNOG} \
-                 {input.predicted_genes} \
-                 {input.refseq} \
-                 {output}"
-
-
-else:
-    rule merge_sample_tables:
-        input:
-            predicted_genes = "{sample}/annotation/predicted_genes/{sample}_plus.tsv",
-            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-            eggNOG = rules.renameeggNOG_annotation.output
-        output:
-            "{sample}/{sample}_annotations.txt"
-        shell:
-            "atlas merge-tables \
-                 --counts {input.counts} \
-                 --eggnog {input.eggNOG} \
-                 {input.predicted_genes} \
-                 {input.refseq} \
-                 {output}"

@@ -1,3 +1,4 @@
+
 BINNING_BAM= "{sample}/sequence_alignment/{sample}.bam"
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
@@ -47,11 +48,19 @@ rule run_concoct:
     output:
         "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(config["binning_min_contig_length"])
     params:
+<<<<<<< HEAD
         basename= lambda wc, output: os.path.dirname(output[0]),
         Nexpected_clusters= config['concoct']['Nexpected_clusters'],
         read_length= config['concoct']['read_length'],
         min_length=config['concoct']["min_contig_length"],
         niterations=config["concoct"]["Niterations"]
+=======
+        basename = lambda wc, output: os.path.dirname(output[0]),
+        Nexpected_clusters = config['concoct']['Nexpected_clusters'],
+        read_length = config['concoct']['read_length'],
+        min_length = config["binning_min_contig_length"],
+        niterations = config["concoct"]["Niterations"]
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
     log:
         "{sample}/logs/binning/concoct/log.txt"
     conda:
@@ -62,19 +71,24 @@ rule run_concoct:
         mem = config["java_mem"]
     shell:
         """
-        concoct -c {params.Nexpected_clusters}\
-            --coverage_file {input.coverage}\
-            --composition_file {input.fasta}\
-            --basename {params.basename}\
+        concoct -c {params.Nexpected_clusters} \
+            --coverage_file {input.coverage} \
+            --composition_file {input.fasta} \
+            --basename {params.basename} \
             --read_length {params.read_length} \
-            --length_threshold {params.min_length}\
+            --length_threshold {params.min_length} \
             --converge_out \
             --iterations {params.niterations} &> >(tee {log}) 2>1
         """
 
 
+<<<<<<< HEAD
 localrules: concoct
 rule concoct:
+=======
+localrules: convert_concoct_csv_to_tsv
+rule convert_concoct_csv_to_tsv:
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
     input:
         rules.run_concoct.output[0]
     output:
@@ -127,16 +141,16 @@ rule metabat:
     resources:
         mem = config["java_mem"]
     shell:
-          """
-          metabat2 -i {input.contigs} \
-          --abdFile {input.depth_file} \
-          --minContig {params.min_contig_len} \
-          --numThreads {threads} \
-          --maxEdges {params.sensitivity} \
-          --saveCls --noBinOut\
-          -o {output} \
-          &> >(tee {log})
-          """
+        """
+        metabat2 -i {input.contigs} \
+            --abdFile {input.depth_file} \
+            --minContig {params.min_contig_len} \
+            --numThreads {threads} \
+            --maxEdges {params.sensitivity} \
+            --saveCls --noBinOut \
+            -o {output} \
+            &> >(tee {log})
+        """
 
 
 # localrules: MAG_analyze_metabat_clusters
@@ -175,7 +189,11 @@ ruleorder: maxbin > get_bins
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
+<<<<<<< HEAD
         coverage = rules.get_contig_coverage_from_bb.output
+=======
+        covarage = rules.get_contig_coverage_from_bb.output
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
     output:
         directory("{sample}/binning/maxbin/bins")
     params:
@@ -191,13 +209,19 @@ rule maxbin:
         config["threads"]
     shell:
         """
+<<<<<<< HEAD
         mkdir {output[0]} 2> {log}
         run_MaxBin.pl -contig {input.fasta} \
             -abund {input.coverage} \
+=======
+        run_MaxBin.pl -contig {input.fasta} \
+            -abund {input.covarage} \
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
             -out {params.output_prefix} \
             -min_contig_length {params.mcl} \
             -thread {threads} \
             -prob_threshold {params.pt} \
+<<<<<<< HEAD
             -max_iteration {params.mi} >> {log}
 
         mv {params.output_prefix}.summary {output[0]}/ 2>> {log}
@@ -218,6 +242,12 @@ rule get_maxbin_cluster_attribution:
     run:
         bin_ids, = glob_wildcards(params.file_name)
         print("found {} bins".format(len(bin_ids)))
+=======
+            -max_iteration {params.mi} > {log}
+
+        cp {params.output_prefix}.marker {output.cluster_attribution_file} 2>> {log}
+        """
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
 
         with open(output[0],'w') as out_file:
             for binid in bin_ids:
@@ -228,6 +258,7 @@ rule get_maxbin_cluster_attribution:
                             out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header=fasta_header))
 
 
+<<<<<<< HEAD
 rule get_bins:
     input:
         cluster_attribution = "{sample}/binning/{binner}/cluster_attribution.tsv",
@@ -243,6 +274,8 @@ rule get_bins:
 
 
 
+=======
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
 ## Checkm
 # TODO generalize checkm rules
 rule initialize_checkm:
@@ -250,19 +283,33 @@ rule initialize_checkm:
     output:
         touched_output = "logs/checkm_init.txt"
     params:
-        database_dir = CHECKMDIR
+        database_dir = CHECKMDIR,
+        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/checkm.yaml" % CONDAENV
     log:
         "logs/initialize_checkm.log"
     shell:
+<<<<<<< HEAD
         "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
+=======
+        """
+        python {params.script_dir}/rules/initialize_checkm.py \
+            {params.database_dir} \
+            {output.touched_output} \
+            {log}
+        """
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
 
 
 rule run_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
+<<<<<<< HEAD
         bins = directory("{sample}/binning/{binner}/bins") # actualy path to fastas
+=======
+        bins = "{sample}/binning/{binner}/bins/bin.marker"
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
     output:
         "{sample}/binning/{binner}/checkm/completeness.tsv"
     params:
@@ -280,7 +327,11 @@ rule run_checkm_lineage_wf:
             --quiet \
             --extension fasta \
             --threads {threads} \
+<<<<<<< HEAD
             {input.bins} \
+=======
+            {params.bin_dir} \
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
             {params.output_dir}
         """
 
@@ -295,11 +346,20 @@ rule run_checkm_tree_qa:
     conda:
         "%s/checkm.yaml" % CONDAENV
     shell:
+<<<<<<< HEAD
         """checkm tree_qa \
                --tab_table \
                --out_format 2 \
                --file {params.output_dir}/taxonomy.tsv \
                {params.output_dir}
+=======
+        """
+        checkm tree_qa \
+            --tab_table \
+            --out_format 2 \
+            --file {params.output_dir}/taxonomy.tsv \
+            {params.output_dir}
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f
         """
 
 
@@ -311,17 +371,19 @@ rule build_bin_report:
         report = "reports/bin_report_{binner}.html",
         bin_table = "reports/genomic_bins_{binner}.tsv"
     params:
-        samples = " ".join(SAMPLES)
+        samples = " ".join(SAMPLES),
+        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/report.yaml" % CONDAENV
     shell:
         """
-        python %s/report/bin_report.py \
+        python {params.script_dir}/report/bin_report.py \
             --samples {params.samples} \
             --completeness {input.completeness_files} \
             --taxonomy {input.taxonomy_files} \
             --report-out {output.report} \
             --bin-table {output.bin_table}
+<<<<<<< HEAD
         """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
@@ -363,3 +425,6 @@ rule run_das_tool:
         " --threads {threads} "
         " --score_threshold {params.score_threshold} &> >(tee {log}) "
         " ; mv {params.output_prefix}_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
+=======
+        """
+>>>>>>> 270245231684c25c9fe9e5def53e6a2066ad917f

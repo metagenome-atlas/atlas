@@ -309,7 +309,7 @@ rule counts_per_region:
 
 
 if config.get("quantification"):
-    rule merge_sample_tables:
+    rule merge_quantification_tables:
         input:
             prokka = "{sample}/prokka/{sample}_fixed.tsv",
             refseq = "{sample}/refseq/{sample}_tax_assignments.tsv",
@@ -320,7 +320,7 @@ if config.get("quantification"):
             "atlas merge-tables --counts {input.counts} {input.prokka} {input.refseq} {output}"
 
 else:
-    rule merge_sample_tables:
+    rule merge_quantification_tables:
         input:
             prokka = "{sample}/prokka/{sample}_fixed.tsv",
             refseq = "{sample}/refseq/{sample}_tax_assignments.tsv"

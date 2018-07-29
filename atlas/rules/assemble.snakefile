@@ -108,7 +108,7 @@ rule error_correction:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS))
     benchmark:
-        "logs/benchmarks/assembly/pre_process/error_correction_{sample}_{previous_steps}.txt"
+        "logs/benchmarks/assembly/pre_process/{sample}_error_correction_{previous_steps}.txt"
     log:
         "{sample}/logs/assembly/pre_process/error_correction_{previous_steps}.log"
     conda:
@@ -272,25 +272,24 @@ else:
             skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
         log:
             "{sample}/logs/assembly/spades.log"
-        # shadow:
-        #     "full"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
-            mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
+            mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            "spades.py "
-            " --threads {threads} "
-            " --memory {resources.mem} "
-            " -o {params.outdir} "
-            " -k {params.k}"
-            " {params.preset} "
-            " {params.inputs} {params.input_merged} "
-            " {params.skip_error_correction} "
-            " > {log} 2>&1 "
-
+            """
+            spades.py --threads {threads} \
+                --memory {resources.mem} \
+                -o {params.outdir} \
+                -k {params.k} \
+                {params.preset} \
+                {params.inputs} \
+                {params.input_merged} \
+                {params.skip_error_correction} \
+                > {log} 2>&1
+            """
 
 
     rule rename_spades_output:
@@ -375,7 +374,7 @@ if config['filter_contigs']:
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
             """
-            bbwrap.sh nodisk=t \
+                bbwrap.sh nodisk=t \
                 ref={input.fasta} \
                 {params.input} \
                 trimreaddescriptions=t \
@@ -517,28 +516,28 @@ rule align_reads_to_final_contigs:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     shell:
-        """bbwrap.sh nodisk=t \
-               ref={input.fasta} \
-               {params.input} \
-               trimreaddescriptions=t \
-               out={output.sam} \
-               {params.unmapped} \
-               threads={threads} \
-               pairlen={params.max_distance_between_pairs} \
-               pairedonly={params.paired_only} \
-               minid={params.min_id} \
-               mdtag=t \
-               xstag=fs \
-               nmtag=t \
-               sam=1.3 \
-               local=t \
-               ambiguous={params.ambiguous} \
-               secondary=t \
-               append=t \
-               machineout=t \
-               maxsites={params.maxsites} \
-               -Xmx{resources.java_mem}G \
-               2> {log}
+        """
+        bbwrap.sh nodisk=t \
+            ref={input.fasta} \
+            {params.input} \
+            trimreaddescriptions=t \
+            outm={output.sam} \
+            {params.unmapped} \
+            threads={threads} \
+            pairlen={params.max_distance_between_pairs} \
+            pairedonly={params.paired_only} \
+            minid={params.min_id} \
+            mdtag=t \
+            xstag=fs \
+            nmtag=t \
+            sam=1.3 \
+            local=t \
+            ambiguous={params.ambiguous} \
+            secondary=t \
+            saa=f \
+            maxsites={params.maxsites} \
+            -Xmx{resources.java_mem}G \
+            2> {log}
         """
 
 
