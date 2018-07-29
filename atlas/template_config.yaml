@@ -142,11 +142,26 @@ feature_counts_allow_overlap: true
 ########################
 # Binning
 ########################
-perform_genome_binning: true
-maxbin_max_iteration: 50
-maxbin_min_contig_length: 200
-maxbin_prob_threshold: 0.9
+binner: ['metabat','concoct','maxbin']
 
+metabat:
+  sensitivity: sensitive
+  min_contig_length: 1500 # metabat needs >1500
+
+concoct:
+  Nexpected_clusters: 200           # important parameter
+  read_length: 100                  # change this parameter !
+  Niterations: 500
+  min_contig_length: 1000
+
+maxbin:
+  max_iteration: 50
+  prob_threshold: 0.9
+  min_contig_length: 1000
+
+DASTool:
+  search_engine: 'diamond'
+  score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
 
 ########################
 # Annotation
