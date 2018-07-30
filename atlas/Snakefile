@@ -119,6 +119,33 @@ def input_params_for_bbwrap(wildcards, input):
     return flag
 
 
+def define_groups(samples):
+
+    from collections import defaultdict
+
+    for s in samples:
+        # add default value, each sample is it's own group
+        if not 'group' in samples[s]:
+            samples[s]['group'] = s
+
+    Groups = defaultdict(set)
+
+    for s in samples:
+        Groups[samples[s]['group']].add(s)
+
+    print("You have {} in {} groups".format(len(samples),len(Groups)))
+
+
+    return Groups
+
+
+
+
+
+
+
+
+
 CONDAENV = get_conda_envs_dir()
 EGGNOG_DIR  = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "eggNOG")
 
@@ -128,6 +155,7 @@ if config.get("workflow") != "download":
     TMPDIR = get_temp_dir(config)
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
     SAMPLES = [i for i in config["samples"].keys()]
+
 
     PAIRED_END = all([config["samples"][s].get("paired", False) \
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
@@ -235,6 +263,9 @@ elif config.get("workflow", "complete") == "complete":
 
 
 elif config.get("workflow") == "binning":
+
+
+    GROUPS = define_groups(config['samples'])
 
 
     rule all:

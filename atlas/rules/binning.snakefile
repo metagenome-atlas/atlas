@@ -1,5 +1,5 @@
 
-BINNING_BAM= "{sample}/sequence_alignment/{sample}.bam"
+
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
 
@@ -89,7 +89,9 @@ rule convert_concoct_csv_to_tsv:
 ## METABAT
 rule get_metabat_depth_file:
     input:
-        bam = BINNING_BAM
+        bam = lambda wc: expand("{sample}/sequence_alignment/{sample_reads}.bam",
+                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                     sample=wc.sample)
     output:
         temp("{sample}/binning/metabat/metabat_depth.txt")
     log:

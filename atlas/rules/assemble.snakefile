@@ -485,15 +485,15 @@ rule finalize_contigs:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
 
-
+# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "{sample}/{sample}_contigs.fasta",
+        fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
-        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
-        unmapped = expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS)
+        sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
+        unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+                          fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
@@ -506,9 +506,9 @@ rule align_reads_to_final_contigs:
     shadow:
         "shallow"
     benchmark:
-        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}.txt"
+        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/align_reads_to_filtered_contigs.log"
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
