@@ -27,6 +27,8 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_prefix):
     assert CA.shape[1] == 1, "File should have only two columns " + cluster_attribution
     CA = CA.iloc[:, 0]
     CA.index = CA.index.astype("str")
+    # exclude cluster 0 which is unclustered at least for metabat
+    CA = CA.loc[CA!=0]
 
     contigs = SeqIO.to_dict(SeqIO.parse(contigs, "fasta"))
 
