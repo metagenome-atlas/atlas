@@ -154,8 +154,13 @@ elif config.get("workflow", "complete") == "complete":
     REPORTS += ["reports/assembly_report.html"]
 
     if config.get("perform_genome_binning", True):
+        # later update to include others as well as integrate concoct and metabat
         REPORTS.append("reports/bin_report_maxbin.html")
+        # include this?
+        # expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+        #        binner=config['binner'], sample =SAMPLES)
         include: "rules/binning.snakefile"
+
 
     localrules: all
     rule all:
@@ -170,6 +175,18 @@ elif config.get("workflow", "complete") == "complete":
             expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
             REPORTS
 
+# checkpoint finished contigs, no annotation
+    localrules: finish_assembly
+    rule finish_assembly:
+        input:
+            expand("{sample}/sequence_quality_control/finished_QC",
+                sample=SAMPLES),
+            expand("{sample}/{sample}_contigs.fasta",
+                sample=SAMPLES),
+            expand("{sample}/sequence_alignment/{sample}.bam",
+                sample=SAMPLES),
+            expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt", sample=SAMPLES),
+
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
     include: "rules/gene_annotation.snakefile"
@@ -178,7 +195,7 @@ elif config.get("workflow", "complete") == "complete":
     if config.get("perform_genome_binning", True):
 
 
-        rule merge_sample_tables:
+        rule merge_sample_tables_with_bins:
             input:
                 prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
                 refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
@@ -227,6 +244,7 @@ elif config.get("workflow") == "binning":
             expand("{sample}/annotation/predicted_genes/{sample}.faa",
                    sample =SAMPLES),
             expand("reports/bin_report_{binner}.html", binner=config['binner'])
+
 
     include: "rules/binning.snakefile"
     include: "rules/assemble.snakefile"

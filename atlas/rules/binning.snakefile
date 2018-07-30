@@ -1,3 +1,4 @@
+
 BINNING_BAM= "{sample}/sequence_alignment/{sample}.bam"
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
@@ -6,9 +7,9 @@ BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt
 ruleorder: bam_2_sam > align_reads_to_final_contigs
 rule bam_2_sam:
     input:
-        "{file}.bam"
+        "{sample}/sequence_alignment/{sample}.bam"
     output:
-        temp("{file}.sam")
+        temp("{sample}/sequence_alignment/{sample}.sam")
     threads:
         config['threads']
     resources:
@@ -62,19 +63,19 @@ rule run_concoct:
         mem = config["java_mem"]
     shell:
         """
-        concoct -c {params.Nexpected_clusters}\
-            --coverage_file {input.coverage}\
-            --composition_file {input.fasta}\
-            --basename {params.basename}\
+        concoct -c {params.Nexpected_clusters} \
+            --coverage_file {input.coverage} \
+            --composition_file {input.fasta} \
+            --basename {params.basename} \
             --read_length {params.read_length} \
-            --length_threshold {params.min_length}\
+            --length_threshold {params.min_length} \
             --converge_out \
             --iterations {params.niterations} &> >(tee {log}) 2>1
         """
 
 
-localrules: concoct
-rule concoct:
+localrules: convert_concoct_csv_to_tsv
+rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
@@ -127,16 +128,16 @@ rule metabat:
     resources:
         mem = config["java_mem"]
     shell:
-          """
-          metabat2 -i {input.contigs} \
-          --abdFile {input.depth_file} \
-          --minContig {params.min_contig_len} \
-          --numThreads {threads} \
-          --maxEdges {params.sensitivity} \
-          --saveCls --noBinOut\
-          -o {output} \
-          &> >(tee {log})
-          """
+        """
+        metabat2 -i {input.contigs} \
+            --abdFile {input.depth_file} \
+            --minContig {params.min_contig_len} \
+            --numThreads {threads} \
+            --maxEdges {params.sensitivity} \
+            --saveCls --noBinOut \
+            -o {output} \
+            &> >(tee {log})
+        """
 
 
 # localrules: MAG_analyze_metabat_clusters
@@ -218,7 +219,6 @@ rule get_maxbin_cluster_attribution:
     run:
         bin_ids, = glob_wildcards(params.file_name)
         print("found {} bins".format(len(bin_ids)))
-
         with open(output[0],'w') as out_file:
             for binid in bin_ids:
                 with open(params.file_name.format(binid=binid)) as bin_file:
@@ -226,6 +226,7 @@ rule get_maxbin_cluster_attribution:
                         if line.startwith(">"):
                             fasta_header = line[1:].strip().split()[0]
                             out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header=fasta_header))
+
 
 
 rule get_bins:
@@ -241,8 +242,6 @@ rule get_bins:
     script:
         "get_fasta_of_bins.py"
 
-
-
 ## Checkm
 # TODO generalize checkm rules
 rule initialize_checkm:
@@ -250,13 +249,19 @@ rule initialize_checkm:
     output:
         touched_output = "logs/checkm_init.txt"
     params:
-        database_dir = CHECKMDIR
+        database_dir = CHECKMDIR,
+        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/checkm.yaml" % CONDAENV
     log:
         "logs/initialize_checkm.log"
     shell:
-        "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
+        """
+        python {params.script_dir}/rules/initialize_checkm.py \
+            {params.database_dir} \
+            {output.touched_output} \
+            {log}
+        """
 
 
 rule run_checkm_lineage_wf:
@@ -311,18 +316,19 @@ rule build_bin_report:
         report = "reports/bin_report_{binner}.html",
         bin_table = "reports/genomic_bins_{binner}.tsv"
     params:
-        samples = " ".join(SAMPLES)
+        samples = " ".join(SAMPLES),
+        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/report.yaml" % CONDAENV
     shell:
         """
-        python %s/report/bin_report.py \
+        python {params.script_dir}/report/bin_report.py \
             --samples {params.samples} \
             --completeness {input.completeness_files} \
             --taxonomy {input.taxonomy_files} \
             --report-out {output.report} \
             --bin-table {output.bin_table}
-        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
+        """
 
 
 # not working correctly https://github.com/cmks/DAS_Tool/issues/13
