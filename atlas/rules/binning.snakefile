@@ -253,10 +253,10 @@ rule maxbin:
             -prob_threshold {params.pt} \
             -max_iteration {params.mi} >> {log}
 
-        mv {params.output_prefix}.summary {output[0]}/ 2>> {log}
-        mv {params.output_prefix}.marker {output[0]}/  2>> {log}
-        mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/  2>> {log}
-        mv {params.output_prefix}.log {output[0]}/  2>> {log}
+        mv {params.output_prefix}.summary {output[0]}/.. 2>> {log}
+        mv {params.output_prefix}.marker {output[0]}/..  2>> {log}
+        mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/..  2>> {log}
+        mv {params.output_prefix}.log {output[0]}/..  2>> {log}
         """
 
 
