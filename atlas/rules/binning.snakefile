@@ -1,15 +1,14 @@
 
 
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
-BB_COVERAGE_FILE = "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
 
 
-ruleorder: bam_2_sam > align_reads_to_final_contigs
+ruleorder: align_reads_to_prefilter_contigs> bam_2_sam > align_reads_to_final_contigs
 rule bam_2_sam:
     input:
-        "{sample}/sequence_alignment/{sample}.bam"
+        "{sample}/sequence_alignment/{sample_reads}.bam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.sam")
+        temp("{sample}/sequence_alignment/{sample_reads}.sam")
     threads:
         config['threads']
     resources:
@@ -25,12 +24,43 @@ rule bam_2_sam:
         """
 
 
+
+
+rule pileup_for_binning:
+    input:
+        fasta = BINNING_CONTIGS,
+        sam = "{sample}/sequence_alignment/{sample_reads}.sam",
+    output:
+        covstats = "{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
+    params:
+        pileup_secondary = 't' if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS) else 'f',
+    log:
+        "{sample}/logs/binning/calculate_coverage/pileup_reads_from_{sample_reads}_to_filtered_contigs.log" # this file is udes for assembly report
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+    shell:
+        """pileup.sh ref={input.fasta} in={input.sam} \
+               threads={threads} \
+               -Xmx{resources.java_mem}G \
+               covstats={output.covstats} \
+               secondary={params.pileup_secondary} \
+                2> {log}
+        """
+
+
+
+
 localrules: get_contig_coverage_from_bb
 rule get_contig_coverage_from_bb:
     input:
-        coverage = BB_COVERAGE_FILE
+        coverage = "{sample}/binning/coverage/{sample_reads}_coverage_stats.txt"
     output:
-        "{sample}/binning/contig_coverage.tsv",
+        temp("{sample}/binning/coverage/{sample_reads}_coverage.txt"),
     run:
         with open(input[0]) as fi, open(output[0], "w") as fo:
             # header
@@ -43,7 +73,7 @@ rule get_contig_coverage_from_bb:
 ## CONCOCT
 rule run_concoct:
     input:
-        coverage = "{sample}/binning/contig_coverage.tsv",
+        coverage = "{sample}/binning/coverage/{sample}_coverage.txt",
         fasta = BINNING_CONTIGS
     output:
         "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(config["binning_min_contig_length"])
@@ -175,10 +205,30 @@ rule metabat:
 #
 
 ruleorder: maxbin > get_bins
+
+
+localrules: get_maxbin_abund_list
+rule get_maxbin_abund_list:
+    input:
+        lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage.txt",
+                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                     sample=wc.sample)
+    output:
+        temp("{sample}/binning/coverage/voverage.list")
+    run:
+        with open(output[0],'w') as file:
+            for cov_file in input:
+                file.write(str(cov_file)+"\n")
+
+
+
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
-        coverage = rules.get_contig_coverage_from_bb.output
+        abund_list = rules.get_maxbin_abund_list.output,
+        abund_files = lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage.txt",
+                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                     sample=wc.sample)
     output:
         directory("{sample}/binning/maxbin/bins")
     params:
@@ -196,7 +246,7 @@ rule maxbin:
         """
         mkdir {output[0]} 2> {log}
         run_MaxBin.pl -contig {input.fasta} \
-            -abund {input.coverage} \
+            -abund_list {input.abund_list} \
             -out {params.output_prefix} \
             -min_contig_length {params.mcl} \
             -thread {threads} \
@@ -342,7 +392,7 @@ rule run_das_tool:
         proteins= "{sample}/annotation/predicted_genes/{sample}.faa"
     output:
         expand("{{sample}}/binning/DASTool/{{sample}}{postfix}",
-               postfix=["_summary.txt", "_hqBins.pdf", "_scores.pdf"]),
+               postfix=["_DASTool_summary.txt", "_DASTool_hqBins.pdf", "_DASTool_scores.pdf"]),
         cluster_attribution = "{sample}/binning/DASTool/cluster_attribution.tsv"
     threads:
         config['threads']
@@ -369,5 +419,6 @@ rule run_das_tool:
         " --megabin_penalty {params.megabin_penalty}"
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "
+        " --debug "
         " --score_threshold {params.score_threshold} &> >(tee {log}) "
-        " ; mv {params.output_prefix}_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
+        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
