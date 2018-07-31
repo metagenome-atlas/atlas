@@ -21,7 +21,7 @@ rule bam_2_sam:
         "%s/required_packages.yaml" % CONDAENV
     shell:
         """
-        reformat.sh in={input} out={output}
+        reformat.sh in={input} out={output} sam=1.3
         """
 
 
@@ -225,7 +225,7 @@ rule get_maxbin_cluster_attribution:
             for binid in bin_ids:
                 with open(params.file_name.format(binid=binid)) as bin_file:
                     for line in bin_file:
-                        if line.startwith(">"):
+                        if line.startswith(">"):
                             fasta_header = line[1:].strip().split()[0]
                             out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header=fasta_header))
 
