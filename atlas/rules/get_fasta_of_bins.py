@@ -28,7 +28,7 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_prefix):
     CA = CA.iloc[:, 0]
     CA.index = CA.index.astype("str")
     # exclude cluster 0 which is unclustered at least for metabat
-    CA = CA.loc[CA!=0]
+    CA = CA.loc[CA!="0"]
 
     contigs = SeqIO.to_dict(SeqIO.parse(contigs, "fasta"))
 
