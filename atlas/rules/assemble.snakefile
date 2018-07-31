@@ -254,6 +254,28 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     assembly_params['spades'] = {'meta':'--meta','normal':''}
 
+    def spades_parameters(wc,input):
+        if not os.path.exists("{sample}/assembly/params.txt".format(sample=wc.sample)):
+
+            params={}
+
+            params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            params['preset'] = assembly_params['spades'][config['spades_preset']],
+            params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
+
+        else:
+
+            params = {"inputs": "--restart-from last",
+                      "input_merged":"",
+                      "preset":"",
+                      "skip_error_correction":""}
+
+        params['outdir']= "{sample}/assembly".format(sample=wc.sample)
+
+        return params
+
+
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -264,12 +286,8 @@ else:
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
-            inputs = lambda wc, input: "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            input_merged = lambda wc, input: "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            p= lambda wc,input: spades_parameters(wc,input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            preset = assembly_params['spades'][config['spades_preset']],
-            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
         log:
             "{sample}/logs/assembly/spades.log"
         # shadow:
@@ -284,11 +302,11 @@ else:
             "spades.py "
             " --threads {threads} "
             " --memory {resources.mem} "
-            " -o {params.outdir} "
+            " -o {params.p[outdir]} "
             " -k {params.k}"
-            " {params.preset} "
-            " {params.inputs} {params.input_merged} "
-            " {params.skip_error_correction} "
+            " {params.p[preset]} "
+            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
 
 
