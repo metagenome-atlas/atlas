@@ -18,3 +18,4 @@ dependencies:
     - spades=3.12.0
     - sqlite=3.13.0
     - subread=1.5.3
+    - prodigal=2.6.3
