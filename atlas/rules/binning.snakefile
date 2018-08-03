@@ -221,7 +221,6 @@ rule get_maxbin_abund_list:
                 file.write(str(cov_file)+"\n")
 
 
-
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
