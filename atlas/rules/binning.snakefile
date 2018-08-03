@@ -231,27 +231,12 @@ rule metabat:
 ruleorder: maxbin > get_bins
 
 
-localrules: get_maxbin_abund_list
-rule get_maxbin_abund_list:
-    input:
-        lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage.txt",
-                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
-                     sample=wc.sample)
-    output:
-        temp("{sample}/binning/coverage/coverage.list")
-    run:
-        with open(output[0],'w') as file:
-            for cov_file in input:
-                file.write(str(cov_file)+"\n")
-
 
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
-        abund_list = rules.get_maxbin_abund_list.output,
-        abund_files = lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage.txt",
-                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
-                     sample=wc.sample)
+        abund = "{sample}/binning/coverage/{sample}_coverage.txt",
+
     output:
         directory("{sample}/binning/maxbin/bins")
     params:
@@ -269,7 +254,7 @@ rule maxbin:
         """
         mkdir {output[0]} 2> {log}
         run_MaxBin.pl -contig {input.fasta} \
-            -abund_list {input.abund_list} \
+            -abund {input.abund} \
             -out {params.output_prefix} \
             -min_contig_length {params.mcl} \
             -thread {threads} \
