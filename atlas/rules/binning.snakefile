@@ -55,7 +55,7 @@ rule pileup_for_binning:
 
 
 
-localrules: get_contig_coverage_from_bb
+localrules: get_contig_coverage_from_bb, combine_coverages
 rule get_contig_coverage_from_bb:
     input:
         coverage = "{sample}/binning/coverage/{sample_reads}_coverage_stats.txt"
@@ -70,13 +70,37 @@ rule get_contig_coverage_from_bb:
                 print(toks[0], toks[1], sep="\t", file=fo)
 
 
+rule combine_coverages:
+    input:
+        covstats = lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
+                                 sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                                 sample=wc.sample)
+    output:
+        "{sample}/binning/coverage/combined_coverage.tsv"
+    run:
+
+        import pandas as pd
+        import os
+
+        combined_cov={}
+        for cov_file in input:
+
+            sample= os.path.split(cov_file)[-1].split('_')[0]
+            data= pd.read_table(cov_file,index_col=0)
+
+            data.loc[data.Avg_fold<0,'Avg_fold']=0
+            combined_cov[sample]= data.Avg_fold
+        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
+
+
+
 ## CONCOCT
 rule run_concoct:
     input:
-        coverage = "{sample}/binning/coverage/{sample}_coverage.txt",
+        coverage = "{sample}/binning/coverage/combined_coverage.tsv",
         fasta = BINNING_CONTIGS
     output:
-        "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(config["binning_min_contig_length"])
+        "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(config['concoct']["min_contig_length"])
     params:
         basename= lambda wc, output: os.path.dirname(output[0]),
         Nexpected_clusters= config['concoct']['Nexpected_clusters'],
@@ -84,7 +108,7 @@ rule run_concoct:
         min_length=config['concoct']["min_contig_length"],
         niterations=config["concoct"]["Niterations"]
     log:
-        "{sample}/logs/binning/concoct/log.txt"
+        "{sample}/binning/concoct/intermediate_files/log.txt"
     conda:
         "%s/concoct.yaml" % CONDAENV
     threads:
@@ -100,7 +124,7 @@ rule run_concoct:
             --read_length {params.read_length} \
             --length_threshold {params.min_length} \
             --converge_out \
-            --iterations {params.niterations} &> >(tee {log}) 2>1
+            --iterations {params.niterations}
         """
 
 
@@ -214,7 +238,7 @@ rule get_maxbin_abund_list:
                      sample_reads = GROUPS[config['samples'][wc.sample]['group']],
                      sample=wc.sample)
     output:
-        temp("{sample}/binning/coverage/voverage.list")
+        temp("{sample}/binning/coverage/coverage.list")
     run:
         with open(output[0],'w') as file:
             for cov_file in input:
@@ -341,22 +365,116 @@ rule run_checkm_lineage_wf:
         """
 
 
+
 rule run_checkm_tree_qa:
     input:
-        "{sample}/binning/{binner}/checkm/completeness.tsv"
+        tree="{checkmfolder}/completeness.tsv"
     output:
-        "{sample}/binning/{binner}/checkm/taxonomy.tsv"
+        netwick="{checkmfolder}/tree.nwk",
+        summary="{checkmfolder}/taxonomy.tsv",
     params:
-        output_dir = lambda wc,output: os.path.dirname(output[0])
+        tree_dir = lambda wc, input: os.path.dirname(input.tree),
+    conda:
+        "%s/checkm.yaml"  % CONDAENV
+    threads:
+        1
+    shell:
+        """
+            checkm tree_qa \
+               {params.tree_dir} \
+               --out_format 4 \
+               --file {output.netwick}
+
+               checkm tree_qa \
+                  {params.tree_dir} \
+                  --out_format 2 \
+                  --file {output.summary}\
+                  --tab_table
+
+        """
+
+
+rule checkm_tetra:
+    input:
+        contigs=BINNING_CONTIGS,
+    output:
+        "{sample}/binning/{binner}/checkm/tetranucleotides.txt"
+    log:
+        "{sample}/logs/binning/{binner}/checkm/tetra.txt"
     conda:
         "%s/checkm.yaml" % CONDAENV
+    threads:
+        config.get("threads", 8)
     shell:
-        """checkm tree_qa \
-               --tab_table \
-               --out_format 2 \
-               --file {params.output_dir}/taxonomy.tsv \
+        """
+            checkm tetra \
+            --threads {threads} \
+            {input.contigs} {output} 2> {log}
+        """
+
+
+rule checkm_outliers:
+    input:
+        tetra= "{sample}/binning/{binner}/checkm/tetranucleotides.txt",
+        bin_folder= directory("{sample}/binning/{binner}/bins"),
+        checkm = "{sample}/binning/{binner}/checkm/completeness.tsv"
+    params:
+        checkm_folder = lambda wc, input: os.path.dirname(input.checkm),
+        report_type = 'any',
+        treshold = 95 #reference distribution used to identify outliers; integer between 0 and 100 (default: 95)
+    output:
+        "{sample}/binning/{binner}/checkm/outliers.txt"
+    log:
+        "{sample}/logs/binning/{binner}/checkm/outliers.txt"
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    threads:
+        config.get("threads", 8)
+    shell:
+        """
+            checkm outliers \
+            --extension fasta \
+            --distributions {params.treshold} \
+            --report_type {params.report_type} \
+            {params.checkm_folder} \
+            {input.bin_folder} \
+            {input.tetra} \
+            {output} 2> {log}
+        """
+
+
+rule find_16S:
+    input:
+        contigs=BINNING_CONTIGS,
+        bin_dir= directory("{sample}/binning/{binner}/bins")
+    output:
+        "{sample}/binning/{binner}/checkm/SSU/ssu_summary.tsv",
+    params:
+        output_dir = lambda wc, output: os.path.dirname(output[0]),
+        evalue = 1e-05,
+        concatenate = 200 #concatenate hits that are within the specified number of base pairs
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    threads:
+        1
+    shell:
+        """
+        rm -r {params.output_dir} && \
+           checkm ssu_finder \
+               --extension fasta \
+               --threads {threads} \
+               --evalue {params.evalue} \
+               --concatenate {params.concatenate} \
+               {input.contigs} \
+               {input.bin_dir} \
                {params.output_dir}
         """
+
+
+rule get_all_16S:
+    input:
+        expand(rules.find_16S.output,sample=SAMPLES,binner=config['binner'])
+
 
 
 rule build_bin_report:
