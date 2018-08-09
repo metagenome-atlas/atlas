@@ -285,7 +285,7 @@ rule get_maxbin_cluster_attribution:
                     for line in bin_file:
                         if line.startswith(">"):
                             fasta_header = line[1:].strip().split()[0]
-                            out_file.write("{fasta_header}\t{binid}\n".format(binid=binid, fasta_header=fasta_header))
+                            out_file.write("{fasta_header}\tmaxbin.{binid}\n".format(binid=binid, fasta_header=fasta_header))
 
 
 
