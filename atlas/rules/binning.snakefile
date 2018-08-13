@@ -3,12 +3,11 @@
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 
 
-ruleorder: align_reads_to_prefilter_contigs> bam_2_sam > align_reads_to_final_contigs
-rule bam_2_sam:
+rule bam_2_sam_binning:
     input:
         "{sample}/sequence_alignment/{sample_reads}.bam"
     output:
-        temp("{sample}/sequence_alignment/{sample_reads}.sam")
+        temp("{sample}/sequence_alignment/binning_{sample_reads}.sam")
     threads:
         config['threads']
     resources:
@@ -29,7 +28,7 @@ rule bam_2_sam:
 rule pileup_for_binning:
     input:
         fasta = BINNING_CONTIGS,
-        sam = "{sample}/sequence_alignment/{sample_reads}.sam",
+        sam = "{sample}/sequence_alignment/binning_{sample_reads}.sam",
     output:
         covstats = "{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
     params:
@@ -196,37 +195,6 @@ rule metabat:
         """
 
 
-# localrules: MAG_analyze_metabat_clusters
-# rule MAG_analyze_metabat_clusters:
-#     input:
-#         contigs = COMBINED_CONTIGS,
-#         cluster_attribution_file = "{folder}/binning/metabat/metabat_cluster_attribution.txt".format(folder=combined_contigs_folder),
-#         depth_file = "{folder}/binning/metabat_depth.txt".format(folder=combined_contigs_folder)
-#     output:
-#         expand("{folder}/binning/metabat/{file}", folder=combined_contigs_folder,
-#                file=['cluster_attribution.txt',
-#                      'contig_stats.tsv',
-#                      'cluster_stats.tsv',
-#                      'average_cluster_abundance.tsv',
-#                      'average_contig_abundance.tsv.gz'])
-#         # {folder}/binning/bins/MAG{id}.fasta
-#     params:
-#         output_prefix = lambda wc, output: os.path.join(os.path.dirname(output[0]), 'bins', 'Bin')
-#     log:
-#         "logs/binning/analyze_metabat_clusters.txt"
-#     shell:
-#         """
-#             python %s/rules/analyze_metabat_clusters.py \
-#             {input.contigs} \
-#             {input.cluster_attribution_file} \
-#             {input.depth_file} \
-#             {params.output_prefix} \
-#             2> >(tee {log})
-#         """ % os.path.dirname(os.path.abspath(workflow.snakefile))
-#
-#
-# # https://bitbucket.org/berkeleylab/metabat/wiki/Best%20Binning%20Practices
-#
 
 ruleorder: maxbin > get_bins
 
@@ -485,10 +453,20 @@ rule build_bin_report:
         """
 
 
+localrules: get_unique_bin_ids
+rule get_unique_bin_ids:
+    input:
+        "{sample}/binning/{binner}/cluster_attribution.tsv"
+    output:
+        "{sample}/binning/DASTool/{binner}.scaffolds2bin"
+    shell:
+        "cp {input} {output}"
+
+
 # not working correctly https://github.com/cmks/DAS_Tool/issues/13
 rule run_das_tool:
     input:
-        cluster_attribution = expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
+        cluster_attribution = expand("{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
             binner=config['binner']),
         contigs = BINNING_CONTIGS,
         proteins= "{sample}/annotation/predicted_genes/{sample}.faa"
