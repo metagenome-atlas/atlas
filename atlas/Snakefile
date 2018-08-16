@@ -13,7 +13,7 @@ config = default_config
 
 
 # minimum required snakemake version
-min_version("5.1.3")
+min_version("5.2.2")
 
 def get_conda_envs_dir():
     if config.get("yaml_dir"):
@@ -160,9 +160,6 @@ elif config.get("workflow", "complete") == "complete":
     if config.get("perform_genome_binning", True):
         # later update to include others as well as integrate concoct and metabat
         REPORTS.append("reports/bin_report_maxbin.html")
-        # include this?
-        # expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-        #        binner=config['binner'], sample =SAMPLES)
         include: "rules/binning.snakefile"
 
     localrules: all
@@ -183,7 +180,6 @@ elif config.get("workflow", "complete") == "complete":
     include: "rules/gene_annotation.snakefile"
 
     if config.get("perform_genome_binning", True):
-
 
         rule merge_sample_tables:
             input:
@@ -206,7 +202,6 @@ elif config.get("workflow", "complete") == "complete":
                      {input.refseq} \
                      {output}"
 
-
     else:
         rule merge_sample_tables:
             input:
@@ -223,7 +218,6 @@ elif config.get("workflow", "complete") == "complete":
                      {output}"
 
 
-
 elif config.get("workflow") == "binning":
 
     # define paired end or not
@@ -232,7 +226,7 @@ elif config.get("workflow") == "binning":
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
-
+    localrules: all
     rule all:
         input:
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
