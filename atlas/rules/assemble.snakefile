@@ -6,8 +6,6 @@ from snakemake.utils import report
 import warnings
 from copy import copy
 
-localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
-            finalize_contigs, build_bin_report, build_assembly_report
 
 ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
 if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
@@ -25,9 +23,6 @@ def get_preprocessing_steps(config):
         preprocessing_steps.append("merged")
 
     return ".".join(preprocessing_steps)
-
-
-
 
 
 assembly_preprocessing_steps = get_preprocessing_steps(config)
@@ -241,7 +236,7 @@ if config.get("assembler", "megahit") == "megahit":
                 {params.preset} >> {log} 2>&1
             """
 
-
+    localrules: rename_megahit_output
     rule rename_megahit_output:
         input:
             "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"
@@ -292,6 +287,7 @@ else:
             """
 
 
+    localrules: rename_spades_output
     rule rename_spades_output:
         input:
             "{sample}/assembly/contigs.fasta"
@@ -451,6 +447,8 @@ else: # no filter
         shell:
             "cp {input} {output}"
 
+
+localrules: finalize_contigs
 rule finalize_contigs:
     input:
         "{sample}/assembly/{sample}_final_contigs.fasta"
@@ -460,7 +458,6 @@ rule finalize_contigs:
         1
     run:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
-
 
 
 rule align_reads_to_final_contigs:
@@ -588,7 +585,7 @@ rule create_bam_index:
         "samtools index {input}"
 
 
-
+localrules: build_assembly_report
 rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
