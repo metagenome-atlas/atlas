@@ -214,6 +214,7 @@ rule maxbin:
 
 ## Checkm
 # TODO generalize checkm rules
+localrules: initialize_checkm
 rule initialize_checkm:
     # input:
     output:
@@ -280,6 +281,7 @@ rule run_checkm_tree_qa:
         """
 
 
+localrules: build_bin_report
 rule build_bin_report:
     input:
         completeness_files = expand("{sample}/binning/checkm/{{binner}}/completeness.tsv", sample=SAMPLES),
