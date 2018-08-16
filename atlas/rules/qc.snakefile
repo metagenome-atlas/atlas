@@ -307,7 +307,6 @@ rule apply_quality_filter:
 if len(config.get("contaminant_references", {}).keys()) > 0:
     PROCESSED_STEPS.append("clean")
 
-    # FIXME for some reason this is not run when using --cluster
     rule build_decontamination_db:
         output:
             "ref/genome/1/summary.txt"
