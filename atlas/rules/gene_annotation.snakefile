@@ -13,7 +13,7 @@ def gff_to_gtf(gff_in, gtf_out):
             print(*toks, sep="\t", file=fh)
 
 
-if config.get('gene_predicter', 'prodigal') == 'prokka':
+if config.get("gene_predicter", "prodigal") == "prokka":
 
     rule run_prokka_annotation:
         input:
@@ -70,7 +70,7 @@ if config.get('gene_predicter', 'prodigal') == 'prokka':
             "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
 
-elif config.get('gene_predicter','prodigal')=='prodigal':
+elif config.get("gene_predicter", "prodigal") == "prodigal":
 
     rule predict_genes:
         input:
@@ -122,19 +122,19 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
         output:
             tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
         run:
-            header = ['gene_id', 'Contig', 'Gene_nr', 'Start', 'Stop', 'Strand', 'Annotation']
-            with open(output.tsv, 'w') as tsv:
-                tsv.write('\t'.join([header]) + '\n')
+            header = ["gene_id", "Contig", "Gene_nr", "Start", "Stop", "Strand", "Annotation"]
+            with open(output.tsv, "w") as tsv:
+                tsv.write("\t".join([header]) + "\n")
                 with open(input.faa) as fin:
                     gene_idx = 0
                     for line in fin:
-                        if line[0] == '>':
-                            text = line[1:].strip().split(' # ')
+                        if line[0] == ">":
+                            text = line[1:].strip().split(" # ")
                             old_gene_name = text[0]
                             text.remove(old_gene_name)
-                            sample, contig_nr, gene_nr = old_gene_name.split('_')
+                            sample, contig_nr, gene_nr = old_gene_name.split("_")
                             tsv.write("{gene_id}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(
-                                text='\t'.join(text),
+                                text="\t".join(text),
                                 gene_id=old_gene_name,
                                 i=gene_idx,
                                 sample=sample,
@@ -157,7 +157,7 @@ elif config.get('gene_predicter','prodigal')=='prodigal':
             contigs = tsv.loc[hits.iloc[:, 0]]
             hits.insert(0, contigs.name, contigs.values)
             hits.sort_values([contigs.name, 0, 2], inplace=True)
-            hits.to_csv(output[0], sep='\t', index=False, header=False)
+            hits.to_csv(output[0], sep="\t", index=False, header=False)
 
 
 rule convert_gff_to_gtf:
@@ -168,6 +168,7 @@ rule convert_gff_to_gtf:
     run:
         gff_to_gtf(input[0], output[0])
 
+
 # TODO: doesn't work for prodigal predictions
 rule convert_gff_to_tsv:
     input:
@@ -176,6 +177,7 @@ rule convert_gff_to_tsv:
         "{sample}/annotation/predicted_genes/{sample}_plus.tsv"
     shell:
         """atlas gff2tsv {input} {output}"""
+
 
 # this rule specifies the more general eggNOG rules
 localrules: rename_eggNOG_annotation
@@ -197,7 +199,7 @@ rule find_counts_per_region:
         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
     params:
         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
-        paired_only= "-B" if config.get('contig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
+        paired_only= "-B" if config.get("contig_map_paired_only",CONTIG_MAP_PAIRED_ONLY) else "",
         paired_mode = "-p" if PAIRED_END else "",
         multi_mapping = "-M --fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
         feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
@@ -307,7 +309,7 @@ rule parse_blastp:
 
 
 # TODO: make benchmark
-#HIGH troughput : split faa in 1Mio faa chunks for next step
+#HIGH throughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
         "%s/download_eggnog_data.success" % EGGNOG_DIR,
@@ -365,23 +367,23 @@ rule add_eggNOG_header:
     output:
         "{folder}/{prefix}.emapper.tsv"
     run:
-            import pandas as pd
+        import pandas as pd
 
-            D = pd.read_table(input[0],header=None)
+        D = pd.read_table(input[0], header=None)
+        D.columns = [
+            "query_name",
+            "seed_eggNOG_ortholog",
+            "seed_ortholog_evalue",
+            "seed_ortholog_score",
+            "predicted_gene_name",
+            "GO_terms",
+            "KEGG_KO",
+            "BiGG_Reactions",
+            "Annotation_tax_scope",
+            "Matching_OGs",
+            "best_OG|evalue|score",
+            "categories",
+            "eggNOG_HMM_model_annotation",
+        ]
 
-            D.columns =[ 'query_name','seed_eggNOG_ortholog',
-            'seed_ortholog_evalue',
-            'seed_ortholog_score',
-            'predicted_gene_name',
-            'GO_terms',
-            'KEGG_KO',
-            'BiGG_Reactions',
-            'Annotation_tax_scope',
-            'Matching_OGs',
-            'best_OG|evalue|score',
-            'categories',
-            'eggNOG_HMM_model_annotation'
-            ]
-
-
-            D.to_csv(output[0],sep='\t',index=False)
+        D.to_csv(output[0],sep="\t",index=False)
