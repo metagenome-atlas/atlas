@@ -262,7 +262,7 @@ rule get_bins:
         cluster_attribution = "{sample}/binning/{binner}/cluster_attribution.tsv",
         contigs= BINNING_CONTIGS
     output:
-        directory("{sample}/binning/{binner}/bins")
+        temp(directory("{sample}/binning/{binner}/bins"))
     params:
         prefix= lambda wc, output: os.path.join(output[0],wc.sample)
     conda:
@@ -502,3 +502,21 @@ rule run_das_tool:
         " --debug "
         " --score_threshold {params.score_threshold} &> >(tee {log}) "
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
+
+
+
+
+rule get_all_bins:
+    input:
+        expand(directory("{sample}/binning/{binner}/bins"),
+               sample= SAMPLES, binner= config['final_binner'])
+    output:
+        directory("genomes/all_bins")
+    run:
+        for bin_folder in input:
+            for fasta_file in os.listdir(bin_folder):
+
+                in_path= os.path.join(bin_folder,fasta_file)
+                out_path= os.path.join(output[0],fasta_file)
+
+                os.symlink(os.path.relpath(in_path,output[0]),out_path)
