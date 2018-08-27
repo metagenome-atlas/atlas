@@ -1,0 +1,13 @@
+channels:
+    - bioconda
+    - r
+    - ruby-lang
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.6
+    - mummer>=3.22
+    - mash>=2
+    - prodigal=2.6.3
+    - pip:
+      - drep==2.2.2
