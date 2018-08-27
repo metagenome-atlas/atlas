@@ -183,10 +183,7 @@ elif config.get("workflow", "complete") == "complete":
 
     if config.get("perform_genome_binning", True):
         # later update to include others as well as integrate concoct and metabat
-        REPORTS.append("reports/bin_report_maxbin.html")
-        # include this?
-        # expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-        #        binner=config['binner'], sample =SAMPLES)
+        REPORTS.append("reports/bin_report_{binner}.html".format(binner=config['final_binner']))
         include: "rules/binning.snakefile"
 
 
@@ -272,9 +269,7 @@ elif config.get("workflow") == "binning":
         input:
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                    binner=config['binner'], sample =SAMPLES),
-            expand("{sample}/annotation/predicted_genes/{sample}.faa",
-                   sample =SAMPLES),
-            expand("reports/bin_report_{binner}.html", binner=config['binner'])
+            expand("reports/bin_report_{binner}.html", binner=config['final_binner'])
 
 
     include: "rules/binning.snakefile"

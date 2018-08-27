@@ -142,7 +142,14 @@ feature_counts_allow_overlap: true
 ########################
 # Binning
 ########################
-binner: ['metabat','concoct','maxbin']
+
+final_binner: DASTool             # [DASTool or one of the binner, e.g. maxbin]
+
+binner:                           # If DASTool is used as final_binner, use predictions of this binners
+  - metabat
+  - concoct
+  - maxbin
+
 
 metabat:
   sensitivity: sensitive
