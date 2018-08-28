@@ -195,6 +195,23 @@ def make_default_config():
     }
 
 
+    conf['genome_dereplication']=dict(
+                            filter = dict(
+                                length=5000,
+                                completeness=75,
+                                contamination=15),
+                            weight = dict(
+                                    completeness=1,
+                                    contamination=5,
+                                    strain_heterogeneity=1, #not in table
+                                    N50=0.5,
+                                    size=0),
+                            ANI=0.99,
+                            overlap=0.5,
+                            sketch_size=5000,
+                            opt_parameters=""
+                                )
+
     conf["diamond_run_mode"] = "fast"
     conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
     conf["diamond_e_value"] = DIAMOND_E_VALUE

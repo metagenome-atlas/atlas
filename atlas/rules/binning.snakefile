@@ -1,5 +1,5 @@
 
-
+from glob import glob
 BINNING_CONTIGS= "{sample}/{sample}_contigs.fasta"
 
 
@@ -504,7 +504,7 @@ rule run_das_tool:
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
 
 
-
+## dRep
 
 rule get_all_bins:
     input:
@@ -513,10 +513,114 @@ rule get_all_bins:
     output:
         directory("genomes/all_bins")
     run:
+        os.mkdir(output[0])
+        from glob import glob
+        import shutil
         for bin_folder in input:
-            for fasta_file in os.listdir(bin_folder):
+            for fasta_file in glob(bin_folder+'/*.fasta'):
 
-                in_path= os.path.join(bin_folder,fasta_file)
-                out_path= os.path.join(output[0],fasta_file)
+                #fasta_file_name = os.path.split(fasta_file)[-1]
+                #in_path = os.path.dirname(fasta_file)
+                #out_path= os.path.join(output[0],fasta_file_name)
+                #os.symlink(os.path.relpath(fasta_file,output[0]),out_path)
 
-                os.symlink(os.path.relpath(in_path,output[0]),out_path)
+                shutil.copy(fasta_file,output[0])
+
+rule get_quality_for_dRep:
+    input:
+        "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
+    output:
+        temp("genomes/quality.csv")
+    run:
+        import pandas as pd
+
+        D= pd.read_table(input[0],index_col=0)
+
+        D.index+=".fasta"
+        D.index.name="genome"
+        D.columns= D.columns.str.lower()
+        D.iloc[:,:3].to_csv(ouput[0])
+
+
+rule first_dereplication:
+    input:
+        directory("genomes/all_bins"),
+        quality= rules.get_quality_for_dRep.output
+    output:
+        touch("genomes/Dereplication_1/finished")
+    threads:
+        config['threads']
+    log:
+        "logs/genomes/dereplication_1.log"
+    conda:
+        "%s/dRep.yaml" % CONDAENV
+    params:
+        filter_length= config['genome_dereplication']['filter']['length'],
+        filter_completeness= config['genome_dereplication']['filter']['completeness'],
+        filter_contamination= config['genome_dereplication']['filter']['contamination'],
+        ANI= config['genome_dereplication']['ANI'],
+        completeness_weight= config['genome_dereplication']['weight']['completeness'] ,
+        contamination_weight=config['genome_dereplication']['weight']['contamination'] ,
+        strain_heterogeneity_weight= config['genome_dereplication']['weight']['completeness'] , #not in table
+        N50_weight=config['genome_dereplication']['weight']['N50'] ,
+        size_weight=config['genome_dereplication']['weight']['size'] ,
+        opt_parameters = config['genome_dereplication']['opt_parameters'],
+        work_directory= lambda wc,output: os.path.dirname(output[0])
+
+    shell:
+        " dRep dereplicate "
+        " --genomes {input[0]}/*.fasta "
+        " --genomeInfo {input.quality} "
+        " --length {params.filter_length} "
+        " --completeness {params.filter_completeness} "
+        " --contamination {params.filter_contamination} "
+        " --SkipSecondary "
+        " --P_ani {params.ANI} "
+        " --completeness_weight {params.completeness_weight} "
+        " --contamination_weight {params.contamination_weight} "
+        " --strain_heterogeneity_weight {params.strain_heterogeneity_weight} "
+        " --N50_weight {params.N50_weight} "
+        " --size_weight {params.size_weight} "
+        " --MASH_sketch {params.sketch_size} "
+        " --processors {threads} "
+        " {params.opt_parameters} "
+        " {params.work_directory} "
+
+
+rule second_dereplication:
+    input:
+        rules.first_dereplication.output,
+        quality= rules.get_quality_for_dRep.output
+    output:
+        touch("genomes/Dereplication_2/finished")
+    threads:
+        config['threads']
+    log:
+        "logs/genomes/dereplication_2.log"
+    conda:
+        "%s/dRep.yaml" % CONDAENV
+    params:
+        ANI= config['genome_dereplication']['ANI'],
+        completeness_weight= config['genome_dereplication']['weight']['completeness'] ,
+        contamination_weight=config['genome_dereplication']['weight']['contamination'] ,
+        strain_heterogeneity_weight= config['genome_dereplication']['weight']['completeness'] , #not in table
+        N50_weight=config['genome_dereplication']['weight']['N50'] ,
+        size_weight=config['genome_dereplication']['weight']['size'] ,
+        opt_parameters = config['genome_dereplication']['opt_parameters'],
+        work_directory= lambda wc,output: os.path.dirname(output[0])
+
+    shell:
+        " dRep dereplicate "
+        " --genomes {input[0]}/*.fasta "
+        " --genomeInfo {input.quality} "
+        " --noQualityFiltering "
+        " --S_ani {params.ANI} "
+        " --completeness_weight {params.completeness_weight} "
+        " --contamination_weight {params.contamination_weight} "
+        " --strain_heterogeneity_weight {params.strain_heterogeneity_weight} "
+        " --N50_weight {params.N50_weight} "
+        " --size_weight {params.size_weight} "
+        " --MASH_sketch {params.sketch_size} "
+        " --processors {threads} "
+        " {params.opt_parameters} "
+        " {params.work_directory} "
