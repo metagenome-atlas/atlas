@@ -155,7 +155,7 @@ if config.get("workflow") != "download":
     TMPDIR = get_temp_dir(config)
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
     SAMPLES = [i for i in config["samples"].keys()]
-
+    GROUPS = define_groups(config['samples'])
 
     PAIRED_END = all([config["samples"][s].get("paired", False) \
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
@@ -262,7 +262,7 @@ elif config.get("workflow", "complete") == "complete":
 elif config.get("workflow") == "binning":
 
 
-    GROUPS = define_groups(config['samples'])
+
 
 
     rule all:
