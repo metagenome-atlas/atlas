@@ -207,7 +207,7 @@ def make_default_config():
                                     N50=0.5,
                                     size=0),
                             ANI=0.99,
-                            overlap=0.5,
+                            overlap=0.6,
                             sketch_size=5000,
                             opt_parameters=""
                                 )

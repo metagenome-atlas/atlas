@@ -204,7 +204,7 @@ rule maxbin:
         abund = "{sample}/binning/coverage/{sample}_coverage.txt",
 
     output:
-        directory("{sample}/binning/maxbin")
+        directory("{sample}/binning/maxbin/intermediate_files")
     params:
         mi = config["maxbin"]["max_iteration"],
         mcl = config["maxbin"]["min_contig_length"],
@@ -226,6 +226,11 @@ rule maxbin:
             -thread {threads} \
             -prob_threshold {params.pt} \
             -max_iteration {params.mi} >> {log}
+
+        mv {params.output_prefix}.summary {output[0]}/.. 2>> {log}
+        mv {params.output_prefix}.marker {output[0]}/..  2>> {log}
+        mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/..  2>> {log}
+        mv {params.output_prefix}.log {output[0]}/..  2>> {log}
 
         """
 
@@ -266,7 +271,7 @@ rule get_unique_cluster_attribution:
 
 rule get_maxbin_cluster_attribution:
     input:
-        directory("{sample}/binning/maxbin")
+        directory("{sample}/binning/maxbin/intermediate_files")
     output:
         "{sample}/binning/maxbin/cluster_attribution.tsv"
     params:
@@ -618,7 +623,8 @@ rule first_dereplication:
         N50_weight=config['genome_dereplication']['weight']['N50'] ,
         size_weight=config['genome_dereplication']['weight']['size'] ,
         opt_parameters = config['genome_dereplication']['opt_parameters'],
-        work_directory= lambda wc,output: os.path.dirname(output[0])
+        work_directory= lambda wc,output: os.path.dirname(output[0]),
+        sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
         " dRep dereplicate "
@@ -660,7 +666,8 @@ rule second_dereplication:
         N50_weight=config['genome_dereplication']['weight']['N50'] ,
         size_weight=config['genome_dereplication']['weight']['size'] ,
         opt_parameters = config['genome_dereplication']['opt_parameters'],
-        work_directory= lambda wc,output: os.path.dirname(output[0])
+        work_directory= lambda wc,output: os.path.dirname(output[0]),
+        sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
         " dRep dereplicate "
