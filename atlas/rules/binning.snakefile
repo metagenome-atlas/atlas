@@ -531,7 +531,7 @@ rule run_das_tool:
 rule get_unknown_bins:
     input:
         expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
-        expand(directory("{{sample}}/binning/{binner}/bins", binner= config['binner']),
+        expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
     output:
         dir= directory("{sample}/binning/Unknown/bins"),
         scores= "{sample}/binning/Unknown/scores.tsv"
