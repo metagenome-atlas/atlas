@@ -132,7 +132,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        "{sample}/binning/concoct/cluster_attribution.tsv"
+        temp("{sample}/binning/concoct/cluster_attribution.tmp")
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -167,7 +167,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        "{sample}/binning/metabat/cluster_attribution.tsv",
+        temp("{sample}/binning/metabat/cluster_attribution.tmp"),
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
@@ -230,7 +230,40 @@ rule maxbin:
         """
 
 
-localrules: get_maxbin_cluster_attribution, get_bins
+
+
+
+localrules: get_unique_cluster_attribution, get_maxbin_cluster_attribution, get_bins
+
+rule get_unique_cluster_attribution:
+    input:
+        "{sample}/binning/{binner}/cluster_attribution.tmp"
+    output:
+        "{sample}/binning/{binner}/cluster_attribution.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+
+
+        d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
+
+        assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
+
+        old_cluster_ids = list(d.unique())
+        if 0 in old_cluster_ids:
+            old_cluster_ids.remove(0)
+        N_clusters= len(old_cluster_ids)
+
+        float_format= "{sample}.{binner}.{{:0{N_zeros}d}}".format(N_zeros=len(str(N_clusters)), **wildcards)
+
+        map_cluster_ids = pd.Series(np.arange(N_clusters)+1,index= old_cluster_ids )
+        map_cluster_ids= map_cluster_ids.apply(float_format.format)
+
+        new_d= d.map(map_cluster_ids)
+
+        new_d.to_csv(ouput[0],sep='\t')
+
+
 rule get_maxbin_cluster_attribution:
     input:
         directory("{sample}/binning/maxbin")
@@ -449,26 +482,19 @@ rule build_bin_report:
         """
 
 
-localrules: get_unique_bin_ids
-rule get_unique_bin_ids:
-    input:
-        "{sample}/binning/{binner}/cluster_attribution.tsv"
-    output:
-        "{sample}/binning/DASTool/{binner}.scaffolds2bin"
-    shell:
-        "cp {input} {output}"
-
 
 # not working correctly https://github.com/cmks/DAS_Tool/issues/13
 rule run_das_tool:
     input:
-        cluster_attribution = expand("{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
+        cluster_attribution = expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
             binner=config['binner']),
         contigs = BINNING_CONTIGS,
         proteins= "{sample}/annotation/predicted_genes/{sample}.faa"
     output:
         expand("{{sample}}/binning/DASTool/{{sample}}{postfix}",
                postfix=["_DASTool_summary.txt", "_DASTool_hqBins.pdf", "_DASTool_scores.pdf"]),
+        expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval",
+               binner= config['binner']),
         cluster_attribution = "{sample}/binning/DASTool/cluster_attribution.tsv"
     threads:
         config['threads']
@@ -498,6 +524,37 @@ rule run_das_tool:
         " --debug "
         " --score_threshold {params.score_threshold} &> >(tee {log}) "
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
+
+
+# unknown bins and contigs
+
+rule get_unknown_bins:
+    input:
+        expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
+        expand(directory("{{sample}}/binning/{binner}/bins", binner= config['binner']),
+    output:
+        dir= directory("{sample}/binning/Unknown/bins"),
+        scores= "{sample}/binning/Unknown/scores.tsv"
+
+    run:
+        import pandas as pd
+        import shutil
+
+        Scores= pd.DataFrame()
+
+        for (score_file,bin_dir) in zip(input):
+            S = pd.read_table(score_file,index=0)
+
+            S= S.loc[S.SCG_Completeness==0]
+            Scores= Scores.append(S)
+
+            for bin_id in S.index:
+                shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), ouput.dir )
+
+        Scores.to_csv(output.scores,sep='\t')
+
+
+
 
 
 ## dRep
