@@ -196,8 +196,6 @@ rule metabat:
 
 
 
-ruleorder: maxbin > get_bins
-
 
 
 rule maxbin:
@@ -206,7 +204,7 @@ rule maxbin:
         abund = "{sample}/binning/coverage/{sample}_coverage.txt",
 
     output:
-        directory("{sample}/binning/maxbin/bins")
+        directory("{sample}/binning/maxbin")
     params:
         mi = config["maxbin"]["max_iteration"],
         mcl = config["maxbin"]["min_contig_length"],
@@ -229,17 +227,13 @@ rule maxbin:
             -prob_threshold {params.pt} \
             -max_iteration {params.mi} >> {log}
 
-        mv {params.output_prefix}.summary {output[0]}/.. 2>> {log}
-        mv {params.output_prefix}.marker {output[0]}/..  2>> {log}
-        mv {params.output_prefix}.marker_of_each_bin.tar.gz {output[0]}/..  2>> {log}
-        mv {params.output_prefix}.log {output[0]}/..  2>> {log}
         """
 
 
 localrules: get_maxbin_cluster_attribution, get_bins
 rule get_maxbin_cluster_attribution:
     input:
-        directory("{sample}/binning/maxbin/bins")
+        directory("{sample}/binning/maxbin")
     output:
         "{sample}/binning/maxbin/cluster_attribution.tsv"
     params:
@@ -253,8 +247,10 @@ rule get_maxbin_cluster_attribution:
                     for line in bin_file:
                         if line.startswith(">"):
                             fasta_header = line[1:].strip().split()[0]
-                            out_file.write("{fasta_header}\tmaxbin.{binid}\n".format(binid=binid, fasta_header=fasta_header))
-
+                            out_file.write("{fasta_header}\t{sample}.maxbin.{binid}\n".format(binid=binid,
+                                                                                              fasta_header=fasta_header,
+                                                                                              sample=wildcards.sample))
+                os.remove(params.file_name.format(binid=binid))
 
 
 rule get_bins:
@@ -547,7 +543,7 @@ rule first_dereplication:
         directory("genomes/all_bins"),
         quality= rules.get_quality_for_dRep.output
     output:
-        touch("genomes/Dereplication_1/finished")
+        directory("genomes/Dereplication_1/dereplicated_genomes")
     threads:
         config['threads']
     log:
@@ -592,7 +588,7 @@ rule second_dereplication:
         rules.first_dereplication.output,
         quality= rules.get_quality_for_dRep.output
     output:
-        touch("genomes/Dereplication_2/finished")
+        directory("genomes/Dereplication_2/dereplicated_genomes")
     threads:
         config['threads']
     log:
