@@ -132,7 +132,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        temp("{sample}/binning/concoct/cluster_attribution.tmp")
+        temp("{sample}/binning/concoct/cluster_attribution.tsv")
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -167,7 +167,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        temp("{sample}/binning/metabat/cluster_attribution.tmp"),
+        temp("{sample}/binning/metabat/cluster_attribution.tsv"),
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
@@ -238,35 +238,35 @@ rule maxbin:
 
 
 
-localrules: get_unique_cluster_attribution, get_maxbin_cluster_attribution, get_bins
-
-rule get_unique_cluster_attribution:
-    input:
-        "{sample}/binning/{binner}/cluster_attribution.tmp"
-    output:
-        "{sample}/binning/{binner}/cluster_attribution.tsv"
-    run:
-        import pandas as pd
-        import numpy as np
-
-
-        d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
-
-        assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
-
-        old_cluster_ids = list(d.unique())
-        if 0 in old_cluster_ids:
-            old_cluster_ids.remove(0)
-        N_clusters= len(old_cluster_ids)
-
-        float_format= "{sample}.{binner}.{{:0{N_zeros}d}}".format(N_zeros=len(str(N_clusters)), **wildcards)
-
-        map_cluster_ids = pd.Series(np.arange(N_clusters)+1,index= old_cluster_ids )
-        map_cluster_ids= map_cluster_ids.apply(float_format.format)
-
-        new_d= d.map(map_cluster_ids)
-
-        new_d.to_csv(ouput[0],sep='\t')
+localrules: get_maxbin_cluster_attribution, get_bins
+# localrules: get_unique_cluster_attribution,
+# rule get_unique_cluster_attribution:
+#     input:
+#         "{sample}/binning/{binner}/cluster_attribution.tmp"
+#     output:
+#         "{sample}/binning/{binner}/cluster_attribution.tsv"
+#     run:
+#         import pandas as pd
+#         import numpy as np
+#
+#
+#         d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
+#
+#         assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
+#
+#         old_cluster_ids = list(d.unique())
+#         if 0 in old_cluster_ids:
+#             old_cluster_ids.remove(0)
+#         N_clusters= len(old_cluster_ids)
+#
+#         float_format= "{sample}.{binner}.{{:0{N_zeros}d}}".format(N_zeros=len(str(N_clusters)), **wildcards)
+#
+#         map_cluster_ids = pd.Series(np.arange(N_clusters)+1,index= old_cluster_ids )
+#         map_cluster_ids= map_cluster_ids.apply(float_format.format)
+#
+#         new_d= d.map(map_cluster_ids)
+#
+#         new_d.to_csv(output[0],sep='\t')
 
 
 rule get_maxbin_cluster_attribution:
@@ -296,7 +296,7 @@ rule get_bins:
         cluster_attribution = "{sample}/binning/{binner}/cluster_attribution.tsv",
         contigs= BINNING_CONTIGS
     output:
-        temp(directory("{sample}/binning/{binner}/bins"))
+        directory("{sample}/binning/{binner}/bins")
     params:
         prefix= lambda wc, output: os.path.join(output[0],wc.sample)
     conda:
@@ -486,12 +486,20 @@ rule build_bin_report:
             --bin-table {output.bin_table}
         """
 
+localrules: get_unique_bin_ids
+rule get_unique_bin_ids:
+    input:
+        "{sample}/binning/{binner}/cluster_attribution.tsv"
+    output:
+        "{sample}/binning/DASTool/{binner}.scaffolds2bin"
+    shell:
+        "cp {input} {output}"
 
 
-# not working correctly https://github.com/cmks/DAS_Tool/issues/13
+
 rule run_das_tool:
     input:
-        cluster_attribution = expand("{{sample}}/binning/{binner}/cluster_attribution.tsv",
+        cluster_attribution = expand("{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
             binner=config['binner']),
         contigs = BINNING_CONTIGS,
         proteins= "{sample}/annotation/predicted_genes/{sample}.faa"
@@ -554,7 +562,7 @@ rule get_unknown_bins:
             Scores= Scores.append(S)
 
             for bin_id in S.index:
-                shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), ouput.dir )
+                shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), output.dir )
 
         Scores.to_csv(output.scores,sep='\t')
 
@@ -563,7 +571,7 @@ rule get_unknown_bins:
 
 
 ## dRep
-
+localrules: get_all_bins
 rule get_all_bins:
     input:
         expand(directory("{sample}/binning/{binner}/bins"),
@@ -584,11 +592,12 @@ rule get_all_bins:
 
                 shutil.copy(fasta_file,output[0])
 
-rule get_quality_for_dRep:
+localrules: get_quality_for_dRep_from_checkm
+rule get_quality_for_dRep_from_checkm:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
     output:
-        temp("genomes/quality.csv")
+        "genomes/quality.csv"
     run:
         import pandas as pd
 
@@ -597,19 +606,44 @@ rule get_quality_for_dRep:
         D.index+=".fasta"
         D.index.name="genome"
         D.columns= D.columns.str.lower()
-        D.iloc[:,:3].to_csv(ouput[0])
+        D.iloc[:,:3].to_csv(output[0])
 
+if config['final_binner']=='DASTool':
+    localrules: get_quality_for_dRep_from_DASTool
+    ruleorder: get_quality_for_dRep_from_DASTool> get_quality_for_dRep_from_checkm
+    rule get_quality_for_dRep_from_DASTool:
+        input:
+            expand("{sample}/binning/DASTool/{sample}_DASTool_summary.txt",sample=SAMPLES)
+        output:
+            "genomes/DASTool_quality.tsv",
+            "genomes/quality.csv"
+        run:
+            import pandas as pd
+            D= pd.DataFrame()
+            for i,file in enumerate(input):
+                d= pd.read_table(file,index_col=0)
+                d.index= SAMPLES[i]+'.'+d.index
+                D= D.append(d)
+
+            D.to_csv(output[0],sep='\t')
+
+            D.index+=".fasta"
+            D.index.name="genome"
+
+            D= D.rename(columns={"SCG_completeness":"completeness", "SCG_redundancy":"contamination"})
+
+            D[["completeness","contamination"]].to_csv(output[1])
 
 rule first_dereplication:
     input:
         directory("genomes/all_bins"),
-        quality= rules.get_quality_for_dRep.output
+        quality= "genomes/quality.csv"
     output:
-        directory("genomes/Dereplication_1/dereplicated_genomes")
+        directory("genomes/pre_dereplication/dereplicated_genomes")
     threads:
         config['threads']
     log:
-        "logs/genomes/dereplication_1.log"
+        "logs/genomes/pre_dereplication.log"
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
@@ -644,18 +678,18 @@ rule first_dereplication:
         " --processors {threads} "
         " {params.opt_parameters} "
         " {params.work_directory} "
-
+        " &> {log} "
 
 rule second_dereplication:
     input:
         rules.first_dereplication.output,
-        quality= rules.get_quality_for_dRep.output
+        quality= "genomes/quality.csv"
     output:
-        directory("genomes/Dereplication_2/dereplicated_genomes")
+        directory("genomes/Dereplication/dereplicated_genomes")
     threads:
         config['threads']
     log:
-        "logs/genomes/dereplication_2.log"
+        "logs/genomes/dereplication.log"
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
@@ -684,3 +718,31 @@ rule second_dereplication:
         " --processors {threads} "
         " {params.opt_parameters} "
         " {params.work_directory} "
+        " &> {log} "
+
+
+
+rule run_all_checkm_lineage_wf:
+    input:
+        touched_output = "logs/checkm_init.txt",
+        bins = directory("genomes/Dereplication/dereplicated_genomes")
+    output:
+        "genomes/checkm/completeness.tsv"
+    params:
+        output_dir = lambda wc, output: os.path.dirname(output[0])
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+        rm -r {params.output_dir}
+        checkm lineage_wf \
+            --file {params.output_dir}/completeness.tsv \
+            --tab_table \
+            --quiet \
+            --extension fasta \
+            --threads {threads} \
+            {input.bins} \
+            {params.output_dir}
+        """
