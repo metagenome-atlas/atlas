@@ -647,21 +647,23 @@ rule first_dereplication:
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
+        filter= " --noQualityFiltering " if config['genome_dereplication']['filter']['noFilter'] else "",
         filter_length= config['genome_dereplication']['filter']['length'],
         filter_completeness= config['genome_dereplication']['filter']['completeness'],
         filter_contamination= config['genome_dereplication']['filter']['contamination'],
         ANI= config['genome_dereplication']['ANI'],
-        completeness_weight= config['genome_dereplication']['weight']['completeness'] ,
-        contamination_weight=config['genome_dereplication']['weight']['contamination'] ,
-        strain_heterogeneity_weight= config['genome_dereplication']['weight']['completeness'] , #not in table
-        N50_weight=config['genome_dereplication']['weight']['N50'] ,
-        size_weight=config['genome_dereplication']['weight']['size'] ,
+        completeness_weight= config['genome_dereplication']['score']['completeness'] ,
+        contamination_weight=config['genome_dereplication']['score']['contamination'] ,
+        strain_heterogeneity_weight= config['genome_dereplication']['score']['completeness'] , #not in table
+        N50_weight=config['genome_dereplication']['score']['N50'] ,
+        size_weight=config['genome_dereplication']['score']['length'] ,
         opt_parameters = config['genome_dereplication']['opt_parameters'],
         work_directory= lambda wc,output: os.path.dirname(output[0]),
         sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
         " dRep dereplicate "
+        " {params.filter} "
         " --genomes {input[0]}/*.fasta "
         " --genomeInfo {input.quality} "
         " --length {params.filter_length} "
@@ -694,11 +696,11 @@ rule second_dereplication:
         "%s/dRep.yaml" % CONDAENV
     params:
         ANI= config['genome_dereplication']['ANI'],
-        completeness_weight= config['genome_dereplication']['weight']['completeness'] ,
-        contamination_weight=config['genome_dereplication']['weight']['contamination'] ,
-        strain_heterogeneity_weight= config['genome_dereplication']['weight']['completeness'] , #not in table
-        N50_weight=config['genome_dereplication']['weight']['N50'] ,
-        size_weight=config['genome_dereplication']['weight']['size'] ,
+        completeness_weight= config['genome_dereplication']['score']['completeness'] ,
+        contamination_weight=config['genome_dereplication']['score']['contamination'] ,
+        strain_heterogeneity_weight= config['genome_dereplication']['score']['completeness'] , #not in table
+        N50_weight=config['genome_dereplication']['score']['N50'] ,
+        size_weight=config['genome_dereplication']['score']['length'] ,
         opt_parameters = config['genome_dereplication']['opt_parameters'],
         work_directory= lambda wc,output: os.path.dirname(output[0]),
         sketch_size= config['genome_dereplication']['sketch_size']

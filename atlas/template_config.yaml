@@ -170,6 +170,23 @@ DASTool:
   search_engine: 'diamond'
   score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
 
+genome_dereplication:
+  ANI: 0.99
+  overlap: 0.6
+  opt_parameters: ""
+  filter:
+      noFilter: false
+      length: 5000
+      completeness: 75
+      contamination: 15
+  score:
+      completeness: 1
+      contamination: 5
+      N50: 0.5
+      length: 0
+
+
+
 ########################
 # Annotation
 ########################

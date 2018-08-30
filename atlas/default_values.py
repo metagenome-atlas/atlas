@@ -197,15 +197,16 @@ def make_default_config():
 
     conf['genome_dereplication']=dict(
                             filter = dict(
+                                noFilter=False,
                                 length=5000,
                                 completeness=75,
                                 contamination=15),
-                            weight = dict(
+                            score = dict(
                                     completeness=1,
                                     contamination=5,
-                                    strain_heterogeneity=1, #not in table
+                                    strain_heterogeneity=0, #not in table
                                     N50=0.5,
-                                    size=0),
+                                    length=0),
                             ANI=0.99,
                             overlap=0.6,
                             sketch_size=5000,
