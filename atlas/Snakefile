@@ -262,14 +262,12 @@ elif config.get("workflow", "complete") == "complete":
 elif config.get("workflow") == "binning":
 
 
-
-
-
     rule all:
         input:
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                    binner=config['binner'], sample =SAMPLES),
-            expand("reports/bin_report_{binner}.html", binner=config['final_binner'])
+            expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+            "genomes/checkm/taxonomy.tsv"
 
 
     include: "rules/binning.snakefile"
