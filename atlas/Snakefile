@@ -267,7 +267,8 @@ elif config.get("workflow") == "binning":
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                    binner=config['binner'], sample =SAMPLES),
             expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
-            "genomes/checkm/taxonomy.tsv"
+            "genomes/checkm/taxonomy.tsv",
+            "genomes/checkm/SSU/ssu_summary.tsv"
 
 
     include: "rules/binning.snakefile"
