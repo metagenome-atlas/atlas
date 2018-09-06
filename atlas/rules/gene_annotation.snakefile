@@ -35,7 +35,7 @@ if config.get("gene_predicter", "prodigal") == "prokka":
             outdir = lambda wc, output: os.path.dirname(output.faa),
             kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "%s/prokka.yaml" % CONDAENV
         threads:
             config.get("threads", 1)
         shell:
