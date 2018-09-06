@@ -173,11 +173,14 @@ elif config.get("workflow", "complete") == "complete":
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES),
             expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
+            expand("{sample}/annotation/eggNOG.tsv", sample=SAMPLES),
             REPORTS
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
     include: "rules/gene_annotation.snakefile"
+
+# TODO: we should add --eggnog to the 2 merge_sample_tables and integrate it correctly in the function
 
     if config.get("perform_genome_binning", True):
 
