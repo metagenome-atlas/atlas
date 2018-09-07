@@ -317,7 +317,7 @@ rule eggNOG_homology_search:
     output:
         temp("{folder}/{prefix}.emapper.seed_orthologs"),
     params:
-        data_dir = EGGNOG_DIR,
+        data_dir = DBDIR,
         prefix = "{folder}/{prefix}"
     resources:
         mem = config.get("java_mem", JAVA_MEM)
@@ -339,12 +339,12 @@ rule eggNOG_homology_search:
 # run on single machine
 rule eggNOG_annotation:
     input:
-        "%s/download_eggnog_data.success" % EGGNOG_DIR,
+        "%s/eggnog.db" % DBDIR,
         seed = rules.eggNOG_homology_search.output
     output:
         temp("{folder}/{prefix}.emapper.annotations")
     params:
-        data_dir = EGGNOG_DIR,
+        data_dir = DBDIR,
         prefix = "{folder}/{prefix}"
     threads:
         config.get("threads", 1)
