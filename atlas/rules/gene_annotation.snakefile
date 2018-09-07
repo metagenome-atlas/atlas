@@ -312,7 +312,7 @@ rule parse_blastp:
 #HIGH throughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
-        "%s/download_eggnog_data.success" % EGGNOG_DIR,
+        "%s/eggnog.db" % DBDIR,
         faa = "{folder}/{prefix}.faa",
     output:
         temp("{folder}/{prefix}.emapper.seed_orthologs"),

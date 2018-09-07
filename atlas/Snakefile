@@ -120,7 +120,6 @@ def input_params_for_bbwrap(wildcards, input):
 
 
 CONDAENV = get_conda_envs_dir()
-EGGNOG_DIR  = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "eggNOG")
 
 
 if config.get("workflow") != "download":
