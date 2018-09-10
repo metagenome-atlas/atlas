@@ -12,7 +12,7 @@ from atlas.utils import touch
 
 PROKKA_TSV_HEADER = ["contig_id", "gene_id", "ftype", "gene", "EC_number", "product"]
 PRODIGAL_HEADER = [
-    "",
+    "gene_id",
     "confidence",
     "contig",
     "feature_type",
@@ -111,6 +111,16 @@ BINNED_HEADER = MERGED_HEADER + [
 ]
 
 
+def parse_csv(file_path, **kwargs):
+    try:
+        df = pd.read_csv(file_path, **kwargs)
+    except UnicodeDecodeError:
+        # UnicodeDecodeError: 'utf-8' codec can't decode byte 0x91 in position 35: invalid start byte
+        kwargs["encoding"] = "iso-8859-1"
+        df = pd.read_csv(file_path, **kwargs)
+    return df
+
+
 def get_valid_dataframe(file_path, expected_cols, **kwargs):
     """
     Args:
@@ -123,16 +133,17 @@ def get_valid_dataframe(file_path, expected_cols, **kwargs):
     Raises:
         ValueError: lists missing required columns
     """
-    try:
-        df = pd.read_csv(file_path, **kwargs)
-    except UnicodeDecodeError:
-        # UnicodeDecodeError: 'utf-8' codec can't decode byte 0x91 in position 35: invalid start byte
-        kwargs["encoding"] = "iso-8859-1"
-        df = pd.read_csv(file_path, **kwargs)
+    df = parse_csv(file_path, **kwargs)
     missing_cols = []
     for c in expected_cols:
         if c not in df.columns:
-            missing_cols.append(c)
+            if c == "gene_id" and expected_cols == PRODIGAL_HEADER:
+                # rename cols when parsing the file
+                kwargs["header"] = 0
+                kwargs["names"] = PRODIGAL_HEADER
+                df = parse_csv(file_path, **kwargs)
+            else:
+                missing_cols.append(c)
     if len(missing_cols) > 0:
         raise ValueError(
             "%s missing required columns: %s" % (file_path, ", ".join(missing_cols))
@@ -141,22 +152,25 @@ def get_valid_dataframe(file_path, expected_cols, **kwargs):
 
 
 def table_source(tsv):
-    source = ""
+    header = []
     cols = list(pd.read_table(tsv, nrows=1).columns)
     if len(cols) == len(PRODIGAL_HEADER):
         if cols[1:] == PRODIGAL_HEADER[1:]:
-            source = "prodigal"
+            header = PRODIGAL_HEADER
     elif len(cols) == len(PROKKA_TSV_HEADER) and cols == PROKKA_TSV_HEADER:
-        source = "prokka"
-    if not source:
-        raise ValueError("Unable to determine source of %s" % tsv)
-    return source
+        header = PROKKA_TSV_HEADER
+    if not header:
+        raise ValueError("Unable to determine header of %s" % tsv)
+    return header
 
 
-def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None, eggNOG=None):
+def do_merge(gene_tsv, refseq_tsv, counts_tsv=None, eggnog=None):
     """Reads input files, creates temporary dataframes, and performs the merge."""
-    logging.info("Parsing Prokka TSV: %s" % prokka_tsv)
-    prokka_df = get_valid_dataframe(prokka_tsv, PROKKA_TSV_HEADER, sep="\t")
+    logging.info("Parsing Prokka TSV: %s" % gene_tsv)
+    gene_tsv_header = table_source_header(gene_tsv)
+    gene_df = get_valid_dataframe(gene_tsv, gene_tsv_header, sep="\t")
+
+    # TODO Leaving off edits here until new header columns are better defined
 
     if counts_tsv:
         logging.info("Parsing Counts TSV: %s" % counts_tsv)
@@ -176,13 +190,13 @@ def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None, eggNOG=None):
             right_on=PROKKA_TSV_HEADER[1],
         )
 
-    if eggNOG:
+    if eggnog:
         logging.info("Parsing eggNOG TSV: %s" % counts_tsv)
-        eggNOG_df = get_valid_dataframe(eggNOG, EGGNOG_HEADER, sep="\t")
+        eggnog_df = get_valid_dataframe(eggnog, EGGNOG_HEADER, sep="\t")
 
         # merge prokka and counts
         merged = pd.merge(
-            left=eggNOG_df,
+            left=eggnog_df,
             right=merged,
             how="left",
             left_on="query_name",
@@ -203,7 +217,7 @@ def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None, eggNOG=None):
         )
     else:
         merged = pd.merge(
-            left=prokka_df,
+            left=gene_df,
             right=refseq_df,
             how="left",
             left_on=PROKKA_TSV_HEADER[1],
@@ -320,12 +334,12 @@ def merge_tables(
     fastas represent the sequences that comprise the bins referenced in
     COMPLETENESS and TAXONOMY.
     """
-    if counts_tsv and eggNOG and completeness and taxonomy and fastas:
-        df = do_merge(gene_tsv, refseq_tsv, counts_tsv, eggNOG)
+    if counts_tsv and eggnog and completeness and taxonomy and fastas:
+        df = do_merge(gene_tsv, refseq_tsv, counts_tsv, eggnog)
         df = merge_bin_data(df, completeness, taxonomy, fastas)
         df.to_csv(output, sep="\t", columns=BINNED_HEADER, index=False)
     else:
-        df = do_merge(gene_tsv, refseq_tsv, counts_tsv, eggNOG)
+        df = do_merge(gene_tsv, refseq_tsv, counts_tsv, eggnog)
         if counts_tsv:
             df.to_csv(output, sep="\t", columns=MERGED_HEADER, index=False)
         else:
