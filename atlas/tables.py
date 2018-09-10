@@ -11,6 +11,7 @@ from atlas.parsers import read_fasta
 from atlas.utils import touch
 
 PROKKA_TSV_HEADER = ["contig_id", "gene_id", "ftype", "gene", "EC_number", "product"]
+PRODIGAL_HEADER = ["", "confidence", "contig", "feature_type", "gc_cont", "partial", "rbs_motif", "start", "start_type", "stop", "strand"]
 REFSEQ_TSV_HEADER = [
     "contig",
     "orf",
@@ -125,6 +126,19 @@ def get_valid_dataframe(file_path, expected_cols, **kwargs):
             "%s missing required columns: %s" % (file_path, ", ".join(missing_cols))
         )
     return df
+
+
+def table_source(tsv):
+    source = ""
+    cols = list(pd.read_table(tsv, nrows=1).columns)
+    if len(cols) == len(PRODIGAL_HEADER):
+        if cols[1:] == PRODIGAL_HEADER[1:]:
+            source = "prodigal"
+    elif len(cols) == len(PROKKA_TSV_HEADER) and cols == PROKKA_TSV_HEADER:
+        source = "prokka"
+    if not source:
+        raise ValueError("Unable to determine source of %s" % tsv)
+    return source
 
 
 def do_merge(prokka_tsv, refseq_tsv, counts_tsv=None, eggNOG=None):
