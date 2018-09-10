@@ -29,9 +29,9 @@ DUPLICATES_ALLOW_SUBSTITUTIONS = 2
 NORMALIZATION_KMER_LENGTH = 21
 
 # almost no filtering unless grossly over-represented
-NORMALIZATION_TARGET_DEPTH = 10000 #500
+NORMALIZATION_TARGET_DEPTH = 10000  # 500
 # allow very low represented kmers to remain
-NORMALIZATION_MINIMUM_KMERS = 3 #15
+NORMALIZATION_MINIMUM_KMERS = 3  # 15
 
 ASSEMBLY_MEMORY = 50
 ASSEMBLY_THREADS = 8
@@ -44,21 +44,21 @@ MEGAHIT_PRUNE_LEVEL = 2
 MEGAHIT_LOW_LOCAL_RATIO = 0.2
 SPADES_K = "auto"
 # basically no filtering after assembly
-PREFILTER_MINIMUM_CONTIG_LENGTH = 200 #500
+PREFILTER_MINIMUM_CONTIG_LENGTH = 200  # 500
 # this is bumped up slightly to filter non-merged R1 and R2 sequences
-MINIMUM_CONTIG_LENGTH = 300 #2200
+MINIMUM_CONTIG_LENGTH = 300  # 2200
 
 # leave all contigs
-MINIMUM_AVERAGE_COVERAGE = 1 #5
-MINIMUM_PERCENT_COVERED_BASES = 20 #40
+MINIMUM_AVERAGE_COVERAGE = 1  # 5
+MINIMUM_PERCENT_COVERED_BASES = 20  # 40
 MINIMUM_MAPPED_READS = 0
-CONTIG_TRIM_BP = 0  #100
+CONTIG_TRIM_BP = 0  # 100
 
 # bases
 MINIMUM_REGION_OVERLAP = 1
 FEATURE_COUNTS_ALLOW_OVERLAP = True
 MAXIMUM_COUNTED_MAP_SITES = 10
-#default bbmap
+# default bbmap
 CONTIG_MIN_ID = 0.76
 CONTIG_MAP_PAIRED_ONLY = True
 CONTIG_MAX_DISTANCE_BETWEEN_PAIRS = 1000
@@ -92,6 +92,7 @@ import os
 import sys
 import tempfile
 
+
 def make_default_config():
     """ generates a dict with all the default values, if they exist
     """
@@ -103,13 +104,16 @@ def make_default_config():
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
     conf["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
-    conf["preprocess_reference_kmer_match_length"] = PREPROCESS_REFERENCE_KMER_MATCH_LENGTH
-    conf["preprocess_minimum_passing_read_length"] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
+    conf[
+        "preprocess_reference_kmer_match_length"
+    ] = PREPROCESS_REFERENCE_KMER_MATCH_LENGTH
+    conf[
+        "preprocess_minimum_passing_read_length"
+    ] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
     conf["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
 
     conf["deduplicate"] = True
     conf["error_correction_overlapping_pairs"] = True
-
 
     conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     conf["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
@@ -120,20 +124,19 @@ def make_default_config():
     conf["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
     conf["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
 
-
     conf["normalize_reads_before_assembly"] = True
     conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
     conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
 
-    conf["error_correction_before_assembly"] =  True
+    conf["error_correction_before_assembly"] = True
 
-    conf["merge_pairs_before_assembly"] =  True
+    conf["merge_pairs_before_assembly"] = True
     conf["merging_k"] = MERGING_K
     conf["merging_extend2"] = MERGING_EXTEND2
-    conf["merging_flags"]  = MERGING_FLAGS
+    conf["merging_flags"] = MERGING_FLAGS
 
-    conf["assembler"] = 'megahit'
+    conf["assembler"] = "megahit"
     conf["assembly_memory"] = ASSEMBLY_MEMORY
     conf["assembly_threads"] = ASSEMBLY_THREADS
     conf["megahit_min_count"] = MEGAHIT_MIN_COUNT
@@ -143,11 +146,11 @@ def make_default_config():
     conf["megahit_merge_level"] = MEGAHIT_MERGE_LEVEL
     conf["megahit_prune_level"] = MEGAHIT_PRUNE_LEVEL
     conf["megahit_low_local_ratio"] = MEGAHIT_LOW_LOCAL_RATIO
-    conf["megahit_preset"] = 'default'
+    conf["megahit_preset"] = "default"
     conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
-    conf["spades_preset"] = 'meta'
+    conf["spades_preset"] = "meta"
     conf["spades_skip_BayesHammer"] = False
     conf["filter_contigs"] = True
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
@@ -164,7 +167,6 @@ def make_default_config():
     conf["contig_min_id"] = CONTIG_MIN_ID
     conf["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
     conf["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
-
 
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
     conf["perform_genome_binning"] = True

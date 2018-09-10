@@ -9,7 +9,6 @@ from itertools import groupby
 
 
 class Node(object):
-
     def __init__(self, taxonomy, node_id, parent_id, tax_level):
         """Represents a node within a tree.
 
@@ -29,7 +28,6 @@ class Node(object):
 
 
 class Tree(object):
-
     def __init__(self, tree_file):
         """Builds reference dictionary of Taxonomy Name, Taxonomy ID, and Parent Taxonomy ID."""
         self.tree = defaultdict(dict)
@@ -37,10 +35,13 @@ class Tree(object):
         with open(tree_file) as tree_fh:
             for line in tree_fh:
                 toks = line.strip().split("\t")
-                if not toks[0] == '1' and not toks[2] == '1':
+                if not toks[0] == "1" and not toks[2] == "1":
                     assert not toks[0] == toks[2]
                 if not len(toks) == 4:
-                    logging.warning("Line [%s] does not have ID, NAME, PARENTID, TAX LEVEL" % line.strip())
+                    logging.warning(
+                        "Line [%s] does not have ID, NAME, PARENTID, TAX LEVEL"
+                        % line.strip()
+                    )
                     continue
                 self.add_node(toks[1], toks[0], toks[2], toks[3])
 
@@ -149,7 +150,6 @@ class Tree(object):
             # prepend
             lineage.insert(0, taxonomy)
         return lineage
-
 
     def lca_majority(self, taxonomy_list, majority_cutoff):
         """Finds a consensus majority up a tree structure.
@@ -266,13 +266,14 @@ class Tree(object):
             # create majority from lca
             else:
                 majority, lineages = self.lca_majority(taxonomy_list, majority_cutoff)
-                aggregate_counts = self.counts_to_majority_list(taxonomy_counts, lineages, majority)
+                aggregate_counts = self.counts_to_majority_list(
+                    taxonomy_counts, lineages, majority
+                )
                 p = nettleton_pvalue(aggregate_counts, majority)
-        return {"taxonomy":majority, "pvalue":p}
+        return {"taxonomy": majority, "pvalue": p}
 
 
 class BlastHits(object):
-
     def __init__(self, names=None, max_hits=10, top_fraction=None):
         """Class that represents BLAST hits for a single target sequence. Hits are added to queues
         for bitscore and ID and ordered by increasing bitscore.
@@ -388,10 +389,20 @@ class BlastHits(object):
             return names_reversed[idx]
 
 
-def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min_identity=70,
-                                  min_bitscore=0, min_length=60, max_evalue=0.000001,
-                                  max_hits_per_orf=10, top_fraction_of_hits=None,
-                                  table_name="refseq", lca_threshold=1):
+def parse_blast_results_with_tree(
+    blast_tab,
+    name_map,
+    summary_method,
+    tree,
+    min_identity=70,
+    min_bitscore=0,
+    min_length=60,
+    max_evalue=0.000001,
+    max_hits_per_orf=10,
+    top_fraction_of_hits=None,
+    table_name="refseq",
+    lca_threshold=1,
+):
     """Parse BLAST results (-outfmt 6), filter, and aggregate ORF taxonomies.
 
     Args:
@@ -417,7 +428,9 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
     assert summary_method in ["lca", "best", "majority"]
     contigs = defaultdict(dict)
 
-    with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(blast_tab) as blast_tab_fh:
+    with contextlib.closing(sqlite3.connect(name_map)) as conn, gzopen(
+        blast_tab
+    ) as blast_tab_fh:
         cursor = conn.cursor()
         # group hits by ORF (column 2)
         for orf_id, qgroup in groupby(blast_tab_fh, key=lambda x: x.split("\t")[1]):
@@ -427,7 +440,9 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
             taxonomy_id = "1"
             bitscore = "NA"
             evalue = "NA"
-            orf_hits = BlastHits(max_hits=max_hits_per_orf, top_fraction=top_fraction_of_hits)
+            orf_hits = BlastHits(
+                max_hits=max_hits_per_orf, top_fraction=top_fraction_of_hits
+            )
             lines = []
 
             # iterate over blast hits per ORF
@@ -439,15 +454,20 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
                 # convert toks to dictionary
                 toks = dict(zip(BLAST6, toks))
 
-                if (int(toks["length"]) < min_length or
-                        float(toks["pident"]) < min_identity or
-                        float(toks["evalue"]) > max_evalue):
+                if (
+                    int(toks["length"]) < min_length
+                    or float(toks["pident"]) < min_identity
+                    or float(toks["evalue"]) > max_evalue
+                ):
                     continue
                 if min_bitscore and float(toks["bitscore"]) < min_bitscore:
                     # input is sorted by decreasing bitscore
                     break
 
-                cursor.execute('SELECT function, taxonomy FROM %s WHERE name="%s"' % (table_name, toks["sseqid"]))
+                cursor.execute(
+                    'SELECT function, taxonomy FROM %s WHERE name="%s"'
+                    % (table_name, toks["sseqid"])
+                )
                 current_function, current_taxonomy = cursor.fetchone()
 
                 # update taxonomy based on pident; would be similar to 16S taxonomy assignments
@@ -486,9 +506,16 @@ def parse_blast_results_with_tree(blast_tab, name_map, summary_method, tree, min
                     protein_function = lines[0]["current_function"]
 
                 if bitscore == "NA":
-                    logging.critical("The summarized ID (%s) was not assigned metadata" % taxonomy_id)
+                    logging.critical(
+                        "The summarized ID (%s) was not assigned metadata" % taxonomy_id
+                    )
 
-            contigs[contig_name][orf_id] = (protein_function, taxonomy_id, bitscore, evalue)
+            contigs[contig_name][orf_id] = (
+                protein_function,
+                taxonomy_id,
+                bitscore,
+                evalue,
+            )
 
     return contigs
 
@@ -499,7 +526,9 @@ def validate_lineage(lineage, sep=";"):
     >>> validate_lineage(lineage)
     'k__?;p__Basidiomycota;c__Tremellomycetes;o__Tremellales;f__?;g__Cryptococcus;s__?'
     """
-    levels = ["k" if tax_level == "superkingdom" else tax_level[0] for tax_level in TAX_LEVELS]
+    levels = [
+        "k" if tax_level == "superkingdom" else tax_level[0] for tax_level in TAX_LEVELS
+    ]
     valid_lineage = []
     for idx in levels:
         # removes commas in tax names
@@ -507,7 +536,14 @@ def validate_lineage(lineage, sep=";"):
     return sep.join(valid_lineage)
 
 
-def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold=0.51, table_name="refseq"):
+def process_orfs_with_tree(
+    orf_assignments,
+    tree,
+    output,
+    aggregation_method,
+    majority_threshold=0.51,
+    table_name="refseq",
+):
     """Processing the already classified ORFs through secondary contig classification.
 
     Args:
@@ -517,8 +553,18 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
         aggregation_method (str): lca, lca-majority, or majority
         majority_threshold (float): constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method
     """
-    print("contig", "orf", "taxonomy", "erfc", "orf_taxonomy", "%s_product" % table_name,
-          "%s_evalue" % table_name, "%s_bitscore" % table_name, sep="\t", file=output)
+    print(
+        "contig",
+        "orf",
+        "taxonomy",
+        "erfc",
+        "orf_taxonomy",
+        "%s_product" % table_name,
+        "%s_evalue" % table_name,
+        "%s_bitscore" % table_name,
+        sep="\t",
+        file=output,
+    )
     for contig, orfs in orf_assignments.items():
         taxonomies = [x[1] for x in orfs.values()]
         if aggregation_method == "lca-majority":
@@ -538,11 +584,23 @@ def process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, ma
             node = tree.tree[item]
             if node.tax_level in TAX_LEVELS:
                 # does not account for "no rank" and some other cases of "unclassified"
-                lineage["k" if node.tax_level == "superkingdom" else node.tax_level[0]] = node.taxonomy
+                lineage[
+                    "k" if node.tax_level == "superkingdom" else node.tax_level[0]
+                ] = node.taxonomy
         lineage = validate_lineage(lineage)
 
         for idx in sorted(orfs.keys()):
             orf_function, orf_tax_id, bitscore, evalue = orfs[idx]
             orf_taxonomy = tree.tree[orf_tax_id].taxonomy
-            print(contig, idx, lineage, error_function, orf_taxonomy,
-                  orf_function, evalue, bitscore, sep="\t", file=output)
+            print(
+                contig,
+                idx,
+                lineage,
+                error_function,
+                orf_taxonomy,
+                orf_function,
+                evalue,
+                bitscore,
+                sep="\t",
+                file=output,
+            )
