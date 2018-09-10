@@ -232,7 +232,7 @@ def merge_bin_data(df, completeness_tsv, taxonomy_tsv, fasta_files):
 
 
 def merge_tables(
-    prokka_tsv,
+    gene_tsv,
     refseq_tsv,
     output,
     counts_tsv=None,
@@ -295,11 +295,11 @@ def merge_tables(
     COMPLETENESS and TAXONOMY.
     """
     if counts_tsv and eggNOG and completeness and taxonomy and fastas:
-        df = do_merge(prokka_tsv, refseq_tsv, counts_tsv, eggNOG)
+        df = do_merge(gene_tsv, refseq_tsv, counts_tsv, eggNOG)
         df = merge_bin_data(df, completeness, taxonomy, fastas)
         df.to_csv(output, sep="\t", columns=BINNED_HEADER, index=False)
     else:
-        df = do_merge(prokka_tsv, refseq_tsv, counts_tsv, eggNOG)
+        df = do_merge(gene_tsv, refseq_tsv, counts_tsv, eggNOG)
         if counts_tsv:
             df.to_csv(output, sep="\t", columns=MERGED_HEADER, index=False)
         else:
