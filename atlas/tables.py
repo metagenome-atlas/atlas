@@ -242,14 +242,57 @@ def merge_tables(
     fastas=None,
 ):
     """
+    GENE_TSV (two sources). From Prokka, the expected header is:
 
-    Count data is a TSV formatted with a header:
+        \b
+        contig_id, gene_id, ftype, gene, EC_number, product
+
+    Alternatively, GENE_TSV can be the output from Prodigal and contain:
+
+        \b
+        <blank>, confidence, contig, feature_type, gc_cont, partial,
+        rbs_motif, start, start_type, stop, strand
+
+    REFSEQ_TSV is the final tax_assignments.tsv file with a header of:
+
+        \b
+        contig, orf, taxonomy, erfc, orf_taxonomy, refseq_product,
+        refseq_evalue, refseq_bitscore
+
+    COUNT_TSV is formatted with a header:
 
         \b
         Geneid Chr Start  End Strand Length /path/example.bam
         orf1     1     1  500      +    500                50
         orf2     1   601  900      +    300               300
         orf3     1  1201 1500      +    300               200
+
+    EGGNOG TSV header is:
+
+        \b
+        query_name, seed_eggNOG_ortholog, seed_ortholog_evalue,
+        seed_ortholog_score, predicted_gene_name, GO_terms, KEGG_KO,
+        BiGG_Reactions, Annotation_tax_scope, Matching_OGs,
+        best_OG|evalue|score, categories, eggNOG_HMM_model_annotation
+
+    COMPLETENESS is a TSV from checkm:
+
+        \b
+        Bin Id, Marker lineage, # genomes, # markers, # marker sets,
+        0, 1, 2, 3, 4, 5+, Completeness, Contamination, Strain heterogeneity
+
+    TAXONOMY is also a TSV from checkm:
+
+        \b
+        Bin Id, # unique markers (of 43), # multi-copy, Insertion branch UID,
+        Taxonomy (contained), Taxonomy (sister lineage), GC,
+        Genome size (Mbp), Gene count, Coding density, Translation table,
+        # descendant genomes, Lineage: GC mean, Lineage: GC std,
+        Lineage: genome size (Mbp) mean, Lineage: genome size (Mbp) std,
+        Lineage: gene count mean, Lineage: gene count std
+
+    fastas represent the sequences that comprise the bins referenced in
+    COMPLETENESS and TAXONOMY.
     """
     if counts_tsv and eggNOG and completeness and taxonomy and fastas:
         df = do_merge(prokka_tsv, refseq_tsv, counts_tsv, eggNOG)
