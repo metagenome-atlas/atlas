@@ -2,16 +2,12 @@ import contextlib
 import gzip
 import logging
 import sqlite3
-from atlas import BLAST6
-from atlas.blast import (
-    BlastHits,
-    Node,
-    Tree,
-    parse_blast_results_with_tree,
-    process_orfs_with_tree,
-)
-from atlas.utils import gzopen
 from itertools import groupby
+
+from atlas import BLAST6
+from atlas.blast import (BlastHits, Node, Tree, parse_blast_results_with_tree,
+                         process_orfs_with_tree)
+from atlas.utils import gzopen
 
 
 # TODO: update the docstring to reflect column changes

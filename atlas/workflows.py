@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+
 from atlas.conf import validate_config
 
 

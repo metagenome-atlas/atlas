@@ -1,7 +1,6 @@
 import os
 from collections import Counter, OrderedDict
-from math import log, erfc, sqrt
-
+from math import erfc, log, sqrt
 
 gzopen = lambda f: gzip.open(f, mode="rt") if f.endswith(".gz") else open(f)
 

@@ -3,6 +3,7 @@ import multiprocessing
 import os
 import sys
 import tempfile
+
 from ruamel.yaml import YAML
 from snakemake.io import load_configfile
 

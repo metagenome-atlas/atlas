@@ -2,10 +2,11 @@ import bisect
 import contextlib
 import logging
 import sqlite3
+from collections import Counter, OrderedDict, defaultdict, deque
+from itertools import groupby
+
 from atlas import BLAST6, TAX_LEVELS
 from atlas.utils import gzopen, index_of_list_items, nettleton_pvalue
-from collections import Counter, defaultdict, deque, OrderedDict
-from itertools import groupby
 
 
 class Node(object):

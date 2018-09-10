@@ -1,14 +1,15 @@
-import click
 import logging
 import multiprocessing
 import os
 import sys
+
+import click
+
 from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
 from atlas.workflows import download, run_workflow
-
 
 logging.basicConfig(
     level=logging.INFO,
