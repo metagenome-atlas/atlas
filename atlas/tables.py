@@ -236,7 +236,7 @@ def merge_tables(
     refseq_tsv,
     output,
     counts_tsv=None,
-    eggNOG=None,
+    eggnog=None,
     completeness=None,
     taxonomy=None,
     fastas=None,
