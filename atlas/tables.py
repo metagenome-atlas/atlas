@@ -33,9 +33,9 @@ EGGNOG_HEADER = [
     "BiGG_Reactions",
     "Annotation_tax_scope",
     "Matching_OGs",
-    # 'best_OG|evalue|score',
+    'best_OG|evalue|score',
     "categories",
-    # 'eggNOG_HMM_model_annotation'
+    'eggNOG_HMM_model_annotation'
 ]
 
 # This file provides final annotations of each query. Tab-delimited columns in the file are:
