@@ -223,8 +223,9 @@ elif config.get("workflow", "complete") == "complete":
 
 
         rule merge_sample_tables_with_bins:
+            # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
             input:
-                prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
+                prokka = "{sample}/annotation/predicted_genes/{sample}.tsv",
                 refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
                 counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
                 completeness = "{{sample}}/binning/{binner}/checkm/completeness.tsv".format(binner=config['final_binner']),
@@ -245,8 +246,9 @@ elif config.get("workflow", "complete") == "complete":
 
     else:
         rule merge_sample_tables:
+            # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
             input:
-                prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
+                prokka = "{sample}/annotation/predicted_genes/{sample}.tsv",
                 refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
                 counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
             output:
