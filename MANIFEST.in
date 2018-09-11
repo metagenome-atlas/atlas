@@ -1,4 +1,5 @@
 include atlas/Snakefile
+include atlas/template_config.yaml
 include atlas/rules/assemble.snakefile
 include atlas/rules/annotate.snakefile
 include atlas/rules/download.snakefile
