@@ -227,8 +227,8 @@ elif config.get("workflow", "complete") == "complete":
                 prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
                 refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
                 counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-                completeness = "{sample}/binning/checkm/maxbin/completeness.tsv",
-                taxonomy = "{sample}/binning/checkm/maxbin/taxonomy.tsv"
+                completeness = "{{sample}}/binning/{binner}/checkm/completeness.tsv".format(binner=config['final_binner']),
+                taxonomy = "{{sample}}/binning/{binner}/checkm/taxonomy.tsv".format(binner=config['final_binner'])
             output:
                 "{sample}/{sample}_annotations.txt"
             params:
