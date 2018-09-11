@@ -142,19 +142,49 @@ feature_counts_allow_overlap: true
 ########################
 # Binning
 ########################
-binner: ['metabat','concoct','maxbin']
-binning_min_contig_length: 1500 # metabat needs >1500
+
+final_binner: DASTool             # [DASTool or one of the binner, e.g. maxbin]
+
+binner:                           # If DASTool is used as final_binner, use predictions of this binners
+  - metabat
+  - concoct
+  - maxbin
+
+
 metabat:
   sensitivity: sensitive
+  min_contig_length: 1500 # metabat needs >1500
 
 concoct:
-  Nexpected_clusters: 200
-  read_length: 100
+  Nexpected_clusters: 200           # important parameter
+  read_length: 100                  # change this parameter !
   Niterations: 500
+  min_contig_length: 1000
 
 maxbin:
   max_iteration: 50
   prob_threshold: 0.9
+  min_contig_length: 1000
+
+DASTool:
+  search_engine: 'diamond'
+  score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
+
+genome_dereplication:
+  ANI: 0.99
+  overlap: 0.6
+  opt_parameters: ""
+  filter:
+      noFilter: false
+      length: 5000
+      completeness: 75
+      contamination: 15
+  score:
+      completeness: 1
+      contamination: 5
+      N50: 0.5
+      length: 0
+
 
 
 ########################

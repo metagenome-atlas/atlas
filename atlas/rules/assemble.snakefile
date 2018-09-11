@@ -249,6 +249,28 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     assembly_params['spades'] = {'meta':'--meta','normal':''}
 
+    def spades_parameters(wc,input):
+        if not os.path.exists("{sample}/assembly/params.txt".format(sample=wc.sample)):
+
+            params={}
+
+            params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            params['preset'] = assembly_params['spades'][config['spades_preset']],
+            params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
+
+        else:
+
+            params = {"inputs": "--restart-from last",
+                      "input_merged":"",
+                      "preset":"",
+                      "skip_error_correction":""}
+
+        params['outdir']= "{sample}/assembly".format(sample=wc.sample)
+
+        return params
+
+
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -259,12 +281,8 @@ else:
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
-            inputs = lambda wc, input: "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            input_merged = lambda wc, input: "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            p= lambda wc,input: spades_parameters(wc,input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            preset = assembly_params['spades'][config['spades_preset']],
-            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
         log:
             "{sample}/logs/assembly/spades.log"
         conda:
@@ -274,17 +292,16 @@ else:
         resources:
             mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """
-            spades.py --threads {threads} \
-                --memory {resources.mem} \
-                -o {params.outdir} \
-                -k {params.k} \
-                {params.preset} \
-                {params.inputs} \
-                {params.input_merged} \
-                {params.skip_error_correction} \
-                > {log} 2>&1
-            """
+            "spades.py "
+            " --threads {threads} "
+            " --memory {resources.mem} "
+            " -o {params.p[outdir]} "
+            " -k {params.k}"
+            " {params.p[preset]} "
+            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[skip_error_correction]} "
+            " > {log} 2>&1 "
+
 
 
     localrules: rename_spades_output
@@ -343,15 +360,12 @@ rule combine_sample_contig_stats:
 
 if config['filter_contigs']:
 
-    rule calculate_prefiltered_contig_coverage_stats:
+    rule align_reads_to_prefilter_contigs:
         input:
             unpack(get_quality_controlled_reads),
             fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
-        output: # bbwrap gives output statistics only for single ended
-            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+        output:
             sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
-        benchmark:
-            "logs/benchmarks/assembly/post_process/align_reads_to_prefiltered_contigs/{sample}.txt"
         params:
             input = lambda wc, input : input_params_for_bbwrap(wc, input),
             maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
@@ -359,7 +373,9 @@ if config['filter_contigs']:
             paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
             min_id = config.get('contig_min_id', CONTIG_MIN_ID),
             maxindel = 100,
-            #ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best'
+            ambiguous = 'all'
+        shadow:
+            "shallow"
         log:
             "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log"
         conda:
@@ -371,32 +387,55 @@ if config['filter_contigs']:
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
             """
-            bbwrap.sh \
-                nodisk=t \
+            bbwrap.sh nodisk=t \
                 ref={input.fasta} \
                 {params.input} \
-                fast=t \
+                trimreaddescriptions=t \
+                out={output.sam} \
                 threads={threads} \
-                ambiguous=all \
                 pairlen={params.max_distance_between_pairs} \
                 pairedonly={params.paired_only} \
+                minid={params.min_id} \
                 mdtag=t \
                 xstag=fs \
                 nmtag=t \
+                sam=1.3 \
                 local=t \
+                ambiguous={params.ambiguous} \
                 secondary=t \
                 saa=f \
+                append=t \
+                machineout=t \
                 maxsites={params.maxsites} \
-                -Xmx{resources.java_mem}G \
-                out={output.sam} 2> {log}
+                -Xmx{resources.java_mem}G 2> {log}
+            """
 
-            pileup.sh \
-                ref={input.fasta} \
-                in={output.sam} \
+
+    rule pileup_prefilter:
+        input:
+            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta",
+            sam = "{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam"
+        output:
+            covstats = "{sample}/assembly/contig_stats/prefilter_coverage_stats.txt"
+        params:
+            pileup_secondary = 't'
+        log:
+            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" # this file is used for assembly report
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        shell:
+            """
+            pileup.sh ref={input.fasta} in={input.sam} \
                 threads={threads} \
-                secondary=t \
                 -Xmx{resources.java_mem}G \
-                covstats={output.covstats} 2>> {log}
+                covstats={output.covstats} \
+                concise=t \
+                secondary={params.pileup_secondary} 2> {log}
             """
 
 
@@ -460,14 +499,15 @@ rule finalize_contigs:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
 
+# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "{sample}/{sample}_contigs.fasta",
+        fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
-        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
-        unmapped = expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS)
+        sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
+        unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+                          fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
@@ -477,10 +517,12 @@ rule align_reads_to_final_contigs:
         ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
         min_id = config.get('contig_min_id', CONTIG_MIN_ID),
         maxindel = 100 # default 16000 good for genome deletions but not necessarily for alignment to contigs
+    shadow:
+        "shallow"
     benchmark:
-        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}.txt"
+        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/align_reads_to_filtered_contigs.log"
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:

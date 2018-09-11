@@ -119,6 +119,33 @@ def input_params_for_bbwrap(wildcards, input):
     return flag
 
 
+def define_groups(samples):
+
+    from collections import defaultdict
+
+    for s in samples:
+        # add default value, each sample is it's own group
+        if not 'group' in samples[s]:
+            samples[s]['group'] = s
+
+    Groups = defaultdict(set)
+
+    for s in samples:
+        Groups[samples[s]['group']].add(s)
+
+    print("You have {} in {} groups".format(len(samples),len(Groups)))
+
+
+    return Groups
+
+
+
+
+
+
+
+
+
 CONDAENV = get_conda_envs_dir()
 DBDIR = os.path.realpath(config["db_dir"])
 CHECKMDIR = os.path.join(DBDIR, "checkm")
@@ -128,15 +155,18 @@ if config.get("workflow") != "download":
     TMPDIR = get_temp_dir(config)
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
     SAMPLES = [i for i in config["samples"].keys()]
+    GROUPS = define_groups(config['samples'])
 
-# quality control of sequences only
-if config.get("workflow", "complete") == "qc":
-    # define paired end or not
     PAIRED_END = all([config["samples"][s].get("paired", False) \
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
     REPORTS = ["reports/QC_report.html"]
+
+# quality control of sequences only
+if config.get("workflow", "complete") == "qc":
+    # define paired end or not
+
 
     localrules: qc
     rule qc:
@@ -148,19 +178,14 @@ if config.get("workflow", "complete") == "qc":
 
 # quality control, assembly, annotation, and quantification
 elif config.get("workflow", "complete") == "complete":
-    # define paired end or not
-    PAIRED_END = all([config["samples"][s].get("paired", False) \
-                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
-    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
-
     # REPORTS = ["reports/QC_report.html", "reports/assembly_report.html"]
-    REPORTS = ["reports/assembly_report.html"]
+    REPORTS += ["reports/assembly_report.html"]
 
     if config.get("perform_genome_binning", True):
         # later update to include others as well as integrate concoct and metabat
-        REPORTS.append("reports/bin_report_maxbin.html")
+        REPORTS.append("reports/bin_report_{binner}.html".format(binner=config['final_binner']))
         include: "rules/binning.snakefile"
+
 
     localrules: all
     rule all:
@@ -176,6 +201,18 @@ elif config.get("workflow", "complete") == "complete":
             expand("{sample}/annotation/eggNOG.tsv", sample=SAMPLES),
             REPORTS
 
+# checkpoint finished contigs, no annotation
+    localrules: finish_assembly
+    rule finish_assembly:
+        input:
+            expand("{sample}/sequence_quality_control/finished_QC",
+                sample=SAMPLES),
+            expand("{sample}/{sample}_contigs.fasta",
+                sample=SAMPLES),
+            expand("{sample}/sequence_alignment/{sample}.bam",
+                sample=SAMPLES),
+            expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt", sample=SAMPLES),
+
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
     include: "rules/gene_annotation.snakefile"
@@ -184,7 +221,8 @@ elif config.get("workflow", "complete") == "complete":
 
     if config.get("perform_genome_binning", True):
 
-        rule merge_sample_tables:
+
+        rule merge_sample_tables_with_bins:
             input:
                 prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
                 refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
@@ -223,6 +261,7 @@ elif config.get("workflow", "complete") == "complete":
 
 elif config.get("workflow") == "binning":
 
+
     # define paired end or not
     PAIRED_END = all([config["samples"][s].get("paired", False) \
                      or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
@@ -233,11 +272,16 @@ elif config.get("workflow") == "binning":
     rule all:
         input:
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-                   binner=config['binner'], sample=SAMPLES)
-            #expand("reports/bin_report_{binner}.html", binner=config['binner'])
+                   binner=config['binner'], sample =SAMPLES),
+            expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+            "genomes/checkm/taxonomy.tsv",
+            "genomes/checkm/SSU/ssu_summary.tsv"
+
+
 
     include: "rules/binning.snakefile"
     include: "rules/assemble.snakefile"
+    include: "rules/gene_annotation.snakefile"
 
 
 elif config.get("workflow") == "download":
