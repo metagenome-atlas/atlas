@@ -124,7 +124,7 @@ elif config.get("gene_predicter", "prodigal") == "prodigal":
         run:
             header = ["gene_id", "Contig", "Gene_nr", "Start", "Stop", "Strand", "Annotation"]
             with open(output.tsv, "w") as tsv:
-                tsv.write("\t".join([header]) + "\n")
+                tsv.write("\t".join(header) + "\n")
                 with open(input.faa) as fin:
                     gene_idx = 0
                     for line in fin:
