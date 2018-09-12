@@ -174,7 +174,6 @@ if config.get("workflow", "complete") == "qc":
 
 # quality control, assembly, annotation, and quantification
 elif config.get("workflow", "complete") == "complete":
-    # REPORTS = ["reports/QC_report.html", "reports/assembly_report.html"]
     REPORTS += ["reports/assembly_report.html"]
 
     if config.get("perform_genome_binning", True):
@@ -188,11 +187,7 @@ elif config.get("workflow", "complete") == "complete":
         input:
             expand("{sample}/sequence_quality_control/finished_QC",
                 sample=SAMPLES),
-            # "finished_QC",
-            expand("{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
-                sample=SAMPLES),
-            expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
-                sample=SAMPLES),
+            expand("{sample}/finished_assembly", sample=SAMPLES),
             expand("{sample}/annotation/eggNOG.tsv", sample=SAMPLES),
             REPORTS,
             #expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
@@ -201,13 +196,14 @@ elif config.get("workflow", "complete") == "complete":
     localrules: finish_assembly
     rule finish_assembly:
         input:
-            expand("{sample}/sequence_quality_control/finished_QC",
-                sample=SAMPLES),
-            expand("{sample}/{sample}_contigs.fasta",
-                sample=SAMPLES),
-            expand("{sample}/sequence_alignment/{sample}.bam",
-                sample=SAMPLES),
-            expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt", sample=SAMPLES),
+            "{sample}/sequence_quality_control/finished_QC",
+            "{sample}/{sample}_contigs.fasta",
+            "{sample}/sequence_alignment/{sample}.bam",
+            "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
+            "{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
+            "{sample}/assembly/contig_stats/final_contig_stats.txt"
+        output:
+            touch("{sample}/finished_assembly")
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
@@ -272,6 +268,7 @@ elif config.get("workflow") == "binning":
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                    binner=config['binner'], sample =SAMPLES),
             expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+            "genomes/Dereplication/dereplicated_genomes",
             "genomes/checkm/taxonomy.tsv",
             "genomes/checkm/SSU/ssu_summary.tsv"
 
