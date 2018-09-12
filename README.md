@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
-#![scheme of workflow](resources/images/atlas_workflow.png)
+![scheme of workflow](resources/images/atlas_workflow.png)
 
 
 # Documentation
