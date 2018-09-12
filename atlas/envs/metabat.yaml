@@ -1,0 +1,8 @@
+channels:
+    - bioconda
+    - conda-forge
+    - defaults
+    - ursky
+    - r
+dependencies:
+    - metabat2

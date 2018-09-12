@@ -83,6 +83,8 @@ rule initialize_qc:
     resources:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
+    group:
+        "qc"
     shell:
         """
         reformat.sh {params.inputs} \
@@ -123,6 +125,8 @@ rule get_read_stats:
     params:
         folder = lambda wc, output: os.path.splitext(output[0])[0],
         single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
+    group:
+        "qc"
     run:
         import datetime
         import shutil
@@ -216,6 +220,8 @@ if config.get('deduplicate', True):
         resources:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        group:
+            "qc"
         shell:
             """
             clumpify.sh \
@@ -269,6 +275,8 @@ rule apply_quality_filter:
     resources:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+    group:
+        "qc"
     shell:
         """
         bbduk.sh {params.inputs} \
@@ -315,7 +323,10 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
             k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
             refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
         shell:
-            """bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} threads={threads} k={params.k} local=t 2> {log}"""
+            """
+            bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} \
+                threads={threads} k={params.k} local=t 2> {log}
+            """
 
 
     rule run_decontamination:
@@ -351,6 +362,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         resources:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        group:
+            "qc"
         shell:
             """
             if [ "{params.paired}" = true ] ; then
@@ -380,9 +393,12 @@ rule postprocess_after_decontamination:
     input:
         unpack(get_ribosomal_rna_input)
     output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",step=PROCESSED_STEPS[-1],fraction=MULTIFILE_FRACTIONS)
+        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            step=PROCESSED_STEPS[-1], fraction=MULTIFILE_FRACTIONS)
     threads:
         1
+    group:
+        "qc"
     run:
         import shutil
         for i in range(len(MULTIFILE_FRACTIONS)):
@@ -414,6 +430,8 @@ if PAIRED_END:
             extend2 = config.get("merging_extend2", MERGING_EXTEND2),
             flags = 'loose ecct',
             minprob = config.get("bbmerge_minprob", "0.8")
+        group:
+            "qc"
         shell:
             """
             bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
@@ -446,6 +464,8 @@ else:
             "%s/required_packages.yaml" % CONDAENV
         log:
             "{sample}/logs/QC/stats/calculate_read_length.log"
+        group:
+            "qc"
         shell:
             """
             readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
@@ -553,26 +573,28 @@ rule finalize_sample_qc:
 
 
 rule build_qc_report:
-     input:
-         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-         read_counts = "stats/read_counts.tsv",
-         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
-         zipfiles_QC = expand('{sample}/sequence_quality_control/read_stats/QC.zip', sample=SAMPLES),
-         zipfiles_raw = expand('{sample}/sequence_quality_control/read_stats/raw.zip', sample=SAMPLES),
-     output:
-         touch("finished_QC"),
-         report = "reports/QC_report.html"
-     params:
-         samples = SAMPLES,
-         min_quality = config["preprocess_minimum_base_quality"],
-         snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
-     conda:
-         "%s/report.yaml" % CONDAENV
-     shell:
-         " python {params.snakefile_folder}/report/qc_report.py"
-         " --samples {params.samples} "
-         " --report_out {output.report}"
-         " --zipfiles_QC {input.zipfiles_QC} "
-         " --zipfiles_raw {input.zipfiles_raw} "
-         " --min_quality {params.min_quality}"
-         " --read_counts {input.read_counts} "
+    input:
+        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
+        read_counts = "stats/read_counts.tsv",
+        read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
+        zipfiles_QC = expand('{sample}/sequence_quality_control/read_stats/QC.zip', sample=SAMPLES),
+        zipfiles_raw = expand('{sample}/sequence_quality_control/read_stats/raw.zip', sample=SAMPLES),
+    output:
+        touch("finished_QC"),
+        report = "reports/QC_report.html"
+    params:
+        samples = SAMPLES,
+        min_quality = config["preprocess_minimum_base_quality"],
+        snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
+    conda:
+        "%s/report.yaml" % CONDAENV
+    shell:
+         """
+         python {params.snakefile_folder}/report/qc_report.py \
+            --samples {params.samples} \
+            --report_out {output.report} \
+            --zipfiles_QC {input.zipfiles_QC} \
+            --zipfiles_raw {input.zipfiles_raw} \
+            --min_quality {params.min_quality} \
+            --read_counts {input.read_counts}
+         """

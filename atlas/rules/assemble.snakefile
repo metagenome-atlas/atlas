@@ -6,8 +6,6 @@ from snakemake.utils import report
 import warnings
 from copy import copy
 
-localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
-            finalize_contigs, build_bin_report, build_assembly_report
 
 ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
 if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
@@ -25,30 +23,6 @@ def get_preprocessing_steps(config):
         preprocessing_steps.append("merged")
 
     return ".".join(preprocessing_steps)
-
-
-def gff_to_gtf(gff_in, gtf_out):
-    # orf_re = re.compile(r"ID=(.*?)\;")
-    with open(gtf_out, "w") as fh, open(gff_in) as gff:
-        for line in gff:
-            if line.startswith("##FASTA"): break
-            if line.startswith("#"): continue
-            # convert:
-            # ID=POMFPAEF_00802;inference=ab initio prediction:Prodigal:2.60;
-            # to
-            # ID POMFPAEF_00802; inference ab initio prediction:Prodigal:2.60;
-            toks = line.strip().split("\t")
-            toks[-1] = toks[-1].replace("=", " ").replace(";", "; ")
-            print(*toks, sep="\t", file=fh)
-
-
-def bb_cov_stats_to_maxbin(tsv_in, tsv_out):
-    with open(tsv_in) as fi, open(tsv_out, "w") as fo:
-        # header
-        next(fi)
-        for line in fi:
-            toks = line.strip().split("\t")
-            print(toks[0], toks[1], sep="\t", file=fo)
 
 
 assembly_preprocessing_steps = get_preprocessing_steps(config)
@@ -129,7 +103,7 @@ rule error_correction:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS))
     benchmark:
-        "logs/benchmarks/assembly/pre_process/error_correction_{previous_steps}/{sample}.txt"
+        "logs/benchmarks/assembly/pre_process/{sample}_error_correction_{previous_steps}.txt"
     log:
         "{sample}/logs/assembly/pre_process/error_correction_{previous_steps}.log"
     conda:
@@ -262,7 +236,7 @@ if config.get("assembler", "megahit") == "megahit":
                 {params.preset} >> {log} 2>&1
             """
 
-
+    localrules: rename_megahit_output
     rule rename_megahit_output:
         input:
             "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"
@@ -275,6 +249,28 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     assembly_params['spades'] = {'meta':'--meta','normal':''}
 
+    def spades_parameters(wc,input):
+        if not os.path.exists("{sample}/assembly/params.txt".format(sample=wc.sample)):
+
+            params={}
+
+            params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            params['preset'] = assembly_params['spades'][config['spades_preset']],
+            params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
+
+        else:
+
+            params = {"inputs": "--restart-from last",
+                      "input_merged":"",
+                      "preset":"",
+                      "skip_error_correction":""}
+
+        params['outdir']= "{sample}/assembly".format(sample=wc.sample)
+
+        return params
+
+
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -285,35 +281,30 @@ else:
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
-            inputs = lambda wc, input: "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            input_merged = lambda wc, input: "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            p= lambda wc,input: spades_parameters(wc,input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            preset = assembly_params['spades'][config['spades_preset']],
-            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
         log:
             "{sample}/logs/assembly/spades.log"
-        # shadow:
-        #     "full"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
-            mem=config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
+            mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
             "spades.py "
             " --threads {threads} "
             " --memory {resources.mem} "
-            " -o {params.outdir} "
+            " -o {params.p[outdir]} "
             " -k {params.k}"
-            " {params.preset} "
-            " {params.inputs} {params.input_merged} "
-            " {params.skip_error_correction} "
+            " {params.p[preset]} "
+            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
 
 
 
+    localrules: rename_spades_output
     rule rename_spades_output:
         input:
             "{sample}/assembly/contigs.fasta"
@@ -495,6 +486,8 @@ else: # no filter
         shell:
             "cp {input} {output}"
 
+
+localrules: finalize_contigs
 rule finalize_contigs:
     input:
         "{sample}/assembly/{sample}_final_contigs.fasta"
@@ -506,15 +499,15 @@ rule finalize_contigs:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
 
-
+# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "{sample}/{sample}_contigs.fasta",
+        fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
-        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
-        unmapped = expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS)
+        sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
+        unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+                          fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
@@ -527,9 +520,9 @@ rule align_reads_to_final_contigs:
     shadow:
         "shallow"
     benchmark:
-        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}.txt"
+        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/align_reads_to_filtered_contigs.log"
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -538,28 +531,28 @@ rule align_reads_to_final_contigs:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     shell:
-        """bbwrap.sh nodisk=t \
-               ref={input.fasta} \
-               {params.input} \
-               trimreaddescriptions=t \
-               out={output.sam} \
-               {params.unmapped} \
-               threads={threads} \
-               pairlen={params.max_distance_between_pairs} \
-               pairedonly={params.paired_only} \
-               minid={params.min_id} \
-               mdtag=t \
-               xstag=fs \
-               nmtag=t \
-               sam=1.3 \
-               local=t \
-               ambiguous={params.ambiguous} \
-               secondary=t \
-               append=t \
-               machineout=t \
-               maxsites={params.maxsites} \
-               -Xmx{resources.java_mem}G \
-               2> {log}
+        """
+        bbwrap.sh nodisk=t \
+            ref={input.fasta} \
+            {params.input} \
+            trimreaddescriptions=t \
+            outm={output.sam} \
+            {params.unmapped} \
+            threads={threads} \
+            pairlen={params.max_distance_between_pairs} \
+            pairedonly={params.paired_only} \
+            minid={params.min_id} \
+            mdtag=t \
+            xstag=fs \
+            nmtag=t \
+            sam=1.3 \
+            local=t \
+            ambiguous={params.ambiguous} \
+            secondary=t \
+            saa=f \
+            maxsites={params.maxsites} \
+            -Xmx{resources.java_mem}G \
+            2> {log}
         """
 
 
@@ -595,127 +588,6 @@ rule pileup:
                concise=t \
                secondary={params.pileup_secondary} \
                bincov={output.bincov} 2> {log}"""
-
-
-if config.get("perform_genome_binning", True):
-    rule make_maxbin_abundance_file:
-        input:
-            "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt"
-        output:
-            "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
-        run:
-            bb_cov_stats_to_maxbin(input[0], output[0])
-
-
-    rule run_maxbin:
-        input:
-            fasta = "{sample}/{sample}_contigs.fasta",
-            abundance = "{sample}/genomic_bins/{sample}_contig_coverage.tsv"
-        output:
-            # fastas will need to be dynamic if we do something with them at a later time
-            summary = "{sample}/genomic_bins/{sample}.summary",
-            marker = "{sample}/genomic_bins/{sample}.marker"
-        benchmark:
-            "logs/benchmarks/binning/maxbin2/{sample}.txt"
-        params:
-            mi = config.get("maxbin_max_iteration", MAXBIN_MAX_ITERATION),
-            mcl = config.get("maxbin_min_contig_length", MAXBIN_MIN_CONTIG_LENGTH),
-            pt = config.get("maxbin_prob_threshold", MAXBIN_PROB_THRESHOLD),
-            outdir = lambda wildcards, output: os.path.join(os.path.dirname(output.summary), wildcards.sample)
-        log:
-            "{sample}/logs/binning/maxbin2.log"
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        shell:
-            """run_MaxBin.pl -contig {input.fasta} \
-                   -abund {input.abundance} \
-                   -out {params.outdir} \
-                   -min_contig_length {params.mcl} \
-                   -thread {threads} \
-                   -prob_threshold {params.pt} \
-                   -max_iteration {params.mi} > {log}
-            """
-
-
-    rule initialize_checkm:
-        # input:
-        output:
-            touched_output = "logs/checkm_init.txt"
-        params:
-            database_dir = CHECKMDIR
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        log:
-            "logs/initialize_checkm.log"
-        shell:
-            "python %s/rules/initialize_checkm.py {params.database_dir} {output.touched_output} {log}" % os.path.dirname(os.path.abspath(workflow.snakefile))
-
-
-    rule run_checkm_lineage_wf:
-        input:
-            touched_output = "logs/checkm_init.txt",
-            # init_checkm = "%s/hmms/checkm.hmm" % CHECKMDIR,
-            bins = "{sample}/genomic_bins/{sample}.marker"
-        output:
-            "{sample}/genomic_bins/checkm/completeness.tsv"
-        params:
-            bin_dir = lambda wc, input: os.path.dirname(input.bins),
-            output_dir = lambda wc, output: os.path.dirname(output[0])
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        shell:
-            """rm -r {params.output_dir} && \
-               checkm lineage_wf \
-                   --file {params.output_dir}/completeness.tsv \
-                   --tab_table \
-                   --quiet \
-                   --extension fasta \
-                   --threads {threads} \
-                   {params.bin_dir} \
-                   {params.output_dir}"""
-
-
-    rule run_checkm_tree_qa:
-        input:
-            "{sample}/genomic_bins/checkm/completeness.tsv"
-        output:
-            "{sample}/genomic_bins/checkm/taxonomy.tsv"
-        params:
-            output_dir = "{sample}/genomic_bins/checkm"
-        conda:
-            "%s/optional_genome_binning.yaml" % CONDAENV
-        shell:
-            """checkm tree_qa \
-                   --tab_table \
-                   --out_format 2 \
-                   --file {params.output_dir}/taxonomy.tsv \
-                   {params.output_dir}"""
-
-
-rule build_bin_report:
-    input:
-        completeness_files = expand("{sample}/genomic_bins/checkm/completeness.tsv", sample=SAMPLES),
-        taxonomy_files = expand("{sample}/genomic_bins/checkm/taxonomy.tsv", sample=SAMPLES)
-    output:
-        report = "reports/bin_report.html",
-        bin_table = "genomic_bins.tsv"
-    params:
-        samples = " ".join(SAMPLES)
-    conda:
-        "%s/report.yaml" % CONDAENV
-    shell:
-        """
-        python %s/report/bin_report.py \
-            --samples {params.samples} \
-            --completeness {input.completeness_files} \
-            --taxonomy {input.taxonomy_files} \
-            --report-out {output.report} \
-            --bin-table {output.bin_table}
-        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
 
 
 rule convert_sam_to_bam:
@@ -755,233 +627,11 @@ rule create_bam_index:
         "samtools index {input}"
 
 
-rule run_prokka_annotation:
-    input:
-        "{sample}/{sample}_contigs.fasta"
-    output:
-        discrepancy = "{sample}/annotation/prokka/{sample}.err",
-        faa = "{sample}/annotation/prokka/{sample}.faa",
-        ffn = "{sample}/annotation/prokka/{sample}.ffn",
-        fna = "{sample}/annotation/prokka/{sample}.fna",
-        fsa = "{sample}/annotation/prokka/{sample}.fsa",
-        gff = "{sample}/annotation/prokka/{sample}.gff",
-        log = "{sample}/annotation/prokka/{sample}.log",
-        tbl = "{sample}/annotation/prokka/{sample}.tbl",
-        tsv = "{sample}/annotation/prokka/{sample}.tsv",
-        txt = "{sample}/annotation/prokka/{sample}.txt"
-    benchmark:
-        "logs/benchmarks/prokka/{sample}.txt"
-    params:
-        outdir = lambda wc, output: os.path.dirname(output.faa),
-        kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    shell:
-        """prokka --outdir {params.outdir} \
-               --force \
-               --prefix {wildcards.sample} \
-               --locustag {wildcards.sample} \
-               --kingdom {params.kingdom} \
-               --metagenome \
-               --cpus {threads} \
-               {input}"""
-
-
-rule update_prokka_tsv:
-    input:
-        "{sample}/annotation/prokka/{sample}.gff"
-    output:
-        "{sample}/annotation/prokka/{sample}_plus.tsv"
-    shell:
-        """atlas gff2tsv {input} {output}"""
-
-
-rule convert_gff_to_gtf:
-    input:
-        "{sample}/annotation/prokka/{sample}.gff"
-    output:
-        "{sample}/annotation/prokka/{sample}.gtf"
-    run:
-        gff_to_gtf(input[0], output[0])
-
-
-rule find_counts_per_region:
-    input:
-        gtf = "{sample}/annotation/prokka/{sample}.gtf",
-        bam = "{sample}/sequence_alignment/{sample}.bam"
-    output:
-        summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
-        counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
-    params:
-        min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
-        paired_only= "-B" if config.get('contig_map_paired_only',CONTIG_MAP_PAIRED_ONLY) else "",
-        paired_mode = "-p" if PAIRED_END else "",
-        multi_mapping = "-M --fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
-        feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
-    log:
-        "{sample}/logs/quantify/counts_per_region.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    shell:
-        """featureCounts \
-                --minOverlap {params.min_read_overlap} \
-                {params.paired_mode} \
-                {params.paired_only} \
-               -F GTF \
-               -T {threads} \
-               {params.multi_mapping} \
-               {params.feature_counts_allow_overlap} \
-               -t CDS \
-               -g ID \
-               -a {input.gtf} \
-               -o {output.counts} \
-               {input.bam} 2> {log}"""
-
-
-rule run_diamond_blastp:
-    input:
-        fasta = "{sample}/annotation/prokka/{sample}.faa",
-        db = config["diamond_db"]
-    output:
-        "{sample}/annotation/refseq/{sample}_hits.tsv"
-    benchmark:
-        "logs/benchmarks/quantify/run_diamond_blastp/{sample}.txt"
-    params:
-        tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
-        top_seqs = config.get("diamond_top_seqs", DIAMOND_TOP_SEQS),
-        e_value = config.get("diamond_e_value", DIAMOND_E_VALUE),
-        min_identity = config.get("diamond_min_identity", DIAMOND_MIN_IDENTITY),
-        query_cover = config.get("diamond_query_coverage", DIAMOND_QUERY_COVERAGE),
-        gap_open = config.get("diamond_gap_open", DIAMOND_GAP_OPEN),
-        gap_extend = config.get("diamond_gap_extend", DIAMOND_GAP_EXTEND),
-        block_size = config.get("diamond_block_size", DIAMOND_BLOCK_SIZE),
-        index_chunks = config.get("diamond_index_chunks", DIAMOND_INDEX_CHUNKS),
-        run_mode = "--more-sensitive" if not config.get("diamond_run_mode", "") == "fast" else ""
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    shell:
-        """diamond blastp \
-               --threads {threads} \
-               --outfmt 6 \
-               --out {output} \
-               --query {input.fasta} \
-               --db {input.db} \
-               --top {params.top_seqs} \
-               --evalue {params.e_value} \
-               --id {params.min_identity} \
-               --query-cover {params.query_cover} \
-               {params.run_mode} \
-               --gapopen {params.gap_open} \
-               --gapextend {params.gap_extend} \
-               {params.tmpdir} \
-               --block-size {params.block_size} \
-               --index-chunks {params.index_chunks}"""
-
-
-rule add_contig_metadata:
-    input:
-        hits = "{sample}/annotation/refseq/{sample}_hits.tsv",
-        gff = "{sample}/annotation/prokka/{sample}.gff"
-    output:
-        temp("{sample}/annotation/refseq/{sample}_hits_plus.tsv")
-    shell:
-        "atlas munge-blast {input.hits} {input.gff} {output}"
-
-
-rule sort_munged_blast_hits:
-    # ensure blast hits are grouped by contig, ORF, and then decreasing by bitscore
-    input:
-        "{sample}/annotation/refseq/{sample}_hits_plus.tsv"
-    output:
-        "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
-    shell:
-        "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
-
-
-rule parse_blastp:
-    # assign a taxonomy to contigs using the consensus of the ORF assignments
-    input:
-        "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
-    output:
-        "{sample}/annotation/refseq/{sample}_tax_assignments.tsv"
-    params:
-        namemap = config["refseq_namemap"],
-        treefile = config["refseq_tree"],
-        summary_method = config.get("summary_method", SUMMARY_METHOD),
-        aggregation_method = config.get("aggregation_method", AGGREGATION_METHOD),
-        majority_threshold = config.get("majority_threshold", MAJORITY_THRESHOLD),
-        min_identity = config.get("diamond_min_identity", DIAMOND_MIN_IDENTITY),
-        min_bitscore = config.get("min_bitscore", MIN_BITSCORE),
-        min_length = config.get("min_length", MIN_LENGTH),
-        max_evalue = config.get("diamond_e_value", DIAMOND_E_VALUE),
-        max_hits = config.get("max_hits", MAX_HITS),
-        top_fraction = (100 - config.get("diamond_top_seqs", 5)) * 0.01
-    shell:
-        """atlas refseq \
-               --summary-method {params.summary_method} \
-               --aggregation-method {params.aggregation_method} \
-               --majority-threshold {params.majority_threshold} \
-               --min-identity {params.min_identity} \
-               --min-bitscore {params.min_bitscore} \
-               --min-length {params.min_length} \
-               --max-evalue {params.max_evalue} \
-               --max-hits {params.max_hits} \
-               --top-fraction {params.top_fraction} \
-               {input} \
-               {params.namemap} \
-               {params.treefile} \
-               {output}"""
-
-
-if config.get("perform_genome_binning", True):
-    rule merge_sample_tables:
-        input:
-            prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
-            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-            completeness = "{sample}/genomic_bins/checkm/completeness.tsv",
-            taxonomy = "{sample}/genomic_bins/checkm/taxonomy.tsv"
-        output:
-            "{sample}/{sample}_annotations.txt"
-        params:
-            fastas = lambda wc: " --fasta ".join(glob("{sample}/genomic_bins/{sample}.*.fasta".format(sample=wc.sample)))
-        shell:
-            "atlas merge-tables \
-                 --counts {input.counts} \
-                 --completeness {input.completeness} \
-                 --taxonomy {input.taxonomy} \
-                 --fasta {params.fastas} \
-                 {input.prokka} \
-                 {input.refseq} \
-                 {output}"
-
-
-else:
-    rule merge_sample_tables:
-        input:
-            prokka = "{sample}/annotation/prokka/{sample}_plus.tsv",
-            refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-            counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-        output:
-            "{sample}/{sample}_annotations.txt"
-        shell:
-            "atlas merge-tables \
-                 --counts {input.counts} \
-                 {input.prokka} \
-                 {input.refseq} \
-                 {output}"
-
-
+localrules: build_assembly_report
 rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
-        gene_tables = expand("{sample}/annotation/prokka/{sample}_plus.tsv", sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/predicted_genes/{sample}_plus.tsv", sample=SAMPLES),
         mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)

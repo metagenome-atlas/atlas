@@ -1,0 +1,4 @@
+contig_id	gene_id	ftype	gene	EC_number	product
+S1_77	S1_77_1	CDS	yjaB_1	2.3.1.-	putative N-acetyltransferase YjaB
+S1_77	S1_77_2	CDS	metA	2.3.1.46	Homoserine O-succinyltransferase
+S1_41	S1_41_1	CDS	aceB	2.3.3.9	Malate synthase A
