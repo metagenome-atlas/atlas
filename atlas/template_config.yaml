@@ -25,7 +25,8 @@ assembly_threads: 8
 assembly_memory: 50
 # Local directory for temp files, useful for cluster execution without shared file system
 tmpdir: /tmp
-
+# database dir. You can download the necessary databases with atlas download
+db_dir: databases
 
 ########################
 # Quality control
