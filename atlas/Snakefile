@@ -142,10 +142,6 @@ def define_groups(samples):
 
 
 
-
-
-
-
 CONDAENV = get_conda_envs_dir()
 DBDIR = os.path.realpath(config["db_dir"])
 CHECKMDIR = os.path.join(DBDIR, "checkm")
@@ -197,9 +193,9 @@ elif config.get("workflow", "complete") == "complete":
                 sample=SAMPLES),
             expand("{sample}/assembly/contig_stats/final_contig_stats.txt",
                 sample=SAMPLES),
-            expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
             expand("{sample}/annotation/eggNOG.tsv", sample=SAMPLES),
-            REPORTS
+            REPORTS,
+            #expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
 
 # checkpoint finished contigs, no annotation
     localrules: finish_assembly
@@ -218,47 +214,47 @@ elif config.get("workflow", "complete") == "complete":
     include: "rules/gene_annotation.snakefile"
 
 # TODO: we should add --eggnog to the 2 merge_sample_tables and integrate it correctly in the function
-
-    if config.get("perform_genome_binning", True):
-
-
-        rule merge_sample_tables_with_bins:
-            # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
-            input:
-                prokka = "{sample}/annotation/predicted_genes/{sample}.tsv",
-                refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-                counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-                completeness = "{{sample}}/binning/{binner}/checkm/completeness.tsv".format(binner=config['final_binner']),
-                taxonomy = "{{sample}}/binning/{binner}/checkm/taxonomy.tsv".format(binner=config['final_binner'])
-            output:
-                "{sample}/{sample}_annotations.txt"
-            params:
-                fastas = lambda wc: " --fasta ".join(glob("{sample}/binning/checkm/maxbin/{sample}.*.fasta".format(sample=wc.sample)))
-            shell:
-                "atlas merge-tables \
-                     --counts {input.counts} \
-                     --completeness {input.completeness} \
-                     --taxonomy {input.taxonomy} \
-                     --fasta {params.fastas} \
-                     {input.prokka} \
-                     {input.refseq} \
-                     {output}"
-
-    else:
-        rule merge_sample_tables:
-            # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
-            input:
-                prokka = "{sample}/annotation/predicted_genes/{sample}.tsv",
-                refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-                counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-            output:
-                "{sample}/{sample}_annotations.txt"
-            shell:
-                "atlas merge-tables \
-                     --counts {input.counts} \
-                     {input.prokka} \
-                     {input.refseq} \
-                     {output}"
+    #
+    # if config.get("perform_genome_binning", True):
+    #
+    #
+    #     rule merge_sample_tables_with_bins:
+    #         # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
+    #         input:
+    #             prokka = "{sample}/annotation/predicted_genes/{sample}.tsv",
+    #             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+    #             counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+    #             completeness = "{{sample}}/binning/{binner}/checkm/completeness.tsv".format(binner=config['final_binner']),
+    #             taxonomy = "{{sample}}/binning/{binner}/checkm/taxonomy.tsv".format(binner=config['final_binner'])
+    #         output:
+    #             "{sample}/{sample}_annotations.txt"
+    #         params:
+    #             fastas = lambda wc: " --fasta ".join(glob("{sample}/binning/checkm/maxbin/{sample}.*.fasta".format(sample=wc.sample)))
+    #         shell:
+    #             "atlas merge-tables \
+    #                  --counts {input.counts} \
+    #                  --completeness {input.completeness} \
+    #                  --taxonomy {input.taxonomy} \
+    #                  --fasta {params.fastas} \
+    #                  {input.prokka} \
+    #                  {input.refseq} \
+    #                  {output}"
+    #
+    # else:
+    #     rule merge_sample_tables:
+    #         # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
+    #         input:
+    #             prokka = "{sample}/annotation/predicted_genes/{sample}.tsv",
+    #             refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
+    #             counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
+    #         output:
+    #             "{sample}/{sample}_annotations.txt"
+    #         shell:
+    #             "atlas merge-tables \
+    #                  --counts {input.counts} \
+    #                  {input.prokka} \
+    #                  {input.refseq} \
+    #                  {output}"
 
 
 elif config.get("workflow") == "binning":
