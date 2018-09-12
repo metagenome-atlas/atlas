@@ -55,7 +55,7 @@ setup(
             'atlas/report/qc_report.py',
             'atlas/report/report.css',
             'atlas/report/assembly_report.py',
-            'atlas/report/bin_report.py
+            'atlas/report/bin_report.py'
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
