@@ -545,66 +545,66 @@ def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         workflow="binner",
     )
 
-
-
-## annotate
-@cli.command(
-    "annotate",
-    context_settings=dict(ignore_unknown_options=True),
-    short_help="annotation workflow",
-)
-@click.argument("config")
-@click.option(
-    "-j",
-    "--jobs",
-    default=multiprocessing.cpu_count(),
-    type=int,
-    show_default=True,
-    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
-)
-@click.option(
-    "-o",
-    "--out-dir",
-    default=os.path.realpath("."),
-    show_default=True,
-    help="results output directory",
-)
-@click.option(
-    "--no-conda",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not use conda environments",
-)
-@click.option(
-    "-n",
-    "--dryrun",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not execute anything",
-)
-@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
-    for a sample, quantification is also performed.
-
-    A skeleton configuration file can be generated using:
-
-        \b
-        atlas make-config
-
-    For more details, see: http://pnnl-atlas.readthedocs.io/
-    """
-    run_workflow(
-        os.path.realpath(config),
-        jobs,
-        out_dir,
-        no_conda,
-        dryrun,
-        snakemake_args,
-        workflow="annotate",
-    )
+#
+#
+# ## annotate
+# @cli.command(
+#     "annotate",
+#     context_settings=dict(ignore_unknown_options=True),
+#     short_help="annotation workflow",
+# )
+# @click.argument("config")
+# @click.option(
+#     "-j",
+#     "--jobs",
+#     default=multiprocessing.cpu_count(),
+#     type=int,
+#     show_default=True,
+#     help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
+# )
+# @click.option(
+#     "-o",
+#     "--out-dir",
+#     default=os.path.realpath("."),
+#     show_default=True,
+#     help="results output directory",
+# )
+# @click.option(
+#     "--no-conda",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="do not use conda environments",
+# )
+# @click.option(
+#     "-n",
+#     "--dryrun",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="do not execute anything",
+# )
+# @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+# def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+#     """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
+#     for a sample, quantification is also performed.
+#
+#     A skeleton configuration file can be generated using:
+#
+#         \b
+#         atlas make-config
+#
+#     For more details, see: http://pnnl-atlas.readthedocs.io/
+#     """
+#     run_workflow(
+#         os.path.realpath(config),
+#         jobs,
+#         out_dir,
+#         no_conda,
+#         dryrun,
+#         snakemake_args,
+#         workflow="annotate",
+#     )
 
 # Download
 @cli.command(
