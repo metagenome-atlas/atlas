@@ -1,0 +1,60 @@
+
+
+# only parameters defined in key_mapping (see below) are passed to the command.
+__default__:
+  system: 'slurm' #check if system is defined below
+
+# default parameter for all rules
+# for steps, where memory/threads can be specified the values defined in the config file are used.
+# assembly_threads
+# assembly_mem
+# threads
+# java_mem
+# for all others the parameters here are used
+
+
+
+  # account: normal #requred
+  time: 710 # minutes
+  mem: 50 # GB
+  threads: 8
+  queue: shared-bigmem # required
+  nodes: 1
+  # ntasks: 24
+
+  command_options:
+    slurm:
+      command: "sbatch --parsable"
+      key_mapping:
+        name: "--job-name={}"
+        threads: "-n {}"
+        mem: "--mem={}g"
+        account: "--account={}"
+        queue: "--partition={}"
+        time: "--time={}"
+        nodes: "-N {}"
+    lsf:
+      command: "bsub"
+      key_mapping:
+        name: "-J {}"
+        threads: "-n {}"
+        mem: "-M {}000000"
+        account: "-P {}"
+        queue: "-q {}"
+        time: "-W {}"
+        nodes: "-C {}"
+
+# for other commands see: https://slurm.schedmd.com/rosetta.pdf
+
+
+
+
+# specific parameters for certain rules, which need more time/memory
+
+run_megahit:
+  queue: shared-bigmem
+  time: 710
+#   threads and memory definen in config file
+run_spades:
+  queue: shared-bigmem
+  time: 710

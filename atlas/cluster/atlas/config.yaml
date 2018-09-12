@@ -1,0 +1,11 @@
+restart-times: 0
+cluster: "/home/kiesers/.config/snakemake/atlas/slurm_scheduler.py" #
+cluster-status: "/home/kiesers/.config/snakemake/atlas/slurm_status.py" #
+cluster-config: "/home/kiesers/.config/snakemake/atlas/cluster_spec.yaml" #abs path
+max-jobs-per-second: 1
+max-status-checks-per-second: 10
+#cores: 99 # how many jobs you want to submit to your cluster queue
+local-cores: 1
+rerun-incomplete: true
+conda-prefix: "/home/kiesers/scratch/conda_envs" # path to folder where to save conda envs
+keep-going: true
