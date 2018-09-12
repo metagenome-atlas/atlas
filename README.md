@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
-![scheme of workflow](resources/images/atlas_workflow.png)
+#![scheme of workflow](resources/images/atlas_workflow.png)
 
 
 # Documentation
@@ -26,8 +26,7 @@ For more information related to bioconda, see: https://bioconda.github.io/
 With `conda`, execute:
 
 ```
-conda create -n atlas -c bioconda python>=3.6 \
-    snakemake bbmap=37.78 click ruamel.yaml
+conda create -n atlas -c bioconda -c conda-forge python>=3.6 snakemake bbmap=37.78 click ruamel.yaml
 ```
 
 Load the environment:
@@ -42,13 +41,6 @@ Install `atlas`:
 pip install -U pnnl-atlas
 ```
 
-## In the Same Environment
-
-```
-conda install -c bioconda python>=3.6 \
-    snakemake bbmap=37.78 click ruamel.yaml
-pip install -U pnnl-atlas
-```
 
 # Getting Started
 
@@ -63,7 +55,7 @@ To download the databases and their respective metadata databases:
 atlas download -o ~/databases
 ```
 
-The downloads use approximately 40 GB of disk space.
+The downloads use approximately 100 GB of disk space.
 
 
 ## Configuration File
@@ -71,8 +63,7 @@ The downloads use approximately 40 GB of disk space.
 To create a configuration file run:
 
 ```
-atlas make-config --database-dir ~/databases \
-    config.yaml ~/directory_with_fastqs
+atlas make-config --database-dir ~/databases config.yaml ~/directory_with_fastqs
 ```
 
 Sample names and file paths along with default settings will populate
