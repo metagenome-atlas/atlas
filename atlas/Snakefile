@@ -307,15 +307,15 @@ elif config.get("workflow") == "download":
 
     include: "rules/download.snakefile"
 
-elif config.get("workflow") == "annotate":
-    localrules: annotate
-    rule annotate:
-        input:
-            expand("{sample}_annotations.txt", sample=SAMPLES),
-            expand("{sample}/contig_stats.txt", sample=SAMPLES),
-            #"reports/assembly_report.html" # not tested yet, but should work
-
-    include: "rules/annotate.snakefile"
+# elif config.get("workflow") == "annotate":
+#     localrules: annotate
+#     rule annotate:
+#         input:
+#             expand("{sample}_annotations.txt", sample=SAMPLES),
+#             expand("{sample}/contig_stats.txt", sample=SAMPLES),
+#             #"reports/assembly_report.html" # not tested yet, but should work
+#
+#     include: "rules/annotate.snakefile"
 
 else:
     print("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"),
