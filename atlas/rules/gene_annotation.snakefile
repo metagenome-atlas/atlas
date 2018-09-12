@@ -312,12 +312,12 @@ rule parse_blastp:
 #HIGH throughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
-        "%s/eggnog.db" % DBDIR,
+        "%s/eggnog.db" % EGGNOG_DIR,
         faa = "{folder}/{prefix}.faa",
     output:
         temp("{folder}/{prefix}.emapper.seed_orthologs"),
     params:
-        data_dir = DBDIR,
+        data_dir = EGGNOG_DIR,
         prefix = "{folder}/{prefix}"
     resources:
         mem = config.get("java_mem", JAVA_MEM)
@@ -339,12 +339,12 @@ rule eggNOG_homology_search:
 # run on single machine
 rule eggNOG_annotation:
     input:
-        "%s/eggnog.db" % DBDIR,
+        "%s/eggnog.db" % EGGNOG_DIR,
         seed = rules.eggNOG_homology_search.output
     output:
         temp("{folder}/{prefix}.emapper.annotations")
     params:
-        data_dir = DBDIR,
+        data_dir = EGGNOG_DIR,
         prefix = "{folder}/{prefix}"
     threads:
         config.get("threads", 1)

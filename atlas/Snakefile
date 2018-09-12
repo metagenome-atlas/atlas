@@ -143,8 +143,7 @@ def define_groups(samples):
 
 
 CONDAENV = get_conda_envs_dir()
-DBDIR = os.path.realpath(config["db_dir"])
-CHECKMDIR = os.path.join(DBDIR, "checkm")
+EGGNOG_DIR = os.path.realpath(config["eggnog_dir"])
 
 if config.get("workflow") != "download":
     config = update_config_file_paths(config)
@@ -281,7 +280,8 @@ elif config.get("workflow") == "binning":
 
 elif config.get("workflow") == "download":
 
-
+    DBDIR = os.path.realpath(config["db_dir"])
+    CHECKMDIR = os.path.join(DBDIR, "checkm")
     CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
     # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
     FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
