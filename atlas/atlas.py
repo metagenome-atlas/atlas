@@ -1,16 +1,21 @@
-import click
 import logging
 import multiprocessing
 import os
 import sys
+
+import click
+
 from atlas import __version__
 from atlas.conf import make_config
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
 from atlas.workflows import download, run_workflow
 
-
-logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s %(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M",
+    format="[%(asctime)s %(levelname)s] %(message)s",
+)
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -29,17 +34,92 @@ def cli(obj):
 @click.argument("namemap", type=click.Path(exists=True))
 @click.argument("treefile", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
-@click.option("-s", "--summary-method", type=click.Choice(["lca", "majority", "best"]), default="lca", show_default=True, help="summary method for annotating ORFs; when using LCA, it's recommended that one limits the number of hits using --top-fraction though function will be assigned per the best hit; 'best' is fastest")
-@click.option("-a", "--aggregation-method", type=click.Choice(["lca", "lca-majority", "majority"]), default="lca-majority", show_default=True, help="summary method for aggregating ORF taxonomic assignments to contig level assignment; 'lca' will result in most stringent, least specific assignments")
-@click.option("--majority-threshold", type=float, default=0.51, show_default=True, help="constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method")
-@click.option("--min-identity", type=int, default=70, show_default=True, help="minimum allowable percent ID of BLAST hit")
-@click.option("--min-bitscore", type=int, default=0, show_default=True, help="minimum allowable bitscore of BLAST hit; 0 disables")
-@click.option("--min-length", type=int, default=60, show_default=True, help="minimum allowable BLAST alignment length")
-@click.option("--max-evalue", type=float, default=0.000001, show_default=True, help="maximum allowable e-value of BLAST hit")
-@click.option("--max-hits", type=int, default=10, show_default=True, help="maximum number of BLAST hits to consider when summarizing ORFs; can drastically alter ORF LCA assignments if too high without further limits")
-@click.option("--table-name", default="refseq", help="table name within namemap database; expected columns are 'name', 'function', and 'taxonomy'")
-@click.option("--top-fraction", type=float, default=1, show_default=True, help="filters ORF BLAST hits by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits")
-def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregation_method, majority_threshold, min_identity, min_bitscore, min_length, max_evalue, max_hits, table_name, top_fraction):
+@click.option(
+    "-s",
+    "--summary-method",
+    type=click.Choice(["lca", "majority", "best"]),
+    default="lca",
+    show_default=True,
+    help="summary method for annotating ORFs; when using LCA, it's recommended that one limits the number of hits using --top-fraction though function will be assigned per the best hit; 'best' is fastest",
+)
+@click.option(
+    "-a",
+    "--aggregation-method",
+    type=click.Choice(["lca", "lca-majority", "majority"]),
+    default="lca-majority",
+    show_default=True,
+    help="summary method for aggregating ORF taxonomic assignments to contig level assignment; 'lca' will result in most stringent, least specific assignments",
+)
+@click.option(
+    "--majority-threshold",
+    type=float,
+    default=0.51,
+    show_default=True,
+    help="constitutes a majority fraction at tree node for 'lca-majority' ORF aggregation method",
+)
+@click.option(
+    "--min-identity",
+    type=int,
+    default=70,
+    show_default=True,
+    help="minimum allowable percent ID of BLAST hit",
+)
+@click.option(
+    "--min-bitscore",
+    type=int,
+    default=0,
+    show_default=True,
+    help="minimum allowable bitscore of BLAST hit; 0 disables",
+)
+@click.option(
+    "--min-length",
+    type=int,
+    default=60,
+    show_default=True,
+    help="minimum allowable BLAST alignment length",
+)
+@click.option(
+    "--max-evalue",
+    type=float,
+    default=0.000001,
+    show_default=True,
+    help="maximum allowable e-value of BLAST hit",
+)
+@click.option(
+    "--max-hits",
+    type=int,
+    default=10,
+    show_default=True,
+    help="maximum number of BLAST hits to consider when summarizing ORFs; can drastically alter ORF LCA assignments if too high without further limits",
+)
+@click.option(
+    "--table-name",
+    default="refseq",
+    help="table name within namemap database; expected columns are 'name', 'function', and 'taxonomy'",
+)
+@click.option(
+    "--top-fraction",
+    type=float,
+    default=1,
+    show_default=True,
+    help="filters ORF BLAST hits by only keep hits within this fraction of the highest bitscore; this is recommended over --max-hits",
+)
+def run_refseq_parser(
+    tsv,
+    namemap,
+    treefile,
+    output,
+    summary_method,
+    aggregation_method,
+    majority_threshold,
+    min_identity,
+    min_bitscore,
+    min_length,
+    max_evalue,
+    max_hits,
+    table_name,
+    top_fraction,
+):
     """Parse TSV (tabular BLAST output [-outfmt 6]), grabbing taxonomy metadata from ANNOTATION to
     compute LCAs.
 
@@ -67,32 +147,52 @@ def run_refseq_parser(tsv, namemap, treefile, output, summary_method, aggregatio
         k121_52126 k121_52126_1 root     1.0  root         hypothetical protein 1.0e-41       176.8
 
     """
-    refseq_parser(tsv, namemap, treefile, output, summary_method, aggregation_method, majority_threshold, min_identity, min_bitscore, min_length, max_evalue, max_hits, table_name, top_fraction)
+    refseq_parser(
+        tsv,
+        namemap,
+        treefile,
+        output,
+        summary_method,
+        aggregation_method,
+        majority_threshold,
+        min_identity,
+        min_bitscore,
+        min_length,
+        max_evalue,
+        max_hits,
+        table_name,
+        top_fraction,
+    )
 
 
-@cli.command("gff2tsv", short_help="writes version of Prokka TSV with contig as new first column")
+@cli.command(
+    "gff2tsv", short_help="writes version of Prokka TSV with contig as new first column"
+)
 @click.argument("gff", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
-@click.option("--feature-type", default="all", show_default=True, help="feature type in GFF annotation to print")
+@click.option(
+    "--feature-type",
+    default="all",
+    show_default=True,
+    help="feature type in GFF annotation to print",
+)
 def run_gff_to_tsv(gff, output, feature_type):
     import re, pandas as pd
 
     res = dict(
-
-    gene_id = re.compile(r"ID=(.*?)(?:;|$)"),
-    EC_number = re.compile(r"eC_number=(.*?)(?:;|$)"),
-    gene = re.compile(r"gene=(.*?)(?:;|$)"),
-    product = re.compile(r"product=(.*?)(?:;|$)"),
-    partial = re.compile(r"partial=(.*?)(?:;|$)"),
-    rbs_motif = re.compile(r"rbs_motif=(.*?)(?:;|$)"),
-    gc_cont = re.compile(r"gc_cont=(.*?)(?:;|$)"),
-    confidence = re.compile(r"conf=(.*?)(?:;|$)"),
-    start_type = re.compile(r"start_type=(.*?)(?:;|$)")
+        gene_id=re.compile(r"ID=(.*?)(?:;|$)"),
+        EC_number=re.compile(r"eC_number=(.*?)(?:;|$)"),
+        gene=re.compile(r"gene=(.*?)(?:;|$)"),
+        product=re.compile(r"product=(.*?)(?:;|$)"),
+        partial=re.compile(r"partial=(.*?)(?:;|$)"),
+        rbs_motif=re.compile(r"rbs_motif=(.*?)(?:;|$)"),
+        gc_cont=re.compile(r"gc_cont=(.*?)(?:;|$)"),
+        confidence=re.compile(r"conf=(.*?)(?:;|$)"),
+        start_type=re.compile(r"start_type=(.*?)(?:;|$)"),
     )
 
-
     def parse_gff_annotation(toks):
-        parsed= {}
+        parsed = {}
         for key in res:
             try:
                 parsed[key] = res[key].findall(toks[-1])[0]
@@ -105,7 +205,7 @@ def run_gff_to_tsv(gff, output, feature_type):
                     # do not add empty values
         return parsed
 
-    parsed_df={}
+    parsed_df = {}
 
     with open(gff) as gff_fh:
         for line in gff_fh:
@@ -115,37 +215,39 @@ def run_gff_to_tsv(gff, output, feature_type):
                 continue
 
             toks = line.strip().split("\t")
-            if (toks[2] != feature_type) and (feature_type !='all'):
+            if (toks[2] != feature_type) and (feature_type != "all"):
                 continue
 
             parsed_line = parse_gff_annotation(toks)
-            parsed_line['feature_type'] = toks[2]
-            parsed_line['contig'] = toks[0]
-            parsed_line['start'] = toks[3]
-            parsed_line['stop'] = toks[4]
-            parsed_line['strand'] = toks[6]
-
-
-            parsed_df[parsed_line['gene_id']] = parsed_line
+            parsed_line["feature_type"] = toks[2]
+            parsed_line["contig"] = toks[0]
+            parsed_line["start"] = toks[3]
+            parsed_line["stop"] = toks[4]
+            parsed_line["strand"] = toks[6]
+            parsed_df[parsed_line["gene_id"]] = parsed_line
 
     parsed_df = pd.DataFrame(parsed_df).T
-    parsed_df.drop('gene_id',inplace=True,axis=1)
-    parsed_df.to_csv(output,sep='\t')
-
-
+    parsed_df.drop("gene_id", inplace=True, axis=1)
+    parsed_df.to_csv(output, sep="\t")
 
 
 @cli.command("munge-blast", short_help="adds contig ID to prokka annotated ORFs")
 @click.argument("tsv", type=click.Path(exists=True))
 @click.argument("gff", type=click.Path(exists=True))
 @click.argument("output", type=click.File("w", atomic=True))
-@click.option("--gene-id", default="ID", show_default=True, help="tag in gff attributes corresponding to ORF ID")
+@click.option(
+    "--gene-id",
+    default="ID",
+    show_default=True,
+    help="tag in gff attributes corresponding to ORF ID",
+)
 def run_munge_blast(tsv, gff, output, gene_id):
     """Prokka ORFs are reconnected to their origin contigs using the GFF of the Prokka output.
     Contig output is re-inserted as column 1, altering blast hits to be tabular + an extra initial
     column that will be used to place the ORFs into context.
     """
     import re
+
     gff_map = dict()
 
     logging.info("step 1 of 2; parsing %s" % gff)
@@ -163,7 +265,10 @@ def run_munge_blast(tsv, gff, output, gene_id):
             except IndexError:
                 # some, like repeat regions, will not have a locus_tag=, but they also will not
                 # be in the .faa file that is being locally aligned
-                logging.warning("Unable to locate ORF ID using '%s' for line '%s'" % (gene_id, " ".join(toks)))
+                logging.warning(
+                    "Unable to locate ORF ID using '%s' for line '%s'"
+                    % (gene_id, " ".join(toks))
+                )
                 continue
             gff_map[orf_id] = toks[0]
 
@@ -182,37 +287,73 @@ def run_munge_blast(tsv, gff, output, gene_id):
             print(*toks, sep="\t", file=output)
 
 
-@cli.command("merge-tables", short_help="merge genepredictions TSV, Counts, and Taxonomy")
+@cli.command(
+    "merge-tables", short_help="merge genepredictions TSV, Counts, and Taxonomy"
+)
 @click.argument("prokkatsv", type=click.Path(exists=True))
 @click.argument("refseqtsv", type=click.Path(exists=True))
 @click.argument("output")
-@click.option("--counts", type=click.Path(exists=True), help="Feature Counts result TSV")
-@click.option("--eggnog", type=click.Path(exists=True), help="Gene annotations from eggNOG-mapper")
-@click.option("--completeness", type=click.Path(exists=True), help="CheckM completeness TSV")
+@click.option(
+    "--counts", type=click.Path(exists=True), help="Feature Counts result TSV"
+)
+@click.option(
+    "--eggnog", type=click.Path(exists=True), help="Gene annotations from eggNOG-mapper"
+)
+@click.option(
+    "--completeness", type=click.Path(exists=True), help="CheckM completeness TSV"
+)
 @click.option("--taxonomy", type=click.Path(exists=True), help="CheckM taxonomy TSV")
-@click.option("--fasta", multiple=True, type=click.Path(exists=True), help="Bin fasta file path; can be specified multiple times")
-def run_merge_tables(prokkatsv, refseqtsv, output, counts, eggnog ,completeness, taxonomy, fasta):
+@click.option(
+    "--fasta",
+    multiple=True,
+    type=click.Path(exists=True),
+    help="Bin fasta file path; can be specified multiple times",
+)
+def run_merge_tables(
+    prokkatsv, refseqtsv, output, counts, eggnog, completeness, taxonomy, fasta
+):
     """Combines gne annotations TSV, RefSeq TSV, and Counts TSV into a single table, merging on "gene_id" tag.
     """
-    merge_tables(prokkatsv, refseqtsv, output, counts, eggnog ,completeness, taxonomy, fasta)
+    merge_tables(
+        prokkatsv, refseqtsv, output, counts, eggnog, completeness, taxonomy, fasta
+    )
 
 
-@cli.command("make-config", short_help="prepopulate a configuration file with samples and defaults")
+@cli.command(
+    "make-config",
+    short_help="prepopulate a configuration file with samples and defaults",
+)
 @click.argument("config")
 @click.argument("path")
-@click.option("--assembler", default="megahit",
-              type=click.Choice(["megahit", "spades"]),
-              show_default=True, help="contig assembler")
-@click.option("--data-type", default="metagenome",
-              type=click.Choice(["metagenome", "metatranscriptome"]),
-              show_default=True, help="sample data type")
-@click.option("--database-dir", default="databases", show_default=True,
-              help="location of formatted databases (from `atlas download`)")
+@click.option(
+    "--assembler",
+    default="megahit",
+    type=click.Choice(["megahit", "spades"]),
+    show_default=True,
+    help="contig assembler",
+)
+@click.option(
+    "--data-type",
+    default="metagenome",
+    type=click.Choice(["metagenome", "metatranscriptome"]),
+    show_default=True,
+    help="sample data type",
+)
+@click.option(
+    "--database-dir",
+    default="databases",
+    show_default=True,
+    help="location of formatted databases (from `atlas download`)",
+)
 # @click.option("--process", default="assemble",
 #               type=click.Choice(["annotate", "assemble"]),
 #               help="additional fields in the configuration file have no effect on the protocol, to limit the options for annotation only set `--process annotate`")
-@click.option("--threads", default=multiprocessing.cpu_count(), type=int,
-              help="number of threads to use per multi-threaded job")
+@click.option(
+    "--threads",
+    default=multiprocessing.cpu_count(),
+    type=int,
+    help="number of threads to use per multi-threaded job",
+)
 def run_make_config(config, path, data_type, database_dir, threads, assembler):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.
@@ -223,12 +364,44 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
-@cli.command("qc", context_settings=dict(ignore_unknown_options=True), short_help="quality control workflow (without assembly)")
+## QC command
+
+@cli.command(
+    "qc",
+    context_settings=dict(ignore_unknown_options=True),
+    short_help="quality control workflow (without assembly)",
+)
 @click.argument("config")
-@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
-@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
-@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
-@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.option(
+    "-j",
+    "--jobs",
+    default=multiprocessing.cpu_count(),
+    type=int,
+    show_default=True,
+    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
+)
+@click.option(
+    "-o",
+    "--out-dir",
+    default=os.path.realpath("."),
+    show_default=True,
+    help="results output directory",
+)
+@click.option(
+    "--no-conda",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="do not use conda environments",
+)
+@click.option(
+    "-n",
+    "--dryrun",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="do not execute anything",
+)
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     """Runs the ATLAS Quality control protocol, the first step of the workflow.
@@ -240,15 +413,55 @@ def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
-    run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="qc")
+    run_workflow(
+        os.path.realpath(config),
+        jobs,
+        out_dir,
+        no_conda,
+        dryrun,
+        snakemake_args,
+        workflow="qc",
+    )
+
+## assemble
 
 
-@cli.command("assemble", context_settings=dict(ignore_unknown_options=True), short_help="assembly workflow")
+@cli.command(
+    "assemble",
+    context_settings=dict(ignore_unknown_options=True),
+    short_help="assembly workflow",
+)
 @click.argument("config")
-@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
-@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
-@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
-@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.option(
+    "-j",
+    "--jobs",
+    default=multiprocessing.cpu_count(),
+    type=int,
+    show_default=True,
+    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
+)
+@click.option(
+    "-o",
+    "--out-dir",
+    default=os.path.realpath("."),
+    show_default=True,
+    help="results output directory",
+)
+@click.option(
+    "--no-conda",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="do not use conda environments",
+)
+@click.option(
+    "-n",
+    "--dryrun",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="do not execute anything",
+)
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     """Runs the complete ATLAS protocol from raw reads through assembly, annotation, quantification,
@@ -261,33 +474,159 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
-    run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="complete")
+    run_workflow(
+        os.path.realpath(config),
+        jobs,
+        out_dir,
+        no_conda,
+        dryrun,
+        snakemake_args,
+        workflow="complete",
+    )
 
+# genome bin
 
-@cli.command("annotate", context_settings=dict(ignore_unknown_options=True), short_help="annotation workflow")
+@cli.command(
+    "bin-genomes",
+    context_settings=dict(ignore_unknown_options=True),
+    short_help="""Bin contigs using different binners.
+    Completness and contamination estimation for each bin.
+    Dereplicate bins for all samples and select the best genome for each species""",
+)
 @click.argument("config")
-@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads")
-@click.option("-o", "--out-dir", default=os.path.realpath("."), show_default=True, help="results output directory")
-@click.option("--no-conda", is_flag=True, default=False, show_default=True, help="do not use conda environments")
-@click.option("--dryrun", is_flag=True, default=False, show_default=True, help="do not execute anything")
+@click.option(
+    "-j",
+    "--jobs",
+    default=multiprocessing.cpu_count(),
+    type=int,
+    show_default=True,
+    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
+)
+@click.option(
+    "-o",
+    "--out-dir",
+    default=os.path.realpath("."),
+    show_default=True,
+    help="results output directory",
+)
+@click.option(
+    "--no-conda",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="do not use conda environments",
+)
+@click.option(
+    "-n",
+    "--dryrun",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="do not execute anything",
+)
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
-    for a sample, quantification is also performed.
+def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+    """Runs the ATLAS binner protokol. Outbut can be found in <output directory>/genomes
 
-    A skeleton configuration file can be generated using:
+    A skeleton configuration file can be generated with defaults using:
 
         \b
         atlas make-config
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
-    run_workflow(os.path.realpath(config), jobs, out_dir, no_conda, dryrun, snakemake_args,workflow="annotate")
+    run_workflow(
+        os.path.realpath(config),
+        jobs,
+        out_dir,
+        no_conda,
+        dryrun,
+        snakemake_args,
+        workflow="binner",
+    )
 
+#
+#
+# ## annotate
+# @cli.command(
+#     "annotate",
+#     context_settings=dict(ignore_unknown_options=True),
+#     short_help="annotation workflow",
+# )
+# @click.argument("config")
+# @click.option(
+#     "-j",
+#     "--jobs",
+#     default=multiprocessing.cpu_count(),
+#     type=int,
+#     show_default=True,
+#     help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
+# )
+# @click.option(
+#     "-o",
+#     "--out-dir",
+#     default=os.path.realpath("."),
+#     show_default=True,
+#     help="results output directory",
+# )
+# @click.option(
+#     "--no-conda",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="do not use conda environments",
+# )
+# @click.option(
+#     "-n",
+#     "--dryrun",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="do not execute anything",
+# )
+# @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+# def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+#     """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
+#     for a sample, quantification is also performed.
+#
+#     A skeleton configuration file can be generated using:
+#
+#         \b
+#         atlas make-config
+#
+#     For more details, see: http://pnnl-atlas.readthedocs.io/
+#     """
+#     run_workflow(
+#         os.path.realpath(config),
+#         jobs,
+#         out_dir,
+#         no_conda,
+#         dryrun,
+#         snakemake_args,
+#         workflow="annotate",
+#     )
 
-@cli.command("download", context_settings=dict(ignore_unknown_options=True), short_help="download reference files")
-@click.option("-j", "--jobs", default=multiprocessing.cpu_count(), type=int, show_default=True, help="number of simultaneous downloads")
-@click.option("-o", "--out-dir", default=os.path.join(os.path.realpath("."), "databases"), show_default=True, help="database download directory")
+# Download
+@cli.command(
+    "download",
+    context_settings=dict(ignore_unknown_options=True),
+    short_help="download reference files",
+)
+@click.option(
+    "-j",
+    "--jobs",
+    default=multiprocessing.cpu_count(),
+    type=int,
+    show_default=True,
+    help="number of simultaneous downloads",
+)
+@click.option(
+    "-o",
+    "--out-dir",
+    default=os.path.join(os.path.realpath("."), "databases"),
+    show_default=True,
+    help="database download directory",
+)
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_download(jobs, out_dir, snakemake_args):
     """Executes a snakemake workflow to download reference database files and validate based on

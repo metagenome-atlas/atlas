@@ -2,14 +2,31 @@ import contextlib
 import gzip
 import logging
 import sqlite3
-from atlas import BLAST6
-from atlas.blast import BlastHits, Node, Tree, parse_blast_results_with_tree, process_orfs_with_tree
-from atlas.utils import gzopen
 from itertools import groupby
+
+from atlas import BLAST6
+from atlas.blast import (BlastHits, Node, Tree, parse_blast_results_with_tree,
+                         process_orfs_with_tree)
+from atlas.utils import gzopen
 
 
 # TODO: update the docstring to reflect column changes
-def refseq_parser(tsv, namemap, treefile, output, summary_method, aggregation_method, majority_threshold, min_identity, min_bitscore, min_length, max_evalue, max_hits, table_name, top_fraction):
+def refseq_parser(
+    tsv,
+    namemap,
+    treefile,
+    output,
+    summary_method,
+    aggregation_method,
+    majority_threshold,
+    min_identity,
+    min_bitscore,
+    min_length,
+    max_evalue,
+    max_hits,
+    table_name,
+    top_fraction,
+):
     """Parse TSV (tabular BLAST output [-outfmt 6]), grabbing taxonomy metadata from ANNOTATION to
     compute LCAs.
 
@@ -55,13 +72,28 @@ def refseq_parser(tsv, namemap, treefile, output, summary_method, aggregation_me
     """
     logging.info("Parsing %s" % tsv)
     tree = Tree(treefile)
-    orf_assignments = parse_blast_results_with_tree(tsv, namemap, summary_method=summary_method, tree=tree,
-                          min_identity=min_identity, min_bitscore=min_bitscore,
-                          min_length=min_length, max_evalue=max_evalue,
-                          max_hits_per_orf=max_hits, table_name=table_name,
-                          top_fraction_of_hits=top_fraction)
+    orf_assignments = parse_blast_results_with_tree(
+        tsv,
+        namemap,
+        summary_method=summary_method,
+        tree=tree,
+        min_identity=min_identity,
+        min_bitscore=min_bitscore,
+        min_length=min_length,
+        max_evalue=max_evalue,
+        max_hits_per_orf=max_hits,
+        table_name=table_name,
+        top_fraction_of_hits=top_fraction,
+    )
     logging.info("Assigning taxonomies to contigs using %s" % aggregation_method)
-    process_orfs_with_tree(orf_assignments, tree, output, aggregation_method, majority_threshold, table_name)
+    process_orfs_with_tree(
+        orf_assignments,
+        tree,
+        output,
+        aggregation_method,
+        majority_threshold,
+        table_name,
+    )
     logging.info("Complete")
 
 
@@ -90,10 +122,10 @@ def read_fasta(fh):
         >>> os.remove("test.fasta")
 
     """
-    for header, group in groupby(fh, lambda line: line[0] == '>'):
+    for header, group in groupby(fh, lambda line: line[0] == ">"):
         if header:
             line = next(group)
             name = line[1:].strip()
         else:
-            seq = ''.join(line.strip() for line in group)
+            seq = "".join(line.strip() for line in group)
             yield name, seq

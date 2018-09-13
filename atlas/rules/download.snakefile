@@ -27,6 +27,8 @@ rule transfer_files:
             "eggnog_proteins.dmnd": "eggnog_proteins.dmnd.gz",
         }
 
+# OG_fasta.tar.gz will be unzipped to a directory !!
+
         if wildcards.filename in eggnog_files:
             dl_filename = eggnog_files[wildcards.filename]
             dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)

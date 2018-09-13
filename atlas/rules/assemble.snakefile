@@ -6,8 +6,6 @@ from snakemake.utils import report
 import warnings
 from copy import copy
 
-localrules: rename_megahit_output, rename_spades_output, initialize_checkm, \
-            finalize_contigs, build_bin_report, build_assembly_report
 
 ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
 if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
@@ -25,9 +23,6 @@ def get_preprocessing_steps(config):
         preprocessing_steps.append("merged")
 
     return ".".join(preprocessing_steps)
-
-
-
 
 
 assembly_preprocessing_steps = get_preprocessing_steps(config)
@@ -241,7 +236,7 @@ if config.get("assembler", "megahit") == "megahit":
                 {params.preset} >> {log} 2>&1
             """
 
-
+    localrules: rename_megahit_output
     rule rename_megahit_output:
         input:
             "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"
@@ -254,6 +249,28 @@ if config.get("assembler", "megahit") == "megahit":
 else:
     assembly_params['spades'] = {'meta':'--meta','normal':''}
 
+    def spades_parameters(wc,input):
+        if not os.path.exists("{sample}/assembly/params.txt".format(sample=wc.sample)):
+
+            params={}
+
+            params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
+            params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            params['preset'] = assembly_params['spades'][config['spades_preset']],
+            params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
+
+        else:
+
+            params = {"inputs": "--restart-from last",
+                      "input_merged":"",
+                      "preset":"",
+                      "skip_error_correction":""}
+
+        params['outdir']= "{sample}/assembly".format(sample=wc.sample)
+
+        return params
+
+
     rule run_spades:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
@@ -264,12 +281,8 @@ else:
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
-            inputs = lambda wc, input: "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            input_merged = lambda wc, input: "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            p= lambda wc,input: spades_parameters(wc,input),
             k = config.get("spades_k", SPADES_K),
-            outdir = lambda wc: "{sample}/assembly".format(sample=wc.sample),
-            preset = assembly_params['spades'][config['spades_preset']],
-            skip_error_correction = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
         log:
             "{sample}/logs/assembly/spades.log"
         conda:
@@ -279,19 +292,19 @@ else:
         resources:
             mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
         shell:
-            """
-            spades.py --threads {threads} \
-                --memory {resources.mem} \
-                -o {params.outdir} \
-                -k {params.k} \
-                {params.preset} \
-                {params.inputs} \
-                {params.input_merged} \
-                {params.skip_error_correction} \
-                > {log} 2>&1
-            """
+            "spades.py "
+            " --threads {threads} "
+            " --memory {resources.mem} "
+            " -o {params.p[outdir]} "
+            " -k {params.k}"
+            " {params.p[preset]} "
+            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[skip_error_correction]} "
+            " > {log} 2>&1 "
 
 
+
+    localrules: rename_spades_output
     rule rename_spades_output:
         input:
             "{sample}/assembly/contigs.fasta"
@@ -473,6 +486,8 @@ else: # no filter
         shell:
             "cp {input} {output}"
 
+
+localrules: finalize_contigs
 rule finalize_contigs:
     input:
         "{sample}/assembly/{sample}_final_contigs.fasta"
@@ -484,15 +499,15 @@ rule finalize_contigs:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
 
-
+# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "{sample}/{sample}_contigs.fasta",
+        fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
-        sam = temp("{sample}/sequence_alignment/{sample}.sam"),
-        unmapped = expand("{{sample}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS)
+        sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
+        unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+                          fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
@@ -505,9 +520,9 @@ rule align_reads_to_final_contigs:
     shadow:
         "shallow"
     benchmark:
-        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}.txt"
+        "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/align_reads_to_filtered_contigs.log"
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -612,11 +627,11 @@ rule create_bam_index:
         "samtools index {input}"
 
 
-
+localrules: build_assembly_report
 rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
-        gene_tables = expand("{sample}/annotation/predicted_genes/{sample}_plus.tsv", sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
         mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
