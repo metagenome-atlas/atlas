@@ -205,7 +205,7 @@ elif config.get("workflow", "complete") == "complete":
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
     include: "rules/gene_annotation.snakefile"
-
+    include: "rules/genecatalog.snakefile"
 
 # TODO: we should add --eggnog to the 2 merge_sample_tables and integrate it correctly in the function
 
