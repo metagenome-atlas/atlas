@@ -179,7 +179,6 @@ elif config.get("workflow", "complete") == "complete":
         # later update to include others as well as integrate concoct and metabat
         REPORTS.append("reports/bin_report_{binner}.html".format(binner=config['final_binner']))
         include: "rules/binning.snakefile"
-        ruleorder: align_reads_to_prefilter_contigs > bam_2_sam > align_reads_to_final_contigs
 
     localrules: all
     rule all:
@@ -202,18 +201,6 @@ elif config.get("workflow", "complete") == "complete":
             "{sample}/assembly/contig_stats/final_contig_stats.txt"
         output:
             touch("{sample}/finished_assembly")
-
-# checkpoint finished contigs, no annotation
-
-    rule finish_assembly:
-        input:
-            expand("{sample}/sequence_quality_control/finished_QC",
-                sample=SAMPLES),
-            expand("{sample}/{sample}_contigs.fasta",
-                sample=SAMPLES),
-            expand("{sample}/sequence_alignment/{sample}.bam",
-                sample=SAMPLES),
-            expand("{sample}/assembly/contig_stats/postfilter_coverage_stats.txt", sample=SAMPLES),
 
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"

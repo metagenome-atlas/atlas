@@ -201,7 +201,7 @@ rule metabat:
 rule maxbin:
     input:
         fasta = BINNING_CONTIGS,
-        coverage = rules.get_contig_coverage_from_bb.output
+        abund = "{sample}/binning/coverage/{sample}_coverage.txt",
     output:
         directory("{sample}/binning/maxbin/intermediate_files")
     params:
@@ -219,7 +219,7 @@ rule maxbin:
         """
         mkdir {output[0]} 2> {log}
         run_MaxBin.pl -contig {input.fasta} \
-            -abund {input.coverage} \
+            -abund {input.abund} \
             -out {params.output_prefix} \
             -min_contig_length {params.mcl} \
             -thread {threads} \
