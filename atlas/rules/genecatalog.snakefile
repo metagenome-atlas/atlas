@@ -165,8 +165,11 @@ rule get_gene_catalog_annotations:
         gene_catalog= 'gene_catalog/gene_catalog.fna',
         eggNOG= expand('{sample}/annotation/eggNOG.tsv',sample=SAMPLES),
         refseq= expand('{sample}/annotation/refseq/{sample}_tax_assignments.tsv',sample=SAMPLES),
+        #coords= expand("{sample}/annotation/feature_counts/{sample}_counts.txt",sample=SAMPLES),
     output:
-        "gene_catalog/annotations.tsv"
+        annotations= "gene_catalog/annotations.tsv",
+        #coords= "gene_catalog/original_coords.tsv",
+
     run:
         import pandas as pd
 
@@ -186,7 +189,39 @@ rule get_gene_catalog_annotations:
 
 
         annotations= refseq.join(eggNOG).loc[gene_ids]
-        annotations.to_csv(output[0],sep='\t')
+        annotations.to_csv(output.annotations,sep='\t')
+
+#         # get coorinates
+#
+#         coords= pd.DataFrame()
+#         for coord_file in input.coords:
+#
+#             d = pd.read_table(coord_file,usecols=['Geneid','Chr','Start','End','Strand','Length'] ,
+#                                                index_col=0,comment='#')
+#
+#             d.index= d.Chr+'_'+d.index.map(lambda s: s.split('_')[1])
+#
+#             d.index.name='GeneID'
+#
+#             coords=coords.append(d)
+#
+#         coords.loc[gene_ids].to_csv(output.coords,sep='\t')
+#
+#
+# rule get_gene_catalog_with_extensions:
+#     input:
+#         coords= "gene_catalog/original_coords.tsv",
+#         fastas = expand("{sample}/{sample}_contigs.fasta",sample=SAMPLES)
+#     output:
+#         coords= "gene_catalog/coords.tsv",
+#         fasta = "gene_catalog/gene_catalog_for_mapping.fasta"
+#     params:
+#         extension=50
+#     run:
+#         pass
+
+
+
 
 
 
