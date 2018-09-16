@@ -211,7 +211,7 @@ rule predict_single_copy_genes:
         "%s/DASTool.yaml" % CONDAENV # needs pearl
     threads:
         config['threads']
-    run:
+    shell:
         " DIR=$(dirname $(which DAS_Tool)) "
         ";"
         " {params.script_dir}/rules/scg_blank_diamond.rb diamond"
