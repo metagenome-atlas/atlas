@@ -54,7 +54,10 @@ rule cluster_catalog:
         identity=0.95
     shell:
         """
-            cd-hit-est -i {input} -T {threads} -M {resources.mem}000 -o {params.prefix} -c {params.identity} -n 9  -d 0 -aS {params.coverage} -aL {params.coverage} 2> >(tee {log})
+            cd-hit-est -i {input} -T {threads} \
+            -M {resources.mem}000 -o {params.prefix} \
+            -c {params.identity} -n 9  -d 0 \
+            -aS {params.coverage} -aL {params.coverage} &> >(tee {log})
             mv {params.prefix} {output[0]}
         """
 
