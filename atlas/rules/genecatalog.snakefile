@@ -165,10 +165,9 @@ rule get_gene_catalog_annotations:
         gene_catalog= 'gene_catalog/gene_catalog.fna',
         eggNOG= expand('{sample}/annotation/eggNOG.tsv',sample=SAMPLES),
         refseq= expand('{sample}/annotation/refseq/{sample}_tax_assignments.tsv',sample=SAMPLES),
+        scg= expand("gene_catalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
     output:
         annotations= "gene_catalog/annotations.tsv",
-
-
     run:
         import pandas as pd
 
@@ -186,9 +185,40 @@ rule get_gene_catalog_annotations:
         for annotation_file in input.refseq:
             refseq=refseq.append(pd.read_table(annotation_file, index_col=1))
 
+        scg=pd.DataFrame()
+        for annotation_file in input.scg:
+            d= pd.read_table(annotation_file, index_col=0,header=None)
+            d.columns = 'scg_'+ os.path.splitext(annotation_file)[0].split('_')[-1] # bacteria or archaea
+            scg=scg.append(d)
 
-        annotations= refseq.join(eggNOG).loc[gene_ids]
+
+        annotations= refseq.join(eggNOG).join(scg).loc[gene_ids]
         annotations.to_csv(output.annotations,sep='\t')
+
+
+rule predict_single_copy_genes:
+    input:
+        "gene_catalog/gene_catalog.fna"
+    output:
+        "gene_catalog/annotation/single_copy_genes_{domain}.tsv",
+    params:
+        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile)),
+        key = lambda wc: wc.domain[:3] #bac for bacteria, #archaea
+    conda:
+        "%s/DASTool.yaml" % CONDAENV # needs pearl
+    threads:
+        config['threads']
+    run:
+        " DIR=$(dirname $(which DAS_Tool)) "
+        ";"
+        " {params.script_dir}/rules/scg_blank_diamond.rb diamond"
+        " {input} "
+        " $DIR\/db/{params.key}.all.faa "
+        " $DIR\/db/{params.key}.scg.faa "
+        " $DIR\/db/{params.key}.scg.lookup "
+        " {threads} "
+        " &> >(tee {log}) "
+        " mv {input[0]}.{wildcards.domain}.scg > {output}"
 
 
 
