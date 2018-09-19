@@ -801,7 +801,7 @@ rule build_db_genomes:
 rule align_reads_to_MAGs:
     input:
         unpack(get_quality_controlled_reads),
-        ref = rules.build_db_genomes.output,
+        ref = rules.build_db_genomes.output.index,
     output:
         sam = temp("genomes/alignments/{sample}.sam"),
     params:
@@ -826,7 +826,7 @@ rule align_reads_to_MAGs:
     shell:
         """
             bbwrap.sh \
-            ref={input.ref} \
+            build=3 \
             {params.input} \
             trimreaddescriptions=t \
             out={output.sam} \
@@ -845,6 +845,27 @@ rule align_reads_to_MAGs:
             -Xmx{resources.java_mem}G \
             2> {log}
         """
+
+ruleorder: bam_2_sam_MAGs > align_reads_to_MAGs
+rule bam_2_sam_MAGs:
+    input:
+        "genomes/alignments/{sample}.bam"
+    output:
+        temp("genomes/alignments/{sample}.sam")
+    threads:
+        config['threads']
+    resources:
+        mem = config["java_mem"],
+    shadow:
+        "shallow"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    shell:
+        """
+        reformat.sh in={input} out={output} sam=1.3
+        """
+
+
 
 rule pileup_MAGs:
     input:
