@@ -66,13 +66,12 @@ rule cluster_catalog:
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_gene_catalog:
     input:
-        reads=expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz",
-                                           fraction=MULTIFILE_FRACTIONS),
+        unpack(get_quality_controlled_reads),
         fasta = "gene_catalog/gene_catalog.fna",
     output:
         sam = temp("gene_catalog/alignments/{sample}.sam")
     params:
-        input = lambda wc, input : 'in='+','.join(input.reads),
+                    input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = 2,
         ambiguous = 'all',
         min_id = 0.95,
@@ -118,6 +117,7 @@ rule pileup_gene_cluster:
         bam = "gene_catalog/alignments/{sample}.bam"
     output:
         covstats = temp("gene_catalog/alignments/{sample}_coverage.tsv"),
+        basecov = temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
     params:
         pileup_secondary = 't' # a read maay map to different genes
     log:
@@ -134,6 +134,7 @@ rule pileup_gene_cluster:
                threads={threads} \
                -Xmx{resources.java_mem}G \
                covstats={output.covstats} \
+               basecov={output.basecov} \
                secondary={params.pileup_secondary} \
                 2> {log}
         """
