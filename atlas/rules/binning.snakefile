@@ -132,7 +132,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        temp("{sample}/binning/concoct/cluster_attribution.tsv")
+        "{sample}/binning/concoct/cluster_attribution.tsv"
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -167,7 +167,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        temp("{sample}/binning/metabat/cluster_attribution.tsv"),
+        "{sample}/binning/metabat/cluster_attribution.tsv",
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
