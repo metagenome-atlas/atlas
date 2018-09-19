@@ -71,7 +71,7 @@ rule align_reads_to_gene_catalog:
     output:
         sam = temp("gene_catalog/alignments/{sample}.sam")
     params:
-                    input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = 2,
         ambiguous = 'all',
         min_id = 0.95,
@@ -111,13 +111,13 @@ rule align_reads_to_gene_catalog:
         """
 
 
-rule pileup_gene_cluster:
+rule pileup_gene_catalog:
     input:
         sam = "gene_catalog/alignments/{sample}.sam",
         bam = "gene_catalog/alignments/{sample}.bam"
     output:
         covstats = temp("gene_catalog/alignments/{sample}_coverage.tsv"),
-        basecov = temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
+        basecov = temp("gene_catalog/alignments/{sample}_base_coverage.txt.gz"),
     params:
         pileup_secondary = 't' # a read maay map to different genes
     log:
@@ -139,16 +139,14 @@ rule pileup_gene_cluster:
                 2> {log}
         """
 
-
 localrules: combine_gene_coverages
-
 rule combine_gene_coverages:
     input:
         covstats = expand("gene_catalog/alignments/{sample}_coverage.tsv",
             sample=SAMPLES)
     output:
         "gene_catalog/counts/median_coverage.tsv",
-        "gene_catalog/counts/raw_counts.tsv",
+        "gene_catalog/counts/Nmapped_reads.tsv",
     run:
 
         import pandas as pd
