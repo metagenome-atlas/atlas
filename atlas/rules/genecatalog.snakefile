@@ -147,21 +147,27 @@ rule combine_gene_coverages:
         covstats = expand("gene_catalog/alignments/{sample}_coverage.tsv",
             sample=SAMPLES)
     output:
-        "gene_catalog/counts/raw_counts.tsv"
+        "gene_catalog/counts/median_coverage.tsv",
+        "gene_catalog/counts/raw_counts.tsv",
     run:
 
         import pandas as pd
         import os
 
-
+        combined_cov={}
         combined_N_reads={}
         for cov_file in input:
 
             sample= os.path.split(cov_file)[-1].split('_')[0]
             data= pd.read_table(cov_file,index_col=0)
+            data.loc[data.Median_fold<0,'Median_fold']=0
+            combined_cov[sample]= data.Median_fold
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
 
-        pd.DataFrame(combined_N_reads).to_csv(output[0],sep='\t')
+        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
+        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+
+
 
 localrules: get_gene_catalog_annotations
 rule get_gene_catalog_annotations:
