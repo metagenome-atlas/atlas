@@ -777,7 +777,8 @@ rule build_db_genomes:
     input:
         fasta_dir = directory("genomes/Dereplication/dereplicated_genomes")
     output:
-        "ref/genome/3/summary.txt",
+        index="ref/genome/3/summary.txt",
+        fasta=temp("genomes/all_contigs.fasta")
     threads:
         config.get("threads", 6)
     resources:
@@ -785,10 +786,12 @@ rule build_db_genomes:
         java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
     log:
         "logs/genomes/mapping/build_bbmap_index.log"
-    params:
-        refs_in = lambda wc, input: ",".join(glob(os.path.join(input.fasta_dir,"*.fasta")))
     shell:
-        """bbmap.sh build=3 -Xmx{resources.java_mem}G ref={params.refs_in} threads={threads} local=f 2> {log}"""
+        """
+        cat {input.fasta_dir}/* > {output.fasta} 2> {log}
+        bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
+
+        """
 
 
 
