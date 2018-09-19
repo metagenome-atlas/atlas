@@ -95,8 +95,8 @@ else:
             """
 
 
-    localrules: get_contigs_from_gene_names, rename_genes
 
+    # localrules: rename_genes
     # rule rename_genes:
     #     input:
     #         "{sample}/annotation/predicted_genes/{sample}_ambigous_names.{extension}",
@@ -116,7 +116,7 @@ else:
     #                     else:
     #                         fout.write(line)
 
-
+    localrules: get_contigs_from_gene_names
     rule get_contigs_from_gene_names:
         input:
             faa = "{sample}/annotation/predicted_genes/{sample}.faa",
