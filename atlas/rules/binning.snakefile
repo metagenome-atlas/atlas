@@ -770,3 +770,173 @@ rule run_all_checkm_lineage_wf:
             {input.bins} \
             {params.output_dir}
         """
+
+
+
+rule build_db_genomes:
+    input:
+        fasta_dir = directory("genomes/Dereplication/dereplicated_genomes")
+    output:
+        "ref/genome/3/summary.txt",
+    threads:
+        config.get("threads", 6)
+    resources:
+        mem = config["java_mem"],
+        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+    log:
+        "logs/genomes/mapping/build_bbmap_index.log"
+    params:
+        refs_in = lambda wc, input: ",".join(glob(os.path.join(input.fasta_dir,"*.fasta")))
+    shell:
+        """bbmap.sh build=3 -Xmx{resources.java_mem}G ref={params.refs_in} threads={threads} local=f 2> {log}"""
+
+
+
+
+
+# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
+rule align_reads_to_MAGs:
+    input:
+        unpack(get_quality_controlled_reads),
+        ref = rules.build_db_genomes.output,
+    output:
+        sam = temp("genomes/alignments/{sample}.sam"),
+    params:
+        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
+        max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+        paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
+        ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
+        min_id = config.get('contig_min_id', CONTIG_MIN_ID),
+        maxindel = 100 # default 16000 good for genome deletions but not necessarily for alignment to contigs
+    shadow:
+        "shallow"
+    log:
+        "logs/genomes/mapping/map_{sample}.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+    shell:
+        """
+            bbwrap.sh \
+            ref={input.ref} \
+            {params.input} \
+            trimreaddescriptions=t \
+            out={output.sam} \
+            threads={threads} \
+            pairlen={params.max_distance_between_pairs} \
+            pairedonly={params.paired_only} \
+            minid={params.min_id} \
+            mdtag=t \
+            xstag=fs \
+            nmtag=t \
+            sam=1.3 \
+            ambiguous={params.ambiguous} \
+            secondary=t \
+            saa=f \
+            maxsites={params.maxsites} \
+            -Xmx{resources.java_mem}G \
+            2> {log}
+        """
+
+rule pileup_MAGs:
+    input:
+        sam = "genomes/alignments/{sample}.sam",
+        bam = "genomes/alignments/{sample}.bam" # to store it
+    output:
+        basecov = temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
+        covhist = temp("genomes/alignments/{sample}_coverage_histogram.txt"),
+        covstats = temp("genomes/alignments/{sample}_coverage.txt"),
+        bincov = temp("genomes/alignments/{sample}_coverage_binned.txt")
+    log:
+        "logs/genomes/alignments/pilup_{sample}.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+    shell:
+        """pileup.sh in={input.sam} \
+               threads={threads} \
+               -Xmx{resources.java_mem}G \
+               covstats={output.covstats} \
+               hist={output.covhist} \
+               basecov={output.basecov}\
+               concise=t \
+               bincov={output.bincov} 2> {log}"""
+
+
+
+localrules: combine_coverages_MAGs,combine_bined_coverages_MAGs
+rule combine_coverages_MAGs:
+    input:
+        covstats = expand("genomes/alignments/{sample}_coverage.txt",
+            sample=SAMPLES)
+    output:
+        "genomes/counts/median_coverage.tsv",
+        "genomes/counts/raw_counts.tsv",
+    run:
+
+        import pandas as pd
+        import os
+
+        combined_cov={}
+        combined_N_reads={}
+        for cov_file in input:
+
+            sample= os.path.split(cov_file)[-1].split('_')[0]
+            data= pd.read_table(cov_file,index_col=0)
+            data.loc[data.Median_fold<0,'Median_fold']=0
+            combined_cov[sample]= data.Median_fold
+            combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
+
+        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
+        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+
+
+
+rule combine_bined_coverages_MAGs:
+    input:
+        binned_coverage_files = expand("genomes/alignments/{sample}_coverage_binned.txt",
+            sample=SAMPLES),
+        cluster_attribution = "genomes/cluster_attribution.tsv"
+    params:
+        samples= SAMPLES
+    output:
+        binned_cov= "genomes/counts/binned_coverage.tsv.gz",
+        median_abund = "genomes/counts/median_coverage.tsv"
+    run:
+
+        import pandas as pd
+        import os
+
+        def read_coverage_binned(covarage_binned_file):
+            return pd.read_table(covarage_binned_file,
+                             skiprows=2,
+                             index_col=[0,2],
+                             usecols=[0,1,2],
+                             squeeze=True)
+
+
+        binCov={}
+        for i, cov_file in enumerate(input.binned_coverage_files):
+
+            sample= params.samples[i]
+
+            binCov[sample] = read_coverage_binned(cov_file)
+
+        binCov = pd.DataFrame(binCov)
+        binCov.index.names=['Contig','Position']
+        binCov.to_csv(output.binned_cov,sep='\t',compression='gzip')
+
+        cluster_attribution = pd.read_table(input.cluster_attribution,header=None,index_col=0,squeeze=True)
+
+        Median_abund= binCov.groupby(cluster_attribution.loc[binCov.index.get_level_values(0)].values).median().T
+
+        Median_abund.to_csv(output.median_abund,sep='\t')
