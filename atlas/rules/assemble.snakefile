@@ -599,6 +599,8 @@ rule convert_sam_to_bam:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    shadow:
+        "shallow"
     resources:
         mem = 2 * config.get("threads", 1)
     shell:

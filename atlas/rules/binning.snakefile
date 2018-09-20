@@ -668,8 +668,6 @@ rule first_dereplication:
         "logs/genomes/pre_dereplication.log"
     conda:
         "%s/dRep.yaml" % CONDAENV
-    shadow:
-        "shallow"
     params:
         filter= " --noQualityFiltering " if config['genome_dereplication']['filter']['noFilter'] else "",
         filter_length= config['genome_dereplication']['filter']['length'],
@@ -718,8 +716,6 @@ rule second_dereplication:
         "logs/genomes/dereplication.log"
     conda:
         "%s/dRep.yaml" % CONDAENV
-    shadow:
-        "shallow"
     params:
         ANI= config['genome_dereplication']['ANI'],
         completeness_weight= config['genome_dereplication']['score']['completeness'] ,
@@ -874,7 +870,7 @@ rule bam_2_sam_MAGs:
 rule pileup_MAGs:
     input:
         sam = "genomes/alignments/{sample}.sam",
-        bam = "genomes/alignments/{sample}.bam" # to store it
+        #bam = "genomes/alignments/{sample}.bam" # to store it
     output:
         basecov = temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
         covhist = temp("genomes/alignments/{sample}_coverage_histogram.txt"),
