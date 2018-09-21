@@ -594,8 +594,7 @@ rule get_all_bins:
         cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                sample= SAMPLES, binner= config['final_binner'])
     output:
-        directory("genomes/all_bins"),
-        "genomes/cluster_attribution.tsv"
+        directory("genomes/all_bins")
 
     run:
         os.mkdir(output[0])
@@ -611,7 +610,6 @@ rule get_all_bins:
 
                 shutil.copy(fasta_file,output[0])
 
-        shell("cat {input.cluster_attribution} > {output[1]}")
 
 
 localrules: get_quality_for_dRep_from_checkm
@@ -770,6 +768,27 @@ rule run_all_checkm_lineage_wf:
             {input.bins} \
             {params.output_dir}
         """
+
+localrules: get_final_cluster_attribution
+rule get_final_cluster_attribution:
+    input:
+        directory("genomes/Dereplication/dereplicated_genomes")
+    output:
+        "genomes/cluster_attribution.tsv"
+    params:
+        file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
+    run:
+        bin_ids, = glob_wildcards(params.file_name)
+        print("found {} bins".format(len(bin_ids)))
+        with open(output[0],'w') as out_file:
+            for binid in bin_ids:
+                with open(params.file_name.format(binid=binid)) as bin_file:
+                    for line in bin_file:
+                        if line.startswith(">"):
+                            fasta_header = line[1:].strip().split()[0]
+                            out_file.write(f"{fasta_header}\t{binid}\n")
+
+
 
 
 
