@@ -786,7 +786,7 @@ rule get_final_cluster_attribution:
                     for line in bin_file:
                         if line.startswith(">"):
                             fasta_header = line[1:].strip().split()[0]
-                            out_file.write(f"{fasta_header}\t{binid}\n")
+                            out_file.write("{fasta_header}\t{binid}\n".format(fasta_header=fasta_header,binid=binid))
 
 
 
@@ -922,8 +922,8 @@ rule combine_coverages_MAGs:
         covstats = expand("genomes/alignments/{sample}_coverage.txt",
             sample=SAMPLES)
     output:
-        "genomes/counts/median_coverage.tsv",
-        "genomes/counts/raw_counts.tsv",
+        "genomes/counts/median_contig_coverage.tsv",
+        "genomes/counts/raw_counts_contigs.tsv",
     run:
 
         import pandas as pd
@@ -953,7 +953,7 @@ rule combine_bined_coverages_MAGs:
         samples= SAMPLES
     output:
         binned_cov= "genomes/counts/binned_coverage.tsv.gz",
-        median_abund = "genomes/counts/median_coverage.tsv"
+        median_abund = "genomes/counts/median_coverage_genomes.tsv"
     run:
 
         import pandas as pd
