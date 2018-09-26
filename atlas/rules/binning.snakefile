@@ -132,7 +132,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        temp("{sample}/binning/concoct/cluster_attribution.tsv")
+        "{sample}/binning/concoct/cluster_attribution.tmp"
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -167,7 +167,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        temp("{sample}/binning/metabat/cluster_attribution.tsv"),
+        "{sample}/binning/metabat/cluster_attribution.tmp",
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
@@ -238,34 +238,34 @@ rule maxbin:
 
 
 localrules: get_maxbin_cluster_attribution, get_bins
-# localrules: get_unique_cluster_attribution,
-# rule get_unique_cluster_attribution:
-#     input:
-#         "{sample}/binning/{binner}/cluster_attribution.tmp"
-#     output:
-#         "{sample}/binning/{binner}/cluster_attribution.tsv"
-#     run:
-#         import pandas as pd
-#         import numpy as np
-#
-#
-#         d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
-#
-#         assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
-#
-#         old_cluster_ids = list(d.unique())
-#         if 0 in old_cluster_ids:
-#             old_cluster_ids.remove(0)
-#         N_clusters= len(old_cluster_ids)
-#
-#         float_format= "{sample}.{binner}.{{:0{N_zeros}d}}".format(N_zeros=len(str(N_clusters)), **wildcards)
-#
-#         map_cluster_ids = pd.Series(np.arange(N_clusters)+1,index= old_cluster_ids )
-#         map_cluster_ids= map_cluster_ids.apply(float_format.format)
-#
-#         new_d= d.map(map_cluster_ids)
-#
-#         new_d.to_csv(output[0],sep='\t')
+localrules: get_unique_cluster_attribution,
+rule get_unique_cluster_attribution:
+    input:
+        "{sample}/binning/{binner}/cluster_attribution.tmp"
+    output:
+        "{sample}/binning/{binner}/cluster_attribution.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+
+
+        d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
+
+        assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
+
+        old_cluster_ids = list(d.unique())
+        if 0 in old_cluster_ids:
+            old_cluster_ids.remove(0)
+        N_clusters= len(old_cluster_ids)
+
+        float_format= "{sample}.{binner}.{{:0{N_zeros}d}}".format(N_zeros=len(str(N_clusters)), **wildcards)
+
+        map_cluster_ids = pd.Series(np.arange(N_clusters)+1,index= old_cluster_ids )
+        map_cluster_ids= map_cluster_ids.apply(float_format.format)
+
+        new_d= d.map(map_cluster_ids)
+
+        new_d.to_csv(output[0],sep='\t')
 
 
 rule get_maxbin_cluster_attribution:
@@ -589,15 +589,18 @@ rule run_das_tool:
 localrules: get_all_bins
 rule get_all_bins:
     input:
-        expand(directory("{sample}/binning/{binner}/bins"),
+        bins=expand(directory("{sample}/binning/{binner}/bins"),
+               sample= SAMPLES, binner= config['final_binner']),
+        cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                sample= SAMPLES, binner= config['final_binner'])
     output:
         directory("genomes/all_bins")
+
     run:
         os.mkdir(output[0])
         from glob import glob
         import shutil
-        for bin_folder in input:
+        for bin_folder in input.bins:
             for fasta_file in glob(bin_folder+'/*.fasta'):
 
                 #fasta_file_name = os.path.split(fasta_file)[-1]
@@ -606,6 +609,8 @@ rule get_all_bins:
                 #os.symlink(os.path.relpath(fasta_file,output[0]),out_path)
 
                 shutil.copy(fasta_file,output[0])
+
+
 
 localrules: get_quality_for_dRep_from_checkm
 rule get_quality_for_dRep_from_checkm:
@@ -763,3 +768,218 @@ rule run_all_checkm_lineage_wf:
             {input.bins} \
             {params.output_dir}
         """
+
+localrules: get_final_cluster_attribution
+rule get_final_cluster_attribution:
+    input:
+        directory("genomes/Dereplication/dereplicated_genomes")
+    output:
+        "genomes/cluster_attribution.tsv"
+    params:
+        file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
+    run:
+        bin_ids, = glob_wildcards(params.file_name)
+        print("found {} bins".format(len(bin_ids)))
+        with open(output[0],'w') as out_file:
+            for binid in bin_ids:
+                with open(params.file_name.format(binid=binid)) as bin_file:
+                    for line in bin_file:
+                        if line.startswith(">"):
+                            fasta_header = line[1:].strip().split()[0]
+                            out_file.write("{fasta_header}\t{binid}\n".format(fasta_header=fasta_header,binid=binid))
+
+
+
+
+
+rule build_db_genomes:
+    input:
+        fasta_dir = directory("genomes/Dereplication/dereplicated_genomes")
+    output:
+        index="ref/genome/3/summary.txt",
+        fasta=temp("genomes/all_contigs.fasta")
+    threads:
+        config.get("threads", 6)
+    resources:
+        mem = config["java_mem"],
+        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+    log:
+        "logs/genomes/mapping/build_bbmap_index.log"
+    shell:
+        """
+        cat {input.fasta_dir}/* > {output.fasta} 2> {log}
+        bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
+
+        """
+
+
+
+
+
+# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
+rule align_reads_to_MAGs:
+    input:
+        unpack(get_quality_controlled_reads),
+        ref = rules.build_db_genomes.output.index,
+    output:
+        sam = temp("genomes/alignments/{sample}.sam"),
+    params:
+        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
+        max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
+        paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
+        ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
+        min_id = config.get('contig_min_id', CONTIG_MIN_ID),
+        maxindel = 100 # default 16000 good for genome deletions but not necessarily for alignment to contigs
+    shadow:
+        "shallow"
+    log:
+        "logs/genomes/mapping/map_{sample}.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+    shell:
+        """
+            bbwrap.sh \
+            build=3 \
+            {params.input} \
+            trimreaddescriptions=t \
+            out={output.sam} \
+            threads={threads} \
+            pairlen={params.max_distance_between_pairs} \
+            pairedonly={params.paired_only} \
+            minid={params.min_id} \
+            mdtag=t \
+            xstag=fs \
+            nmtag=t \
+            sam=1.3 \
+            ambiguous={params.ambiguous} \
+            secondary=t \
+            saa=f \
+            maxsites={params.maxsites} \
+            -Xmx{resources.java_mem}G \
+            2> {log}
+        """
+
+ruleorder: bam_2_sam_MAGs > align_reads_to_MAGs
+rule bam_2_sam_MAGs:
+    input:
+        "genomes/alignments/{sample}.bam"
+    output:
+        temp("genomes/alignments/{sample}.sam")
+    threads:
+        config['threads']
+    resources:
+        mem = config["java_mem"],
+    shadow:
+        "shallow"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    shell:
+        """
+        reformat.sh in={input} out={output} sam=1.3
+        """
+
+
+
+rule pileup_MAGs:
+    input:
+        sam = "genomes/alignments/{sample}.sam",
+        #bam = "genomes/alignments/{sample}.bam" # to store it
+    output:
+        basecov = temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
+        covhist = temp("genomes/alignments/{sample}_coverage_histogram.txt"),
+        covstats = temp("genomes/alignments/{sample}_coverage.txt"),
+        bincov = temp("genomes/alignments/{sample}_coverage_binned.txt")
+    log:
+        "logs/genomes/alignments/pilup_{sample}.log"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem = config.get("java_mem", JAVA_MEM),
+        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+    shell:
+        """pileup.sh in={input.sam} \
+               threads={threads} \
+               -Xmx{resources.java_mem}G \
+               covstats={output.covstats} \
+               hist={output.covhist} \
+               basecov={output.basecov}\
+               concise=t \
+               bincov={output.bincov} 2> {log}"""
+
+
+
+localrules: combine_coverages_MAGs,combine_bined_coverages_MAGs
+rule combine_coverages_MAGs:
+    input:
+        covstats = expand("genomes/alignments/{sample}_coverage.txt",
+            sample=SAMPLES)
+    output:
+        "genomes/counts/median_contig_coverage.tsv",
+        "genomes/counts/raw_counts_contigs.tsv",
+    run:
+
+        import pandas as pd
+        import os
+
+        combined_cov={}
+        combined_N_reads={}
+        for cov_file in input:
+
+            sample= os.path.split(cov_file)[-1].split('_')[0]
+            data= pd.read_table(cov_file,index_col=0)
+            data.loc[data.Median_fold<0,'Median_fold']=0
+            combined_cov[sample]= data.Median_fold
+            combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
+
+        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
+        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+
+
+
+rule combine_bined_coverages_MAGs:
+    input:
+        binned_coverage_files = expand("genomes/alignments/{sample}_coverage_binned.txt",
+            sample=SAMPLES),
+        cluster_attribution = "genomes/cluster_attribution.tsv"
+    params:
+        samples= SAMPLES
+    output:
+        binned_cov= "genomes/counts/binned_coverage.tsv.gz",
+        median_abund = "genomes/counts/median_coverage_genomes.tsv"
+    run:
+
+        import pandas as pd
+        import os
+
+        def read_coverage_binned(covarage_binned_file):
+            return pd.read_table(covarage_binned_file,
+                             skiprows=2,
+                             index_col=[0,2],
+                             usecols=[0,1,2],
+                             squeeze=True)
+
+
+        binCov={}
+        for i, cov_file in enumerate(input.binned_coverage_files):
+
+            sample= params.samples[i]
+
+            binCov[sample] = read_coverage_binned(cov_file)
+
+        binCov = pd.DataFrame(binCov)
+        binCov.index.names=['Contig','Position']
+        binCov.to_csv(output.binned_cov,sep='\t',compression='gzip')
+
+        cluster_attribution = pd.read_table(input.cluster_attribution,header=None,index_col=0,squeeze=True)
+
+        Median_abund= binCov.groupby(cluster_attribution.loc[binCov.index.get_level_values(0)].values).median().T
+
+        Median_abund.to_csv(output.median_abund,sep='\t')
