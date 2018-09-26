@@ -1,18 +1,28 @@
 import os
 
 localrules: concat_genes
-
-
-
 rule concat_genes:
     input:
-        expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
+        faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
+        fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
     output:
-        unfiltered=temp("gene_catalog/all_predicted_genes_unfiltered.fna"),
-        all_genes= temp("gene_catalog/all_predicted_genes.fna"),
-        lhist= "gene_catalog/stats/length_hist.txt"
+        faa=temp("Genecatalog/all_predicted_genes.faa"),
+        fna = "Genecatalog/all_predicted_genes_unfiltered.fna",
+    params:
+        min_length=100
+    shell:
+        " cat {input.faa} >  {output.faa} ;"
+        " cat {input.fna} > {output.fna}"
+
+
+rule filter_genes:
+    input:
+        temp("Genecatalog/all_predicted_genes_unfiltered.fna")
+    output:
+        all_genes= temp("Genecatalog/all_predicted_genes.fna"),
+        lhist= "Genecatalog/stats/length_hist.txt"
     log:
-        "log/gene_catalog/filter_genes.fasta"
+        "log/Genecatalog/filter_genes.fasta"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -23,29 +33,84 @@ rule concat_genes:
     params:
         min_length=100
     shell:
-        " cat {input} >  {output.unfiltered} ;"
         " reformat.sh "
-        " in={output.unfiltered}"
+        " in={input}"
         " minlength={params.min_length} "
         " lhist={output.lhist} "
         " ow=t out={output.all_genes} "
         " 2> {log} "
 
+# localrules: remove_asterix
+# rule remove_asterix:
+#     input:
+#         "{file}_with_asterix.faa",
+#     output:
+#         temp("{file}.faa")
+#     run:
+#         with open(input[0]) as f, open(output[0],'w') as fo:
+#             for line in f:
+#                 fo.write(line.replace('*',''))
+#
+
+
+rule cluster_proteins:
+    input:
+        faa= "Genecatalog/all_predicted_genes.faa"
+    output:
+        tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
+        db=temp("Genecatalog/all_predicted_genes.db"),
+        clusterdb = "Genecatalog/clustering/protein_clusters.db",
+    conda:
+        "%s/mmseqs.yaml" % CONDAENV
+    log:
+        "logs/Genecatalog/clustering/cluster_proteins.log"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+            mmseqs createdb {input.faa} {output.db} 2> {log}
+
+            mmseqs cluster --threads {threads} {output.db} {output.clusterdb} {output.tmpdir} 2> {log}
+        """
+
+
+rule get_rep_proteins:
+    input:
+        db=temp("Genecatalog/all_predicted_genes.db"),
+        clusterdb = "Genecatalog/clustering/protein_clusters.db",
+    output:
+        cluster_attribution = "Genecatalog/protein_catalog.tsv",
+        rep_seqs_db = temp("Genecatalog/protein_catalog.db"),
+        rep_seqs = "Genecatalog/protein_catalog_oldnames.faa"
+    conda:
+        "%s/mmseqs.yaml" % CONDAENV
+    log:
+        "logs/Genecatalog/clustering/get_rep_proteins.log"
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+        mmseqs createtsv {input.db} {input.db} {input.clusterdb} {output.cluster_attribution} 2> {log}
+
+        mmseqs result2repseq {input.db} {input.clusterdb} {output.rep_seqs_db} 2>> {log}
+        mmseqs result2flat {input.db} {input.db} {output.rep_seqs_db} {output.rep_seqs} 2>> {log}
+
+        """
 
 
 
 rule cluster_catalog:
     input:
-        rules.concat_genes.output.all_genes
+        rules.concat_genes.output # change
     output:
-        "gene_catalog/gene_catalog.fna",
-        "gene_catalog/gene_catalog.clstr"
+        "Genecatalog/Genecatalog.fna",
+        "Genecatalog/Genecatalog.clstr"
     conda:
         "%s/cd-hit.yaml" % CONDAENV
     log:
-        "logs/gene_catalog/cluster_genes.log"
+        "logs/Genecatalog/cluster_genes.log"
     threads:
-        8
+        config.get("threads", 1)
     resources:
         mem=20
     params:
@@ -64,12 +129,12 @@ rule cluster_catalog:
 
 
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
-rule align_reads_to_gene_catalog:
+rule align_reads_to_Genecatalog:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "gene_catalog/gene_catalog.fna",
+        fasta = "Genecatalog/Genecatalog.fna",
     output:
-        sam = temp("gene_catalog/alignments/{sample}.sam")
+        sam = temp("Genecatalog/alignments/{sample}.sam")
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = 2,
@@ -79,7 +144,7 @@ rule align_reads_to_gene_catalog:
     shadow:
         "shallow"
     log:
-        "logs/gene_catalog/alignment/{sample}_map.log"
+        "logs/Genecatalog/alignment/{sample}_map.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -111,17 +176,17 @@ rule align_reads_to_gene_catalog:
         """
 
 
-rule pileup_gene_catalog:
+rule pileup_Genecatalog:
     input:
-        sam = "gene_catalog/alignments/{sample}.sam",
-        bam = "gene_catalog/alignments/{sample}.bam"
+        sam = "Genecatalog/alignments/{sample}.sam",
+        bam = "Genecatalog/alignments/{sample}.bam"
     output:
-        covstats = temp("gene_catalog/alignments/{sample}_coverage.tsv"),
-        basecov = temp("gene_catalog/alignments/{sample}_base_coverage.txt.gz"),
+        covstats = temp("Genecatalog/alignments/{sample}_coverage.tsv"),
+        basecov = temp("Genecatalog/alignments/{sample}_base_coverage.txt.gz"),
     params:
         pileup_secondary = 't' # a read maay map to different genes
     log:
-        "logs/gene_catalog/alignment/{sample}_pileup.log"
+        "logs/Genecatalog/alignment/{sample}_pileup.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -142,11 +207,11 @@ rule pileup_gene_catalog:
 localrules: combine_gene_coverages
 rule combine_gene_coverages:
     input:
-        covstats = expand("gene_catalog/alignments/{sample}_coverage.tsv",
+        covstats = expand("Genecatalog/alignments/{sample}_coverage.tsv",
             sample=SAMPLES)
     output:
-        "gene_catalog/counts/median_coverage.tsv",
-        "gene_catalog/counts/Nmapped_reads.tsv",
+        "Genecatalog/counts/median_coverage.tsv",
+        "Genecatalog/counts/Nmapped_reads.tsv",
     run:
 
         import pandas as pd
@@ -167,20 +232,20 @@ rule combine_gene_coverages:
 
 
 
-localrules: get_gene_catalog_annotations
-rule get_gene_catalog_annotations:
+localrules: get_Genecatalog_annotations
+rule get_Genecatalog_annotations:
     input:
-        gene_catalog= 'gene_catalog/gene_catalog.fna',
+        Genecatalog= 'Genecatalog/Genecatalog.fna',
         eggNOG= expand('{sample}/annotation/eggNOG.tsv',sample=SAMPLES),
         refseq= expand('{sample}/annotation/refseq/{sample}_tax_assignments.tsv',sample=SAMPLES),
-        scg= expand("gene_catalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
+        scg= expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
     output:
-        annotations= "gene_catalog/annotations.tsv",
+        annotations= "Genecatalog/annotations.tsv",
     run:
         import pandas as pd
 
         gene_ids=[]
-        with open(input.gene_catalog) as fasta_file:
+        with open(input.Genecatalog) as fasta_file:
             for line in fasta_file:
                 if line[0]=='>':
                     gene_ids.append(line[1:].strip().split()[0])
@@ -206,9 +271,9 @@ rule get_gene_catalog_annotations:
 
 rule predict_single_copy_genes:
     input:
-        "gene_catalog/gene_catalog.fna"
+        "Genecatalog/Genecatalog.fna"
     output:
-        "gene_catalog/annotation/single_copy_genes_{domain}.tsv",
+        "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
     params:
         script_dir = os.path.dirname(os.path.abspath(workflow.snakefile)),
         key = lambda wc: wc.domain[:3] #bac for bacteria, #archaea
@@ -236,9 +301,9 @@ rule predict_single_copy_genes:
 #
 # rule reformat_for_canopy:
 #         input:
-#             "mapresults/Gene_catalog_CE/combined_Nmaped_reads.tsv"
+#             "mapresults/Genecatalog_CE/combined_Nmaped_reads.tsv"
 #         output:
-#             "mapresults/Gene_catalog_CE/nseq.tsv"
+#             "mapresults/Genecatalog_CE/nseq.tsv"
 #         run:
 #             import pandas as pd
 #
@@ -252,12 +317,12 @@ rule predict_single_copy_genes:
 #     input:
 #         rules.reformat_for_canopy.output
 #     output:
-#         cluster="mapresults/Gene_catalog_CE/canopy_cluster.tsv",
-#         profile="mapresults/Gene_catalog_CE/cluster_profiles.tsv",
+#         cluster="mapresults/Genecatalog_CE/canopy_cluster.tsv",
+#         profile="mapresults/Genecatalog_CE/cluster_profiles.tsv",
 #     params:
 #         canopy_params=config.get("canopy_params","")
 #     log:
-#         "mapresults/Gene_catalog_CE/canopy.log"
+#         "mapresults/Genecatalog_CE/canopy.log"
 #     benchmark:
 #         "logs/benchmarks/canopy_clustering.txt"
 #     conda:
