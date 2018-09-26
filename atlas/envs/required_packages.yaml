@@ -6,6 +6,7 @@ channels:
 dependencies:
     - python=3.5
     - bbmap=37.78
+    - pigz
     - bzip2=1.0.6
     - click=6.7
     - diamond=0.9.10
