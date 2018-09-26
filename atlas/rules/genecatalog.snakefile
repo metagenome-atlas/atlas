@@ -79,9 +79,9 @@ rule get_rep_proteins:
         db=temp("Genecatalog/all_predicted_genes.db"),
         clusterdb = "Genecatalog/clustering/protein_clusters.db",
     output:
-        cluster_attribution = "Genecatalog/protein_catalog.tsv",
+        cluster_attribution = temp("Genecatalog/genes2proteins_oldnames.tsv"),
         rep_seqs_db = temp("Genecatalog/protein_catalog.db"),
-        rep_seqs = "Genecatalog/protein_catalog_oldnames.faa"
+        rep_seqs = temp("Genecatalog/protein_catalog_oldnames.faa")
     conda:
         "%s/mmseqs.yaml" % CONDAENV
     log:
@@ -97,6 +97,35 @@ rule get_rep_proteins:
 
         """
 
+def gen_names_for_range(N,prefix='',start=1):
+    n_leading_zeros= len(str(N))
+    format_int=prefix+'{:0'+str(n_leading_zeros)+'d}'
+    return [format_int.format(i) for i in range(start,N+start)]
+localrules: rename_protein_catalog
+rule rename_protein_catalog:
+    input:
+        cluster_attribution = "Genecatalog/genes2proteins_oldnames.tsv",
+        rep_seqs = "Genecatalog/protein_catalog_oldnames.faa"
+    output:
+        cluster_attribution = "Genecatalog/genes2proteins.tsv",
+        rep_seqs = "Genecatalog/protein_catalog.faa"
+    run:
+        import pandas as pd
+        gene2proteins= pd.read_table(input.cluster_attribution,index_col=0, header=None)
+        Ngenes= gene2proteins.shape[0]
+
+        gene2proteins['new_name'] = gen_names_for_range(Ngenes,'geneproduct')
+        gene2proteins['new_name'].to_csv(output.cluster_attribution,sep='\t',header=False)
+
+        map_names = dict(zip(gene2proteins[1],gene2proteins['new_name']))
+
+        with open(output.rep_seqs,'w') as fout:
+            with open(input.rep_seqs) as fin :
+                for line in fin:
+                    if line[0]=='>':
+                        fout.write(">{new_name}\n".format(new_name=map_names[line[1:].strip()]))
+                    else:
+                        fout.write(line)
 
 
 rule cluster_catalog:

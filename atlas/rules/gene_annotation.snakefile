@@ -96,26 +96,6 @@ else:
 
 
 
-    # localrules: rename_genes
-    # rule rename_genes:
-    #     input:
-    #         "{sample}/annotation/predicted_genes/{sample}_ambigous_names.{extension}",
-    #         tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
-    #     output:
-    #         "{sample}/annotation/predicted_genes/{sample}.{extension}"
-    #     wildcard_constraints:
-    #         extension= "faa|fna"
-    #     run:
-    #         with open(output[0],'w') as fout:
-    #             with open(input[0]) as fin :
-    #                 i=0
-    #                 for line in fin:
-    #                     if line[0]=='>':
-    #                         fout.write(">{sample}_{i}\n".format(i=i,**wildcards))
-    #                         i+=1
-    #                     else:
-    #                         fout.write(line)
-
     localrules: get_contigs_from_gene_names
     rule get_contigs_from_gene_names:
         input:
