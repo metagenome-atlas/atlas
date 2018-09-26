@@ -58,7 +58,7 @@ rule cluster_proteins:
         faa= "Genecatalog/all_predicted_genes.faa"
     output:
         tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
-        db=temp("Genecatalog/all_predicted_genes.db"),
+        db=temp(expand("Genecatalog/all_predicted_genes.{dbext}",dbext=['db','db.dbtype', 'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
         clusterdb = "Genecatalog/clustering/protein_clusters.db",
     conda:
         "%s/mmseqs.yaml" % CONDAENV
@@ -68,15 +68,15 @@ rule cluster_proteins:
         config.get("threads", 1)
     shell:
         """
-            mmseqs createdb {input.faa} {output.db} 2> {log}
+            mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
 
-            mmseqs cluster --threads {threads} {output.db} {output.clusterdb} {output.tmpdir} 2> {log}
+            mmseqs cluster --threads {threads} {output.db[0]} {output.clusterdb} {output.tmpdir}  > >(tee -a  {log})
         """
 
 
 rule get_rep_proteins:
     input:
-        db=temp("Genecatalog/all_predicted_genes.db"),
+        db= rules.cluster_proteins.output.db,
         clusterdb = "Genecatalog/clustering/protein_clusters.db",
     output:
         cluster_attribution = temp("Genecatalog/genes2proteins_oldnames.tsv"),
@@ -90,17 +90,21 @@ rule get_rep_proteins:
         config.get("threads", 1)
     shell:
         """
-        mmseqs createtsv {input.db} {input.db} {input.clusterdb} {output.cluster_attribution} 2> {log}
+        mmseqs createtsv {input.db} {input.db} {input.clusterdb} {output.cluster_attribution}  > >(tee   {log})
 
-        mmseqs result2repseq {input.db} {input.clusterdb} {output.rep_seqs_db} 2>> {log}
-        mmseqs result2flat {input.db} {input.db} {output.rep_seqs_db} {output.rep_seqs} 2>> {log}
+        mmseqs result2repseq {input.db[0]} {input.clusterdb} {output.rep_seqs_db}  > >(tee -a  {log})
+        mmseqs result2flat {input.db[0]} {input.db[0]} {output.rep_seqs_db} {output.rep_seqs}  > >(tee -a  {log})
 
         """
 
 def gen_names_for_range(N,prefix='',start=1):
+    """generates a range of IDS with leading zeros so sorting will be ok"""
     n_leading_zeros= len(str(N))
     format_int=prefix+'{:0'+str(n_leading_zeros)+'d}'
     return [format_int.format(i) for i in range(start,N+start)]
+
+
+
 localrules: rename_protein_catalog
 rule rename_protein_catalog:
     input:
@@ -126,6 +130,8 @@ rule rename_protein_catalog:
                         fout.write(">{new_name}\n".format(new_name=map_names[line[1:].strip()]))
                     else:
                         fout.write(line)
+
+
 
 
 rule cluster_catalog:
