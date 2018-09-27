@@ -1,66 +1,67 @@
 import os
 
+
+config['genecatalog']={'minlength_nt':100}
+config['cluster_proteins']=dict(
+        coverage=0.8, #0.8,
+        evalue=0.001, # 0.001
+        minid=0, # 0.00
+        extra=""
+        )
+
 localrules: concat_genes
 rule concat_genes:
     input:
         faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
         fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
     output:
-        faa=temp("Genecatalog/all_predicted_genes.faa"),
-        fna = "Genecatalog/all_predicted_genes_unfiltered.fna",
-    params:
-        min_length=100
+        faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
+        fna = temp("Genecatalog/all_genes_unfiltered.fna"),
     shell:
         " cat {input.faa} >  {output.faa} ;"
         " cat {input.fna} > {output.fna}"
 
 
+
+localrules: filter_genes
 rule filter_genes:
     input:
-        temp("Genecatalog/all_predicted_genes_unfiltered.fna")
+        fna="Genecatalog/all_genes_unfiltered.fna",
+        faa="Genecatalog/all_genes_unfiltered.fna"
     output:
-        all_genes= temp("Genecatalog/all_predicted_genes.fna"),
-        lhist= "Genecatalog/stats/length_hist.txt"
+        fna= "Genecatalog/all_genes/predicted_genes.fna",
+        faa= "Genecatalog/all_genes/predicted_genes.faa",
     log:
         "log/Genecatalog/filter_genes.fasta"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
+#    conda:
+#        "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
-    resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        1
     params:
-        min_length=100
-    shell:
-        " reformat.sh "
-        " in={input}"
-        " minlength={params.min_length} "
-        " lhist={output.lhist} "
-        " ow=t out={output.all_genes} "
-        " 2> {log} "
+        min_length=config['genecatalog']['minlength_nt']
+    run:
+        from Bio import SeqIO
+        faa = SeqIO.parse(input.faa,'fasta')
+        fna = SeqIO.parse(input.fna,'fasta')
 
-# localrules: remove_asterix
-# rule remove_asterix:
-#     input:
-#         "{file}_with_asterix.faa",
-#     output:
-#         temp("{file}.faa")
-#     run:
-#         with open(input[0]) as f, open(output[0],'w') as fo:
-#             for line in f:
-#                 fo.write(line.replace('*',''))
-#
+        with open(output.faa,'w') as out_faa, open(output.fna,'w') as out_fna:
+
+            for gene in fna:
+                protein = next(faa)
+
+                if len(gene) >= params.min_length:
+                    SeqIO.write(gene,out_fna,'fasta')
+                    SeqIO.write(protein,out_faa,'fasta')
 
 
 rule cluster_proteins:
     input:
-        faa= "Genecatalog/all_predicted_genes.faa"
+        faa= "Genecatalog/all_genes/predicted_genes.faa"
     output:
         tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
-        db=temp(expand("Genecatalog/all_predicted_genes.{dbext}",dbext=['db','db.dbtype',
+        db=temp(expand("Genecatalog/all_genes/predicted_genes.{dbext}",dbext=['db','db.dbtype',
                                                                         'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
-        clusterdb = temp(extend("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
+        clusterdb = temp(expand("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
     conda:
         "%s/mmseqs.yaml" % CONDAENV
     log:
@@ -68,15 +69,16 @@ rule cluster_proteins:
     threads:
         config.get("threads", 1)
     params:
-        coverage=0.8, #0.8,
-        evalue=0.001, # 0.001
-        minid=0 # 0.00
+        coverage=config['cluster_proteins']['coverage'], #0.8,
+        evalue=config['cluster_proteins']['evalue'], # 0.001
+        minid=config['cluster_proteins']['minid'], # 0.00
+        extra=config['cluster_proteins']['extra']
     shell:
         """
             mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
 
             mmseqs cluster -c {params.coverage} -e {params.evalue} \
-            --min-seq-id {params.minid} \
+            --min-seq-id {params.minid} {params.extra} \
             --threads {threads} {output.db[0]} {output.clusterdb[0]} {output.tmpdir}  > >(tee -a  {log})
         """
 
@@ -118,7 +120,7 @@ rule rename_protein_catalog:
         cluster_attribution = "Genecatalog/genes2proteins_oldnames.tsv",
         rep_seqs = "Genecatalog/protein_catalog_oldnames.faa"
     output:
-        cluster_attribution = "Genecatalog/genes2proteins.tsv",
+        cluster_attribution = "Genecatalog/clustering/genes2proteins.tsv",
         rep_seqs = "Genecatalog/protein_catalog.faa"
     run:
         import pandas as pd
@@ -142,10 +144,6 @@ rule rename_protein_catalog:
                         fout.write(">{new_name}\n".format(new_name=map_names[line[1:].strip()]))
                     else:
                         fout.write(line)
-
-
-
-
 
 
 
@@ -178,7 +176,7 @@ rule cluster_catalog:
 
 
 
-# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
+
 rule align_reads_to_Genecatalog:
     input:
         unpack(get_quality_controlled_reads),
