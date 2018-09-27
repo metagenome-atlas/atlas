@@ -1,13 +1,26 @@
 import os
 
 
-config['genecatalog']={'minlength_nt':100}
+config['genecatalog']={'minlength_nt':100,
+                       'minid':0.95,
+                       'coverage':0.9}
+
+
 config['cluster_proteins']=dict(
         coverage=0.8, #0.8,
         evalue=0.001, # 0.001
         minid=0, # 0.00
         extra=""
         )
+
+
+rule gene_catalog:
+    input:
+        "Genecatalog/protein_catalog.faa",
+        "Genecatalog/gene_catalog.fna",
+        "Genecatalog/counts/median_coverage.tsv",
+        expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
+
 
 localrules: concat_genes
 rule concat_genes:
@@ -33,8 +46,6 @@ rule filter_genes:
         faa= "Genecatalog/all_genes/predicted_genes.faa",
     log:
         "log/Genecatalog/filter_genes.fasta"
-#    conda:
-#        "%s/required_packages.yaml" % CONDAENV
     threads:
         1
     params:
@@ -88,7 +99,7 @@ rule get_rep_proteins:
         db= rules.cluster_proteins.output.db,
         clusterdb = rules.cluster_proteins.output.clusterdb,
     output:
-        cluster_attribution = temp("Genecatalog/genes2proteins_oldnames.tsv"),
+        cluster_attribution = temp("Genecatalog/orf2proteins_oldnames.tsv"),
         rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
         rep_seqs = temp("Genecatalog/protein_catalog_oldnames.faa")
     conda:
@@ -117,10 +128,10 @@ def gen_names_for_range(N,prefix='',start=1):
 localrules: rename_protein_catalog
 rule rename_protein_catalog:
     input:
-        cluster_attribution = "Genecatalog/genes2proteins_oldnames.tsv",
+        cluster_attribution = "Genecatalog/orf2proteins_oldnames.tsv",
         rep_seqs = "Genecatalog/protein_catalog_oldnames.faa"
     output:
-        cluster_attribution = "Genecatalog/clustering/genes2proteins.tsv",
+        cluster_attribution = "Genecatalog/clustering/orf2proteins.tsv",
         rep_seqs = "Genecatalog/protein_catalog.faa"
     run:
         import pandas as pd
@@ -145,14 +156,49 @@ rule rename_protein_catalog:
                     else:
                         fout.write(line)
 
+# cluster genes
 
 
-rule cluster_catalog:
+# Create fasta files of the genes (nt) for all genes in a protein cluster for subclustering
+rule dispatch_fasta:
     input:
-        rules.concat_genes.output # change
+        genes2proteins = "Genecatalog/clustering/orf2proteins.tsv",
+        fna= "Genecatalog/all_genes/predicted_genes.fna",
     output:
-        "Genecatalog/Genecatalog.fna",
-        "Genecatalog/Genecatalog.clstr"
+        temp_folder= temp(directory("Genecatalog/clustering/nt_unclustered")),
+        unique_fna = temp("Genecatalog/clustering/unique_genes.fna")
+    run:
+        import pandas as pd
+        import os, shutil
+        from Bio import SeqIO
+
+        os.mkdir(output.temp_folder)
+
+        genes2proteins=pd.read_table(input.genes2proteins,
+                             index_col=0,squeeze=True)
+        #no need to cluster unique genes
+        unique_genes= genes2proteins.drop_duplicates(keep=False)
+
+        if unique_genes.shape[0]>0:
+            genes2proteins.loc[unique_genes.index]='unique'
+        else:
+            genes2proteins.loc['stub']='unique' # add unique so an empty file will be created
+
+        # create individual file handles
+        filehandles= dict( (proteinID,open(os.path.join(output.temp_folder, f"{proteinID}.fna"),"w"))
+                          for proteinID in genes2proteins.unique())
+
+        for seq in SeqIO.parse(input.fna,'fasta'):
+            SeqIO.write(seq,filehandles[genes2proteins.loc[seq.name]],'fasta')
+
+        shutil.move(os.path.join(output.temp_folder, "unique.fna"),output.unique_fna)
+
+
+rule subcluster_genes:
+    input:
+        fna_dir=directory("Genecatalog/clustering/nt_unclustered"),
+    output:
+        directory("Genecatalog/clustering/gene_subclusters")
     conda:
         "%s/cd-hit.yaml" % CONDAENV
     log:
@@ -160,19 +206,55 @@ rule cluster_catalog:
     threads:
         config.get("threads", 1)
     resources:
-        mem=20
+        mem=config.get("java_mem", JAVA_MEM)
     params:
-        prefix= lambda wc,output: os.path.splitext(output[0])[0],
-        coverage=0.9,
-        identity=0.95
+        snakefile= os.path.join(os.path.dirname(workflow.snakefile),'rules','cluster_genes.snakefile'),
+        coverage=config['genecatalog']['coverage'],
+        identity=config['genecatalog']['minid']
     shell:
-        """
-            cd-hit-est -i {input} -T {threads} \
-            -M {resources.mem}000 -o {params.prefix} \
-            -c {params.identity} -n 9  -d 0 \
-            -aS {params.coverage} -aL {params.coverage} &> >(tee {log})
-            mv {params.prefix} {output[0]}
-        """
+        " snakemake -s {params.snakefile} "
+        " --config  unclustered_dir={input.fna_dir} clustered_dir={output} "
+        " identity={params.identity} coverage={params.coverage} "
+        " -j {threads} -p "
+        " --resources mem={resources.mem} "
+        " &> {log} "
+
+
+
+
+
+rule combine_gene_clusters:
+    input:
+        clustered_dir= directory("Genecatalog/clustering/gene_subclusters"),
+        unique_fna = "Genecatalog/clustering/unique_genes.fna",
+        cluster_attribution = rules.rename_protein_catalog.output.cluster_attribution
+    output:
+        old_names= temp("Genecatalog/gene_catalog_oldnames.fna"),
+        gen_catalog= "Genecatalog/gene_catalog.fna",
+        gene2proteins= "Genecatalog/clustering/gene2proteins.tsv"
+    run:
+        from Bio import SeqIO
+        import pandas as pd
+
+        shell("cat {input.clustered_dir}/*.fna {input.unique_fna} > {output.old_names}")
+
+        Genes= SeqIO.to_dict(SeqIO.parse(output.old_names,'fasta'))
+
+        N_genes= len(Genes)
+        old2new_names= pd.Series(index= Genes.keys(), data=gen_names_for_range(N_genes,'Gene'))
+
+        for old_name in Genes:
+            Genes[old_name].name= old2new_names[old_name]
+
+        SeqIO.write(Genes.values(),output.gen_catalog,'fasta')
+        del Genes
+
+        orf2protein= pd.read_table(input.cluster_attribution,index_col=0,squeeze=True)
+
+        genes2proteins = pd.Series(index= old2new_names.values,
+                                   data=orf2protein.loc[old2new_names.index].values, name='ProteinID')
+        genes2proteins.index.name='GeneID'
+        genes2proteins.to_csv(output.gene2proteins,sep='\t',header=True)
 
 
 
@@ -180,14 +262,14 @@ rule cluster_catalog:
 rule align_reads_to_Genecatalog:
     input:
         unpack(get_quality_controlled_reads),
-        fasta = "Genecatalog/Genecatalog.fna",
+        fasta = "Genecatalog/gene_catalog.fna",
     output:
         sam = temp("Genecatalog/alignments/{sample}.sam")
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = 2,
         ambiguous = 'all',
-        min_id = 0.95,
+        minid = config['genecatalog']['minid'],
         maxindel = 1 # default 16000 good for genome deletions but not necessarily for alignment to contigs
     shadow:
         "shallow"
@@ -279,47 +361,47 @@ rule combine_gene_coverages:
         pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
 
 
-
-localrules: get_Genecatalog_annotations
-rule get_Genecatalog_annotations:
-    input:
-        Genecatalog= 'Genecatalog/Genecatalog.fna',
-        eggNOG= expand('{sample}/annotation/eggNOG.tsv',sample=SAMPLES),
-        refseq= expand('{sample}/annotation/refseq/{sample}_tax_assignments.tsv',sample=SAMPLES),
-        scg= expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
-    output:
-        annotations= "Genecatalog/annotations.tsv",
-    run:
-        import pandas as pd
-
-        gene_ids=[]
-        with open(input.Genecatalog) as fasta_file:
-            for line in fasta_file:
-                if line[0]=='>':
-                    gene_ids.append(line[1:].strip().split()[0])
-
-        eggNOG=pd.DataFrame()
-        for annotation_file in input.eggNOG:
-            eggNOG=eggNOG.append(pd.read_table(annotation_file, index_col=0))
-
-        refseq=pd.DataFrame()
-        for annotation_file in input.refseq:
-            refseq=refseq.append(pd.read_table(annotation_file, index_col=1))
-
-        scg=pd.DataFrame()
-        for annotation_file in input.scg:
-            d= pd.read_table(annotation_file, index_col=0,header=None)
-            d.columns = 'scg_'+ os.path.splitext(annotation_file)[0].split('_')[-1] # bacteria or archaea
-            scg=scg.append(d)
-
-
-        annotations= refseq.join(eggNOG).join(scg).loc[gene_ids]
-        annotations.to_csv(output.annotations,sep='\t')
+#
+# localrules: get_Genecatalog_annotations
+# rule get_Genecatalog_annotations:
+#     input:
+#         Genecatalog= 'Genecatalog/gene_catalog.fna".fna',
+#         eggNOG= expand('{sample}/annotation/eggNOG.tsv',sample=SAMPLES),
+#         refseq= expand('{sample}/annotation/refseq/{sample}_tax_assignments.tsv',sample=SAMPLES),
+#         scg= expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
+#     output:
+#         annotations= "Genecatalog/annotations.tsv",
+#     run:
+#         import pandas as pd
+#
+#         gene_ids=[]
+#         with open(input.Genecatalog) as fasta_file:
+#             for line in fasta_file:
+#                 if line[0]=='>':
+#                     gene_ids.append(line[1:].strip().split()[0])
+#
+#         eggNOG=pd.DataFrame()
+#         for annotation_file in input.eggNOG:
+#             eggNOG=eggNOG.append(pd.read_table(annotation_file, index_col=0))
+#
+#         refseq=pd.DataFrame()
+#         for annotation_file in input.refseq:
+#             refseq=refseq.append(pd.read_table(annotation_file, index_col=1))
+#
+#         scg=pd.DataFrame()
+#         for annotation_file in input.scg:
+#             d= pd.read_table(annotation_file, index_col=0,header=None)
+#             d.columns = 'scg_'+ os.path.splitext(annotation_file)[0].split('_')[-1] # bacteria or archaea
+#             scg=scg.append(d)
+#
+#
+#         annotations= refseq.join(eggNOG).join(scg).loc[gene_ids]
+#         annotations.to_csv(output.annotations,sep='\t')
 
 
 rule predict_single_copy_genes:
     input:
-        "Genecatalog/Genecatalog.fna"
+        "Genecatalog/gene_catalog.fna"
     output:
         "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
     params:
