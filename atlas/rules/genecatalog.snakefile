@@ -144,11 +144,7 @@ rule rename_protein_catalog:
                         fout.write(line)
 
 
-rule dispatch_fasta:
-    input:
 
-
-    run:
 
 
 
