@@ -35,7 +35,7 @@ With ``conda``, execute:
 ::
 
     conda create -n atlas -c bioconda python>=3.6 \
-        snakemake bbmap=37.78 click ruamel.yaml
+        snakemake bbmap=37.78 click ruamel.yaml biopython
 
 Load the environment:
 
