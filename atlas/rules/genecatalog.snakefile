@@ -291,7 +291,7 @@ rule align_reads_to_Genecatalog:
             trimreaddescriptions=t \
             outm={output.sam} \
             threads={threads} \
-            minid={params.min_id} \
+            minid={params.minid} \
             mdtag=t \
             xstag=fs \
             nmtag=t \
