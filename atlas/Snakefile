@@ -188,7 +188,7 @@ elif config.get("workflow", "complete") == "complete":
             expand("{sample}/finished_assembly", sample=SAMPLES),
             REPORTS,
             expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
-            
+
 # checkpoint finished contigs, no annotation
     localrules: finish_assembly
     rule finish_assembly:
