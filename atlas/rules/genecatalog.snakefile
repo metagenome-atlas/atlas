@@ -58,29 +58,36 @@ rule cluster_proteins:
         faa= "Genecatalog/all_predicted_genes.faa"
     output:
         tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
-        db=temp(expand("Genecatalog/all_predicted_genes.{dbext}",dbext=['db','db.dbtype', 'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
-        clusterdb = "Genecatalog/clustering/protein_clusters.db",
+        db=temp(expand("Genecatalog/all_predicted_genes.{dbext}",dbext=['db','db.dbtype',
+                                                                        'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
+        clusterdb = temp(extend("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
     conda:
         "%s/mmseqs.yaml" % CONDAENV
     log:
         "logs/Genecatalog/clustering/cluster_proteins.log"
     threads:
         config.get("threads", 1)
+    params:
+        coverage=0.8, #0.8,
+        evalue=0.001, # 0.001
+        minid=0 # 0.00
     shell:
         """
             mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
 
-            mmseqs cluster --threads {threads} {output.db[0]} {output.clusterdb} {output.tmpdir}  > >(tee -a  {log})
+            mmseqs cluster -c {params.coverage} -e {params.evalue} \
+            --min-seq-id {params.minid} \
+            --threads {threads} {output.db[0]} {output.clusterdb[0]} {output.tmpdir}  > >(tee -a  {log})
         """
 
 
 rule get_rep_proteins:
     input:
         db= rules.cluster_proteins.output.db,
-        clusterdb = "Genecatalog/clustering/protein_clusters.db",
+        clusterdb = rules.cluster_proteins.output.clusterdb,
     output:
         cluster_attribution = temp("Genecatalog/genes2proteins_oldnames.tsv"),
-        rep_seqs_db = temp("Genecatalog/protein_catalog.db"),
+        rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
         rep_seqs = temp("Genecatalog/protein_catalog_oldnames.faa")
     conda:
         "%s/mmseqs.yaml" % CONDAENV
@@ -90,10 +97,10 @@ rule get_rep_proteins:
         config.get("threads", 1)
     shell:
         """
-        mmseqs createtsv {input.db} {input.db} {input.clusterdb} {output.cluster_attribution}  > >(tee   {log})
+        mmseqs createtsv {input.db[0]} {input.db[0]} {input.clusterdb[0]} {output.cluster_attribution}  > >(tee   {log})
 
-        mmseqs result2repseq {input.db[0]} {input.clusterdb} {output.rep_seqs_db}  > >(tee -a  {log})
-        mmseqs result2flat {input.db[0]} {input.db[0]} {output.rep_seqs_db} {output.rep_seqs}  > >(tee -a  {log})
+        mmseqs result2repseq {input.db[0]} {input.clusterdb[0]} {output.rep_seqs_db[0]}  > >(tee -a  {log})
+        mmseqs result2flat {input.db[0]} {input.db[0]} {output.rep_seqs_db[0]} {output.rep_seqs}  > >(tee -a  {log})
 
         """
 
@@ -115,13 +122,18 @@ rule rename_protein_catalog:
         rep_seqs = "Genecatalog/protein_catalog.faa"
     run:
         import pandas as pd
-        gene2proteins= pd.read_table(input.cluster_attribution,index_col=0, header=None)
-        Ngenes= gene2proteins.shape[0]
+        # CLuterID    GeneID    empty third column
+        gene2proteins= pd.read_table(input.cluster_attribution,index_col=1, header=None)
 
-        gene2proteins['new_name'] = gen_names_for_range(Ngenes,'geneproduct')
-        gene2proteins['new_name'].to_csv(output.cluster_attribution,sep='\t',header=False)
+        protein_clusters_old_names= gene2proteins[0].unique()
 
-        map_names = dict(zip(gene2proteins[1],gene2proteins['new_name']))
+        map_names = dict(zip(protein_clusters_old_names,
+                             gen_names_for_range(len(protein_clusters_old_names),'Protein')))
+
+        gene2proteins['proteinID'] = gene2proteins[0].map(map_names)
+        gene2proteins.index.name='GeneID'
+        gene2proteins['proteinID'].to_csv(output.cluster_attribution,sep='\t',header=True)
+
 
         with open(output.rep_seqs,'w') as fout:
             with open(input.rep_seqs) as fin :
@@ -130,6 +142,13 @@ rule rename_protein_catalog:
                         fout.write(">{new_name}\n".format(new_name=map_names[line[1:].strip()]))
                     else:
                         fout.write(line)
+
+
+rule dispatch_fasta:
+    input:
+
+
+    run:
 
 
 
