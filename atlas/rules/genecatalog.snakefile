@@ -1,19 +1,6 @@
 import os
 
 
-config['genecatalog']={'minlength_nt':100,
-                       'minid':0.95,
-                       'coverage':0.9}
-
-
-config['cluster_proteins']=dict(
-        coverage=0.8, #0.8,
-        evalue=0.001, # 0.001
-        minid=0, # 0.00
-        extra=""
-        )
-
-
 rule gene_catalog:
     input:
         "Genecatalog/protein_catalog.faa",
