@@ -225,16 +225,20 @@ rule combine_gene_clusters:
 
         shell("cat {input.clustered_dir}/*.fna {input.unique_fna} > {output.old_names}")
 
-        Genes= SeqIO.to_dict(SeqIO.parse(output.old_names,'fasta'))
+        # count genes
+        old_names=[]
+        with open(output.old_names) as fin:
+            for line in fin:
+                if line[0]=='>':
+                    old_names.append(line[1:].strip().split()[0])
 
-        N_genes= len(Genes)
-        old2new_names= pd.Series(index= Genes.keys(), data=gen_names_for_range(N_genes,'Gene'))
+        old2new_names= pd.Series(index= old_names, data=gen_names_for_range(len(old_names),'Gene'))
 
-        for old_name in Genes:
-            Genes[old_name].name= old2new_names[old_name]
+        with open(output.gen_catalog,'w') as f_out:
+            for gene in SeqIO.parse(output.old_names,'fasta'):
+                gene.id = old2new_names[gene.name]
+                SeqIO.write(gene,f_out,'fasta')
 
-        SeqIO.write(Genes.values(),output.gen_catalog,'fasta')
-        del Genes
 
         orf2protein= pd.read_table(input.cluster_attribution,index_col=0,squeeze=True)
 
