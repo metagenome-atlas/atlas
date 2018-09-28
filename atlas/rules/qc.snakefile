@@ -83,8 +83,8 @@ rule initialize_qc:
     resources:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
-    group:
-        "qc"
+#    group:
+#        "qc"
     shell:
         """
         reformat.sh {params.inputs} \
@@ -125,8 +125,8 @@ rule get_read_stats:
     params:
         folder = lambda wc, output: os.path.splitext(output[0])[0],
         single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
-    group:
-        "qc"
+#    group:
+#        "qc"
     run:
         import datetime
         import shutil
@@ -220,8 +220,8 @@ if config.get('deduplicate', True):
         resources:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-        group:
-            "qc"
+    #    group:
+    #        "qc"
         shell:
             """
             clumpify.sh \
@@ -275,8 +275,8 @@ rule apply_quality_filter:
     resources:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-    group:
-        "qc"
+#    group:
+#        "qc"
     shell:
         """
         bbduk.sh {params.inputs} \
@@ -362,8 +362,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
         resources:
             mem = config.get("java_mem", JAVA_MEM),
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-        group:
-            "qc"
+    #    group:
+    #        "qc"
         shell:
             """
             if [ "{params.paired}" = true ] ; then
@@ -397,8 +397,8 @@ rule postprocess_after_decontamination:
             step=PROCESSED_STEPS[-1], fraction=MULTIFILE_FRACTIONS)
     threads:
         1
-    group:
-        "qc"
+#    group:
+#        "qc"
     run:
         import shutil
         for i in range(len(MULTIFILE_FRACTIONS)):
@@ -430,8 +430,8 @@ if PAIRED_END:
             extend2 = config.get("merging_extend2", MERGING_EXTEND2),
             flags = 'loose ecct',
             minprob = config.get("bbmerge_minprob", "0.8")
-        group:
-            "qc"
+    #    group:
+    #        "qc"
         shell:
             """
             bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
@@ -464,8 +464,8 @@ else:
             "%s/required_packages.yaml" % CONDAENV
         log:
             "{sample}/logs/QC/stats/calculate_read_length.log"
-        group:
-            "qc"
+    #    group:
+    #        "qc"
         shell:
             """
             readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
