@@ -56,7 +56,6 @@ rule cluster_proteins:
     input:
         faa= "Genecatalog/all_genes/predicted_genes.faa"
     output:
-        tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
         db=temp(expand("Genecatalog/all_genes/predicted_genes.{dbext}",dbext=['db','db.dbtype',
                                                                         'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
         clusterdb = temp(expand("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
@@ -67,6 +66,8 @@ rule cluster_proteins:
     threads:
         config.get("threads", 1)
     params:
+        tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
+        clustermethod = config['cluster_proteins']['method']
         coverage=config['cluster_proteins']['coverage'], #0.8,
         evalue=config['cluster_proteins']['evalue'], # 0.001
         minid=config['cluster_proteins']['minid'], # 0.00
@@ -75,9 +76,11 @@ rule cluster_proteins:
         """
             mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
 
-            mmseqs cluster -c {params.coverage} -e {params.evalue} \
+            mkdir -p {params.tmpdir}
+
+            mmseqs {params.clustermethod} -c {params.coverage} -e {params.evalue} \
             --min-seq-id {params.minid} {params.extra} \
-            --threads {threads} {output.db[0]} {output.clusterdb[0]} {output.tmpdir}  > >(tee -a  {log})
+            --threads {threads} {output.db[0]} {output.clusterdb[0]} {params.tmpdir}  > >(tee -a  {log})
         """
 
 

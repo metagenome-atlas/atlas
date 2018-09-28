@@ -129,6 +129,7 @@ genecatalog:
 # first all gene products of predicted orfs are clustered using mmseqs
 # than all genes in are sub clustered to optain the gene catalog
 cluster_proteins:
+  method: cluster   # cluster or linclust see mmseqs for more details
   coverage: 0.9
   evalue: 0.001
   minid: 0.9

@@ -178,6 +178,7 @@ def make_default_config():
 
 
     conf['cluster_proteins']=dict(
+            method='cluster'
             coverage=0.9, #0.8,
             evalue=0.001, # 0.001
             minid=0.9, # 0.00
