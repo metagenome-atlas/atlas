@@ -171,14 +171,19 @@ rule dispatch_fasta:
         if unique_genes.shape[0]>0:
             genes2proteins.loc[unique_genes.index]='unique'
         else:
-            genes2proteins.loc['stub']='unique' # add unique so an empty file will be created
+            open(output.unique_fna,'w').close()
 
         # create individual file handles
-        filehandles= dict( (proteinID,open(os.path.join(output.temp_folder, f"{proteinID}.fna"),"w"))
-                          for proteinID in genes2proteins.unique())
+        from collections import defaultdict
+        output_groups = defaultdict([])
+        #{dict( (proteinID,open(os.path.join(output.temp_folder, f"{proteinID}.fna"),"w"))
+                          #for proteinID in genes2proteins.unique())}
 
         for seq in SeqIO.parse(input.fna,'fasta'):
-            SeqIO.write(seq,filehandles[genes2proteins.loc[seq.name]],'fasta')
+            output_groups[genes2proteins[seq.name]].append(seq)
+
+        for proteinID in output_groups:
+            SeqIO.write(output_groups[proteinID],f"{output.temp_folder}/{proteinID}.fna",'fasta')
 
         shutil.move(os.path.join(output.temp_folder, "unique.fna"),output.unique_fna)
 
