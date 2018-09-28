@@ -769,27 +769,34 @@ rule run_all_checkm_lineage_wf:
             {params.output_dir}
         """
 
-localrules: get_final_cluster_attribution
-rule get_final_cluster_attribution:
+localrules: rename_final_bins
+rule rename_final_bins:
     input:
         directory("genomes/Dereplication/dereplicated_genomes")
     output:
-        "genomes/cluster_attribution.tsv"
+        dir=directory("genomes/genomes"),
+        map_file="genomes/contig2genome.tsv"
     params:
         file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
     run:
         bin_ids, = glob_wildcards(params.file_name)
-        print("found {} bins".format(len(bin_ids)))
-        with open(output[0],'w') as out_file:
+
+        old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
+        os.makedirs(output.dir)
+
+        with open(output.map_file,'w') as out_file:
             for binid in bin_ids:
-                with open(params.file_name.format(binid=binid)) as bin_file:
+
+                fasta_in = params.file_name.format(binid=binid)
+                new_name= old2old2new_name[binid]
+                fasta_out = os.path.join(output.dir,f"{new_name}.fasta")
+                shutil.copy(fasta_in,fasta_out)
+
+                with open(fasta_in) as bin_file:
                     for line in bin_file:
-                        if line.startswith(">"):
-                            fasta_header = line[1:].strip().split()[0]
-                            out_file.write("{fasta_header}\t{binid}\n".format(fasta_header=fasta_header,binid=binid))
-
-
-
+                        if line[0]==">":
+                            contig = line[1:].strip().split()[0]
+                            out_file.write(f"{contig}\t{new_name}\n")
 
 
 rule build_db_genomes:
