@@ -132,7 +132,6 @@ def read_fasta(fh):
 
 
 
-
 def parse_cd_hit_file(clstr_file):
     """
 
