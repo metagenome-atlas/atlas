@@ -32,8 +32,6 @@ rule filter_genes:
     output:
         fna= "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
-    log:
-        "log/Genecatalog/filter_genes.fasta"
     threads:
         1
     params:
@@ -189,7 +187,7 @@ rule subcluster_genes:
     input:
         fna_dir=directory("Genecatalog/clustering/nt_unclustered"),
     output:
-        directory("Genecatalog/clustering/gene_subclusters")
+        temp(directory("Genecatalog/clustering/gene_subclusters"))
     conda:
         "%s/cd-hit.yaml" % CONDAENV
     log:
@@ -210,6 +208,19 @@ rule subcluster_genes:
         " --resources mem={resources.mem} "
         " &> {log} "
 
+
+
+
+
+localrules: combine_gene_clusters, parse_clstr_files, rename_gene_clusters
+rule combine_gene_clusters:
+    input:
+        clustered_dir= directory("Genecatalog/clustering/gene_subclusters"),
+        unique_fna = "Genecatalog/clustering/unique_genes.fna",
+    output:
+        temp("Genecatalog/gene_catalog_oldnames.fna"),
+    shell:
+        "cat {input.clustered_dir}/*.fna {input.unique_fna} > {output}"
 
 def parse_cd_hit_file(clstr_file):
     """
@@ -250,63 +261,71 @@ def parse_cd_hit_file(clstr_file):
     return Clusters
 
 
-def write_cd_hit_clusters(Clusters,file_handle,write_header=True):
-    if write_header:
-        file_handle.write(f"ORF\tLength\tIdentity\tGene\n")
-
+def write_cd_hit_clusters(Clusters,file_handle):
         for cluster in Clusters:
             for element in cluster['elements']:
                 file_handle.write(f"{element[0]}\t{element[1]}\t{element[2]}\t{cluster['representative']}\n")
 
 
 
-rule combine_gene_clusters:
+rule parse_clstr_files:
     input:
-        clustered_dir= directory("Genecatalog/clustering/gene_subclusters"),
-        unique_fna = "Genecatalog/clustering/unique_genes.fna",
-        cluster_attribution = rules.rename_protein_catalog.output.cluster_attribution,
-        faa= "Genecatalog/all_genes/predicted_genes.faa"
+        clustered_dir= directory("Genecatalog/clustering/gene_subclusters")
     output:
-        old_names= temp("Genecatalog/gene_catalog_oldnames.fna"),
-        gen_catalog= "Genecatalog/gene_catalog.fna",
-        gen_catalog_faa= "Genecatalog/gene_catalog.faa",
-        gene2proteins= "Genecatalog/clustering/gene2proteins.tsv",
+        temp("Genecatalog/clustering/orf2gene_oldnames.tsv")
     run:
-        from Bio import SeqIO
+        from glob import glob
+
+        with open(output[0],'w') as fout:
+            fout.write(f"ORF\tLength\tIdentity\tGene\n")
+            for clstr_file in glob("{input.clustered_dir}/*.clstr"):
+                Clusters=parse_cd_hit_file(clstr_file)
+                write_cd_hit_clusters(Clusters,fout)
+
+
+
+rule rename_gene_clusters:
+    input:
+        fna = "Genecatalog/gene_catalog_oldnames.fna",
+        faa= "Genecatalog/all_genes/predicted_genes.faa",
+        orf2gene = "Genecatalog/clustering/orf2gene_oldnames.tsv",
+        orf2protein = "Genecatalog/orf2proteins_oldnames.tsv"
+    output:
+        fna= "Genecatalog/gene_catalog.fna",
+        faa= "Genecatalog/gene_catalog.faa",
+        mapping_file = "Genecatalog/clustering/gene_mapping_file.tsv"
+    run:
         import pandas as pd
+        from Bio import SeqIO
 
-        shell("cat {input.clustered_dir}/*.fna {input.unique_fna} > {output.old_names}")
+        orf2gene= pd.read_table(input.orf2gene,index_col=0)
+        orf2protein = pd.read_table(input.orf2protein,index_col=0)
 
-        # count genes
-        old_names=[]
-        with open(output.old_names) as fin:
-            for line in fin:
-                if line[0]=='>':
-                    old_names.append(line[1:].strip().split()[0])
+        orf2gene=orf2gene.join(orf2gene)
 
-        old2new_names= pd.Series(index= old_names, data=gen_names_for_range(len(old_names),'Gene'))
+        # rename gene repr to Gene0000XX
+
+        gene_clusters_old_names= gene2proteins['Gene'].unique()
+
+        map_names = dict(zip(gene_clusters_old_names,
+                             gen_names_for_range(len(gene_clusters_old_names),'Gene')))
+
+        gene2proteins['Gene'] = gene2proteins['Gene'](map_names)
+        gene2proteins.to_csv(output.mapping_file,sep='\t',header=True)
 
         # rename fna
-
-        with open(output.gen_catalog,'w') as f_out:
-            for gene in SeqIO.parse(output.old_names,'fasta'):
+        with open(output.fna,'w') as f_out:
+            for gene in SeqIO.parse(output.fna,'fasta'):
                 gene.id = old2new_names[gene.name]
                 SeqIO.write(gene,f_out,'fasta')
 
         # rename faa
-        with open(output.gen_catalog_faa,'w') as f_out:
+        with open(output.faa,'w') as f_out:
             for gene in SeqIO.parse(input.faa,'fasta'):
                 if gene.name in old2new_names:
                     gene.id = old2new_names[gene.name]
                     SeqIO.write(gene,f_out,'fasta')
 
-
-        orf2protein= pd.read_table(input.cluster_attribution,index_col=0,squeeze=True)
-
-        genes2proteins = pd.Series(index= old2new_names.values,
-                                   data=orf2protein.loc[old2new_names.index].values, name='ProteinCluster')
-        genes2proteins.index.name='Gene'
-        genes2proteins.to_csv(output.gene2proteins,sep='\t',header=True)
 
 
 
