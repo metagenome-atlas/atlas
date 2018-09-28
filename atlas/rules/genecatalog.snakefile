@@ -5,6 +5,7 @@ rule gene_catalog:
     input:
         "Genecatalog/protein_catalog.faa",
         "Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.faa",
         "Genecatalog/counts/median_coverage.tsv",
         expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
 
@@ -67,7 +68,7 @@ rule cluster_proteins:
         config.get("threads", 1)
     params:
         tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
-        clustermethod = config['cluster_proteins']['method']
+        clustermethod = config['cluster_proteins']['method'],
         coverage=config['cluster_proteins']['coverage'], #0.8,
         evalue=config['cluster_proteins']['evalue'], # 0.001
         minid=config['cluster_proteins']['minid'], # 0.00
@@ -210,18 +211,17 @@ rule subcluster_genes:
         " &> {log} "
 
 
-
-
-
 rule combine_gene_clusters:
     input:
         clustered_dir= directory("Genecatalog/clustering/gene_subclusters"),
         unique_fna = "Genecatalog/clustering/unique_genes.fna",
-        cluster_attribution = rules.rename_protein_catalog.output.cluster_attribution
+        cluster_attribution = rules.rename_protein_catalog.output.cluster_attribution,
+        faa= "Genecatalog/all_genes/predicted_genes.faa"
     output:
         old_names= temp("Genecatalog/gene_catalog_oldnames.fna"),
         gen_catalog= "Genecatalog/gene_catalog.fna",
-        gene2proteins= "Genecatalog/clustering/gene2proteins.tsv"
+        gen_catalog_faa= "Genecatalog/gene_catalog.faa",
+        gene2proteins= "Genecatalog/clustering/gene2proteins.tsv",
     run:
         from Bio import SeqIO
         import pandas as pd
@@ -237,10 +237,19 @@ rule combine_gene_clusters:
 
         old2new_names= pd.Series(index= old_names, data=gen_names_for_range(len(old_names),'Gene'))
 
+        # rename fna
+
         with open(output.gen_catalog,'w') as f_out:
             for gene in SeqIO.parse(output.old_names,'fasta'):
                 gene.id = old2new_names[gene.name]
                 SeqIO.write(gene,f_out,'fasta')
+
+        # rename faa
+        with open(output.gen_catalog_faa,'w') as f_out:
+            for gene in SeqIO.parse(input.faa,'fasta'):
+                if gene.name in old2new_names:
+                    gene.id = old2new_names[gene.name]
+                    SeqIO.write(gene,f_out,'fasta')
 
 
         orf2protein= pd.read_table(input.cluster_attribution,index_col=0,squeeze=True)
@@ -391,6 +400,7 @@ rule combine_gene_coverages:
 #
 #         annotations= refseq.join(eggNOG).join(scg).loc[gene_ids]
 #         annotations.to_csv(output.annotations,sep='\t')
+
 
 
 rule predict_single_copy_genes:
