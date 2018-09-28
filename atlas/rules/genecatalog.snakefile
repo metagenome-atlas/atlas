@@ -131,11 +131,11 @@ rule rename_protein_catalog:
         protein_clusters_old_names= gene2proteins[0].unique()
 
         map_names = dict(zip(protein_clusters_old_names,
-                             gen_names_for_range(len(protein_clusters_old_names),'Protein')))
+                             gen_names_for_range(len(protein_clusters_old_names),'ProteinCluster')))
 
-        gene2proteins['proteinID'] = gene2proteins[0].map(map_names)
-        gene2proteins.index.name='GeneID'
-        gene2proteins['proteinID'].to_csv(output.cluster_attribution,sep='\t',header=True)
+        gene2proteins['proteinCluster'] = gene2proteins[0].map(map_names)
+        gene2proteins.index.name='ORF'
+        gene2proteins['proteinCluster'].to_csv(output.cluster_attribution,sep='\t',header=True)
 
 
         with open(output.rep_seqs,'w') as fout:
@@ -246,8 +246,8 @@ rule combine_gene_clusters:
         orf2protein= pd.read_table(input.cluster_attribution,index_col=0,squeeze=True)
 
         genes2proteins = pd.Series(index= old2new_names.values,
-                                   data=orf2protein.loc[old2new_names.index].values, name='ProteinID')
-        genes2proteins.index.name='GeneID'
+                                   data=orf2protein.loc[old2new_names.index].values, name='ProteinCluster')
+        genes2proteins.index.name='Gene'
         genes2proteins.to_csv(output.gene2proteins,sep='\t',header=True)
 
 
