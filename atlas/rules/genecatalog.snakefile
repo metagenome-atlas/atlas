@@ -211,6 +211,55 @@ rule subcluster_genes:
         " &> {log} "
 
 
+def parse_cd_hit_file(clstr_file):
+    """
+
+    >Cluster 0
+    0	342nt, >S1_83_1... *
+    1	342nt, >S2_82_1... at +/100.00%
+    >Cluster 1
+    0	339nt, >S1_61_1... *
+    1	339nt, >S2_59_1... at +/100.00%
+
+
+    """
+
+    def parse_line(line):
+        _, length, name, identity = line.strip().replace('...','\t').replace(', ','\t').split('\t')
+
+        length= int(length.replace('nt',''))
+        name=name[1:]
+        if '*' in identity:
+            identity= None
+        else:
+            identity= float(identity[identity.rfind('/')+1:identity.rfind('%')])
+
+        return name,length, identity
+
+    Clusters= []
+    with open(clstr_file) as f:
+        for line in f:
+            if line[0]=='>': #new cluster
+                cluster= dict(elements=[],representative=None)
+                Clusters.append(cluster)
+            else:
+                name,length, identity =parse_line(line)
+                cluster['elements'].append((name,length, identity))
+                if identity is None:
+                    cluster['representative']= name
+    return Clusters
+
+
+def write_cd_hit_clusters(Clusters,file_handle,write_header=True):
+    if write_header:
+        file_handle.write(f"ORF\tLength\tIdentity\tGene\n")
+
+        for cluster in Clusters:
+            for element in cluster['elements']:
+                file_handle.write(f"{element[0]}\t{element[1]}\t{element[2]}\t{cluster['representative']}\n")
+
+
+
 rule combine_gene_clusters:
     input:
         clustered_dir= directory("Genecatalog/clustering/gene_subclusters"),
