@@ -80,6 +80,8 @@ rule cluster_proteins:
             mmseqs {params.clustermethod} -c {params.coverage} -e {params.evalue} \
             --min-seq-id {params.minid} {params.extra} \
             --threads {threads} {output.db[0]} {output.clusterdb[0]} {params.tmpdir}  > >(tee -a  {log})
+
+            rm -fr  {params.tmpdir} > >(tee -a  {log})
         """
 
 
@@ -175,7 +177,7 @@ rule dispatch_fasta:
 
         # create individual file handles
         from collections import defaultdict
-        output_groups = defaultdict([])
+        output_groups = defaultdict(list)
         #{dict( (proteinID,open(os.path.join(output.temp_folder, f"{proteinID}.fna"),"w"))
                           #for proteinID in genes2proteins.unique())}
 
@@ -184,8 +186,8 @@ rule dispatch_fasta:
 
         for proteinID in output_groups:
             SeqIO.write(output_groups[proteinID],f"{output.temp_folder}/{proteinID}.fna",'fasta')
-
-        shutil.move(os.path.join(output.temp_folder, "unique.fna"),output.unique_fna)
+        if unique_genes.shape[0]>0:
+            shutil.move(os.path.join(output.temp_folder, "unique.fna"),output.unique_fna)
 
 
 rule subcluster_genes:
@@ -239,14 +241,14 @@ def parse_cd_hit_file(clstr_file):
 
 
     """
-
+    import numpy as np
     def parse_line(line):
         _, length, name, identity = line.strip().replace('...','\t').replace(', ','\t').split('\t')
 
         length= int(length.replace('nt',''))
         name=name[1:]
         if '*' in identity:
-            identity= None
+            identity= np.nan
         else:
             identity= float(identity[identity.rfind('/')+1:identity.rfind('%')])
 
@@ -261,7 +263,7 @@ def parse_cd_hit_file(clstr_file):
             else:
                 name,length, identity =parse_line(line)
                 cluster['elements'].append((name,length, identity))
-                if identity is None:
+                if np.isnan(identity):
                     cluster['representative']= name
     return Clusters
 
@@ -280,10 +282,9 @@ rule parse_clstr_files:
         temp("Genecatalog/clustering/orf2gene_oldnames.tsv")
     run:
         from glob import glob
-
         with open(output[0],'w') as fout:
             fout.write(f"ORF\tLength\tIdentity\tGene\n")
-            for clstr_file in glob("{input.clustered_dir}/*.clstr"):
+            for clstr_file in glob(f"{input.clustered_dir}/*.clstr"):
                 Clusters=parse_cd_hit_file(clstr_file)
                 write_cd_hit_clusters(Clusters,fout)
 
@@ -294,7 +295,7 @@ rule rename_gene_clusters:
         fna = "Genecatalog/gene_catalog_oldnames.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
         orf2gene = "Genecatalog/clustering/orf2gene_oldnames.tsv",
-        orf2protein = "Genecatalog/orf2proteins_oldnames.tsv"
+        orf2protein = "Genecatalog/clustering/orf2proteins.tsv"
     output:
         fna= "Genecatalog/gene_catalog.fna",
         faa= "Genecatalog/gene_catalog.faa",
@@ -306,29 +307,29 @@ rule rename_gene_clusters:
         orf2gene= pd.read_table(input.orf2gene,index_col=0)
         orf2protein = pd.read_table(input.orf2protein,index_col=0)
 
-        orf2gene=orf2gene.join(orf2gene)
+        orf2gene=orf2gene.join(orf2protein)
 
         # rename gene repr to Gene0000XX
 
-        gene_clusters_old_names= gene2proteins['Gene'].unique()
+        gene_clusters_old_names= orf2gene['Gene'].unique()
 
         map_names = dict(zip(gene_clusters_old_names,
                              gen_names_for_range(len(gene_clusters_old_names),'Gene')))
 
-        gene2proteins['Gene'] = gene2proteins['Gene'](map_names)
-        gene2proteins.to_csv(output.mapping_file,sep='\t',header=True)
+        orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
+        orf2gene.to_csv(output.mapping_file,sep='\t',header=True)
 
         # rename fna
         with open(output.fna,'w') as f_out:
             for gene in SeqIO.parse(output.fna,'fasta'):
-                gene.id = old2new_names[gene.name]
+                gene.id = map_names[gene.name]
                 SeqIO.write(gene,f_out,'fasta')
 
         # rename faa
         with open(output.faa,'w') as f_out:
             for gene in SeqIO.parse(input.faa,'fasta'):
-                if gene.name in old2new_names:
-                    gene.id = old2new_names[gene.name]
+                if gene.name in map_names:
+                    gene.id = map_names[gene.name]
                     SeqIO.write(gene,f_out,'fasta')
 
 
