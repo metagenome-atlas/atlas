@@ -170,6 +170,22 @@ def make_default_config():
 
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
+    # gene cluster
+
+    conf['genecatalog']={'minlength_nt':100,
+                           'minid':0.95,
+                           'coverage':0.9}
+
+
+    conf['cluster_proteins']=dict(
+            method='cluster',
+            coverage=0.9, #0.8,
+            evalue=0.001, # 0.001
+            minid=0.9, # 0.00
+            extra=""
+            )
+
+
     # binning
     conf["perform_genome_binning"] = True
 

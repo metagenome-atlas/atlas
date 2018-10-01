@@ -26,7 +26,7 @@ For more information related to bioconda, see: https://bioconda.github.io/
 With `conda`, execute:
 
 ```
-conda create -n atlas -c bioconda -c conda-forge python>=3.6 snakemake bbmap=37.78 click ruamel.yaml
+conda create -n atlas -c bioconda -c conda-forge python>=3.6 snakemake bbmap=37.78 click ruamel.yaml biopython
 ```
 
 Load the environment:
