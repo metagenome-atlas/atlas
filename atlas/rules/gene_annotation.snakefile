@@ -96,6 +96,7 @@ else:
 
 
 
+
     # localrules: rename_genes
     # rule rename_genes:
     #     input:
@@ -115,6 +116,7 @@ else:
     #                         i+=1
     #                     else:
     #                         fout.write(line)
+
 
     localrules: get_contigs_from_gene_names
     rule get_contigs_from_gene_names:

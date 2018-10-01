@@ -120,6 +120,24 @@ minimum_contig_length: 300
 
 
 ########################
+# Gene catalog
+#######################
+genecatalog:
+  minlength_nt: 100
+  minid: 0.95
+  coverage: 0.9
+# first all gene products of predicted orfs are clustered using mmseqs
+# than all genes in are sub clustered to optain the gene catalog
+cluster_proteins:
+  method: linclust   # cluster or linclust see mmseqs for more details
+  coverage: 0.9
+  evalue: 0.001
+  minid: 0.9
+  extra: ""
+
+
+
+########################
 # Quantification
 ########################
 

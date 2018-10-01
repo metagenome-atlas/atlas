@@ -6,6 +6,7 @@ from snakemake.utils import logger, min_version, update_config
 
 from default_values import *
 
+
 # get default values and update them with values specified in config file
 default_config = make_default_config()
 update_config(default_config, config)
@@ -212,6 +213,7 @@ elif config.get("workflow", "complete") == "complete":
     include: "rules/assemble.snakefile"
     include: "rules/qc.snakefile"
     include: "rules/gene_annotation.snakefile"
+    include: "rules/genecatalog.snakefile"
 
 
 # TODO: we should add --eggnog to the 2 merge_sample_tables and integrate it correctly in the function
