@@ -212,6 +212,7 @@ rule subcluster_genes:
         " --config  unclustered_dir={input.fna_dir} clustered_dir={output} "
         " identity={params.identity} coverage={params.coverage} "
         " -j {threads} -p "
+        " --nolock "
         " --resources mem={resources.mem} "
         " &> {log} "
 
