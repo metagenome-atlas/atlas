@@ -434,8 +434,8 @@ rule find_16S:
         contigs=BINNING_CONTIGS,
         bin_dir= directory("{sample}/binning/{binner}/bins")
     output:
-        summary="{sample}/binning/{binner}/checkm/SSU/ssu_summary.tsv",
-        fasta="{sample}/binning/{binner}/checkm/SSU/ssu.fna",
+        summary="{sample}/binning/{binner}/SSU/ssu_summary.tsv",
+        fasta="{sample}/binning/{binner}/SSU/ssu.fna",
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0]),
         evalue = 1e-05,
@@ -463,8 +463,8 @@ rule get_all_16S:
         summaries= expand(rules.find_16S.output.summary,sample=SAMPLES,binner=config['final_binner']),
         fastas= expand(rules.find_16S.output.fasta,sample=SAMPLES,binner=config['final_binner'])
     output:
-        fasta="genomes/checkm/SSU/ssu.fasta",
-        summary ="genomes/checkm/SSU/ssu_summary.tsv"
+        fasta="genomes/SSU/ssu.fasta",
+        summary ="genomes/SSU/ssu_summary.tsv"
     run:
         shell("cat {input.fastas} > {output.fasta}")
 

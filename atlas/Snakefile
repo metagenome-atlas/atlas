@@ -280,7 +280,7 @@ elif config.get("workflow") == "binning":
             expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
             "genomes/Dereplication/dereplicated_genomes",
             "genomes/checkm/taxonomy.tsv",
-            "genomes/checkm/SSU/ssu_summary.tsv"
+            "genomes/SSU/ssu_summary.tsv"
 
 
 
