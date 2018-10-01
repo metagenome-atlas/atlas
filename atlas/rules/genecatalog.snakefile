@@ -299,7 +299,8 @@ rule rename_gene_clusters:
     output:
         fna= "Genecatalog/gene_catalog.fna",
         faa= "Genecatalog/gene_catalog.faa",
-        mapping_file = "Genecatalog/clustering/gene_mapping_file.tsv"
+        orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+        mapping_file = "Genecatalog/gene_mapping_file.tsv"
     run:
         import pandas as pd
         from Bio import SeqIO
@@ -307,7 +308,7 @@ rule rename_gene_clusters:
         orf2gene= pd.read_table(input.orf2gene,index_col=0)
         orf2protein = pd.read_table(input.orf2protein,index_col=0)
 
-        orf2gene=orf2gene.join(orf2protein)
+
 
         # rename gene repr to Gene0000XX
 
@@ -317,7 +318,10 @@ rule rename_gene_clusters:
                              gen_names_for_range(len(gene_clusters_old_names),'Gene')))
 
         orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
-        orf2gene.to_csv(output.mapping_file,sep='\t',header=True)
+        orf2gene.to_csv(output.orf2gene,sep='\t',header=True)
+
+        mapping_file=orf2gene[['Gene']].join(orf2protein)
+        mapping_file.to_csv(output.mapping_file,sep='\t',header=True)
 
         # rename fna
         with open(output.fna,'w') as f_out:
