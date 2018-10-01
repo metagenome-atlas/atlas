@@ -31,6 +31,8 @@ rule cluster_catalog:
         os.path.join(clustered_dir,"{proteinID}.clstr")
     params:
         prefix= lambda wc,output: os.path.splitext(output[0])[0],
+    threads:
+        1
     resources:
         mem=100 # can be reduced by comand line
     shell:

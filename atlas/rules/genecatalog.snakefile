@@ -202,7 +202,7 @@ rule subcluster_genes:
     threads:
         config.get("threads", 1)
     resources:
-        mem=config.get("java_mem", JAVA_MEM)
+        mem= int(config.get("java_mem", JAVA_MEM)/ config.get("threads", 1))
     params:
         snakefile= os.path.join(os.path.dirname(workflow.snakefile),'rules','cluster_genes.snakefile'),
         coverage=config['genecatalog']['coverage'],
@@ -212,6 +212,7 @@ rule subcluster_genes:
         " --config  unclustered_dir={input.fna_dir} clustered_dir={output} "
         " identity={params.identity} coverage={params.coverage} "
         " -j {threads} -p "
+        " --nolock "
         " --resources mem={resources.mem} "
         " &> {log} "
 
