@@ -208,6 +208,7 @@ elif config.get("workflow", "complete") == "complete":
     include: "rules/gene_annotation.snakefile"
     include: "rules/genecatalog.snakefile"
 
+
 # TODO: we should add --eggnog to the 2 merge_sample_tables and integrate it correctly in the function
 
     if config.get("perform_genome_binning", True):
