@@ -3,7 +3,6 @@ import os
 
 rule gene_catalog:
     input:
-        "Genecatalog/protein_catalog.faa",
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/counts/median_coverage.tsv",
@@ -35,7 +34,7 @@ rule filter_genes:
     threads:
         1
     params:
-        min_length=config['genecatalog']['minlength_nt']
+        min_length=config['genecatalog']['minlength']
     run:
         from Bio import SeqIO
         faa = SeqIO.parse(input.faa,'fasta')
@@ -51,294 +50,238 @@ rule filter_genes:
                     SeqIO.write(protein,out_faa,'fasta')
 
 
-rule cluster_proteins:
-    input:
-        faa= "Genecatalog/all_genes/predicted_genes.faa"
-    output:
-        db=temp(expand("Genecatalog/all_genes/predicted_genes.{dbext}",dbext=['db','db.dbtype',
-                                                                        'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
-        clusterdb = temp(expand("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
-    conda:
-        "%s/mmseqs.yaml" % CONDAENV
-    log:
-        "logs/Genecatalog/clustering/cluster_proteins.log"
-    threads:
-        config.get("threads", 1)
-    params:
-        tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
-        clustermethod = config['cluster_proteins']['method'],
-        coverage=config['cluster_proteins']['coverage'], #0.8,
-        evalue=config['cluster_proteins']['evalue'], # 0.001
-        minid=config['cluster_proteins']['minid'], # 0.00
-        extra=config['cluster_proteins']['extra']
-    shell:
-        """
-            mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
+if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog']['clustermethod']=='mmseqs'):
 
-            mkdir -p {params.tmpdir}
+    rule cluster_genes:
+        input:
+            faa= "Genecatalog/all_genes/predicted_genes.faa"
+        output:
+            db=temp(expand("Genecatalog/all_genes/predicted_genes.{dbext}",dbext=['db','db.dbtype',
+                                                                            'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
+            clusterdb = temp(expand("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
+        conda:
+            "%s/mmseqs.yaml" % CONDAENV
+        log:
+            "logs/Genecatalog/clustering/cluster_proteins.log"
+        threads:
+            config.get("threads", 1)
+        params:
+            tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
+            clustermethod = 'linclust' if config['genecatalog']['clustermethod']=='linclust' else 'cluster',
+            coverage=config['genecatalog']['coverage'], #0.8,
+            minid=config['genecatalog']['minid'], # 0.00
+            extra=config['genecatalog']['extra']
+        shell:
+            """
+                mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
 
-            mmseqs {params.clustermethod} -c {params.coverage} -e {params.evalue} \
-            --min-seq-id {params.minid} {params.extra} \
-            --threads {threads} {output.db[0]} {output.clusterdb[0]} {params.tmpdir}  > >(tee -a  {log})
+                mkdir -p {params.tmpdir}
 
-            rm -fr  {params.tmpdir} > >(tee -a  {log})
-        """
+                mmseqs {params.clustermethod} -c {params.coverage} \
+                --min-seq-id {params.minid} {params.extra} \
+                --threads {threads} {output.db[0]} {output.clusterdb[0]} {params.tmpdir}  > >(tee -a  {log})
 
-
-rule get_rep_proteins:
-    input:
-        db= rules.cluster_proteins.output.db,
-        clusterdb = rules.cluster_proteins.output.clusterdb,
-    output:
-        cluster_attribution = temp("Genecatalog/orf2proteins_oldnames.tsv"),
-        rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
-        rep_seqs = temp("Genecatalog/protein_catalog_oldnames.faa")
-    conda:
-        "%s/mmseqs.yaml" % CONDAENV
-    log:
-        "logs/Genecatalog/clustering/get_rep_proteins.log"
-    threads:
-        config.get("threads", 1)
-    shell:
-        """
-        mmseqs createtsv {input.db[0]} {input.db[0]} {input.clusterdb[0]} {output.cluster_attribution}  > >(tee   {log})
-
-        mmseqs result2repseq {input.db[0]} {input.clusterdb[0]} {output.rep_seqs_db[0]}  > >(tee -a  {log})
-        mmseqs result2flat {input.db[0]} {input.db[0]} {output.rep_seqs_db[0]} {output.rep_seqs}  > >(tee -a  {log})
-
-        """
-
-def gen_names_for_range(N,prefix='',start=1):
-    """generates a range of IDS with leading zeros so sorting will be ok"""
-    n_leading_zeros= len(str(N))
-    format_int=prefix+'{:0'+str(n_leading_zeros)+'d}'
-    return [format_int.format(i) for i in range(start,N+start)]
+                rm -fr  {params.tmpdir} > >(tee -a  {log})
+            """
 
 
+    rule get_rep_proteins:
+        input:
+            db= rules.cluster_genes.output.db,
+            clusterdb = rules.cluster_genes.output.clusterdb,
+        output:
+            cluster_attribution = temp("Genecatalog/orf2gene_oldnames.tsv"),
+            rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
+            rep_seqs = temp("Genecatalog/protein_catalog_oldnames.faa")
+        conda:
+            "%s/mmseqs.yaml" % CONDAENV
+        log:
+            "logs/Genecatalog/clustering/get_rep_proteins.log"
+        threads:
+            config.get("threads", 1)
+        shell:
+            """
+            mmseqs createtsv {input.db[0]} {input.db[0]} {input.clusterdb[0]} {output.cluster_attribution}  > >(tee   {log})
 
-localrules: rename_protein_catalog
-rule rename_protein_catalog:
-    input:
-        cluster_attribution = "Genecatalog/orf2proteins_oldnames.tsv",
-        rep_seqs = "Genecatalog/protein_catalog_oldnames.faa"
-    output:
-        cluster_attribution = "Genecatalog/clustering/orf2proteins.tsv",
-        rep_seqs = "Genecatalog/protein_catalog.faa"
-    run:
-        import pandas as pd
-        # CLuterID    GeneID    empty third column
-        gene2proteins= pd.read_table(input.cluster_attribution,index_col=1, header=None)
+            mmseqs result2repseq {input.db[0]} {input.clusterdb[0]} {output.rep_seqs_db[0]}  > >(tee -a  {log})
+            mmseqs result2flat {input.db[0]} {input.db[0]} {output.rep_seqs_db[0]} {output.rep_seqs}  > >(tee -a  {log})
 
-        protein_clusters_old_names= gene2proteins[0].unique()
-
-        map_names = dict(zip(protein_clusters_old_names,
-                             gen_names_for_range(len(protein_clusters_old_names),'ProteinCluster')))
-
-        gene2proteins['proteinCluster'] = gene2proteins[0].map(map_names)
-        gene2proteins.index.name='ORF'
-        gene2proteins['proteinCluster'].to_csv(output.cluster_attribution,sep='\t',header=True)
+            """
 
 
-        with open(output.rep_seqs,'w') as fout:
-            with open(input.rep_seqs) as fin :
-                for line in fin:
-                    if line[0]=='>':
-                        fout.write(">{new_name}\n".format(new_name=map_names[line[1:].strip()]))
-                    else:
-                        fout.write(line)
+    localrules: rename_protein_catalog
+    rule rename_protein_catalog:
+        input:
+            cluster_attribution = "Genecatalog/orf2gene_oldnames.tsv",
+        output:
+            cluster_attribution = "Genecatalog/clustering/orf2gene.tsv",
+        run:
+            import pandas as pd
+            # CLuterID    GeneID    empty third column
+            gene2proteins= pd.read_table(input.cluster_attribution,index_col=1, header=None)
+
+            protein_clusters_old_names= gene2proteins[0].unique()
+
+            map_names = dict(zip(protein_clusters_old_names,
+                                 gen_names_for_range(len(protein_clusters_old_names),'Gene')))
+
+            gene2proteins['Gene'] = gene2proteins[0].map(map_names)
+            gene2proteins.index.name='ORF'
+            gene2proteins['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+
+
+
+elif config['genecatalog']['clustermethod']=='cd-hit-est':
 
 # cluster genes
 
 
-# Create fasta files of the genes (nt) for all genes in a protein cluster for subclustering
-rule dispatch_fasta:
-    input:
-        genes2proteins = "Genecatalog/clustering/orf2proteins.tsv",
-        fna= "Genecatalog/all_genes/predicted_genes.fna",
-    output:
-        temp_folder= temp(directory("Genecatalog/clustering/nt_unclustered")),
-        unique_fna = temp("Genecatalog/clustering/unique_genes.fna")
-    run:
-        import pandas as pd
-        import os, shutil
-        from Bio import SeqIO
+    rule cluster_genes:
+        input:
+            fna_dir="Genecatalog/all_genes/predicted_genes.fna",
+        output:
+            temp("Genecatalog/gene_catalog_oldnames.faa"),
+            temp("Genecatalog/gene_catalog_oldnames.clstr")
+        conda:
+            "%s/cd-hit.yaml" % CONDAENV
+        log:
+            "logs/Genecatalog/cluster_genes.log"
+        threads:
+            config.get("threads", 1)
+        resources:
+            mem= config.get("java_mem", JAVA_MEM)
+        params:
+            coverage=config['genecatalog']['coverage'],
+            identity=config['genecatalog']['minid'],
+            extra= config['genecatalog']['extra'],
+            prefix= lambda wc,output: os.path.splitext(output[0])[0],
+        shell:
+            """
+                cd-hit-est -i {input} -T {threads} \
+                -M {resources.mem}000 -o {params.prefix} \
+                -c {params.identity} -n 9  -d 0 {params.extra} \
+                -aS {params.coverage} -aL {params.coverage} > >(tee {log})
 
-        os.mkdir(output.temp_folder)
-
-        genes2proteins=pd.read_table(input.genes2proteins,
-                             index_col=0,squeeze=True)
-        #no need to cluster unique genes
-        unique_genes= genes2proteins.drop_duplicates(keep=False)
-
-        if unique_genes.shape[0]>0:
-            genes2proteins.loc[unique_genes.index]='unique'
-        else:
-            open(output.unique_fna,'w').close()
-
-        # create individual file handles
-        from collections import defaultdict
-        output_groups = defaultdict(list)
-        #{dict( (proteinID,open(os.path.join(output.temp_folder, f"{proteinID}.fna"),"w"))
-                          #for proteinID in genes2proteins.unique())}
-
-        for seq in SeqIO.parse(input.fna,'fasta'):
-            output_groups[genes2proteins[seq.name]].append(seq)
-
-        for proteinID in output_groups:
-            SeqIO.write(output_groups[proteinID],f"{output.temp_folder}/{proteinID}.fna",'fasta')
-        if unique_genes.shape[0]>0:
-            shutil.move(os.path.join(output.temp_folder, "unique.fna"),output.unique_fna)
-
-
-rule subcluster_genes:
-    input:
-        fna_dir=directory("Genecatalog/clustering/nt_unclustered"),
-    output:
-        temp(directory("Genecatalog/clustering/gene_subclusters"))
-    conda:
-        "%s/cd-hit.yaml" % CONDAENV
-    log:
-        "logs/Genecatalog/cluster_genes.log"
-    threads:
-        config.get("threads", 1)
-    resources:
-        mem= int(config.get("java_mem", JAVA_MEM)/ config.get("threads", 1))
-    params:
-        snakefile= os.path.join(os.path.dirname(workflow.snakefile),'rules','cluster_genes.snakefile'),
-        coverage=config['genecatalog']['coverage'],
-        identity=config['genecatalog']['minid']
-    shell:
-        " snakemake -s {params.snakefile} "
-        " --config  unclustered_dir={input.fna_dir} clustered_dir={output} "
-        " identity={params.identity} coverage={params.coverage} "
-        " -j {threads} -p "
-        " --nolock "
-        " --resources mem={resources.mem} "
-        " &> {log} "
+                mv {params.prefix} {output[0]} 2>> {log}
+            """
 
 
 
 
 
-localrules: combine_gene_clusters, parse_clstr_files, rename_gene_clusters
-rule combine_gene_clusters:
-    input:
-        clustered_dir= directory("Genecatalog/clustering/gene_subclusters"),
-        unique_fna = "Genecatalog/clustering/unique_genes.fna",
-    output:
-        temp("Genecatalog/gene_catalog_oldnames.fna"),
-    shell:
-        "cat {input.clustered_dir}/*.fna {input.unique_fna} > {output}"
+    localrules:  parse_clstr_files, rename_gene_clusters
 
-def parse_cd_hit_file(clstr_file):
-    """
+    def parse_cd_hit_file(clstr_file):
+        """
 
-    >Cluster 0
-    0	342nt, >S1_83_1... *
-    1	342nt, >S2_82_1... at +/100.00%
-    >Cluster 1
-    0	339nt, >S1_61_1... *
-    1	339nt, >S2_59_1... at +/100.00%
+        >Cluster 0
+        0	342nt, >S1_83_1... *
+        1	342nt, >S2_82_1... at +/100.00%
+        >Cluster 1
+        0	339nt, >S1_61_1... *
+        1	339nt, >S2_59_1... at +/100.00%
 
 
-    """
-    import numpy as np
-    def parse_line(line):
-        _, length, name, identity = line.strip().replace('...','\t').replace(', ','\t').split('\t')
+        """
+        import numpy as np
+        def parse_line(line):
+            _, length, name, identity = line.strip().replace('...','\t').replace(', ','\t').split('\t')
 
-        length= int(length.replace('nt',''))
-        name=name[1:]
-        if '*' in identity:
-            identity= np.nan
-        else:
-            identity= float(identity[identity.rfind('/')+1:identity.rfind('%')])
-
-        return name,length, identity
-
-    Clusters= []
-    with open(clstr_file) as f:
-        for line in f:
-            if line[0]=='>': #new cluster
-                cluster= dict(elements=[],representative=None)
-                Clusters.append(cluster)
+            length= int(length.replace('nt',''))
+            name=name[1:]
+            if '*' in identity:
+                identity= np.nan
             else:
-                name,length, identity =parse_line(line)
-                cluster['elements'].append((name,length, identity))
-                if np.isnan(identity):
-                    cluster['representative']= name
-    return Clusters
+                identity= float(identity[identity.rfind('/')+1:identity.rfind('%')])
+
+            return name,length, identity
+
+        Clusters= []
+        with open(clstr_file) as f:
+            for line in f:
+                if line[0]=='>': #new cluster
+                    cluster= dict(elements=[],representative=None)
+                    Clusters.append(cluster)
+                else:
+                    name,length, identity =parse_line(line)
+                    cluster['elements'].append((name,length, identity))
+                    if np.isnan(identity):
+                        cluster['representative']= name
+        return Clusters
 
 
-def write_cd_hit_clusters(Clusters,file_handle):
-        for cluster in Clusters:
-            for element in cluster['elements']:
-                file_handle.write(f"{element[0]}\t{element[1]}\t{element[2]}\t{cluster['representative']}\n")
+    def write_cd_hit_clusters(Clusters,file_handle):
+            for cluster in Clusters:
+                for element in cluster['elements']:
+                    file_handle.write(f"{element[0]}\t{element[1]}\t{element[2]}\t{cluster['representative']}\n")
 
 
 
-rule parse_clstr_files:
-    input:
-        clustered_dir= directory("Genecatalog/clustering/gene_subclusters")
-    output:
-        temp("Genecatalog/clustering/orf2gene_oldnames.tsv")
-    run:
-        from glob import glob
-        with open(output[0],'w') as fout:
-            fout.write(f"ORF\tLength\tIdentity\tGene\n")
-            for clstr_file in glob(f"{input.clustered_dir}/*.clstr"):
-                Clusters=parse_cd_hit_file(clstr_file)
+    rule parse_clstr_files:
+        input:
+            clustered_dir= "Genecatalog/gene_catalog_oldnames.clstr"
+        output:
+            temp("Genecatalog/clustering/orf2gene_oldnames.tsv")
+        run:
+            with open(output[0],'w') as fout:
+                fout.write(f"ORF\tLength\tIdentity\tGene\n")
+                Clusters=parse_cd_hit_file(input[0])
                 write_cd_hit_clusters(Clusters,fout)
 
 
 
-rule rename_gene_clusters:
+    rule rename_gene_clusters:
+        input:
+            orf2gene = "Genecatalog/clustering/orf2gene_oldnames.tsv",
+        output:
+            orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+        run:
+            import pandas as pd
+            from Bio import SeqIO
+
+            orf2gene= pd.read_table(input.orf2gene,index_col=0)
+
+            # rename gene repr to Gene0000XX
+
+            gene_clusters_old_names= orf2gene['Gene'].unique()
+
+            map_names = dict(zip(gene_clusters_old_names,
+                                 gen_names_for_range(len(gene_clusters_old_names),'Gene')))
+
+            orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
+            orf2gene.to_csv(output.orf2gene,sep='\t',header=True)
+
+else:
+    raise Exception("Didn't understood the genecatalog clustermethod: {}".format(config['genecatalog']['clustermethod']))
+
+localrules: rename_gene_catalog
+rule rename_gene_catalog:
     input:
-        fna = "Genecatalog/gene_catalog_oldnames.fna",
+        fna = "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
-        orf2gene = "Genecatalog/clustering/orf2gene_oldnames.tsv",
-        orf2protein = "Genecatalog/clustering/orf2proteins.tsv"
+        orf2gene = "Genecatalog/clustering/orf2gene.tsv",
     output:
         fna= "Genecatalog/gene_catalog.fna",
         faa= "Genecatalog/gene_catalog.faa",
-        orf2gene = "Genecatalog/clustering/orf2gene.tsv",
-        mapping_file = "Genecatalog/gene_mapping_file.tsv"
     run:
         import pandas as pd
         from Bio import SeqIO
 
-        orf2gene= pd.read_table(input.orf2gene,index_col=0)
-        orf2protein = pd.read_table(input.orf2protein,index_col=0)
-
-
-
-        # rename gene repr to Gene0000XX
-
-        gene_clusters_old_names= orf2gene['Gene'].unique()
-
-        map_names = dict(zip(gene_clusters_old_names,
-                             gen_names_for_range(len(gene_clusters_old_names),'Gene')))
-
-        orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
-        orf2gene.to_csv(output.orf2gene,sep='\t',header=True)
-
-        mapping_file=orf2gene[['Gene']].join(orf2protein)
-        mapping_file.to_csv(output.mapping_file,sep='\t',header=True)
+        map_names= pd.read_table(input.orf2gene,index_col=0)['Gene']
 
         # rename fna
-        with open(output.fna,'w') as f_out:
-            for gene in SeqIO.parse(output.fna,'fasta'):
-                gene.id = map_names[gene.name]
-                SeqIO.write(gene,f_out,'fasta')
+        faa_parser = SeqIO.parse(input.faa,'fasta')
+        fna_parser = SeqIO.parse(input.fna,'fasta')
 
-        # rename faa
-        with open(output.faa,'w') as f_out:
-            for gene in SeqIO.parse(input.faa,'fasta'):
-                if gene.name in map_names:
+        with open(output.fna,'w') as fna, open(output.faa,'w') as faa :
+            for gene in fna_parser:
+                protein = next(faa_parser)
+                if gene.name in map_names.index:
                     gene.id = map_names[gene.name]
-                    SeqIO.write(gene,f_out,'fasta')
+                    protein.id = map_names[protein.name]
 
-
-
+                    SeqIO.write(gene,fna,'fasta')
+                    SeqIO.write(gene,faa,'fasta')
 
 
 rule align_reads_to_Genecatalog:
