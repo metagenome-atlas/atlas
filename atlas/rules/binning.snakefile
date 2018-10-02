@@ -955,7 +955,7 @@ rule combine_bined_coverages_MAGs:
     input:
         binned_coverage_files = expand("genomes/alignments/{sample}_coverage_binned.txt",
             sample=SAMPLES),
-        cluster_attribution = "genomes/cluster_attribution.tsv"
+        cluster_attribution = "genomes/contig2genome.tsv"
     params:
         samples= SAMPLES
     output:
