@@ -35,7 +35,7 @@ rule filter_genes:
     threads:
         1
     params:
-        min_length=config['genecatalog']['minlength_nt']
+        min_length=config['genecatalog']['minlength']
     run:
         from Bio import SeqIO
         faa = SeqIO.parse(input.faa,'fasta')
@@ -50,10 +50,10 @@ rule filter_genes:
                     SeqIO.write(gene,out_fna,'fasta')
                     SeqIO.write(protein,out_faa,'fasta')
 
-config['genecatalog']['clustermethod']='proteins'
-if config['genecatalog']['clustermethod']=='proteins':
 
-    rule cluster_proteins:
+if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog']['clustermethod']=='mmseqs'):
+
+    rule cluster_genes:
         input:
             faa= "Genecatalog/all_genes/predicted_genes.faa"
         output:
@@ -68,18 +68,17 @@ if config['genecatalog']['clustermethod']=='proteins':
             config.get("threads", 1)
         params:
             tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
-            clustermethod = config['cluster_proteins']['method'],
-            coverage=config['cluster_proteins']['coverage'], #0.8,
-            evalue=config['cluster_proteins']['evalue'], # 0.001
-            minid=config['cluster_proteins']['minid'], # 0.00
-            extra=config['cluster_proteins']['extra']
+            clustermethod = 'linclust' if config['genecatalog']['clustermethod']=='linclust' else 'cluster',
+            coverage=config['genecatalog']['coverage'], #0.8,
+            minid=config['genecatalog']['minid'], # 0.00
+            extra=config['genecatalog']['extra']
         shell:
             """
                 mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
 
                 mkdir -p {params.tmpdir}
 
-                mmseqs {params.clustermethod} -c {params.coverage} -e {params.evalue} \
+                mmseqs {params.clustermethod} -c {params.coverage} \
                 --min-seq-id {params.minid} {params.extra} \
                 --threads {threads} {output.db[0]} {output.clusterdb[0]} {params.tmpdir}  > >(tee -a  {log})
 
@@ -89,8 +88,8 @@ if config['genecatalog']['clustermethod']=='proteins':
 
     rule get_rep_proteins:
         input:
-            db= rules.cluster_proteins.output.db,
-            clusterdb = rules.cluster_proteins.output.clusterdb,
+            db= rules.cluster_genes.output.db,
+            clusterdb = rules.cluster_genes.output.clusterdb,
         output:
             cluster_attribution = temp("Genecatalog/orf2gene_oldnames.tsv"),
             rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
@@ -133,7 +132,7 @@ if config['genecatalog']['clustermethod']=='proteins':
 
 
 
-else:
+elif config['genecatalog']['clustermethod']=='cd-hit-est':
 
 # cluster genes
 
@@ -155,12 +154,13 @@ else:
         params:
             coverage=config['genecatalog']['coverage'],
             identity=config['genecatalog']['minid'],
+            extra= config['genecatalog']['extra']
             prefix= lambda wc,output: os.path.splitext(output[0])[0],
         shell:
             """
                 cd-hit-est -i {input} -T {threads} \
                 -M {resources.mem}000 -o {params.prefix} \
-                -c {params.identity} -n 9  -d 0 \
+                -c {params.identity} -n 9  -d 0 {params.extra} \
                 -aS {params.coverage} -aL {params.coverage} > >(tee {log})
 
                 mv {params.prefix} {output[0]} 2>> {log}
@@ -251,6 +251,9 @@ else:
 
             orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
             orf2gene.to_csv(output.orf2gene,sep='\t',header=True)
+
+else:
+    raise Exception("Didn't understood the genecatalog clustermethod: {}".format(config['genecatalog']['clustermethod']))
 
 localrules: rename_gene_catalog
 rule rename_gene_catalog:
