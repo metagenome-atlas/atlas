@@ -3,7 +3,6 @@ import os
 
 rule gene_catalog:
     input:
-        "Genecatalog/protein_catalog.faa",
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/counts/median_coverage.tsv",
