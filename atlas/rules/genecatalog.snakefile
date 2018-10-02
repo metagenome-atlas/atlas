@@ -154,7 +154,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
         params:
             coverage=config['genecatalog']['coverage'],
             identity=config['genecatalog']['minid'],
-            extra= config['genecatalog']['extra']
+            extra= config['genecatalog']['extra'],
             prefix= lambda wc,output: os.path.splitext(output[0])[0],
         shell:
             """
