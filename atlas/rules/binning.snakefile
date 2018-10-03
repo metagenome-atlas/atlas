@@ -472,8 +472,12 @@ rule get_all_16S:
         summary= pd.DataFrame()
 
         for file in input.summaries:
-            d = pd.read_table(file,index_col=0)
-            summary=summary.append(d)
+            try:
+                d = pd.read_table(file,index_col=0)
+                summary=summary.append(d)
+            except:
+                pd.errors.EmptyDataError
+                
         summary.to_csv(output.summary,sep='\t')
 
 
