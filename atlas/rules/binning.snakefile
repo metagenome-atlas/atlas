@@ -783,6 +783,7 @@ rule rename_final_bins:
     params:
         file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
     run:
+        import shutil
         bin_ids, = glob_wildcards(params.file_name)
 
         old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
