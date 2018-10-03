@@ -477,7 +477,7 @@ rule get_all_16S:
                 summary=summary.append(d)
             except:
                 pd.errors.EmptyDataError
-                
+
         summary.to_csv(output.summary,sep='\t')
 
 
@@ -792,7 +792,7 @@ rule rename_final_bins:
             for binid in bin_ids:
 
                 fasta_in = params.file_name.format(binid=binid)
-                new_name= old2old2new_name[binid]
+                new_name= old2new_name[binid]
                 fasta_out = os.path.join(output.dir,f"{new_name}.fasta")
                 shutil.copy(fasta_in,fasta_out)
 
