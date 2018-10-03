@@ -28,7 +28,7 @@ rule bam_2_sam_binning:
 rule pileup_for_binning:
     input:
         fasta = BINNING_CONTIGS,
-        sam = "{sample}/sequence_alignment/binning_{sample_reads}.sam",
+        sam = rules.bam_2_sam_binning.output,
     output:
         covstats = "{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
     params:
