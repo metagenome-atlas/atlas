@@ -438,9 +438,11 @@ rule predict_single_copy_genes:
         "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
     params:
         script_dir = os.path.dirname(os.path.abspath(workflow.snakefile)),
-        key = lambda wc: wc.domain[:3] #bac for bacteria, #archaea
+        key = lambda wc: wc.domain[:3] #bac for bacteria, #arc for archaea
     conda:
         "%s/DASTool.yaml" % CONDAENV # needs pearl
+    log:
+        "logs/Genecatalog/annotation/predict_single_copy_genes_{domain}.log"
     threads:
         config['threads']
     shell:
@@ -452,7 +454,8 @@ rule predict_single_copy_genes:
         " $DIR\/db/{params.key}.scg.faa "
         " $DIR\/db/{params.key}.scg.lookup "
         " {threads} "
-        " &> >(tee {log}) "
+        " 2> >(tee {log}) "
+        " ; "
         " mv {input[0]}.{wildcards.domain}.scg > {output}"
 
 
