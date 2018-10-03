@@ -271,7 +271,7 @@ rule rename_gene_catalog:
         representatives= []
         with open(input.representatives) as fasta:
             for line in fasta:
-                if line[0]=='>': representatives.append(line[1:].strip())
+                if line[0]=='>': representatives.append(line[1:].split()[0])
 
         map_names= pd.read_table(input.orf2gene,index_col=0).loc[representatives,'Gene']
 
