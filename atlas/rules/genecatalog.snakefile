@@ -92,7 +92,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         output:
             cluster_attribution = temp("Genecatalog/orf2gene_oldnames.tsv"),
             rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
-            rep_seqs = temp("Genecatalog/protein_catalog_oldnames.faa")
+            rep_seqs = temp("Genecatalog/representatives_of_clusters.fasta")
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
@@ -140,7 +140,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
         input:
             fna_dir="Genecatalog/all_genes/predicted_genes.fna",
         output:
-            temp("Genecatalog/gene_catalog_oldnames.faa"),
+            temp("Genecatalog/representatives_of_clusters.fasta"),
             temp("Genecatalog/gene_catalog_oldnames.clstr")
         conda:
             "%s/cd-hit.yaml" % CONDAENV
@@ -154,7 +154,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
             coverage=config['genecatalog']['coverage'],
             identity=config['genecatalog']['minid'],
             extra= config['genecatalog']['extra'],
-            prefix= lambda wc,output: os.path.splitext(output[0])[0],
+            prefix= lambda wc,output: os.path.splitext(output[1])[0],
         shell:
             """
                 cd-hit-est -i {input} -T {threads} \
@@ -260,6 +260,7 @@ rule rename_gene_catalog:
         fna = "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
         orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+        representatives= "Genecatalog/representatives_of_clusters.fasta"
     output:
         fna= "Genecatalog/gene_catalog.fna",
         faa= "Genecatalog/gene_catalog.faa",
@@ -267,7 +268,12 @@ rule rename_gene_catalog:
         import pandas as pd
         from Bio import SeqIO
 
-        map_names= pd.read_table(input.orf2gene,index_col=0)['Gene']
+        representatives= []
+        with open(input.representatives) as fasta:
+            for line in fasta:
+                if line[0]=='>': representatives.append(line[1:].strip())
+
+        map_names= pd.read_table(input.orf2gene,index_col=0).loc[representatives,'Gene']
 
         # rename fna
         faa_parser = SeqIO.parse(input.faa,'fasta')
