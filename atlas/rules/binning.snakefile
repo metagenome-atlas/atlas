@@ -256,14 +256,11 @@ rule get_unique_cluster_attribution:
         old_cluster_ids = list(d.unique())
         if 0 in old_cluster_ids:
             old_cluster_ids.remove(0)
-        N_clusters= len(old_cluster_ids)
 
-        float_format= "{sample}.{binner}.{{:0{N_zeros}d}}".format(N_zeros=len(str(N_clusters)), **wildcards)
-
-        map_cluster_ids = pd.Series(np.arange(N_clusters)+1,index= old_cluster_ids )
-        map_cluster_ids= map_cluster_ids.apply(float_format.format)
+        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}.{binner}." )  ))
 
         new_d= d.map(map_cluster_ids)
+        new_d.dropna(inplace=True)
 
         new_d.to_csv(output[0],sep='\t')
 
