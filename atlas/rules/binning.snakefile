@@ -598,7 +598,7 @@ rule get_all_bins:
         cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                sample= SAMPLES, binner= config['final_binner'])
     output:
-        directory("genomes/all_bins")
+        temp(directory("genomes/all_bins"))
 
     run:
         os.mkdir(output[0])
@@ -751,7 +751,7 @@ rule second_dereplication:
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = directory("genomes/Dereplication/dereplicated_genomes")
+        bins = directory("genomes/genomes")
     output:
         "genomes/checkm/completeness.tsv"
     params:
@@ -779,7 +779,8 @@ rule rename_final_bins:
         directory("genomes/Dereplication/dereplicated_genomes")
     output:
         dir=directory("genomes/genomes"),
-        map_file="genomes/contig2genome.tsv"
+        map_file="genomes/contig2genome.tsv",
+        old2new = "genomes/old2newID.tsv"
     params:
         file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
     run:
@@ -789,14 +790,19 @@ rule rename_final_bins:
         old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
         os.makedirs(output.dir)
 
-        with open(output.map_file,'w') as out_file:
+        with open(output.map_file,'w') as out_file, open(ouput.old2new,'w') as old2new_mapping_file :
+            old2new_mapping_file.write(f"BinID\tMAG\n")
             for binid in bin_ids:
 
                 fasta_in = params.file_name.format(binid=binid)
                 new_name= old2new_name[binid]
+
+                old2new_mapping_file.write(f"{binid}\t{new_name}\n")
+
                 fasta_out = os.path.join(output.dir,f"{new_name}.fasta")
                 shutil.copy(fasta_in,fasta_out)
 
+                # write names of contigs in mapping file
                 with open(fasta_in) as bin_file:
                     for line in bin_file:
                         if line[0]==">":
@@ -806,7 +812,7 @@ rule rename_final_bins:
 
 rule build_db_genomes:
     input:
-        fasta_dir = directory("genomes/Dereplication/dereplicated_genomes")
+        fasta_dir = directory("genomes/genomes")
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
