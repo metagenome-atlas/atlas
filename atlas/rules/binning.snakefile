@@ -257,7 +257,7 @@ rule get_unique_cluster_attribution:
         if 0 in old_cluster_ids:
             old_cluster_ids.remove(0)
 
-        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}.{binner}." )  ))
+        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_" )  ))
 
         new_d= d.map(map_cluster_ids)
         new_d.dropna(inplace=True)
@@ -281,7 +281,7 @@ rule get_maxbin_cluster_attribution:
                     for line in bin_file:
                         if line.startswith(">"):
                             fasta_header = line[1:].strip().split()[0]
-                            out_file.write("{fasta_header}\t{sample}.maxbin.{binid}\n".format(binid=binid,
+                            out_file.write("{fasta_header}\t{sample}_maxbin_{binid}\n".format(binid=binid,
                                                                                               fasta_header=fasta_header,
                                                                                               sample=wildcards.sample))
                 os.remove(params.file_name.format(binid=binid))
