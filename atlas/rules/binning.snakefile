@@ -787,7 +787,7 @@ rule rename_final_bins:
         old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
         os.makedirs(output.dir)
 
-        with open(output.map_file,'w') as out_file, open(ouput.old2new,'w') as old2new_mapping_file :
+        with open(output.map_file,'w') as out_file, open(output.old2new,'w') as old2new_mapping_file :
             old2new_mapping_file.write(f"BinID\tMAG\n")
             for binid in bin_ids:
 
