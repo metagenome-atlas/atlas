@@ -424,6 +424,10 @@ rule checkm_outliers:
         """
 
 
+rule refine_bins:
+    input:
+        expand("{sample}/binning/{binner}/checkm/outliers.txt",sample=SAMPLES,binner=config['binner'])
+
 rule find_16S:
     input:
         contigs=BINNING_CONTIGS,
