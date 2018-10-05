@@ -557,30 +557,30 @@ rule run_das_tool:
 
 # # unknown bins and contigs
 #
-# rule get_unknown_bins:
-#     input:
-#         expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
-#         expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
-#     output:
-#         dir= directory("{sample}/binning/Unknown/bins"),
-#         scores= "{sample}/binning/Unknown/scores.tsv"
-#
-#     run:
-#         import pandas as pd
-#         import shutil
-#
-#         Scores= pd.DataFrame()
-#
-#         for (score_file,bin_dir) in zip(input):
-#             S = pd.read_table(score_file,index=0)
-#
-#             S= S.loc[S.SCG_Completeness==0]
-#             Scores= Scores.append(S)
-#
-#             for bin_id in S.index:
-#                 shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), output.dir )
-#
-#         Scores.to_csv(output.scores,sep='\t')
+rule get_unknown_bins:
+    input:
+        expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
+        expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
+    output:
+        dir= directory("{sample}/binning/Unknown/bins"),
+        scores= "{sample}/binning/Unknown/scores.tsv"
+
+    run:
+        import pandas as pd
+        import shutil
+
+        Scores= pd.DataFrame()
+
+        for (score_file,bin_dir) in zip(input):
+            S = pd.read_table(score_file,index=0)
+
+            S= S.loc[S.SCG_Completeness==0]
+            Scores= Scores.append(S)
+
+            for bin_id in S.index:
+                shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), output.dir )
+
+        Scores.to_csv(output.scores,sep='\t')
 #
 #
 #
