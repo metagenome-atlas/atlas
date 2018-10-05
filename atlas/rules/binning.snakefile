@@ -576,7 +576,7 @@ if config['final_binner']=='DASTool':
 
                 S = pd.read_table(score_file,index_col=0)
 
-                S= S.loc[S.SCG_Completeness==0]
+                S= S.loc[S.SCG_completeness==0]
                 Scores= Scores.append(S)
 
                 for bin_id in S.index:
