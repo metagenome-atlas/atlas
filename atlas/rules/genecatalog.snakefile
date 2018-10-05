@@ -448,7 +448,7 @@ rule predict_single_copy_genes:
     shell:
         " DIR=$(dirname $(which DAS_Tool)) "
         ";"
-        " {params.script_dir}/rules/scg_blank_diamond.rb diamond"
+        " ruby {params.script_dir}/rules/scg_blank_diamond.rb diamond"
         " {input} "
         " $DIR\/db/{params.key}.all.faa "
         " $DIR\/db/{params.key}.scg.faa "
