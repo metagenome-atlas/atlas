@@ -293,8 +293,6 @@ rule get_bins:
         contigs= BINNING_CONTIGS
     output:
         directory("{sample}/binning/{binner}/bins")
-    params:
-        prefix= lambda wc, output: os.path.join(output[0],"/")
     conda:
         "%s/sequence_utils.yaml" % CONDAENV
     script:
@@ -557,6 +555,7 @@ rule run_das_tool:
 
 # # unknown bins and contigs
 #
+localrules: get_unknown_bins
 rule get_unknown_bins:
     input:
         expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
