@@ -33,7 +33,7 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
 
     for id in CA.index.unique():
         bin_contig_names = CA.loc[id]
-        out_file = os.path.join(out_folder,"{id}.fasta".format(id=id)
+        out_file = os.path.join(out_folder,"{id}.fasta".format(id=id))
         if type(bin_contig_names) == str:
             warnings.warn("single contig bin Bin: " + out_file)
             bin_contig_names = [bin_contig_names]
