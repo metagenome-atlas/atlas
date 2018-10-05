@@ -555,36 +555,37 @@ rule run_das_tool:
 
 # # unknown bins and contigs
 #
-localrules: get_unknown_bins
-rule get_unknown_bins:
-    input:
-        score_files=expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
-        bin_dirs=expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
-    output:
-        dir= directory("{sample}/binning/Unknown/bins"),
-        scores= "{sample}/binning/Unknown/scores.tsv"
+if config['final_binner']=='DASTool':
+    localrules: get_unknown_bins
+    rule get_unknown_bins:
+        input:
+            score_files=expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
+            bin_dirs=expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
+        output:
+            dir= directory("{sample}/binning/Unknown/bins"),
+            scores= "{sample}/binning/Unknown/scores.tsv"
 
-    run:
-        import pandas as pd
-        import shutil
+        run:
+            import pandas as pd
+            import shutil
 
-        Scores= pd.DataFrame()
-        for i in range(len(config['binner'])):
-        score_file = input.score_files[i]
-        bin_dir = input.bin_dirs[i]
+            Scores= pd.DataFrame()
+            for i in range(len(config['binner'])):
+                score_file = input.score_files[i]
+                bin_dir = input.bin_dirs[i]
 
-            S = pd.read_table(score_file,index=0)
+                S = pd.read_table(score_file,index=0)
 
-            S= S.loc[S.SCG_Completeness==0]
-            Scores= Scores.append(S)
+                S= S.loc[S.SCG_Completeness==0]
+                Scores= Scores.append(S)
 
-            for bin_id in S.index:
-                shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), output.dir )
+                for bin_id in S.index:
+                    shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), output.dir )
 
-        Scores.to_csv(output.scores,sep='\t')
-#
-#
-#
+            Scores.to_csv(output.scores,sep='\t')
+    #
+    #
+    #
 
 
 ## dRep
