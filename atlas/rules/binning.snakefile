@@ -568,6 +568,9 @@ if config['final_binner']=='DASTool':
         run:
             import pandas as pd
             import shutil
+            import os
+
+            os.makedirs(output.dir)
 
             Scores= pd.DataFrame()
             for i in range(len(config['binner'])):
@@ -580,7 +583,8 @@ if config['final_binner']=='DASTool':
                 Scores= Scores.append(S)
 
                 for bin_id in S.index:
-                    shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'), output.dir )
+                    shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'),
+                                os.path.join(output.dir,bin_id+'.fasta') )
 
             Scores.to_csv(output.scores,sep='\t')
     #
