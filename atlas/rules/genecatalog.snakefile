@@ -433,7 +433,7 @@ rule combine_gene_coverages:
 
 rule predict_single_copy_genes:
     input:
-        "Genecatalog/gene_catalog.fna"
+        "Genecatalog/gene_catalog.faa"
     output:
         "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
     params:
