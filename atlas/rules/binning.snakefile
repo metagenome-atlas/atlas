@@ -628,7 +628,8 @@ rule get_quality_for_dRep_from_checkm:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
     output:
-        "genomes/quality.csv"
+        "genomes/quality.csv",
+        "genomes/clustering/Checkm_quality_allbins.tsv",
     run:
         import pandas as pd
 
@@ -638,6 +639,7 @@ rule get_quality_for_dRep_from_checkm:
         D.index.name="genome"
         D.columns= D.columns.str.lower()
         D.iloc[:,:3].to_csv(output[0])
+        D.to_csv(output[1],sep='\t')
 
 if config['final_binner']=='DASTool':
     localrules: get_quality_for_dRep_from_DASTool
@@ -646,8 +648,8 @@ if config['final_binner']=='DASTool':
         input:
             expand("{sample}/binning/DASTool/{sample}_DASTool_summary.txt",sample=SAMPLES)
         output:
-            "genomes/DASTool_quality.tsv",
-            "genomes/quality.csv"
+            "genomes/clustering/DASTool_quality_allbins.tsv",
+            temp("genomes/quality.csv")
         run:
             import pandas as pd
             D= pd.DataFrame()
@@ -786,8 +788,8 @@ rule rename_final_bins:
         directory("genomes/Dereplication/dereplicated_genomes")
     output:
         dir=directory("genomes/genomes"),
-        map_file="genomes/contig2genome.tsv",
-        old2new = "genomes/old2newID.tsv"
+        map_file="genomes/clustering/contig2genome.tsv",
+        old2new = "genomes/clustering/old2newID.tsv"
     params:
         file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
     run:
@@ -796,6 +798,7 @@ rule rename_final_bins:
 
         old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
         os.makedirs(output.dir)
+
 
         with open(output.map_file,'w') as out_file, open(output.old2new,'w') as old2new_mapping_file :
             old2new_mapping_file.write(f"BinID\tMAG\n")
@@ -815,6 +818,48 @@ rule rename_final_bins:
                         if line[0]==">":
                             contig = line[1:].strip().split()[0]
                             out_file.write(f"{contig}\t{new_name}\n")
+
+
+localrules: get_genomes2cluster
+rule get_genomes2cluster:
+    input:
+        old2new="genomes/clustering/old2newID.tsv",
+        pre_dereplication=directory("genomes/pre_dereplication/dereplicated_genomes"),
+        dereplication= directory("genomes/Dereplication/dereplicated_genomes")
+    output:
+        "genomes/clustering/allbins2genome.tsv"
+    run:
+        import pandas as pd
+
+
+        def genome2cluster(Drep_folder):
+
+            Cdb= pd.read_csv(os.path.join(Drep_folder,'data_tables','Cdb.csv'))
+            Cdb.index= Cdb.genome # location changes
+
+            Wdb= pd.read_csv(os.path.join(Drep_folder,'data_tables','Wdb.csv'))
+            Wdb.index = Wdb.cluster
+            map_genome2cluster =  Cdb.secondary_cluster.map(Wdb.genome)
+
+            return map_genome2cluster
+
+        Genome_map= genome2cluster(input.pre_dereplication).\
+        map(genome2cluster(input.dereplication))
+
+        Genome_map.index= Genome_map.index.str.replace('.fasta','')
+        Genome_map = Genome_map.str.replace('.fasta','')
+
+
+        old2new_name= pd.read_table(input.old2new, index_col=0,squeeze=True)
+        Genome_map= Genome_map.map(old2new_name)
+
+        Genome_map.sort_values(inplace=True)
+        Genome_map.name='MAG'
+
+        Genome_map.to_csv(ouput[0],sep='\t')
+
+
+
 
 
 rule build_db_genomes:
