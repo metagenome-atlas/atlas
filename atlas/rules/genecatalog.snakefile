@@ -27,7 +27,7 @@ localrules: filter_genes
 rule filter_genes:
     input:
         fna="Genecatalog/all_genes_unfiltered.fna",
-        faa="Genecatalog/all_genes_unfiltered.fna"
+        faa="Genecatalog/all_genes_unfiltered.faa"
     output:
         fna= "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
