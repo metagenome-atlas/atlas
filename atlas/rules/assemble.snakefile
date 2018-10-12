@@ -387,7 +387,7 @@ if config['filter_contigs']:
             java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         shell:
             """
-            bbwrap.sh nodisk=t \
+                bbwrap.sh nodisk=t \
                 ref={input.fasta} \
                 {params.input} \
                 trimreaddescriptions=t \
@@ -420,7 +420,7 @@ if config['filter_contigs']:
         params:
             pileup_secondary = 't'
         log:
-            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" # this file is used for assembly report
+            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" 
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -599,6 +599,8 @@ rule convert_sam_to_bam:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    shadow:
+        "shallow"
     resources:
         mem = 2 * config.get("threads", 1)
     shell:
@@ -631,7 +633,7 @@ localrules: build_assembly_report
 rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
-        gene_tables = expand("{sample}/annotation/predicted_genes/{sample}_plus.tsv", sample=SAMPLES),
+        gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
         mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)

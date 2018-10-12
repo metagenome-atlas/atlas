@@ -35,7 +35,7 @@ With ``conda``, execute:
 ::
 
     conda create -n atlas -c bioconda python>=3.6 \
-        snakemake bbmap=37.78 click ruamel.yaml
+        snakemake pandas bbmap=37.78 click ruamel.yaml biopython
 
 Load the environment:
 
@@ -48,6 +48,16 @@ Install ``atlas``:
 ::
 
     pip install -U pnnl-atlas
+
+
+or install the up to date atlas from github:
+
+::
+
+    git clone https://github.com/pnnl/atlas.git
+    cd atlas
+    pip install .
+
 
 In the Same Environment
 -----------------------

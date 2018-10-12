@@ -13,7 +13,7 @@ def gff_to_gtf(gff_in, gtf_out):
             print(*toks, sep="\t", file=fh)
 
 
-if config.get("gene_predicter", "prodigal") == "prokka":
+if config.get("run_prokka", False):
 
     rule run_prokka_annotation:
         input:
@@ -27,7 +27,7 @@ if config.get("gene_predicter", "prodigal") == "prokka":
             gff = "{sample}/annotation/predicted_genes/{sample}.gff",
             log = "{sample}/annotation/predicted_genes/{sample}.log",
             tbl = "{sample}/annotation/predicted_genes/{sample}.tbl",
-            tsv = "{sample}/annotation/predicted_genes/{sample}.tsv",
+            tsv = "{sample}/annotation/predicted_genes/{sample}_prokka.tsv",
             txt = "{sample}/annotation/predicted_genes/{sample}.txt"
         benchmark:
             "logs/benchmarks/prokka/{sample}.txt"
@@ -49,6 +49,15 @@ if config.get("gene_predicter", "prodigal") == "prokka":
                    {input}
               """
 
+    # TODO: doesn't work for prodigal predictions
+    rule convert_gff_to_tsv:
+        input:
+            "{sample}/annotation/predicted_genes/{sample}.gff"
+        output:
+            "{sample}/annotation/predicted_genes/{sample}.tsv"
+        shell:
+            """atlas gff2tsv {input} {output}"""
+
 
     rule add_contig_metadata:
         input:
@@ -60,17 +69,9 @@ if config.get("gene_predicter", "prodigal") == "prokka":
             "atlas munge-blast {input.hits} {input.gff} {output}"
 
 
-    rule sort_munged_blast_hits:
-        # ensure blast hits are grouped by contig, ORF, and then decreasing by bitscore
-        input:
-            "{sample}/annotation/refseq/{sample}_hits_plus.tsv"
-        output:
-            "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
-        shell:
-            "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
 
-elif config.get("gene_predicter", "prodigal") == "prodigal":
+else:
 
     rule predict_genes:
         input:
@@ -94,8 +95,9 @@ elif config.get("gene_predicter", "prodigal") == "prodigal":
             """
 
 
-    localrules: get_contigs_from_gene_names, rename_genes
 
+
+    # localrules: rename_genes
     # rule rename_genes:
     #     input:
     #         "{sample}/annotation/predicted_genes/{sample}_ambigous_names.{extension}",
@@ -116,6 +118,7 @@ elif config.get("gene_predicter", "prodigal") == "prodigal":
     #                         fout.write(line)
 
 
+    localrules: get_contigs_from_gene_names
     rule get_contigs_from_gene_names:
         input:
             faa = "{sample}/annotation/predicted_genes/{sample}.faa",
@@ -169,25 +172,7 @@ rule convert_gff_to_gtf:
         gff_to_gtf(input[0], output[0])
 
 
-# TODO: doesn't work for prodigal predictions
-rule convert_gff_to_tsv:
-    input:
-        "{sample}/annotation/predicted_genes/{sample}.gff"
-    output:
-        "{sample}/annotation/predicted_genes/{sample}_plus.tsv"
-    shell:
-        """atlas gff2tsv {input} {output}"""
 
-
-# this rule specifies the more general eggNOG rules
-localrules: rename_eggNOG_annotation
-rule rename_eggNOG_annotation:
-    input:
-        "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
-    output:
-        "{sample}/annotation/eggNOG.tsv"
-    shell:
-        "cp {input} {output}"
 
 
 rule find_counts_per_region:
@@ -226,6 +211,8 @@ rule find_counts_per_region:
             {input.bam} 2> {log}
         """
 
+
+#### Taxonomy ####
 
 rule run_diamond_blastp:
     input:
@@ -269,6 +256,14 @@ rule run_diamond_blastp:
             --block-size {params.block_size} \
             --index-chunks {params.index_chunks}
         """
+rule sort_munged_blast_hits:
+    # ensure blast hits are grouped by contig, ORF, and then decreasing by bitscore
+    input:
+        "{sample}/annotation/refseq/{sample}_hits_plus.tsv"
+    output:
+        "{sample}/annotation/refseq/{sample}_hits_plus_sorted.tsv"
+    shell:
+        "sort -k1,1 -k2,2 -k13,13rn {input} > {output}"
 
 
 rule parse_blastp:
@@ -306,18 +301,30 @@ rule parse_blastp:
             {params.treefile} \
             {output}
         """
+###########
+## EGG NOG
+##########
 
+# this rule specifies the more general eggNOG rules
+localrules: rename_eggNOG_annotation
+rule rename_eggNOG_annotation:
+    input:
+        "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
+    output:
+        "{sample}/annotation/eggNOG.tsv"
+    shell:
+        "cp {input} {output}"
 
 # TODO: make benchmark
 #HIGH throughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
-        "%s/eggnog.db" % DBDIR,
+        "%s/eggnog.db" % EGGNOG_DIR,
         faa = "{folder}/{prefix}.faa",
     output:
         temp("{folder}/{prefix}.emapper.seed_orthologs"),
     params:
-        data_dir = DBDIR,
+        data_dir = EGGNOG_DIR,
         prefix = "{folder}/{prefix}"
     resources:
         mem = config.get("java_mem", JAVA_MEM)
@@ -335,16 +342,18 @@ rule eggNOG_homology_search:
         """
 
 
+
+
 #HIGH throughput : concat emapper.seed_orthologs chunks
 # run on single machine
 rule eggNOG_annotation:
     input:
-        "%s/eggnog.db" % DBDIR,
+        "%s/eggnog.db" % EGGNOG_DIR,
         seed = rules.eggNOG_homology_search.output
     output:
         temp("{folder}/{prefix}.emapper.annotations")
     params:
-        data_dir = DBDIR,
+        data_dir = EGGNOG_DIR,
         prefix = "{folder}/{prefix}"
     threads:
         config.get("threads", 1)

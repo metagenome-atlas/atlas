@@ -364,6 +364,8 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     make_config(config, path, data_type, database_dir, threads, assembler)
 
 
+## QC command
+
 @cli.command(
     "qc",
     context_settings=dict(ignore_unknown_options=True),
@@ -393,6 +395,7 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     help="do not use conda environments",
 )
 @click.option(
+    "-n",
     "--dryrun",
     is_flag=True,
     default=False,
@@ -419,6 +422,8 @@ def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         snakemake_args,
         workflow="qc",
     )
+
+## assemble
 
 
 @cli.command(
@@ -450,6 +455,7 @@ def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     help="do not use conda environments",
 )
 @click.option(
+    "-n",
     "--dryrun",
     is_flag=True,
     default=False,
@@ -478,11 +484,12 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         workflow="complete",
     )
 
+# genome bin
 
 @cli.command(
-    "annotate",
+    "bin-genomes",
     context_settings=dict(ignore_unknown_options=True),
-    short_help="annotation workflow",
+    short_help="bins contigs using different binners to genomes",
 )
 @click.argument("config")
 @click.option(
@@ -508,6 +515,7 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     help="do not use conda environments",
 )
 @click.option(
+    "-n",
     "--dryrun",
     is_flag=True,
     default=False,
@@ -515,14 +523,14 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
     help="do not execute anything",
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
-    for a sample, quantification is also performed.
+def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+    """Runs the ATLAS binner protocol. Output can be found in <output directory>/genomes
 
-    A skeleton configuration file can be generated using:
+    bins contigs using different binners, estimates completeness and contamination
+    for each bin. Dereplicate bins for all samples and select the best genome for each species.
+    Calculate abundance of different species per genome.
 
-        \b
-        atlas make-config
+    run after 'atlas assemble'
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
@@ -533,10 +541,71 @@ def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         no_conda,
         dryrun,
         snakemake_args,
-        workflow="annotate",
+        workflow="binning",
     )
 
+#
+#
+# ## annotate
+# @cli.command(
+#     "annotate",
+#     context_settings=dict(ignore_unknown_options=True),
+#     short_help="annotation workflow",
+# )
+# @click.argument("config")
+# @click.option(
+#     "-j",
+#     "--jobs",
+#     default=multiprocessing.cpu_count(),
+#     type=int,
+#     show_default=True,
+#     help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
+# )
+# @click.option(
+#     "-o",
+#     "--out-dir",
+#     default=os.path.realpath("."),
+#     show_default=True,
+#     help="results output directory",
+# )
+# @click.option(
+#     "--no-conda",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="do not use conda environments",
+# )
+# @click.option(
+#     "-n",
+#     "--dryrun",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="do not execute anything",
+# )
+# @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+# def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+#     """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
+#     for a sample, quantification is also performed.
+#
+#     A skeleton configuration file can be generated using:
+#
+#         \b
+#         atlas make-config
+#
+#     For more details, see: http://pnnl-atlas.readthedocs.io/
+#     """
+#     run_workflow(
+#         os.path.realpath(config),
+#         jobs,
+#         out_dir,
+#         no_conda,
+#         dryrun,
+#         snakemake_args,
+#         workflow="annotate",
+#     )
 
+# Download
 @cli.command(
     "download",
     context_settings=dict(ignore_unknown_options=True),
