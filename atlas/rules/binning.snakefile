@@ -809,10 +809,10 @@ rule get_genomes2cluster:
 
         def genome2cluster(Drep_folder):
 
-            Cdb= pd.read_csv(os.path.join(Drep_folder,'data_tables','Cdb.csv'))
+            Cdb= pd.read_csv(os.path.join(Drep_folder,'..','data_tables','Cdb.csv'))
             Cdb.index= Cdb.genome # location changes
 
-            Wdb= pd.read_csv(os.path.join(Drep_folder,'data_tables','Wdb.csv'))
+            Wdb= pd.read_csv(os.path.join(Drep_folder,'..','data_tables','Wdb.csv'))
             Wdb.index = Wdb.cluster
             map_genome2cluster =  Cdb.secondary_cluster.map(Wdb.genome)
 
