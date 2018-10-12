@@ -45,7 +45,7 @@ or install the up to date atlas from github:
 ```
 git clone https://github.com/pnnl/atlas.git
 cd atlas
-python install.py setup develop
+pip install .
 ```
 
 

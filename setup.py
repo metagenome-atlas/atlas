@@ -64,11 +64,7 @@ setup(
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake
     install_requires=[
-        'ruamel.yaml==0.15.35',
-        'biopython==1.70',
-        'pandas==0.20.1',
-        'snakemake',
-        'click'
+        'ruamel.yaml==0.15.35'
     ],
     entry_points={
           'console_scripts': [
