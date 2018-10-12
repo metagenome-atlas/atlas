@@ -345,5 +345,4 @@ elif config.get("workflow") == "download":
 #     include: "rules/annotate.snakefile"
 
 else:
-    print("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"),
-          file=sys.stderr)
+    raise Exception("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"))

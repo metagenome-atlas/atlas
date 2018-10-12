@@ -489,9 +489,7 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 @cli.command(
     "bin-genomes",
     context_settings=dict(ignore_unknown_options=True),
-    short_help="""Bin contigs using different binners.
-    Completness and contamination estimation for each bin.
-    Dereplicate bins for all samples and select the best genome for each species""",
+    short_help="bins contigs using different binners to genomes",
 )
 @click.argument("config")
 @click.option(
@@ -526,12 +524,13 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    """Runs the ATLAS binner protokol. Outbut can be found in <output directory>/genomes
+    """Runs the ATLAS binner protocol. Output can be found in <output directory>/genomes
 
-    A skeleton configuration file can be generated with defaults using:
+    bins contigs using different binners, estimates completeness and contamination
+    for each bin. Dereplicate bins for all samples and select the best genome for each species.
+    Calculate abundance of different species per genome.
 
-        \b
-        atlas make-config
+    run after 'atlas assemble'
 
     For more details, see: http://pnnl-atlas.readthedocs.io/
     """
@@ -542,7 +541,7 @@ def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         no_conda,
         dryrun,
         snakemake_args,
-        workflow="binner",
+        workflow="binning",
     )
 
 #
