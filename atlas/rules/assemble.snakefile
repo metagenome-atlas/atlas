@@ -420,7 +420,7 @@ if config['filter_contigs']:
         params:
             pileup_secondary = 't'
         log:
-            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" # this file is used for assembly report
+            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" 
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
