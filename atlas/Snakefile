@@ -296,7 +296,8 @@ elif config.get("workflow") == "binning":
             "genomes/Dereplication/dereplicated_genomes",
             "genomes/checkm/taxonomy.tsv",
             "genomes/counts/median_coverage_genomes.tsv",
-            "genomes/contig2genome.tsv",
+            "genomes/clustering/contig2genome.tsv",
+            "genomes/clustering/allbins2genome.tsv",
             "genomes/SSU/ssu_summary.tsv",
 
 
