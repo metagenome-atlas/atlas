@@ -628,7 +628,7 @@ rule get_quality_for_dRep_from_checkm:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
     output:
-        "genomes/quality.csv",
+        temp("genomes/quality.csv"),
         "genomes/clustering/Checkm_quality_allbins.tsv",
     run:
         import pandas as pd
@@ -641,31 +641,6 @@ rule get_quality_for_dRep_from_checkm:
         D.iloc[:,:3].to_csv(output[0])
         D.to_csv(output[1],sep='\t')
 
-if config['final_binner']=='DASTool':
-    localrules: get_quality_for_dRep_from_DASTool
-    ruleorder: get_quality_for_dRep_from_DASTool> get_quality_for_dRep_from_checkm
-    rule get_quality_for_dRep_from_DASTool:
-        input:
-            expand("{sample}/binning/DASTool/{sample}_DASTool_summary.txt",sample=SAMPLES)
-        output:
-            "genomes/clustering/DASTool_quality_allbins.tsv",
-            temp("genomes/quality.csv")
-        run:
-            import pandas as pd
-            D= pd.DataFrame()
-            for i,file in enumerate(input):
-                d= pd.read_table(file,index_col=0)
-                d.index= SAMPLES[i]+'.'+d.index
-                D= D.append(d)
-
-            D.to_csv(output[0],sep='\t')
-
-            D.index+=".fasta"
-            D.index.name="genome"
-
-            D= D.rename(columns={"SCG_completeness":"completeness", "SCG_redundancy":"contamination"})
-
-            D[["completeness","contamination"]].to_csv(output[1])
 
 rule first_dereplication:
     input:
