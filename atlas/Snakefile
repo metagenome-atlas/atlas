@@ -159,7 +159,7 @@ def define_groups(samples):
 
 
 CONDAENV = get_conda_envs_dir()
-EGGNOG_DIR = os.path.realpath(config["eggnog_dir"])
+EGGNOG_DIR = os.path.realpath(config["database_dir"])
 
 if config.get("workflow") != "download":
     config = update_config_file_paths(config)

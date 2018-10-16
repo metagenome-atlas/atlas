@@ -92,7 +92,7 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
                                       "PhiX":os.path.join(database_dir, "phiX174_virus.fa")}
 
     conf["assembler"] = assembler
-    conf["eggnogg_dir"] = database_dir
+    conf["database_dir"] = database_dir
     conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
     conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
     conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
