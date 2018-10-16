@@ -159,11 +159,11 @@ def define_groups(samples):
 
 
 CONDAENV = get_conda_envs_dir()
-EGGNOG_DIR = os.path.realpath(config["eggnog_dir"])
-
 if config.get("workflow") != "download":
+
     config = update_config_file_paths(config)
     TMPDIR = get_temp_dir(config)
+    EGGNOG_DIR = os.path.realpath(config["database_dir"])
     CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
     SAMPLES = [i for i in config["samples"].keys()]
     GROUPS = define_groups(config['samples'])
