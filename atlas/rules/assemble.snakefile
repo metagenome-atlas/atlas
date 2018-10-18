@@ -301,6 +301,7 @@ else:
             " -o {params.p[outdir]} "
             " -k {params.k}"
             " {params.p[preset]} "
+            " {params.p[extra]} "
             " {params.p[inputs]} {params.p[input_merged]} "
             " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
