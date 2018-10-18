@@ -151,6 +151,7 @@ def make_default_config():
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
     conf["spades_preset"] = "meta"
+    conf["spades_extra"] = ""
     conf["spades_skip_BayesHammer"] = False
     conf["filter_contigs"] = True
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE

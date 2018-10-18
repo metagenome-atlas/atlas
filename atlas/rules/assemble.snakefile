@@ -247,7 +247,7 @@ if config.get("assembler", "megahit") == "megahit":
 
 
 else:
-    assembly_params['spades'] = {'meta':'--meta','normal':''}
+    assembly_params['spades'] = {'meta':'--meta','normal':'', 'rna':'--rna'}
 
     def spades_parameters(wc,input):
         if not os.path.exists("{sample}/assembly/params.txt".format(sample=wc.sample)):
@@ -256,15 +256,18 @@ else:
 
             params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
             params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
-            params['preset'] = assembly_params['spades'][config['spades_preset']],
+            params['preset'] = assembly_params['spades'][config['spades_preset']]
             params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
+            params['extra'] = config['spades_extra']
+
 
         else:
 
             params = {"inputs": "--restart-from last",
                       "input_merged":"",
                       "preset":"",
-                      "skip_error_correction":""}
+                      "skip_error_correction":"",
+                      "extra":""}
 
         params['outdir']= "{sample}/assembly".format(sample=wc.sample)
 
@@ -420,7 +423,7 @@ if config['filter_contigs']:
         params:
             pileup_secondary = 't'
         log:
-            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log" 
+            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
