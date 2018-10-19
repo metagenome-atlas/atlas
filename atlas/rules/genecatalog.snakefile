@@ -287,7 +287,7 @@ rule rename_gene_catalog:
                     protein.id = map_names[protein.name]
 
                     SeqIO.write(gene,fna,'fasta')
-                    SeqIO.write(gene,faa,'fasta')
+                    SeqIO.write(protein,faa,'fasta')
 
 
 rule align_reads_to_Genecatalog:
