@@ -442,6 +442,8 @@ rule predict_single_copy_genes:
         "%s/DASTool.yaml" % CONDAENV # needs pearl
     log:
         "logs/Genecatalog/annotation/predict_single_copy_genes_{domain}.log"
+    shadow:
+        "shallow"
     threads:
         config['threads']
     shell:
