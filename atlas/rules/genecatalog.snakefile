@@ -463,6 +463,58 @@ rule predict_single_copy_genes:
 
 
 
+rule generate_subsets_for_annotation:
+    input:
+        "Genecatalog/gene_catalog.faa"
+#    wildcards_constraints:
+#        extension="f[n,a]a"
+    output:
+        temp(dynamic("Genecatalog/subsets/genes/{subsetID}.faa"))
+    params:
+        subset_size=200,
+        output_dir= lambda wc, output: os.path.dirname(output[0]),
+        extension= lambda wc, output: os.path.splitext(output[0])[-1]
+    run:
+        i,subset_n=0,0
+        fout= None
+        with open(input[0]) as fin:
+            for line in fin:
+                if i % params.subset_size == 0:
+                    subset_n+=1
+                    if fout is not None:
+                        fout.close()
+                    fout = open(f"{params.output_dir}/subset{subset_n}{params.extension}",'w')
+
+                if line[0]=='>':
+                    fout.write(line.split()[0]+'\n')
+                    i+=1
+                else:
+                    fout.write(line)
+        fout.close()
+
+rule combine_annotations:
+    input:
+        faa= dynamic("Genecatalog/subsets/genes/{subsetID}.faa"),
+        eggNOG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.annotations")
+    output:
+        eggNOG= "Genecatalog/annotations/eggNog.tsv"
+    run:
+        # eggNog
+        with open(input.eggNOG[0]) as f:
+            first_line= f.readline()
+            assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
+
+        with open(output.eggNOG,'w') as f:
+            f.write("\t".join(EGGNOG_HEADERS) + '\n')
+        shell("cat {input.eggNOG} >> {output.eggNOG}")
+
+
+
+
+# after combination need to add eggNOG headerself.
+#"{folder}/{prefix}_eggNOG.tsv"
+
+
 
 #
 # ############## Canopy clustering

@@ -173,46 +173,47 @@ rule convert_gff_to_gtf:
 
 
 
+# no longer used
 
-
-rule find_counts_per_region:
-    input:
-        gtf = "{sample}/annotation/predicted_genes/{sample}.gtf",
-        bam = "{sample}/sequence_alignment/{sample}.bam"
-    output:
-        summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
-        counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
-    params:
-        min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
-        paired_only= "-B" if config.get("contig_map_paired_only",CONTIG_MAP_PAIRED_ONLY) else "",
-        paired_mode = "-p" if PAIRED_END else "",
-        multi_mapping = "-M --fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
-        feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
-    log:
-        "{sample}/logs/quantify/counts_per_region.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    shell:
-        """
-        featureCounts \
-            --minOverlap {params.min_read_overlap} \
-            {params.paired_mode} \
-            {params.paired_only} \
-            -F GTF \
-            -T {threads} \
-            {params.multi_mapping} \
-            {params.feature_counts_allow_overlap} \
-            -t CDS \
-            -g ID \
-            -a {input.gtf} \
-            -o {output.counts} \
-            {input.bam} 2> {log}
-        """
+# rule find_counts_per_region:
+#     input:
+#         gtf = "{sample}/annotation/predicted_genes/{sample}.gtf",
+#         bam = "{sample}/sequence_alignment/{sample}.bam"
+#     output:
+#         summary = "{sample}/annotation/feature_counts/{sample}_counts.txt.summary",
+#         counts = "{sample}/annotation/feature_counts/{sample}_counts.txt"
+#     params:
+#         min_read_overlap = config.get("minimum_region_overlap", MINIMUM_REGION_OVERLAP),
+#         paired_only= "-B" if config.get("contig_map_paired_only",CONTIG_MAP_PAIRED_ONLY) else "",
+#         paired_mode = "-p" if PAIRED_END else "",
+#         multi_mapping = "-M --fraction" if config.get("contig_count_multi_mapped_reads",CONTIG_COUNT_MULTI_MAPPED_READS) else "--primary",
+#         feature_counts_allow_overlap = "-O --fraction" if config.get("feature_counts_allow_overlap", FEATURE_COUNTS_ALLOW_OVERLAP) else ""
+#     log:
+#         "{sample}/logs/quantify/counts_per_region.log"
+#     conda:
+#         "%s/required_packages.yaml" % CONDAENV
+#     threads:
+#         config.get("threads", 1)
+#     shell:
+#         """
+#         featureCounts \
+#             --minOverlap {params.min_read_overlap} \
+#             {params.paired_mode} \
+#             {params.paired_only} \
+#             -F GTF \
+#             -T {threads} \
+#             {params.multi_mapping} \
+#             {params.feature_counts_allow_overlap} \
+#             -t CDS \
+#             -g ID \
+#             -a {input.gtf} \
+#             -o {output.counts} \
+#             {input.bam} 2> {log}
+#         """
 
 
 #### Taxonomy ####
+
 
 rule run_diamond_blastp:
     input:
@@ -305,18 +306,11 @@ rule parse_blastp:
 ## EGG NOG
 ##########
 
-# this rule specifies the more general eggNOG rules
-localrules: rename_eggNOG_annotation
-rule rename_eggNOG_annotation:
-    input:
-        "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
-    output:
-        "{sample}/annotation/eggNOG.tsv"
-    shell:
-        "cp {input} {output}"
+# # this rule specifies the more general eggNOG rules
+
+# output with wildcards "{folder}/{prefix}.emapper.tsv"
 
 # TODO: make benchmark
-#HIGH throughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
         "%s/eggnog.db" % EGGNOG_DIR,
@@ -343,9 +337,6 @@ rule eggNOG_homology_search:
 
 
 
-
-#HIGH throughput : concat emapper.seed_orthologs chunks
-# run on single machine
 rule eggNOG_annotation:
     input:
         "%s/eggnog.db" % EGGNOG_DIR,
@@ -379,20 +370,5 @@ rule add_eggNOG_header:
         import pandas as pd
 
         D = pd.read_table(input[0], header=None)
-        D.columns = [
-            "query_name",
-            "seed_eggNOG_ortholog",
-            "seed_ortholog_evalue",
-            "seed_ortholog_score",
-            "predicted_gene_name",
-            "GO_terms",
-            "KEGG_KO",
-            "BiGG_Reactions",
-            "Annotation_tax_scope",
-            "Matching_OGs",
-            "best_OG|evalue|score",
-            "categories",
-            "eggNOG_HMM_model_annotation",
-        ]
-
+        D.columns = EGGNOG_HEADERS
         D.to_csv(output[0],sep="\t",index=False)
