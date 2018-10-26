@@ -370,20 +370,5 @@ rule add_eggNOG_header:
         import pandas as pd
 
         D = pd.read_table(input[0], header=None)
-        D.columns = [
-            "query_name",
-            "seed_eggNOG_ortholog",
-            "seed_ortholog_evalue",
-            "seed_ortholog_score",
-            "predicted_gene_name",
-            "GO_terms",
-            "KEGG_KO",
-            "BiGG_Reactions",
-            "Annotation_tax_scope",
-            "Matching_OGs",
-            "best_OG|evalue|score",
-            "categories",
-            "eggNOG_HMM_model_annotation",
-        ]
-
+        D.columns = EGGNOG_HEADERS
         D.to_csv(output[0],sep="\t",index=False)
