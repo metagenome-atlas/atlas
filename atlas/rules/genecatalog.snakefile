@@ -495,10 +495,24 @@ rule generate_subsets_for_annotation:
 rule combine_annotations:
     input:
         faa= dynamic("Genecatalog/subsets/genes/{subsetID}.faa"),
-        egNOGG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.tsv")
+        eggNOG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.annotations")
+    output:
+        eggNOG= "Genecatalog/annotations/eggNog.tsv"
+    run:
+        # eggNog
+        with open(input.eggNOG[0]) as f:
+            first_line= f.readline()
+            assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
+
+        with open(output.eggNOG,'w') as f:
+            f.write("\t".join(EGGNOG_HEADERS) + '\n')
+        shell("cat {input.eggNOG} >> {output.eggNOG}")
 
 
 
+
+# after combination need to add eggNOG headerself.
+#"{folder}/{prefix}_eggNOG.tsv"
 
 
 

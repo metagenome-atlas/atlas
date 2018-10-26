@@ -307,17 +307,10 @@ rule parse_blastp:
 ##########
 
 # # this rule specifies the more general eggNOG rules
-# localrules: rename_eggNOG_annotation
-# rule rename_eggNOG_annotation:
-#     input:
-#         "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
-#     output:
-#         "{sample}/annotation/eggNOG.tsv"
-#     shell:
-#         "cp {input} {output}"
+
+# output with wildcards "{folder}/{prefix}.emapper.tsv"
 
 # TODO: make benchmark
-#HIGH throughput : split faa in 1Mio faa chunks for next step
 rule eggNOG_homology_search:
     input:
         "%s/eggnog.db" % EGGNOG_DIR,
@@ -344,9 +337,6 @@ rule eggNOG_homology_search:
 
 
 
-
-#HIGH throughput : concat emapper.seed_orthologs chunks
-# run on single machine
 rule eggNOG_annotation:
     input:
         "%s/eggnog.db" % EGGNOG_DIR,
