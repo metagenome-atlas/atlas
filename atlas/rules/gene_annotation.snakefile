@@ -214,6 +214,7 @@ rule convert_gff_to_gtf:
 
 #### Taxonomy ####
 
+
 rule run_diamond_blastp:
     input:
         fasta = "{sample}/annotation/predicted_genes/{sample}.faa",
@@ -305,15 +306,15 @@ rule parse_blastp:
 ## EGG NOG
 ##########
 
-# this rule specifies the more general eggNOG rules
-localrules: rename_eggNOG_annotation
-rule rename_eggNOG_annotation:
-    input:
-        "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
-    output:
-        "{sample}/annotation/eggNOG.tsv"
-    shell:
-        "cp {input} {output}"
+# # this rule specifies the more general eggNOG rules
+# localrules: rename_eggNOG_annotation
+# rule rename_eggNOG_annotation:
+#     input:
+#         "{sample}/annotation/predicted_genes/{sample}.emapper.tsv"
+#     output:
+#         "{sample}/annotation/eggNOG.tsv"
+#     shell:
+#         "cp {input} {output}"
 
 # TODO: make benchmark
 #HIGH throughput : split faa in 1Mio faa chunks for next step

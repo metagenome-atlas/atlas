@@ -494,7 +494,8 @@ rule generate_subsets_for_annotation:
 
 rule combine_annotations:
     input:
-        dynamic("Genecatalog/subsets/genes/{subsetID}.faa")
+        faa= dynamic("Genecatalog/subsets/genes/{subsetID}.faa"),
+        egNOGG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.tsv")
 
 
 
