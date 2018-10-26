@@ -257,7 +257,7 @@ rule get_unique_cluster_attribution:
         if 0 in old_cluster_ids:
             old_cluster_ids.remove(0)
 
-        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_" )  ))
+        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_".format(**wildcards) )  ))
 
         new_d= d.map(map_cluster_ids)
         new_d.dropna(inplace=True)

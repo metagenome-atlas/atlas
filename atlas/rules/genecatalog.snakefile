@@ -7,6 +7,8 @@ rule gene_catalog:
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/counts/median_coverage.tsv",
         expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
+    output:
+        temp(touch("Genecatalog/genecatalog_finished"))
 
 
 localrules: concat_genes
@@ -287,7 +289,7 @@ rule rename_gene_catalog:
                     protein.id = map_names[protein.name]
 
                     SeqIO.write(gene,fna,'fasta')
-                    SeqIO.write(gene,faa,'fasta')
+                    SeqIO.write(protein,faa,'fasta')
 
 
 rule align_reads_to_Genecatalog:
@@ -298,7 +300,7 @@ rule align_reads_to_Genecatalog:
         sam = temp("Genecatalog/alignments/{sample}.sam")
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
-        maxsites = 2,
+        maxsites = 4,
         ambiguous = 'all',
         minid = config['genecatalog']['minid'],
         maxindel = 1 # default 16000 good for genome deletions but not necessarily for alignment to contigs
@@ -320,14 +322,13 @@ rule align_reads_to_Genecatalog:
             ref={input.fasta} \
             {params.input} \
             trimreaddescriptions=t \
-            outm={output.sam} \
+            out={output.sam} \
             threads={threads} \
             minid={params.minid} \
             mdtag=t \
             xstag=fs \
             nmtag=t \
             sam=1.3 \
-            local=t \
             ambiguous={params.ambiguous} \
             secondary=t \
             saa=f \
@@ -443,6 +444,8 @@ rule predict_single_copy_genes:
         "%s/DASTool.yaml" % CONDAENV # needs pearl
     log:
         "logs/Genecatalog/annotation/predict_single_copy_genes_{domain}.log"
+    shadow:
+        "shallow"
     threads:
         config['threads']
     shell:
@@ -456,7 +459,7 @@ rule predict_single_copy_genes:
         " {threads} "
         " 2> >(tee {log}) "
         " ; "
-        " mv {input[0]}.{wildcards.domain}.scg > {output}"
+        " mv {input[0]}.{wildcards.domain}.scg {output}"
 
 
 
