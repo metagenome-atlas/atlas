@@ -7,6 +7,8 @@ rule gene_catalog:
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/counts/median_coverage.tsv",
         expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
+    output:
+        temp(touch("Genecatalog/genecatalog_finished"))
 
 
 localrules: concat_genes
