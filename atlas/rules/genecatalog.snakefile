@@ -459,7 +459,7 @@ rule predict_single_copy_genes:
         " {threads} "
         " 2> >(tee {log}) "
         " ; "
-        " mv {input[0]}.{wildcards.domain}.scg {output}"
+        " mv {input[0]}.scg {output}"
 
 
 
