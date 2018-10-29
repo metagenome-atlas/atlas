@@ -1,14 +1,6 @@
 import os
 
 
-rule gene_catalog:
-    input:
-        "Genecatalog/gene_catalog.fna",
-        "Genecatalog/gene_catalog.faa",
-        "Genecatalog/counts/median_coverage.tsv",
-        expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
-    output:
-        temp(touch("Genecatalog/genecatalog_finished"))
 
 
 localrules: concat_genes
@@ -509,6 +501,15 @@ rule combine_annotations:
         shell("cat {input.eggNOG} >> {output.eggNOG}")
 
 
+rule gene_catalog:
+    input:
+        "Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.faa",
+        "Genecatalog/counts/median_coverage.tsv",
+        expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
+        rules.combine_annotations.output
+    output:
+        temp(touch("Genecatalog/genecatalog_finished"))
 
 
 # after combination need to add eggNOG headerself.
