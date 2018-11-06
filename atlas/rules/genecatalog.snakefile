@@ -441,7 +441,7 @@ rule predict_single_copy_genes:
     threads:
         config['threads']
     shell:
-        " DIR=$(dirname $(which DAS_Tool)) "
+        " DIR=$(dirname $(readlink -f $(which DAS_Tool))) "
         ";"
         " ruby {params.script_dir}/rules/scg_blank_diamond.rb diamond"
         " {input} "
