@@ -591,8 +591,31 @@ if config['final_binner']=='DASTool':
                                 os.path.join(output.dir,bin_id+'.fasta') )
 
             Scores.to_csv(output.scores,sep='\t')
-    #
-    #
+
+    localrules: get_all_unknown_bins
+    rule get_all_unknown_bins:
+        input:
+            bins=rules.get_unknown_bins.output.dir,
+            scores= rules.get_unknown_bins.output.scores
+        output:
+            dir=temp(directory("genomes/all_unknown_bins")),
+            scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
+        run:
+            os.mkdir(output.dir)
+            from glob import glob
+            import shutil
+            for bin_folder in input.bins:
+                for fasta_file in glob(bin_folder+'/*.fasta'):
+                    shutil.copy(fasta_file,output.dir)
+
+            import pandas as pd
+
+            all_scores= [pd.read_table(file,index_col=0)  for file in input.scores]
+
+            pd.concat(all_scores,axis=0).to_csv(output.scores,sep='\t')
+
+
+
     #
 
 
@@ -602,8 +625,8 @@ rule get_all_bins:
     input:
         bins=expand(directory("{sample}/binning/{binner}/bins"),
                sample= SAMPLES, binner= config['final_binner']),
-        cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-               sample= SAMPLES, binner= config['final_binner'])
+        #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+        #       sample= SAMPLES, binner= config['final_binner'])
     output:
         temp(directory("genomes/all_bins"))
 
