@@ -2,8 +2,6 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
-[![Gitter](https://gitter.im/pnnl-atlas/Lobby.png)](https://gitter.im/pnnl-atlas/Lobby)
-
 ![scheme of workflow](resources/images/atlas_workflow.png)
 
 
