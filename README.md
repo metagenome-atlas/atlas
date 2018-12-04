@@ -1,6 +1,6 @@
 # ATLAS
 
-[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
+[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)  [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/pnnl-atlas/Lobby)
 
 ![scheme of workflow](resources/images/atlas_workflow.png)
 
