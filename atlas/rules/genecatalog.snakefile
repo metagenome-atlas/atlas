@@ -364,8 +364,8 @@ rule combine_gene_coverages:
         covstats = expand("Genecatalog/alignments/{sample}_coverage.tsv",
             sample=SAMPLES)
     output:
-        "Genecatalog/counts/median_coverage.tsv",
-        "Genecatalog/counts/Nmapped_reads.tsv",
+        "Genecatalog/counts/median_coverage.tsv.gz",
+        "Genecatalog/counts/Nmapped_reads.tsv.gz",
     run:
 
         import pandas as pd
@@ -505,7 +505,7 @@ rule gene_catalog:
     input:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
-        "Genecatalog/counts/median_coverage.tsv",
+        "Genecatalog/counts/median_coverage.tsv.gz",
         expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
         rules.combine_annotations.output
     output:
