@@ -988,10 +988,12 @@ localrules: combine_coverages_MAGs,combine_bined_coverages_MAGs
 rule combine_coverages_MAGs:
     input:
         covstats = expand("genomes/alignments/{sample}_coverage.txt",
-            sample=SAMPLES)
+            sample=SAMPLES),
+        cluster_attribution = "genomes/clustering/contig2genome.tsv"
     output:
         "genomes/counts/median_contig_coverage.tsv",
         "genomes/counts/raw_counts_contigs.tsv",
+        "genomes/counts/raw_counts_genomes.tsv",
     run:
 
         import pandas as pd
@@ -1008,7 +1010,15 @@ rule combine_coverages_MAGs:
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
 
         pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
-        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+        Counts_contigs= pd.DataFrame(combined_N_reads)
+        Counts_contigs.to_csv(output[1],sep='\t')
+
+
+        cluster_attribution = pd.read_table(input.cluster_attribution,header=None,index_col=0,squeeze=True)
+
+        Counts_genome= Counts_contigs.groupby(cluster_attribution,axis=1).sum().T
+        Counts_genome.index.name='Sample'
+        Counts_genome.to_csv(output[2],sep='\t')
 
 
 
