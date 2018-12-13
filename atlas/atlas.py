@@ -22,10 +22,10 @@ logging.basicConfig(
 @click.version_option(__version__)
 @click.pass_context
 def cli(obj):
-    """ATLAS - a framework for assembly, annotation, and genomic binning of metagenomic and
-    metatranscriptomic data.
+    """ATLAS - workflows for assembly, annotation, and genomic binning of
+    metagenomic and metatranscriptomic data.
 
-    For updates and reporting issues, see: https://github.com/pnnl/atlas
+    For updates and reporting issues, see: https://github.com/metagenome-atlas/atlas
     """
 
 
@@ -411,7 +411,7 @@ def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         \b
         atlas make-config
 
-    For more details, see: http://pnnl-atlas.readthedocs.io/
+    For more details, see: https://metagenome-atlas.readthedocs.io
     """
     run_workflow(
         os.path.realpath(config),
@@ -472,7 +472,7 @@ def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
         \b
         atlas make-config
 
-    For more details, see: http://pnnl-atlas.readthedocs.io/
+    For more details, see: https://metagenome-atlas.readthedocs.io/
     """
     run_workflow(
         os.path.realpath(config),
@@ -532,7 +532,7 @@ def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 
     run after 'atlas assemble'
 
-    For more details, see: http://pnnl-atlas.readthedocs.io/
+    For more details, see: https://metagenome-atlas.readthedocs.io/
     """
     run_workflow(
         os.path.realpath(config),
@@ -593,7 +593,7 @@ def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
 #         \b
 #         atlas make-config
 #
-#     For more details, see: http://pnnl-atlas.readthedocs.io/
+#     For more details, see: https://metagenome-atlas.readthedocs.io/
 #     """
 #     run_workflow(
 #         os.path.realpath(config),

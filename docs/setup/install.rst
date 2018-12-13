@@ -11,7 +11,7 @@ The intended usage requires ``conda``.
 
 Using Python 3, install ``atlas``::
 
-    pip install -U pnnl-atlas
+    pip install -U metagenome-atlas
 
 
 Following install, ``atlas`` should be executable::
@@ -37,7 +37,7 @@ Execution Environment
 
 As ATLAS executes rules to generate output files, an environment is created
 using ``snakemake --use-conda`` in the background. No dependencies aside from
-Python 3, snakemake, and pnnl-atlas are required to be installed prior to
+Python 3, snakemake, and metagenome-atlas are required to be installed prior to
 execution.
 
 For more information related to bioconda, see:

@@ -106,7 +106,7 @@ def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
 ATLAS_ - Bin Summary
 =============================================================
 
-.. _ATLAS: https://github.com/pnnl/atlas
+.. _ATLAS: https://github.com/metagenome-atlas/atlas
 
 .. contents::
     :backlinks: none
