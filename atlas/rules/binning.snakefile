@@ -1072,7 +1072,7 @@ rule run_prokka_annotation:
         expand("genomes/annotations/prokka/{{genome}}{extension}",
                extension= [".err",".faa",".ffn",".fna",".fsa",".gff",".tbl",
             #"_prokka.tsv",
-            ".txt"]
+            ".txt"])
     log:
         "genomes/annotations/prokka/{genome}.log"
     params:
