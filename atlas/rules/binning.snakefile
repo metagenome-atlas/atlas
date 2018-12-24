@@ -1085,6 +1085,7 @@ rule run_prokka_bins:
     shell:
         """prokka --outdir {params.outdir} \
                --force \
+               --metagenome \
                --prefix {wildcards.genome} \
                --locustag {wildcards.genome} \
                --kingdom {params.kingdom} \
