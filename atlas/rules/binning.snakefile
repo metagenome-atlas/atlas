@@ -1065,7 +1065,7 @@ rule combine_bined_coverages_MAGs:
 
 ## annotation
 
-rule run_prokka_annotation:
+rule run_prokka_bins:
     input:
         "genomes/genomes/{genome}.fasta"
     output:
