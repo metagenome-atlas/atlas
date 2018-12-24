@@ -1070,9 +1070,9 @@ rule run_prokka_bins:
         "genomes/genomes/{genome}.fasta"
     output:
         expand("genomes/annotations/prokka/{{genome}}{extension}",
-               extension= [".err",".faa",".ffn",".fna",".fsa",".gff",".tbl",
-            #"_prokka.tsv",
-            ".txt"])
+               extension= [".err",".faa",".ffn",
+                           ".fna",".fsa",".gff",
+                           ".tbl",".tsv",".txt"])
     log:
         "genomes/annotations/prokka/{genome}.log"
     params:
