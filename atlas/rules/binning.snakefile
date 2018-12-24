@@ -1061,3 +1061,33 @@ rule combine_bined_coverages_MAGs:
         Median_abund= binCov.groupby(cluster_attribution.loc[binCov.index.get_level_values(0)].values).median().T
 
         Median_abund.to_csv(output.median_abund,sep='\t')
+
+
+## annotation
+
+rule run_prokka_annotation:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        expand("genomes/annotations/prokka/{{genome}}{extension}",
+               extension= [".err",".faa",".ffn",".fna",".fsa",".gff",".tbl",
+            #"_prokka.tsv",
+            ".txt"]
+    log:
+        "genomes/annotations/prokka/{genome}.log"
+    params:
+        outdir = lambda wc, output: os.path.dirname(output.faa),
+        kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
+    conda:
+        "%s/prokka.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """prokka --outdir {params.outdir} \
+               --force \
+               --prefix {wildcards.genome} \
+               --locustag {wildcards.genome} \
+               --kingdom {params.kingdom} \
+               --cpus {threads} \
+               {input}
+              """
