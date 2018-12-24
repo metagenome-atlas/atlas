@@ -1076,7 +1076,7 @@ rule run_prokka_annotation:
     log:
         "genomes/annotations/prokka/{genome}.log"
     params:
-        outdir = lambda wc, output: os.path.dirname(output.faa),
+        outdir = lambda wc, output: os.path.dirname(output[0]),
         kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
     conda:
         "%s/prokka.yaml" % CONDAENV
