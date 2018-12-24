@@ -4,4 +4,4 @@ channels:
     - bioconda
     - r
 dependencies:
-    - prokka=1.13
+    - prokka=1.13
