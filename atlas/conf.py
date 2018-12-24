@@ -104,8 +104,8 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
 
 def log_exception(msg):
     logging.critical(msg)
-    logging.info("Documentation is available at: https://pnnl-atlas.readthedocs.io")
-    logging.info("Issues can be raised at: https://github.com/pnnl/atlas/issues")
+    logging.info("Documentation is available at: https://metagenome-atlas.readthedocs.io")
+    logging.info("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
     sys.exit(1)
 
 

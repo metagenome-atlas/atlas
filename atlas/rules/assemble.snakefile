@@ -179,7 +179,7 @@ if config.get("assembler", "megahit") == "megahit":
                 temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
                             fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
             shell:
-                "zcat {input} > {output}"
+                "cat {input} > {output}"
 
         ASSEMBLY_FRACTIONS = ['R1','R2','co']
 

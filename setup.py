@@ -3,7 +3,11 @@ from os.path import dirname, join
 from setuptools import setup
 
 
-long_description = open('README.rst').read()
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 def get_version(relpath):
@@ -18,14 +22,15 @@ def get_version(relpath):
 
 
 setup(
-    name='pnnl-atlas',
+    name='metagenome-atlas',
     version=get_version("atlas/__init__.py"),
-    url='https://github.com/pnnl/atlas',
-    license='MIT',
-    author='Joe Brown',
-    author_email='joe.brown@pnnl.gov',
-    description='ATLAS - a framework for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data',
+    url='https://github.com/metagenome-atlas/atlas',
+    license='BSD-3',
+    author='Joe Brown, Silas Kieser',
+    author_email='brwnjm@gmail.com, silas.kieser@gmail.com',
+    description='ATLAS - workflows for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     packages=['atlas'],
     package_data={'': [
             "atlas/Snakefile",

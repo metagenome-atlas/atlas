@@ -2,12 +2,15 @@
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304)
 
+[![Gitter chat](https://badges.gitter.im/pnnl-atlas/Lobby.png)](https://gitter.im/pnnl-atlas/Lobby)
+
+
 ![scheme of workflow](resources/images/atlas_workflow.png)
 
 
 # Documentation
 
-[![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
 
 # Install
 
@@ -38,12 +41,12 @@ source activate atlas
 Install `atlas`:
 
 ```
-pip install -U pnnl-atlas
+pip install -U metagenome-atlas
 ```
 
 or install the up to date atlas from github:
 ```
-git clone https://github.com/pnnl/atlas.git
+git clone https://github.com/metagenome-atlas/atlas.git
 cd atlas
 pip install .
 ```
@@ -79,7 +82,7 @@ with any text editor.
 
 Sample names should be A-Z characters and can be dash ("-") delimited.
 
-For complete documentation, please see: [![Documentation Status](https://readthedocs.org/projects/pnnl-atlas/badge/?version=latest)](http://pnnl-atlas.readthedocs.io/en/latest/?badge=latest)
+For complete documentation, please see: [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
 
 
 ## Assembly

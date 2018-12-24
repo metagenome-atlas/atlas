@@ -217,7 +217,7 @@ Reads quality before QC
 ATLAS_ - QC Summary
 =============================================================
 
-.. _ATLAS: https://github.com/pnnl/atlas
+.. _ATLAS: https://github.com/metagenome-atlas/atlas
 
 .. contents::
     :backlinks: none

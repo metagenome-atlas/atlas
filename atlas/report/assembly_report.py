@@ -109,7 +109,7 @@ def main(samples, contig_stats, gene_tables, mapping_logs, report_out, combined_
 ATLAS_ - Assembly Summary
 =============================================================
 
-.. _ATLAS: https://github.com/pnnl/atlas
+.. _ATLAS: https://github.com/metagenome-atlas/atlas
 
 .. contents::
     :backlinks: none
