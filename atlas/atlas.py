@@ -6,7 +6,7 @@ import sys
 import click
 
 from atlas import __version__
-from atlas.conf import make_config
+from atlas.conf import make_config,repare_sample_table
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
 from atlas.workflows import download, run_workflow
@@ -361,8 +361,8 @@ def run_make_config(config, path, data_type, database_dir, threads, assembler):
     PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
     the file name with the file name minus extension as the sample ID.
     """
-    make_config(config, path, data_type, database_dir, threads, assembler)
-
+    make_config(database_dir, threads, assembler,data_type,config)
+    prepare_sample_table(path,reads_are_QC=False,outfile='samples.tsv')
 
 ## QC command
 

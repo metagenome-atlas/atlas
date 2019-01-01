@@ -5,65 +5,93 @@ import sys
 import tempfile
 from ruamel.yaml import YAML
 from snakemake.io import load_configfile
+import logging
+import pandas as pd
+import numpy as np
+from collections import defaultdict
 # default globals
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
+ADDITIONAL_SAMPLEFILE_HEADERS=['Source_group','Contigs']
 
-
-def get_sample_files(path, data_type):
-    samples = dict()
+def get_samples_from_fastq(path):
+    """
+        creates table sampleID R1 R2 with the absolute paths of fastq files in a given folder
+    """
+    samples = defaultdict(dict)
     seen = set()
-    for dir_name, sub_dirs, files in os.walk(path):
+    for dir_name, sub_dirs, files in os.walk(os.path.abspath(path)):
         for fname in files:
 
             if ".fastq" in fname or ".fq" in fname:
 
-                sample_id = fname.partition(".fastq")[0]
-                if ".fq" in sample_id:
-                    sample_id = fname.partition(".fq")[0]
+                sample_id = fname.split(".fastq")[0].split(".fq")[0]
 
                 sample_id = sample_id.replace("_R1", "").replace("_r1", "").replace("_R2", "").replace("_r2", "")
                 sample_id = sample_id.replace("_", "-").replace(" ", "-")
 
                 fq_path = os.path.join(dir_name, fname)
-                fastq_paths = [fq_path]
 
                 if fq_path in seen: continue
 
-                if "_R1" in fname or "_r1" in fname:
-                    r2_path = os.path.join(dir_name, fname.replace("_R1", "_R2").replace("_r1", "_r2"))
-                    if not r2_path == fq_path:
-                        seen.add(r2_path)
-                        fastq_paths.append(r2_path)
-
                 if "_R2" in fname or "_r2" in fname:
-                    r1_path = os.path.join(dir_name, fname.replace("_R2", "_R1").replace("_r2", "_r1"))
-                    if not r1_path == fq_path:
-                        seen.add(r1_path)
-                        fastq_paths.insert(0, r1_path)
 
-                if sample_id in samples:
-                    logging.warn("Duplicate sample %s was found after renaming; skipping..." % sample_id)
-                    continue
-                samples[sample_id] = {'fastq': fastq_paths, 'type': data_type}
+                    if 'R2' in samples[sample_id]:
+                        logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
+
+                    samples[sample_id]['R2'] = fq_path
+                else:
+                    if 'R1' in samples[sample_id]:
+                        logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
+
+                    samples[sample_id]['R1'] = fq_path
+
+
+    samples= pd.DataFrame(samples).T
+
+    if samples.isna().any().any():
+        logging.error(f"Missing files:\n\n {samples}")
+
     return samples
 
+def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv'):
+    """
+    Write the file `samples.tsv` and complete the sample names and paths for all
+    files in `path`.
+    Args:
+            path_to_fastq (str): fastq/fasta data directory
+    """
 
-def make_config(config, path, data_type, database_dir, threads, assembler):
+    samples = get_samples_from_fastq(path_to_fastq)
+
+    if reads_are_QC:
+        samples.columns= 'Reads_QC_'+samples.columns
+    else:
+        samples.columns= 'Reads_raw_'+samples.columns
+        ADDITIONAL_SAMPLEFILE_HEADERS = list('Reads_QC_'+samples.columns) + ADDITIONAL_SAMPLEFILE_HEADERS
+
+    for h in ADDITIONAL_HEADERS:
+        samples[h]=np.nan
+
+    if os.path.exists(outfile):
+        logging.error(f"Output file {outfile} already exists I don't dare to overwrite it.")
+    else:
+        samples.to_csv(outfile,sep='\t')
+
+
+
+def make_config(database_dir, threads, assembler, data_type='metagenome',config='config.yaml'):
     """
     Reads template config file with comments from ./template_config.yaml
     updates it by the parameters provided.
-    Write the file `config` and complete the sample names and paths for all
-    files in `path`.
 
     Args:
         config (str): output file path for yaml
-        path (str): fastq/fasta data directory
-        data_type (str): this is either metagenome or metatranscriptome
         database_dir (str): location of downloaded databases
         threads (int): number of threads per node to utilize
         assembler (str): either spades or megahit
+        data_type (str): this is either metagenome or metatranscriptome
     """
     config = os.path.realpath(os.path.expanduser(config))
     os.makedirs(os.path.dirname(config), exist_ok=True)
@@ -84,12 +112,15 @@ def make_config(config, path, data_type, database_dir, threads, assembler):
     samples = get_sample_files(path, data_type)
     logging.info("Found %d samples under %s" % (len(samples), path))
 
-    conf["samples"] = samples
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count() if not threads else threads
     conf["preprocess_adapters"] = os.path.join(database_dir, "adapters.fa")
     conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, "silva_rfam_all_rRNAs.fa"),
                                       "PhiX":os.path.join(database_dir, "phiX174_virus.fa")}
+
+    #Samples
+    conf["data_type"]= data_type
+
 
     conf["assembler"] = assembler
     conf["database_dir"] = database_dir
@@ -108,33 +139,7 @@ def log_exception(msg):
     logging.info("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
     sys.exit(1)
 
-
-def validate_sample_defs(config, workflow):
-    if "samples" not in config.keys():
-        log_exception("'samples' are not defined in the configuration")
-    if len(config["samples"]) == 0:
-        log_exception("No samples are defined under 'samples'")
-    for sample in config["samples"]:
-        # annotation workflow
-        if workflow == "annotate":
-            if "fasta" not in config["samples"][sample]:
-                log_exception("'fasta' must be defined per sample")
-            continue
-        # other workflows
-        if "fastq" not in config["samples"][sample]:
-            log_exception("'fastq' must be defined per sample")
-        # single- or paired-end and user added appropriately as list
-        if isinstance(config["samples"][sample]["fastq"], list):
-            for fq in config["samples"][sample]["fastq"]:
-                if not os.path.exists(fq):
-                    log_exception("%s does not exist" % fq)
-        # single-end and user defined as string
-        else:
-            if not os.path.exists(config["samples"][sample]["fastq"]):
-                log_exception("%s does not exist" % config["samples"][sample]["fastq"])
-
-
 def validate_config(config, workflow):
     conf = load_configfile(config)
-    validate_sample_defs(conf, workflow)
+#    validate_sample_defs(conf, workflow)
     # could later add more validation steps
