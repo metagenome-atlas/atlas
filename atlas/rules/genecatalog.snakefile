@@ -463,7 +463,7 @@ rule generate_subsets_for_annotation:
     output:
         temp(dynamic("Genecatalog/subsets/genes/{subsetID}.faa"))
     params:
-        subset_size=200,
+        subset_size=config['genecatalog']['Nsubsets'],
         output_dir= lambda wc, output: os.path.dirname(output[0]),
         extension= lambda wc, output: os.path.splitext(output[0])[-1]
     run:
