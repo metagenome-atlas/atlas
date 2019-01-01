@@ -176,7 +176,8 @@ def make_default_config():
                          'minlength':100,
                            'minid':0.95,
                            'coverage':0.9,
-                           'extra':""}
+                           'extra':""
+                           'SubsetSize': 500000}
 
     # binning
     conf["perform_genome_binning"] = True

@@ -130,6 +130,7 @@ genecatalog:
   minid: 0.95
   coverage: 0.9
   extra: ""
+  SubsetSize: 500000
 
 
 
