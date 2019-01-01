@@ -4,7 +4,7 @@
 [Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
 
 
-![scheme of workflow](resources/images/ATLAS_scheme.png)
+![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
 
 # Install
