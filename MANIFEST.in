@@ -30,3 +30,5 @@ include atlas/report/qc_report.py
 include atlas/report/report.css
 include atlas/report/assembly_report.py
 include atlas/report/bin_report.py
+include scripts/utils/fasta.py
+include scripts/utils/__init__.py

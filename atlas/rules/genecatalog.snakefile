@@ -465,24 +465,10 @@ rule generate_subsets_for_annotation:
     params:
         subset_size=config['genecatalog']['SubsetSize'],
         output_dir= lambda wc, output: os.path.dirname(output[0]),
-        extension= lambda wc, output: os.path.splitext(output[0])[-1]
     run:
-        i,subset_n=0,0
-        fout= None
-        with open(input[0]) as fin:
-            for line in fin:
-                if i % params.subset_size == 0:
-                    subset_n+=1
-                    if fout is not None:
-                        fout.close()
-                    fout = open(f"{params.output_dir}/subset{subset_n}{params.extension}",'w')
+        from utils import fasta
 
-                if line[0]=='>':
-                    fout.write(line.split()[0]+'\n')
-                    i+=1
-                else:
-                    fout.write(line)
-        fout.close()
+        fasta.split(input[0],subset_size,out_dir,simplify_headers=True)
 
 rule combine_annotations:
     input:
@@ -492,6 +478,10 @@ rule combine_annotations:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
         # eggNog
+        import sys
+        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)))
+        from tables import EGGNOG_HEADERS
+
         with open(input.eggNOG[0]) as f:
             first_line= f.readline()
             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
