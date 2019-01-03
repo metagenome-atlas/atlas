@@ -349,14 +349,14 @@ rule eggNOG_annotation:
     threads:
         config.get("threads", 1)
     resources:
-        mem=config["java_mem"]
+        mem=20
     conda:
         "%s/eggNOG.yaml" % CONDAENV
     log:
         "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log"
     shell:
         """
-        emapper.py --annotate_hits_table {input.seed} --no_file_comments \
+        emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
 
