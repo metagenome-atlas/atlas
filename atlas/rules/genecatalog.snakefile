@@ -479,7 +479,7 @@ rule combine_annotations:
     run:
         # eggNog
         import sys
-        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)))
+        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile))))
         from tables import EGGNOG_HEADERS
 
         with open(input.eggNOG[0]) as f:
