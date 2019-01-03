@@ -5,7 +5,7 @@ import tempfile
 from snakemake.utils import logger, min_version, update_config
 
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),scripts)
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),scripts))
 
 from default_values import *
 
