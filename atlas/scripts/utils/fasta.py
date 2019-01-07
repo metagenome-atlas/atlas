@@ -54,7 +54,7 @@ def split(fasta_file,maxSubsetSize,out_dir, simplify_headers=True):
     SubsetSize= int(ceil( N/ceil(N/ maxSubsetSize)))
     extension= os.path.splitext(fasta_file)[-1]
 
-    os.makedirs(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
 
     i,subset_n=0,0
     fout= None
