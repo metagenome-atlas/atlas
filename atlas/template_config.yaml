@@ -217,7 +217,6 @@ diamond_gap_extend: 1
 diamond_block_size: 2
 diamond_index_chunks: 4
 run_prokka: false
-eggnogg_dir: /path/to/databases
 
 # LCA taxonomic annotation
 #--------------------------
