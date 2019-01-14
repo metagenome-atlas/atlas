@@ -135,7 +135,10 @@ else:
                             text = line[1:].strip().split(" # ")
                             old_gene_name = text[0]
                             text.remove(old_gene_name)
-                            sample, contig_nr, gene_nr = old_gene_name.split("_")
+                            old_gene_name_split = old_gene_name.split("_")
+                            gene_nr = old_gene_name_split[-1]
+                            contig_nr = old_gene_name_split[-2]
+                            sample = "_".join(old_gene_name_split[:len(old_gene_name_split) - 2])
                             tsv.write("{gene_id}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(
                                 text="\t".join(text),
                                 gene_id=old_gene_name,
