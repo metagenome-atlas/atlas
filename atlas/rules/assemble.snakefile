@@ -311,7 +311,7 @@ else:
     localrules: rename_spades_output
     rule rename_spades_output:
         input:
-            "{sample}/assembly/contigs.fasta"
+            "{{sample}}/assembly/{sequences}.fasta".format(sequences= 'scaffolds' if config['spades_use_scaffolds'] else 'contigs' )
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
