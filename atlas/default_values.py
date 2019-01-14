@@ -124,7 +124,7 @@ def make_default_config():
     conf["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
     conf["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
 
-    conf["normalize_reads_before_assembly"] = True
+    conf["normalize_reads_before_assembly"] = False
     conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
     conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
@@ -176,7 +176,7 @@ def make_default_config():
                          'minlength':100,
                            'minid':0.95,
                            'coverage':0.9,
-                           'extra':""
+                           'extra':"",
                            'SubsetSize': 500000}
 
     # binning

@@ -1,8 +1,8 @@
 channels:
-    - bioconda
-    - conda-forge
+    - ursky # needs to be before bioconda
     - defaults
-    - ursky
+    - conda-forge
+    - bioconda
     - r
 dependencies:
     - metabat2
