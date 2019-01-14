@@ -54,7 +54,12 @@ def split(fasta_file,maxSubsetSize,out_dir, simplify_headers=True):
     SubsetSize= int(ceil( N/ceil(N/ maxSubsetSize)))
     extension= os.path.splitext(fasta_file)[-1]
 
-    os.makedirs(out_dir)
+    # Check whether the first output file already exists.
+    if (os.path.isfile(os.path.join(out_dir, "subset1" + extension)) = True):
+        print(os.path.join(out_dir, "subset1" + extension) + "already exists. Exiting...")
+        sys.exit(1)
+
+    os.makedirs(out_dir, exist_ok=True)
 
     i,subset_n=0,0
     fout= None

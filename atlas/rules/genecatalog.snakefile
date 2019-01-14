@@ -463,12 +463,12 @@ rule generate_subsets_for_annotation:
     output:
         temp(dynamic("Genecatalog/subsets/genes/{subsetID}.faa"))
     params:
-        subset_size=config['genecatalog']['SubsetSize'],
-        output_dir= lambda wc, output: os.path.dirname(output[0]),
+        subset_size = config['genecatalog']['SubsetSize'],
+        output_dir = lambda wc, output: os.path.dirname(output[0]),
     run:
-        from utils import fasta
+        from scripts.utils import fasta
 
-        fasta.split(input[0],subset_size,out_dir,simplify_headers=True)
+        fasta.split(input[0], params.subset_size, params.output_dir, simplify_headers=True)
 
 rule combine_annotations:
     input:
