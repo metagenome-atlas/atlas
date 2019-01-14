@@ -1,0 +1,79 @@
+defaults: &defaults
+  docker:
+    - image: continuumio/miniconda3
+  environment:
+    DATABASE_DIR: databases
+    WORKING_DIR: WD
+    N_THREADS: 4
+
+version: 2
+
+jobs:
+  build:
+    <<: *defaults
+    parallelism: 1
+    steps:
+      - checkout
+      - run: pwd
+      - run: ls
+      - run: mkdir -p work
+      - run: mv example_data work
+      - run: conda config --add channels conda-forge
+      - run: conda config --add channels bioconda
+      - run: conda config --set always_yes true
+      - run: conda config --set quiet true
+      - run: conda install python>=3.6 snakemake pandas bbmap=37.78 click ruamel.yaml biopython
+      - run: pip install .
+      - run: atlas --help
+      - run: atlas --version
+      - run: atlas download --help
+      - run: atlas qc --help
+      - run: atlas assemble --help
+      - run: atlas bin-genomes --help
+      - persist_to_workspace:
+          root: work
+          paths:
+            - example_data
+
+  makeconfig:
+    <<: *defaults
+    parallelism: 1
+    steps:
+      - run: pwd
+      - run: ls
+      - run: atlas --help
+      - attach_workspace:
+          at: work
+      - run: ls
+      - run: ls work/example_data
+      - run: cd work
+      - run: atlas make-config --database-dir $DATABASE_DIR --threads $N_THREADS --assembler spades config.yaml example_data
+      - persist_to_workspace:
+          root: work
+          paths:
+            - config.yaml
+
+  dryrun:
+    <<: *defaults
+    parallelism: 1
+    steps:
+      - attach_workspace:
+          at: work
+      - run: cd work
+      - run: atlas download --dryrun
+      - run: atlas qc config.yaml -d $WORKING_DIR --dryrun
+      - run: atlas assemble config.yaml -d $WORKING_DIR --dryrun
+      - run: atlas bin-genomes config.yaml -d $WORKING_DIR --dryrun
+
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - makeconfig:
+          requires:
+            - build
+      - dryrun:
+          requires:
+            - makeconfig

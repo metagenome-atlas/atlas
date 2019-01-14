@@ -64,7 +64,9 @@ setup(
             "atlas/report/qc_report.py",
             "atlas/report/report.css",
             "atlas/report/assembly_report.py",
-            "atlas/report/bin_report.py"
+            "atlas/report/bin_report.py",
+            "scripts/utils/fasta.py",
+            "scripts/utils/__init__.py"
                        ]},
     include_package_data=True,
     # install via conda: click, pandas, pyyaml, snakemake

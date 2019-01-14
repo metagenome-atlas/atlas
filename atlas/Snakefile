@@ -4,6 +4,9 @@ import sys
 import tempfile
 from snakemake.utils import logger, min_version, update_config
 
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
+
 from default_values import *
 
 
@@ -292,7 +295,7 @@ elif config.get("workflow") == "binning":
     rule all:
         input:
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-                   binner=config['binner'], sample =SAMPLES),
+                   binner=config['final_binner'], sample =SAMPLES),
             expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
             "genomes/Dereplication/dereplicated_genomes",
             "genomes/checkm/taxonomy.tsv",

@@ -591,8 +591,31 @@ if config['final_binner']=='DASTool':
                                 os.path.join(output.dir,bin_id+'.fasta') )
 
             Scores.to_csv(output.scores,sep='\t')
-    #
-    #
+
+    localrules: get_all_unknown_bins
+    rule get_all_unknown_bins:
+        input:
+            bins=expand(rules.get_unknown_bins.output.dir,sample=SAMPLES),
+            scores= expand(rules.get_unknown_bins.output.scores,sample=SAMPLES)
+        output:
+            dir=temp(directory("genomes/all_unknown_bins")),
+            scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
+        run:
+            os.mkdir(output.dir)
+            from glob import glob
+            import shutil
+            for bin_folder in input.bins:
+                for fasta_file in glob(bin_folder+'/*.fasta'):
+                    shutil.copy(fasta_file,output.dir)
+
+            import pandas as pd
+
+            all_scores= [pd.read_table(file,index_col=0)  for file in input.scores]
+
+            pd.concat(all_scores,axis=0).to_csv(output.scores,sep='\t')
+
+
+
     #
 
 
@@ -602,8 +625,8 @@ rule get_all_bins:
     input:
         bins=expand(directory("{sample}/binning/{binner}/bins"),
                sample= SAMPLES, binner= config['final_binner']),
-        cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-               sample= SAMPLES, binner= config['final_binner'])
+        #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+        #       sample= SAMPLES, binner= config['final_binner'])
     output:
         temp(directory("genomes/all_bins"))
 
@@ -965,10 +988,12 @@ localrules: combine_coverages_MAGs,combine_bined_coverages_MAGs
 rule combine_coverages_MAGs:
     input:
         covstats = expand("genomes/alignments/{sample}_coverage.txt",
-            sample=SAMPLES)
+            sample=SAMPLES),
+        cluster_attribution = "genomes/clustering/contig2genome.tsv"
     output:
         "genomes/counts/median_contig_coverage.tsv",
         "genomes/counts/raw_counts_contigs.tsv",
+        "genomes/counts/raw_counts_genomes.tsv",
     run:
 
         import pandas as pd
@@ -985,7 +1010,15 @@ rule combine_coverages_MAGs:
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
 
         pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
-        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+        Counts_contigs= pd.DataFrame(combined_N_reads)
+        Counts_contigs.to_csv(output[1],sep='\t')
+
+
+        cluster_attribution = pd.read_table(input.cluster_attribution,header=None,index_col=0,squeeze=True)
+
+        Counts_genome= Counts_contigs.groupby(cluster_attribution,axis=1).sum().T
+        Counts_genome.index.name='Sample'
+        Counts_genome.to_csv(output[2],sep='\t')
 
 
 
@@ -1028,3 +1061,34 @@ rule combine_bined_coverages_MAGs:
         Median_abund= binCov.groupby(cluster_attribution.loc[binCov.index.get_level_values(0)].values).median().T
 
         Median_abund.to_csv(output.median_abund,sep='\t')
+
+
+## annotation
+
+rule run_prokka_bins:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        expand("genomes/annotations/prokka/{{genome}}.{extension}",
+               extension= ["err","faa","ffn",
+                           "fna","fsa","gff",
+                           "tbl","tsv","txt"])
+    log:
+        "genomes/annotations/prokka/{genome}.log"
+    params:
+        outdir = lambda wc, output: os.path.dirname(output[0]),
+        kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
+    conda:
+        "%s/prokka.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """prokka --outdir {params.outdir} \
+               --force \
+               --metagenome \
+               --prefix {wildcards.genome} \
+               --locustag {wildcards.genome} \
+               --kingdom {params.kingdom} \
+               --cpus {threads} \
+               {input}
+              """
