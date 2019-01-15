@@ -9,6 +9,7 @@ import logging
 import pandas as pd
 import numpy as np
 from collections import defaultdict
+import click
 # default globals
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
@@ -93,11 +94,7 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
         assembler (str): either spades or megahit
         data_type (str): this is either metagenome or metatranscriptome
     """
-    config = os.path.realpath(os.path.expanduser(config))
-    os.makedirs(os.path.dirname(config), exist_ok=True)
 
-    path = os.path.realpath(os.path.expanduser(path))
-    database_dir = os.path.realpath(os.path.expanduser(database_dir))
 
     yaml = YAML()
     yaml.version = (1, 1)
@@ -115,8 +112,10 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count() if not threads else threads
     conf["preprocess_adapters"] = os.path.join(database_dir, "adapters.fa")
-    conf["contaminant_references"] = {"rRNA":os.path.join(database_dir, "silva_rfam_all_rRNAs.fa"),
-                                      "PhiX":os.path.join(database_dir, "phiX174_virus.fa")}
+    conf["contaminant_references"] = {
+                                      #"rRNA":os.path.join(database_dir, "silva_rfam_all_rRNAs.fa"),
+                                      "PhiX":os.path.join(database_dir, "phiX174_virus.fa")
+                                      }
 
     #Samples
     conf["data_type"]= data_type
@@ -128,18 +127,77 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
     conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
     conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
 
-    with open(config, "w") as f:
-        yaml.dump(conf, f)
-    logging.info("Configuration file written to %s" % config)
+    if os.path.exists(config):
+        logging.warning(f"Config file {config} already exists, I didn't dare to overwrite it. continue...")
+    else:
 
+        with open(config, "w") as f:
+            yaml.dump(conf, f)
+        logging.info(
+                     "Configuration file written to %s\n"
+                     "Cou may want to eddit different options using any text editor."% config
+                     )
 
-def log_exception(msg):
-    logging.critical(msg)
-    logging.info("Documentation is available at: https://metagenome-atlas.readthedocs.io")
-    logging.info("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
-    sys.exit(1)
 
 def validate_config(config, workflow):
     conf = load_configfile(config)
 #    validate_sample_defs(conf, workflow)
     # could later add more validation steps
+
+
+
+@click.command(
+    "make-config",
+    short_help="prepare configuration file and sample table for atlas run",
+)
+@click.argument("path_to_fastq",type=click.Path(readable=True))
+@click.option(
+    "--database-dir",
+    help="location to store databases (need ~50GB)",
+    type=click.Path(dir_okay=True,writable=True,resolve_path=True)
+)
+@click.option(
+    "--working-dir",
+    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
+    help="location to run atlas",
+)
+@click.option(
+    "--assembler",
+    default="megahit",
+    type=click.Choice(["megahit", "spades"]),
+    show_default=True,
+    help="assembler",
+)
+@click.option(
+    "--data-type",
+    default="metagenome",
+    type=click.Choice(["metagenome", "metatranscriptome"]),
+    show_default=True,
+    help="sample data type",
+)
+@click.option(
+    "--threads",
+    default=multiprocessing.cpu_count(),
+    type=int,
+    help="number of threads to use per multi-threaded job",
+)
+@click.option(
+    "--skip-qc",
+    is_flag=True
+    help="Skip QC, if reads are already pre-processed",
+)
+def run_init(path,database_dir, working_dir, assembler,  data_type, threads,skip_qc):
+    """Write the file CONFIG and complete the sample names and paths for all
+    FASTQ files in PATH.
+
+    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+    the file name with the file name minus extension as the sample ID.
+    """
+
+    if not os.path.exists(working_dir): os.makedirs(working_dir)
+        config=os.path.join(working_dir,'config.yaml')
+    if not os.path.exists(database_dir): os.makedirs(database_dir)
+        sample_file= os.path.join(working_dir,'samples.tsv')
+
+    make_config(database_dir, threads, assembler,data_type,config)
+    prepare_sample_table(path,reads_are_QC=skip_qc,outfile=sample_file)
