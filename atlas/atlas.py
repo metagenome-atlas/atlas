@@ -6,10 +6,9 @@ import subprocess
 import click
 
 from atlas import __version__
-from atlas.conf import make_config,repare_sample_table
+from atlas.conf import make_config,prepare_sample_table
 from atlas.parsers import refseq_parser
 from atlas.tables import merge_tables
-from atlas.workflows import download, run_workflow
 from atlas.conf import validate_config,run_init
 
 

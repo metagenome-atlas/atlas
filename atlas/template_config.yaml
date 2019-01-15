@@ -225,15 +225,3 @@ refseq_tree: /path/to/databases/refseq.tree
 summary_method: lca
 aggregation_method: lca-majority
 majority_threshold: 0.51
-
-
-########################
-# SAMPLES
-########################
-samples:
-  sample1:
-    fastq:
-    - /path/to/sample1_R1.fastq.gz
-    - /path/to/sample1_R1.fastq.gz
-    # metagenome OR metatranscriptome
-    type: metagenome

@@ -68,13 +68,15 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
 
     if reads_are_QC:
         samples.columns= 'Reads_QC_'+samples.columns
+        Headers = ADDITIONAL_SAMPLEFILE_HEADERS
     else:
         samples.columns= 'Reads_raw_'+samples.columns
-        ADDITIONAL_SAMPLEFILE_HEADERS = list('Reads_QC_'+samples.columns) + ADDITIONAL_SAMPLEFILE_HEADERS
+        Headers = list('Reads_QC_'+samples.columns) + ADDITIONAL_SAMPLEFILE_HEADERS
 
-    for h in ADDITIONAL_HEADERS:
+    for h in Headers:
         samples[h]=np.nan
 
+    logging.info("Found %d samples under %s" % (len(samples), path_to_fastq))
     if os.path.exists(outfile):
         logging.error(f"Output file {outfile} already exists I don't dare to overwrite it.")
     else:
@@ -106,8 +108,6 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
     with open(template_conf_file) as template_config:
         conf = yaml.load(template_config)
 
-    samples = get_sample_files(path, data_type)
-    logging.info("Found %d samples under %s" % (len(samples), path))
 
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count() if not threads else threads
@@ -147,19 +147,21 @@ def validate_config(config, workflow):
 
 
 @click.command(
-    "make-config",
+    "init",
     short_help="prepare configuration file and sample table for atlas run",
 )
 @click.argument("path_to_fastq",type=click.Path(readable=True))
-@click.option(
+@click.option("-d",
     "--database-dir",
     help="location to store databases (need ~50GB)",
-    type=click.Path(dir_okay=True,writable=True,resolve_path=True)
+    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
+    required=True
 )
-@click.option(
+@click.option("-w",
     "--working-dir",
     type=click.Path(dir_okay=True,writable=True,resolve_path=True),
     help="location to run atlas",
+    default="."
 )
 @click.option(
     "--assembler",
@@ -183,10 +185,10 @@ def validate_config(config, workflow):
 )
 @click.option(
     "--skip-qc",
-    is_flag=True
+    is_flag=True,
     help="Skip QC, if reads are already pre-processed",
 )
-def run_init(path,database_dir, working_dir, assembler,  data_type, threads,skip_qc):
+def run_init(path_to_fastq,database_dir, working_dir, assembler,  data_type, threads,skip_qc):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.
 
@@ -195,9 +197,9 @@ def run_init(path,database_dir, working_dir, assembler,  data_type, threads,skip
     """
 
     if not os.path.exists(working_dir): os.makedirs(working_dir)
-        config=os.path.join(working_dir,'config.yaml')
+    config=os.path.join(working_dir,'config.yaml')
     if not os.path.exists(database_dir): os.makedirs(database_dir)
-        sample_file= os.path.join(working_dir,'samples.tsv')
+    sample_file= os.path.join(working_dir,'samples.tsv')
 
     make_config(database_dir, threads, assembler,data_type,config)
-    prepare_sample_table(path,reads_are_QC=skip_qc,outfile=sample_file)
+    prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)
