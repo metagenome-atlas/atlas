@@ -280,7 +280,7 @@ else:
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
-            temp("{sample}/assembly/contigs.fasta")
+            "{sample}/assembly/contigs.fasta"
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
