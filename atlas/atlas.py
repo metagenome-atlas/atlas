@@ -46,35 +46,6 @@ def get_snakefile():
     return sf
 
 
-def run_workflow(config, jobs, out_dir, no_conda, dryrun, snakemake_args, workflow):
-    if not os.path.exists(config):
-        logging.critical("Config not found: %s" % config)
-        sys.exit(1)
-    validate_config(config, workflow)
-    out_dir = os.path.realpath(out_dir)
-    cmd = (
-        "snakemake --snakefile {snakefile} --directory {out_dir} "
-        "--printshellcmds --jobs {jobs} --rerun-incomplete "
-        "--configfile '{config}' --nolock {conda} {dryrun} "
-        "--config workflow={workflow} {add_args} "
-        "{args}"
-    ).format(
-        snakefile=get_snakefile(),
-        out_dir=out_dir,
-        jobs=jobs,
-        config=config,
-        conda="" if no_conda else "--use-conda",
-        dryrun="--dryrun" if dryrun else "",
-        add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
-        args=" ".join(snakemake_args),
-        workflow=workflow,
-    )
-    logging.info("Executing: %s" % cmd)
-    try:
-        subprocess.check_call(cmd, shell=True)
-    except subprocess.CalledProcessError as e:
-        # removes the traceback
-        logging.critical(e)
 
 
 def download(jobs, out_dir, snakemake_args):
@@ -106,32 +77,43 @@ def download(jobs, out_dir, snakemake_args):
 ## QC command
 
 @cli.command(
-    "qc",
+    "run",
     context_settings=dict(ignore_unknown_options=True),
-    short_help="quality control workflow (without assembly)",
+    short_help="run atlas main workflow"
 )
-@click.argument("config")
+@click.option("-w",
+    "--working-dir",
+    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
+    help="location to run atlas. Expect to find sample-table,"
+         "and config-file if not specified. Both can be generated with 'atlas init'.",
+    default="."
+)
+@click.option(
+    "--config-file",
+    type=click.Path(exists=True,resolve_path=True),
+    help="config-file generated with 'atlas init'",
+)
+@click.option(
+    "--workflow",
+    default="all",
+    type=click.Choice(["qc","assembly","genomes","all"]),
+    show_default=True,
+    help="Execute only subworkflow.",
+)
 @click.option(
     "-j",
     "--jobs",
     default=multiprocessing.cpu_count(),
     type=int,
     show_default=True,
-    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
-)
-@click.option(
-    "-o",
-    "--out-dir",
-    default=os.path.realpath("."),
-    show_default=True,
-    help="results output directory",
+    help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(
     "--no-conda",
     is_flag=True,
     default=False,
     show_default=True,
-    help="do not use conda environments",
+    help="do not use conda environments. good luck!",
 )
 @click.option(
     "-n",
@@ -139,210 +121,57 @@ def download(jobs, out_dir, snakemake_args):
     is_flag=True,
     default=False,
     show_default=True,
-    help="do not execute anything",
+    help="Test execution.",
 )
-@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_qc(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED,
+                help="Other arguments passed directly to snakemake see 'snakemake --help'."
+)
+def run_workflow(working_dir, config,sample_table,workflow, jobs, no_conda, dryrun, snakemake_args):
     """Runs the ATLAS Quality control protocol, the first step of the workflow.
 
     A skeleton configuration file can be generated with defaults using:
 
         \b
-        atlas make-config
+        atlas init
 
     For more details, see: https://metagenome-atlas.readthedocs.io
     """
-    run_workflow(
-        os.path.realpath(config),
-        jobs,
-        out_dir,
-        no_conda,
-        dryrun,
-        snakemake_args,
-        workflow="qc",
+
+    if config is None:
+        config = os.path.join(working_dir,'config.yaml')
+
+    if not os.path.exists(config):
+        logging.critical("Config not found: %s" % config)
+        sys.exit(1)
+
+    validate_config(config, workflow)
+
+    cmd = (
+        "snakemake --snakefile {snakefile} --directory {out_dir} "
+        "--printshellcmds --jobs {jobs} --rerun-incomplete "
+        "--configfile '{config}' --nolock {conda} {dryrun} "
+        "--config workflow={workflow} {add_args} "
+        "{args}"
+    ).format(
+        snakefile=get_snakefile(),
+        out_dir=out_dir,
+        jobs=jobs,
+        config=config,
+        conda="" if no_conda else "--use-conda",
+        dryrun="--dryrun" if dryrun else "",
+        add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
+        args=" ".join(snakemake_args),
+        workflow=workflow,
     )
+    logging.info("Executing: %s" % cmd)
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError as e:
+        # removes the traceback
+        logging.critical(e)
 
-## assemble
 
 
-@cli.command(
-    "assemble",
-    context_settings=dict(ignore_unknown_options=True),
-    short_help="assembly workflow",
-)
-@click.argument("config")
-@click.option(
-    "-j",
-    "--jobs",
-    default=multiprocessing.cpu_count(),
-    type=int,
-    show_default=True,
-    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
-)
-@click.option(
-    "-o",
-    "--out-dir",
-    default=os.path.realpath("."),
-    show_default=True,
-    help="results output directory",
-)
-@click.option(
-    "--no-conda",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not use conda environments",
-)
-@click.option(
-    "-n",
-    "--dryrun",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not execute anything",
-)
-@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_assemble(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    """Runs the complete ATLAS protocol from raw reads through assembly, annotation, quantification,
-    and genomic binning.
-
-    A skeleton configuration file can be generated with defaults using:
-
-        \b
-        atlas make-config
-
-    For more details, see: https://metagenome-atlas.readthedocs.io/
-    """
-    run_workflow(
-        os.path.realpath(config),
-        jobs,
-        out_dir,
-        no_conda,
-        dryrun,
-        snakemake_args,
-        workflow="complete",
-    )
-
-# genome bin
-
-@cli.command(
-    "bin-genomes",
-    context_settings=dict(ignore_unknown_options=True),
-    short_help="bins contigs using different binners to genomes",
-)
-@click.argument("config")
-@click.option(
-    "-j",
-    "--jobs",
-    default=multiprocessing.cpu_count(),
-    type=int,
-    show_default=True,
-    help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
-)
-@click.option(
-    "-o",
-    "--out-dir",
-    default=os.path.realpath("."),
-    show_default=True,
-    help="results output directory",
-)
-@click.option(
-    "--no-conda",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not use conda environments",
-)
-@click.option(
-    "-n",
-    "--dryrun",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not execute anything",
-)
-@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_binner(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-    """Runs the ATLAS binner protocol. Output can be found in <output directory>/genomes
-
-    bins contigs using different binners, estimates completeness and contamination
-    for each bin. Dereplicate bins for all samples and select the best genome for each species.
-    Calculate abundance of different species per genome.
-
-    run after 'atlas assemble'
-
-    For more details, see: https://metagenome-atlas.readthedocs.io/
-    """
-    run_workflow(
-        os.path.realpath(config),
-        jobs,
-        out_dir,
-        no_conda,
-        dryrun,
-        snakemake_args,
-        workflow="binning",
-    )
-
-#
-#
-# ## annotate
-# @cli.command(
-#     "annotate",
-#     context_settings=dict(ignore_unknown_options=True),
-#     short_help="annotation workflow",
-# )
-# @click.argument("config")
-# @click.option(
-#     "-j",
-#     "--jobs",
-#     default=multiprocessing.cpu_count(),
-#     type=int,
-#     show_default=True,
-#     help="use at most this many cores in parallel; total running tasks at any given time will be jobs/threads",
-# )
-# @click.option(
-#     "-o",
-#     "--out-dir",
-#     default=os.path.realpath("."),
-#     show_default=True,
-#     help="results output directory",
-# )
-# @click.option(
-#     "--no-conda",
-#     is_flag=True,
-#     default=False,
-#     show_default=True,
-#     help="do not use conda environments",
-# )
-# @click.option(
-#     "-n",
-#     "--dryrun",
-#     is_flag=True,
-#     default=False,
-#     show_default=True,
-#     help="do not execute anything",
-# )
-# @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-# def run_annotate(config, jobs, out_dir, no_conda, dryrun, snakemake_args):
-#     """Runs the ATLAS annotation protocol on assembled contigs. If FASTQ files are provided
-#     for a sample, quantification is also performed.
-#
-#     A skeleton configuration file can be generated using:
-#
-#         \b
-#         atlas make-config
-#
-#     For more details, see: https://metagenome-atlas.readthedocs.io/
-#     """
-#     run_workflow(
-#         os.path.realpath(config),
-#         jobs,
-#         out_dir,
-#         no_conda,
-#         dryrun,
-#         snakemake_args,
-#         workflow="annotate",
-#     )
 
 # Download
 @cli.command(
