@@ -14,8 +14,6 @@ jobs:
     parallelism: 1
     steps:
       - checkout
-      - run: pwd
-      - run: ls
       - run: mkdir -p work
       - run: mv example_data work
       - run: conda config --add channels conda-forge
@@ -30,36 +28,11 @@ jobs:
       - run: atlas qc --help
       - run: atlas assemble --help
       - run: atlas bin-genomes --help
-      - persist_to_workspace:
-          root: work
-          paths:
-            - example_data
-
-  makeconfig:
-    <<: *defaults
-    parallelism: 1
-    steps:
-      - run: pwd
-      - run: ls
-      - run: atlas --help
-      - attach_workspace:
-          at: work
-      - run: ls
+      # make config
       - run: ls work/example_data
       - run: cd work
       - run: atlas make-config --database-dir $DATABASE_DIR --threads $N_THREADS --assembler spades config.yaml example_data
-      - persist_to_workspace:
-          root: work
-          paths:
-            - config.yaml
-
-  dryrun:
-    <<: *defaults
-    parallelism: 1
-    steps:
-      - attach_workspace:
-          at: work
-      - run: cd work
+      # dryrun
       - run: atlas download --dryrun
       - run: atlas qc config.yaml -d $WORKING_DIR --dryrun
       - run: atlas assemble config.yaml -d $WORKING_DIR --dryrun
@@ -71,9 +44,3 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - makeconfig:
-          requires:
-            - build
-      - dryrun:
-          requires:
-            - makeconfig
