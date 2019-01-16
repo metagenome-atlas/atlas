@@ -780,8 +780,8 @@ rule run_all_checkm_lineage_wf:
             {params.output_dir}
         """
 
-localrules: rename_final_bins
-rule rename_final_bins:
+localrules: genomes
+checkpoint genomes:
     input:
         directory("genomes/Dereplication/dereplicated_genomes")
     output:
@@ -816,6 +816,8 @@ rule rename_final_bins:
                         if line[0]==">":
                             contig = line[1:].strip().split()[0]
                             out_file.write(f"{contig}\t{new_name}\n")
+
+
 
 
 localrules: get_genomes2cluster
@@ -1063,6 +1065,9 @@ rule combine_bined_coverages_MAGs:
         Median_abund.to_csv(output.median_abund,sep='\t')
 
 
+
+
+
 ## annotation
 
 rule run_prokka_bins:
@@ -1092,3 +1097,21 @@ rule run_prokka_bins:
                --cpus {threads} \
                {input}
               """
+
+
+def genome_annotation_input(wildcards):
+    genome_dir = checkpoints.genomes.get(**wildcards).output.dir
+    return expand("annotations/prokka/{genome}.tsv",
+           genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
+
+
+rule aggregate_genome_annotation:
+    input:
+        genome_annotation_input
+    output:
+        "annotations/prokka.tsv"
+    run:
+        import pandas as pd
+        out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
+
+        out.to_csv(output[0],sep='\t')
