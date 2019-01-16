@@ -132,7 +132,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        "{sample}/binning/concoct/cluster_attribution.tmp"
+        "{sample}/binning/concoct/cluster_attribution.tsv"
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -167,7 +167,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        "{sample}/binning/metabat/cluster_attribution.tmp",
+        "{sample}/binning/metabat/cluster_attribution.tsv",
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
@@ -238,32 +238,32 @@ rule maxbin:
 
 
 localrules: get_maxbin_cluster_attribution, get_bins
-localrules: get_unique_cluster_attribution,
-rule get_unique_cluster_attribution:
-    input:
-        "{sample}/binning/{binner}/cluster_attribution.tmp"
-    output:
-        "{sample}/binning/{binner}/cluster_attribution.tsv"
-    run:
-        import pandas as pd
-        import numpy as np
-
-
-        d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
-
-        assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
-
-        old_cluster_ids = list(d.unique())
-        if 0 in old_cluster_ids:
-            old_cluster_ids.remove(0)
-
-        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_".format(**wildcards) )  ))
-
-        new_d= d.map(map_cluster_ids)
-        new_d.dropna(inplace=True)
-
-        new_d.to_csv(output[0],sep='\t')
-
+# localrules: get_unique_cluster_attribution,
+# rule get_unique_cluster_attribution:
+#     input:
+#         "{sample}/binning/{binner}/cluster_attribution.tmp"
+#     output:
+#         "{sample}/binning/{binner}/cluster_attribution.tsv"
+#     run:
+#         import pandas as pd
+#         import numpy as np
+#
+#
+#         d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
+#
+#         assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
+#
+#         old_cluster_ids = list(d.unique())
+#         if 0 in old_cluster_ids:
+#             old_cluster_ids.remove(0)
+#
+#         map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_".format(**wildcards) )  ))
+#
+#         new_d= d.map(map_cluster_ids)
+#         new_d.dropna(inplace=True)
+#
+#         new_d.to_csv(output[0],sep='\t')
+#
 
 rule get_maxbin_cluster_attribution:
     input:
