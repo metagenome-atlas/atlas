@@ -511,7 +511,7 @@ rule align_reads_to_final_contigs:
     output:
         sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
         #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS))
+        #                  fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
