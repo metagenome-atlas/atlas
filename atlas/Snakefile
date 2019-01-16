@@ -297,12 +297,13 @@ elif config.get("workflow") == "binning":
             expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                    binner=config['final_binner'], sample =SAMPLES),
             expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
-            "genomes/Dereplication/dereplicated_genomes",
+            "genomes/genomes",
             "genomes/checkm/taxonomy.tsv",
             "genomes/counts/median_coverage_genomes.tsv",
             "genomes/clustering/contig2genome.tsv",
             "genomes/clustering/allbins2genome.tsv",
             "genomes/SSU/ssu_summary.tsv",
+            "annotations/prokka.tsv"
 
 
 
