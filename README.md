@@ -1,10 +1,12 @@
 # ATLAS
 
 [![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304) [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
-[Join on Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4-brightgreen.svg)](https://snakemake.bitbucket.io)
 
-![scheme of workflow](resources/images/atlas_workflow.png)
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4-brightgreen.svg)](https://snakemake.bitbucket.io)
+[Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
+
+
+![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
 
 # Install
