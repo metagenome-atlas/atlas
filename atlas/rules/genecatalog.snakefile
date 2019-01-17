@@ -60,7 +60,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         threads:
             config.get("threads", 1)
         params:
-            tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
+            tmpdir= os.path.join(config['tmpdir'],"mmseqs"),
             clustermethod = 'linclust' if config['genecatalog']['clustermethod']=='linclust' else 'cluster',
             coverage=config['genecatalog']['coverage'], #0.8,
             minid=config['genecatalog']['minid'], # 0.00
@@ -459,7 +459,7 @@ checkpoint gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
     output:
-        temp(directory("Genecatalog/subsets/genes"))
+        directory("Genecatalog/subsets/genes")
     params:
         subset_size=config['genecatalog']['SubsetSize'],
     run:
@@ -475,7 +475,7 @@ def combine_genecatalog_annotations_input(wildcards):
 
 rule combine_annotations:
     input:
-        eggNOG=combine_genecatalog_annotations_input
+        eggNOG=combine_genecatalog_annotations_input,
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
@@ -491,6 +491,7 @@ rule combine_annotations:
         with open(output.eggNOG,'w') as f:
             f.write("\t".join(EGGNOG_HEADERS) + '\n')
         shell("cat {input.eggNOG} >> {output.eggNOG}")
+
 
 
 rule gene_catalog:

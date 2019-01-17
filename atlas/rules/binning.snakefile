@@ -598,7 +598,7 @@ if config['final_binner']=='DASTool':
             bins=expand(rules.get_unknown_bins.output.dir,sample=SAMPLES),
             scores= expand(rules.get_unknown_bins.output.scores,sample=SAMPLES)
         output:
-            dir=temp(directory("genomes/all_unknown_bins")),
+            dir=directory("genomes/all_unknown_bins"),
             scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
         run:
             os.mkdir(output.dir)
