@@ -267,7 +267,7 @@ localrules: get_maxbin_cluster_attribution, get_bins
 
 rule get_maxbin_cluster_attribution:
     input:
-        directory("{sample}/binning/maxbin/intermediate_files")
+        "{sample}/binning/maxbin/intermediate_files"
     output:
         "{sample}/binning/maxbin/cluster_attribution.tsv"
     params:
@@ -323,7 +323,7 @@ rule initialize_checkm:
 rule run_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = directory("{sample}/binning/{binner}/bins") # actualy path to fastas
+        bins = "{sample}/binning/{binner}/bins" # actualy path to fastas
     output:
         "{sample}/binning/{binner}/checkm/completeness.tsv"
     params:
@@ -397,7 +397,7 @@ rule checkm_tetra:
 rule checkm_outliers:
     input:
         tetra= "{sample}/binning/{binner}/checkm/tetranucleotides.txt",
-        bin_folder= directory("{sample}/binning/{binner}/bins"),
+        bin_folder= "{sample}/binning/{binner}/bins",
         checkm = "{sample}/binning/{binner}/checkm/completeness.tsv"
     params:
         checkm_folder = lambda wc, input: os.path.dirname(input.checkm),
@@ -431,7 +431,7 @@ rule refine_bins:
 rule find_16S:
     input:
         contigs=BINNING_CONTIGS,
-        bin_dir= directory("{sample}/binning/{binner}/bins")
+        bin_dir= "{sample}/binning/{binner}/bins"
     output:
         summary="{sample}/binning/{binner}/SSU/ssu_summary.tsv",
         fasta="{sample}/binning/{binner}/SSU/ssu.fna",
@@ -667,7 +667,7 @@ rule get_quality_for_dRep_from_checkm:
 
 rule first_dereplication:
     input:
-        directory("genomes/all_bins"),
+        "genomes/all_bins",
         quality= "genomes/quality.csv"
     output:
         directory("genomes/pre_dereplication/dereplicated_genomes")
@@ -758,7 +758,7 @@ rule second_dereplication:
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = directory("genomes/genomes")
+        bins = "genomes/genomes"
     output:
         "genomes/checkm/completeness.tsv"
     params:
@@ -783,7 +783,7 @@ rule run_all_checkm_lineage_wf:
 localrules: genomes
 checkpoint genomes:
     input:
-        directory("genomes/Dereplication/dereplicated_genomes")
+        "genomes/Dereplication/dereplicated_genomes"
     output:
         dir=directory("genomes/genomes"),
         map_file="genomes/clustering/contig2genome.tsv",
@@ -824,8 +824,8 @@ localrules: get_genomes2cluster
 rule get_genomes2cluster:
     input:
         old2new="genomes/clustering/old2newID.tsv",
-        pre_dereplication=directory("genomes/pre_dereplication/dereplicated_genomes"),
-        dereplication= directory("genomes/Dereplication/dereplicated_genomes")
+        pre_dereplication="genomes/pre_dereplication/dereplicated_genomes",
+        dereplication= "genomes/Dereplication/dereplicated_genomes"
     output:
         "genomes/clustering/allbins2genome.tsv"
     run:
@@ -861,10 +861,15 @@ rule get_genomes2cluster:
 
 ### Quantification
 
+def build_db_genomes_input(wildcards):
+    genome_dir = checkpoints.genomes.get(**wildcards).output.dir
+    path=os.path.join(genome_dir, "{genome}.fasta")
+    return expand(path, genome=path.genome)
+
 
 rule build_db_genomes:
     input:
-        fasta_dir = directory("genomes/genomes")
+        build_db_genomes_input
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -877,7 +882,7 @@ rule build_db_genomes:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
         """
-        cat {input.fasta_dir}/* > {output.fasta} 2> {log}
+        cat {input} > {output.fasta} 2> {log}
         bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
 
         """
