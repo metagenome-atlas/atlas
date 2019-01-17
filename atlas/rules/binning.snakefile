@@ -623,19 +623,18 @@ if config['final_binner']=='DASTool':
 localrules: get_all_bins
 rule get_all_bins:
     input:
-        bins=expand(directory("{sample}/binning/{binner}/bins"),
+        bins=expand("{sample}/binning/{binner}/bins",
                sample= SAMPLES, binner= config['final_binner']),
         #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
         #       sample= SAMPLES, binner= config['final_binner'])
     output:
         directory(temp("genomes/all_bins"))
-
     run:
         os.mkdir(output[0])
         from glob import glob
         import shutil
         for bin_folder in input.bins:
-            for fasta_file in glob(bin_folder+'/*.fasta'):
+            for fasta_file in glob(os.path.join(bin_folder,'*.fasta')):
 
                 #fasta_file_name = os.path.split(fasta_file)[-1]
                 #in_path = os.path.dirname(fasta_file)
