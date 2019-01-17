@@ -303,7 +303,7 @@ elif config.get("workflow") == "binning":
             "genomes/clustering/contig2genome.tsv",
             "genomes/clustering/allbins2genome.tsv",
             "genomes/SSU/ssu_summary.tsv",
-            "annotations/prokka.tsv"
+            "genomes/annotations/prokka.tsv"
 
 
 

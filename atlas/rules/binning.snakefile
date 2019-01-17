@@ -1114,7 +1114,7 @@ rule aggregate_genome_annotation:
     input:
         genome_annotation_input
     output:
-        "annotations/prokka.tsv"
+        "genomes/annotations/prokka.tsv"
     run:
         import pandas as pd
         out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
