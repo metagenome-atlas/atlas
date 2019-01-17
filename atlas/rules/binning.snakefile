@@ -628,7 +628,7 @@ rule get_all_bins:
         #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
         #       sample= SAMPLES, binner= config['final_binner'])
     output:
-        temp(directory("genomes/all_bins"))
+        directory(temp("genomes/all_bins"))
 
     run:
         os.mkdir(output[0])
