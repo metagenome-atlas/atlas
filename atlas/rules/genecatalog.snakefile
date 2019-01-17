@@ -454,26 +454,28 @@ rule predict_single_copy_genes:
         " mv {input[0]}.scg {output}"
 
 
-
-rule generate_subsets_for_annotation:
+localrules: gene_subsets
+checkpoint gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
-#    wildcards_constraints:
-#        extension="f[n,a]a"
     output:
-        temp(dynamic("Genecatalog/subsets/genes/{subsetID}.faa"))
+        temp(directory("Genecatalog/subsets/genes"))
     params:
         subset_size=config['genecatalog']['SubsetSize'],
-        output_dir= lambda wc, output: os.path.dirname(output[0]),
     run:
         from utils import fasta
+        fasta.split(input[0],subset_size,output[0],simplify_headers=True)
 
-        fasta.split(input[0],subset_size,out_dir,simplify_headers=True)
+
+def combine_genecatalog_annotations_input(wildcards):
+    dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
+    Subset_names= glob_wildcards(os.path.join(dir_for_subsets, "{subsetID}.faa")).subsetID
+    return expand("Genecatalog/subsets/genes/{subsetID}.emapper.annotations", subsetID=Subset_names)
+
 
 rule combine_annotations:
     input:
-        faa= dynamic("Genecatalog/subsets/genes/{subsetID}.faa"),
-        eggNOG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.annotations")
+        eggNOG=combine_genecatalog_annotations_input
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
