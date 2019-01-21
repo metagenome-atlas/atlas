@@ -81,6 +81,13 @@ def download(jobs, out_dir, snakemake_args):
     context_settings=dict(ignore_unknown_options=True),
     short_help="run atlas main workflow"
 )
+@click.option(
+    "--workflow",
+    default="all",
+    type=click.Choice(["qc","assembly","genomes","genecatalog","all","None"]),
+    show_default=True,
+    help="Execute only subworkflow.",
+)
 @click.option("-w",
     "--working-dir",
     type=click.Path(dir_okay=True,writable=True,resolve_path=True),
@@ -88,17 +95,10 @@ def download(jobs, out_dir, snakemake_args):
          "and config-file if not specified. Both can be generated with 'atlas init'.",
     default="."
 )
-@click.option(
+@click.option("-c",
     "--config-file",
     type=click.Path(exists=True,resolve_path=True),
     help="config-file generated with 'atlas init'",
-)
-@click.option(
-    "--workflow",
-    default="all",
-    type=click.Choice(["qc","assembly","genomes","all"]),
-    show_default=True,
-    help="Execute only subworkflow.",
 )
 @click.option(
     "-j",
@@ -123,10 +123,8 @@ def download(jobs, out_dir, snakemake_args):
     show_default=True,
     help="Test execution.",
 )
-@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED,
-                help="Other arguments passed directly to snakemake see 'snakemake --help'."
-)
-def run_workflow(working_dir, config,sample_table,workflow, jobs, no_conda, dryrun, snakemake_args):
+@click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
+def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snakemake_args):
     """Runs the ATLAS Quality control protocol, the first step of the workflow.
 
     A skeleton configuration file can be generated with defaults using:
@@ -137,31 +135,37 @@ def run_workflow(working_dir, config,sample_table,workflow, jobs, no_conda, dryr
     For more details, see: https://metagenome-atlas.readthedocs.io
     """
 
-    if config is None:
-        config = os.path.join(working_dir,'config.yaml')
+    if config_file is None:
+        config_file = os.path.join(working_dir,'config.yaml')
 
-    if not os.path.exists(config):
-        logging.critical("Config not found: %s" % config)
+    if not os.path.exists(config_file):
+        logging.critical(f"config-file not found: {config_file}\n"
+                         "generate one with 'atlas init'")
         sys.exit(1)
 
-    validate_config(config, workflow)
+    sample_file=os.path.join(working_dir,'samples.tsv')
+
+    if not os.path.exists(sample_file):
+        logging.critical(f"sample.tsv not found in the workind dir."
+                         "generate one with 'atlas init'")
+        sys.exit(1)
+
+    validate_config(config_file, workflow)
 
     cmd = (
-        "snakemake --snakefile {snakefile} --directory {out_dir} "
+        "snakemake --snakefile {snakefile} --directory {working_dir} "
         "--printshellcmds --jobs {jobs} --rerun-incomplete "
-        "--configfile '{config}' --nolock {conda} {dryrun} "
-        "--config workflow={workflow} {add_args} "
-        "{args}"
+        "--configfile '{config_file}' --nolock {conda} {dryrun} "
+        "{args} {target_rule}"
     ).format(
         snakefile=get_snakefile(),
-        out_dir=out_dir,
+        working_dir=working_dir,
         jobs=jobs,
-        config=config,
+        config_file=config_file,
         conda="" if no_conda else "--use-conda",
         dryrun="--dryrun" if dryrun else "",
-        add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
         args=" ".join(snakemake_args),
-        workflow=workflow,
+        target_rule=workflow if workflow!="None" else "",
     )
     logging.info("Executing: %s" % cmd)
     try:
@@ -169,6 +173,7 @@ def run_workflow(working_dir, config,sample_table,workflow, jobs, no_conda, dryr
     except subprocess.CalledProcessError as e:
         # removes the traceback
         logging.critical(e)
+        exit(1)
 
 
 
@@ -182,7 +187,7 @@ def run_workflow(working_dir, config,sample_table,workflow, jobs, no_conda, dryr
 @click.option(
     "-j",
     "--jobs",
-    default=multiprocessing.cpu_count(),
+    default=1,
     type=int,
     show_default=True,
     help="number of simultaneous downloads",
@@ -200,7 +205,6 @@ def run_download(jobs, out_dir, snakemake_args):
     their MD5 checksum.
     """
     download(jobs, out_dir, snakemake_args)
-
 
 
 

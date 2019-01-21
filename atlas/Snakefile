@@ -5,13 +5,13 @@ import tempfile
 from snakemake.utils import logger, min_version, update_config
 
 from default_values import *
-
+from conf import load_sample_table
 
 # get default values and update them with values specified in config file
 default_config = make_default_config()
 update_config(default_config, config)
 config = default_config
-
+sampleTable= load_sample_table()
 
 # minimum required snakemake version
 min_version("5.2.2")
@@ -34,68 +34,10 @@ def get_temp_dir(config):
     return tmp_dir
 
 
-def get_bin_summary_files(do_binning, samples):
-    ret_str = ""
-    if do_binning:
-        ret_str = expand("{sample}/genomic_bins/{sample}.summary",
-                      sample=samples)
-    return ret_str
 
 
-def get_shell_prefix(config, override={}):
-    pfx = config.get("prefix")
-    if not pfx:
-        return ""
-
-    keys = re.findall(r"__(\w+)__", pfx)
-    for k in keys:
-        if k in override:
-            v = override[k]
-        else:
-            v = config.get(k, "")
-        pfx = pfx.replace("__{key}__".format(key=k), str(v))
-    return pfx
 
 
-def update_config_file_paths(config):
-    for sample in config["samples"]:
-        try:
-            # convert string into list
-            if isinstance(config["samples"][sample]["fastq"], str):
-                config["samples"][sample]["fastq"] = [config["samples"][sample]["fastq"]]
-        # fastq is not required for annotation alone
-        except KeyError:
-            continue
-    return config
-
-
-def get_quality_controlled_reads(wildcards):
-    """Gets quality controlled reads for two cases. When preprocessed with
-    ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
-    externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
-    """
-    n_files = len(config["samples"][wildcards.sample]["fastq"])
-
-    if config.get("workflow", "complete") == "annotate":
-        # QA'd reads; the user wants to begin at assembly step
-        if n_files == 2:
-            fastq = dict(zip(['R1','R2'], config["samples"][wildcards.sample]["fastq"]))
-        elif n_files == 1:
-            if config["samples"][wildcards.sample].get("paired", False):
-                logger.critical(("This protocol requires interleaved reads be "
-                                 "reformatted into separate R1 and R2 files "
-                                 "before execution. We recommend using "
-                                 "reformat.sh from bbtools to convert."))
-                sys.exit(1)
-            fastq = {'se': config["samples"][wildcards.sample]["fastq"]}
-    else:
-        # reads that have gone through ATLAS QC
-        fractions = ['R1', 'R2', 'se'] if n_files == 2 \
-                        or config["samples"][wildcards.sample].get("paired", False) \
-                        else ['se']
-        fastq = dict(zip(fractions, expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
-                                           fraction=fractions, sample=wildcards.sample)))
-    return fastq
 
 
 def input_params_for_bbwrap(wildcards, input):
@@ -127,223 +69,143 @@ def gen_names_for_range(N,prefix='',start=1):
 
 
 
-def gen_names_for_range(N,prefix='',start=1):
-    """generates a range of IDS with leading zeros so sorting will be ok"""
-    n_leading_zeros= len(str(N))
-    format_int=prefix+'{:0'+str(n_leading_zeros)+'d}'
-    return [format_int.format(i) for i in range(start,N+start)]
-
-
-
-def define_groups(samples):
-
-    from collections import defaultdict
-
-    for s in samples:
-        # add default value, each sample is it's own group
-        if not 'group' in samples[s]:
-            samples[s]['group'] = s
-
-    Groups = defaultdict(set)
-
-    for s in samples:
-        Groups[samples[s]['group']].add(s)
-
-    print("You have {} in {} groups".format(len(samples),len(Groups)))
-
-
-    return Groups
-
-
-
-
-
 CONDAENV = get_conda_envs_dir()
-if config.get("workflow") != "download":
+#if config.get("workflow") != "download":
 
-    config = update_config_file_paths(config)
-    TMPDIR = get_temp_dir(config)
-    EGGNOG_DIR = os.path.realpath(config["database_dir"])
-    CHECKMDIR = os.path.join(os.path.dirname(os.path.realpath(config.get("diamond_db", "."))), "checkm")
-    SAMPLES = [i for i in config["samples"].keys()]
-    GROUPS = define_groups(config['samples'])
+#    config = update_config_file_paths(config)
+TMPDIR = get_temp_dir(config)
+DBDIR = os.path.realpath(config["database_dir"])
+EGGNOG_DIR = DBDIR
+CHECKMDIR = os.path.join(DBDIR, "checkm")
+SAMPLES = sampleTable.index.values
 
-    PAIRED_END = all([config["samples"][s].get("paired", False) \
-                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
-    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
-    REPORTS = ["reports/QC_report.html"]
+#GROUPS = sampleTable.BinGroup.unique()
+def get_alls_samples_of_group(wildcards):
+    group_of_sample= sampleTable.loc[wildcards.sample,'BinGroup']
 
-# quality control of sequences only
-if config.get("workflow", "complete") == "qc":
-    # define paired end or not
+    return list(sampleTable.loc[ sampleTable.BinGroup==group_of_sample].index)
 
 
-    localrules: qc
-    rule qc:
-        input:
-            expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-            REPORTS
 
-    include: "rules/qc.snakefile"
-
-# quality control, assembly, annotation, and quantification
-elif config.get("workflow", "complete") == "complete":
-    REPORTS += ["reports/assembly_report.html"]
-
-    if config.get("perform_genome_binning", True):
-        # later update to include others as well as integrate concoct and metabat
-        REPORTS.append("reports/bin_report_{binner}.html".format(binner=config['final_binner']))
-        include: "rules/binning.snakefile"
-
-    localrules: all
-    rule all:
-        input:
-            expand("{sample}/sequence_quality_control/finished_QC",
-                sample=SAMPLES),
-            expand("{sample}/finished_assembly", sample=SAMPLES),
-            REPORTS,
-            "Genecatalog/genecatalog_finished"
-            #expand("{sample}/{sample}_annotations.txt", sample=SAMPLES),
-
-# checkpoint finished contigs, no annotation
-    localrules: finish_assembly
-    rule finish_assembly:
-        input:
-            "{sample}/sequence_quality_control/finished_QC",
-            "{sample}/{sample}_contigs.fasta",
-            "{sample}/sequence_alignment/{sample}.bam",
-            "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-            "{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
-            "{sample}/assembly/contig_stats/final_contig_stats.txt"
-        output:
-            touch("{sample}/finished_assembly")
-
-    include: "rules/assemble.snakefile"
-    include: "rules/qc.snakefile"
-    include: "rules/gene_annotation.snakefile"
-    include: "rules/genecatalog.snakefile"
+PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
+RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
 
 
-# TODO: we should add --eggnog to the 2 merge_sample_tables and integrate it correctly in the function
+def get_input_fastq(wildcards):
+    return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
 
-    if config.get("perform_genome_binning", True):
+def get_quality_controlled_reads(wildcards):
+    """Gets quality controlled reads for two cases. When preprocessed with
+    ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
+    externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
+    """
+    checks ={}
+    fastq = {}
 
+    for fraction in MULTIFILE_FRACTIONS:
+        checks[fraction]= (("Reads_QC_"+fraction in sampleTable.columns) and
+                          (~sampleTable.loc[wildcards.sample,['Reads_QC_'+fraction]].isnull().any()))
+        if checks[fraction]:
+            fastq[fraction]= sampleTable.loc[wildcards.sample,'Reads_QC_'+fraction]
 
-        rule merge_sample_tables_with_bins:
-            # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
-            input:
-                genes = "{sample}/annotation/predicted_genes/{sample}.tsv",
-                refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-                counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-                completeness = "{{sample}}/binning/{binner}/checkm/completeness.tsv".format(binner=config['final_binner']),
-                taxonomy = "{{sample}}/binning/{binner}/checkm/taxonomy.tsv".format(binner=config['final_binner']),
-                eggnog = "{sample}/annotation/eggNOG.tsv"
-            output:
-                "{sample}/{sample}_annotations.txt"
-            params:
-                fastas = lambda wc: " --fasta ".join(glob("{sample}/binning/{binner}/checkm/{sample}.*.fasta".format(sample=wc.sample,binner=config['final_binner'])))
-            shell:
-                    #" atlas merge-tables "
-                    # HACK:
-                    "echo "
-                     " --counts {input.counts} "
-                     #" --completeness {input.completeness} "
-                     #" --taxonomy {input.taxonomy} "
-                     " --fasta {params.fastas} "
-                     " --eggnog {input.eggnog} "
-                     " {input.genes} "
-                     " {input.refseq} "
-                     " > "
-                     " {output} "
+    if checks['se'] or (checks['R1'] & checks['R2']):
+        #files are in sampletable
+        return fastq
 
     else:
-        rule merge_sample_tables:
-            # "{sample}/annotation/prokka/{sample}_plus.tsv" or "{sample}/annotation/prokka/{sample}.tsv"
-            input:
-                genes = "{sample}/annotation/predicted_genes/{sample}.tsv",
-                refseq = "{sample}/annotation/refseq/{sample}_tax_assignments.tsv",
-                counts = "{sample}/annotation/feature_counts/{sample}_counts.txt",
-                eggnog =  "{sample}/annotation/eggNOG.tsv"
-            output:
-                "{sample}/{sample}_annotations.txt"
-            shell:
-                    #" atlas merge-tables "
-                    # HACK:
-                    "echo "
-                     " --counts {input.counts} "
-                     " --eggnog {input.eggnog} "
-                     " {input.genes} "
-                     " {input.refseq} "
-                     " > "
-                     " {output} "
+        return dict(zip(MULTIFILE_FRACTIONS,
+                expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz",
+                    fraction=MULTIFILE_FRACTIONS)))
 
 
-elif config.get("workflow") == "binning":
+include: "rules/qc.snakefile"
+include: "rules/assemble.snakefile"
+include: "rules/binning.snakefile"
+include: "rules/gene_annotation.snakefile"
+include: "rules/genecatalog.snakefile"
+include: "rules/download.snakefile"
 
 
-    # define paired end or not
-    PAIRED_END = all([config["samples"][s].get("paired", False) \
-                     or (len(config["samples"][s]["fastq"]) > 1) for s in SAMPLES])
-    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+localrules: all, qc, assembly_one_sample, assembly, genomes
+rule all:
+    input:
+        "finished_QC",
+        "finished_assembly",
+        "finished_genomes"
+        #"finished_genecatalog"
 
-    localrules: all
-    rule all:
-        input:
-            expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-                   binner=config['final_binner'], sample =SAMPLES),
-            expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
-            "genomes/Dereplication/dereplicated_genomes",
-            "genomes/checkm/taxonomy.tsv",
-            "genomes/counts/median_coverage_genomes.tsv",
-            "genomes/clustering/contig2genome.tsv",
-            "genomes/clustering/allbins2genome.tsv",
-            "genomes/SSU/ssu_summary.tsv",
+
+# rule in rules/genecatalog.snakefile
+# rule genecatalog:
+#     output:
+#         temp(touch("finished_genecatalog"))
 
 
 
+rule genomes:
+    input:
+        expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+               binner=config['final_binner'], sample =SAMPLES),
+        expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+        "genomes/Dereplication/dereplicated_genomes",
+        "genomes/checkm/taxonomy.tsv",
+        "genomes/counts/median_coverage_genomes.tsv",
+        "genomes/clustering/contig2genome.tsv",
+        "genomes/clustering/allbins2genome.tsv",
+        "genomes/SSU/ssu_summary.tsv",
+    output:
+        temp(touch("finished_genomes"))
 
-    include: "rules/binning.snakefile"
-    include: "rules/assemble.snakefile"
-    include: "rules/gene_annotation.snakefile"
+rule assembly_one_sample:
+    input:
+        "{sample}/{sample}_contigs.fasta",
+        "{sample}/sequence_alignment/{sample}.bam",
+        "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
+        "{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
+        "{sample}/assembly/contig_stats/final_contig_stats.txt"
+    output:
+        touch("{sample}/finished_assembly")
 
 
-elif config.get("workflow") == "download":
+rule assembly:
+    input:
+        expand(rules.assembly_one_sample.output,sample=SAMPLES),
+        "reports/assembly_report.html"
+    output:
+        temp(touch("finished_assembly"))
 
-    DBDIR = os.path.realpath(config["db_dir"])
-    CHECKMDIR = os.path.join(DBDIR, "checkm")
-    CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
-    # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
-    FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
-             "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
-             "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
-             "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
-             "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
-             "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
-             "OG_fasta.tar.gz": "8fc6ce2e055d1735dec654af98a641a4",
-             "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
-             "eggnog_proteins.dmnd": "5efb0eb18ed4575a20d25773092b83b9",
-             "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
-             CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
-    localrules: download
-    rule download:
-        input:
-            expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
-            "%s/taxon_marker_sets.tsv" % CHECKMDIR,
 
-    include: "rules/download.snakefile"
+rule qc:
+    input:
+        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
+        "reports/QC_report.html",
+    output:
+        temp(touch("finished_QC"))
 
-# elif config.get("workflow") == "annotate":
-#     localrules: annotate
-#     rule annotate:
-#         input:
-#             expand("{sample}_annotations.txt", sample=SAMPLES),
-#             expand("{sample}/contig_stats.txt", sample=SAMPLES),
-#             #"reports/assembly_report.html" # not tested yet, but should work
+
+
+
+
+
+
+
+
+
+
+
 #
-#     include: "rules/annotate.snakefile"
 
-else:
-    raise Exception("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"))
+# # elif config.get("workflow") == "annotate":
+# #     localrules: annotate
+# #     rule annotate:
+# #         input:
+# #             expand("{sample}_annotations.txt", sample=SAMPLES),
+# #             expand("{sample}/contig_stats.txt", sample=SAMPLES),
+# #             #"reports/assembly_report.html" # not tested yet, but should work
+# #
+# #     include: "rules/annotate.snakefile"
+#
+# else:
+#     raise Exception("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"))

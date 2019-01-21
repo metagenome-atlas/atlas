@@ -6,7 +6,7 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: postprocess_after_decontamination, initialize_checkm, \
+localrules: initialize_checkm, \
             build_qc_report, combine_read_length_stats, \
             combine_insert_stats, combine_read_counts
 
@@ -37,7 +37,7 @@ def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
 
 
 def get_ribosomal_rna_input(wildcards):
-    data_type = config["samples"][wildcards.sample].get("type", "metagenome").lower()
+    data_type = config["data_type"]
 
     clean_reads = expand("{sample}/sequence_quality_control/{sample}_{step}_{fraction}.fastq.gz",step='clean', fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
     rrna_reads = expand("{sample}/sequence_quality_control/contaminants/rRNA_{fraction}.fastq.gz",fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
@@ -48,30 +48,31 @@ def get_ribosomal_rna_input(wildcards):
         return {'clean_reads':clean_reads}
 
 
-def get_finalize_qc_input(wildcards):
-    inputs = get_quality_controlled_reads(wildcards)
-    try:
-        # FIXME: 'decontaminated_seqs': ['{sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz'...
-        # inputs["decontaminated_seqs"] = rules.decontamination.output.contaminants
-        inputs["decontaminated_stats"] = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt".format(sample=wildcards.sample)
-    except AttributeError:
-        pass
-    return inputs
+# def get_finalize_qc_input(wildcards):
+#     inputs = get_quality_controlled_reads(wildcards)
+#     try:
+#         # FIXME: 'decontaminated_seqs': ['{sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz'...
+#         # inputs["decontaminated_seqs"] = rules.decontamination.output.contaminants
+#         inputs["decontaminated_stats"] = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt".format(sample=wildcards.sample)
+#     except AttributeError:
+#         pass
+#     return inputs
 
 
 PROCESSED_STEPS = ['raw']
 
 
+
 rule initialize_qc:
     input:
-        lambda wc: config["samples"][wc.sample]["fastq"]
+        unpack(get_input_fastq)
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                     fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
     priority: 80
     params:
-        inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % tuple(config["samples"][wc.sample]["fastq"]),
-        interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
+        inputs = lambda wc, input: "in=%s" % input[0] if len(input) == 1 else "in=%s in2=%s" % tuple(input),
+        interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False )else "f",
         outputs = lambda wc, output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
         verifypaired = "t" if PAIRED_END else "f"
     log:
@@ -242,7 +243,8 @@ PROCESSED_STEPS.append("filtered")
 rule apply_quality_filter:
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2])
+            fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2]),
+        config.get("preprocess_adapters")
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
@@ -303,11 +305,15 @@ rule apply_quality_filter:
         """
 
 
+print(" files \n",config["contaminant_references"].values())
+
 # if there are no references, decontamination will be skipped
 if len(config.get("contaminant_references", {}).keys()) > 0:
     PROCESSED_STEPS.append("clean")
 
     rule build_decontamination_db:
+        input:
+            config["contaminant_references"].values()
         output:
             "ref/genome/1/summary.txt"
         threads:
@@ -388,8 +394,8 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
 
 PROCESSED_STEPS.append("QC")
 
-
-rule postprocess_after_decontamination:
+localrules: qcreads
+checkpoint qcreads:
     input:
         unpack(get_ribosomal_rna_input)
     output:
@@ -401,13 +407,23 @@ rule postprocess_after_decontamination:
 #        "qc"
     run:
         import shutil
+        import pandas as pd
         for i in range(len(MULTIFILE_FRACTIONS)):
+
             with open(output[i], 'wb') as outFile:
                 with open(input.clean_reads[i], 'rb') as infile1:
                     shutil.copyfileobj(infile1, outFile)
                     if hasattr(input, 'rrna_reads'):
                         with open(input.rrna_reads[i], 'rb') as infile2:
                             shutil.copyfileobj(infile2, outFile)
+
+        # save to sampleTable
+            sampleTable.loc[wildcards.sample,'Reads_QC_'+MULTIFILE_FRACTIONS[i]] = output[i]
+        sampleTable.to_csv('samples.tsv',sep='\t')
+
+
+
+
 
 if PAIRED_END:
     rule calculate_insert_size:
@@ -533,6 +549,21 @@ if PAIRED_END:
 
             stats.T.to_csv(output[0], sep='\t')
 
+localrules: combine_read_counts, write_read_counts
+rule write_read_counts:
+    input:
+        read_count_files = expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=PROCESSED_STEPS)
+    output:
+        read_stats = "{sample}/sequence_quality_control/read_stats/read_counts.tsv"
+    run:
+        import pandas as pd
+
+        all_read_counts = pd.DataFrame()
+        for read_stats_file in input.read_count_files:
+            d = pd.read_table(read_stats_file, index_col=[0, 1])
+            all_read_counts = all_read_counts.append(d)
+        all_read_counts.to_csv(output.read_stats, sep='\t')
+
 
 rule combine_read_counts:
     input:
@@ -553,34 +584,22 @@ rule combine_read_counts:
 
 rule finalize_sample_qc:
     input:
-        unpack(get_finalize_qc_input),
+        unpack(get_quality_controlled_reads),
         quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
-        read_count_files = expand("{{sample}}/sequence_quality_control/read_stats/{step}_read_counts.tsv", step=PROCESSED_STEPS),
         read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
-        read_stats = "{sample}/sequence_quality_control/read_stats/read_counts.tsv"
-    run:
-        import pandas as pd
 
-        all_read_counts = pd.DataFrame()
-        for read_stats_file in input.read_count_files:
-            d = pd.read_table(read_stats_file, index_col=[0, 1])
-            all_read_counts = all_read_counts.append(d)
-        all_read_counts.to_csv(output.read_stats, sep='\t')
-        print("Finished QC for sample {sample}\n".format(**wildcards))
 
 
 rule build_qc_report:
     input:
-        expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
         read_counts = "stats/read_counts.tsv",
         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
         zipfiles_QC = expand('{sample}/sequence_quality_control/read_stats/QC.zip', sample=SAMPLES),
         zipfiles_raw = expand('{sample}/sequence_quality_control/read_stats/raw.zip', sample=SAMPLES),
     output:
-        touch("finished_QC"),
         report = "reports/QC_report.html"
     params:
         samples = SAMPLES,

@@ -310,10 +310,17 @@ rule parse_blastp:
 
 # output with wildcards "{folder}/{prefix}.emapper.tsv"
 
+
+def get_eggnog_db_file():
+    return expand("{path}/{files}",
+                  path=EGGNOG_DIR,
+                  files=["OG_fasta.tar.gz","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
+                  )
+
 # TODO: make benchmark
 rule eggNOG_homology_search:
     input:
-        "%s/eggnog.db" % EGGNOG_DIR,
+        eggnog_db_files=get_eggnog_db_file(),
         faa = "{folder}/{prefix}.faa",
     output:
         temp("{folder}/{prefix}.emapper.seed_orthologs"),
@@ -339,7 +346,7 @@ rule eggNOG_homology_search:
 
 rule eggNOG_annotation:
     input:
-        "%s/eggnog.db" % EGGNOG_DIR,
+        eggnog_db_files=get_eggnog_db_file(),
         seed = rules.eggNOG_homology_search.output
     output:
         temp("{folder}/{prefix}.emapper.annotations")

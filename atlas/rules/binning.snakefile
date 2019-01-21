@@ -72,7 +72,7 @@ rule get_contig_coverage_from_bb:
 rule combine_coverages:
     input:
         covstats = lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
-                                 sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                                 sample_reads = get_alls_samples_of_group(wc),
                                  sample=wc.sample)
     output:
         "{sample}/binning/coverage/combined_coverage.tsv"
@@ -143,7 +143,7 @@ rule convert_concoct_csv_to_tsv:
 rule get_metabat_depth_file:
     input:
         bam = lambda wc: expand("{sample}/sequence_alignment/{sample_reads}.bam",
-                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                     sample_reads = get_alls_samples_of_group(wc),
                      sample=wc.sample)
     output:
         temp("{sample}/binning/metabat/metabat_depth.txt")

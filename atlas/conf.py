@@ -14,7 +14,7 @@ import click
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
-ADDITIONAL_SAMPLEFILE_HEADERS=['Source_group','Contigs']
+ADDITIONAL_SAMPLEFILE_HEADERS=[]#,'Contigs']
 
 def get_samples_from_fastq(path):
     """
@@ -53,8 +53,24 @@ def get_samples_from_fastq(path):
 
     if samples.isna().any().any():
         logging.error(f"Missing files:\n\n {samples}")
+        exit(1)
 
     return samples
+
+def validate_sample_table(sampleTable):
+
+
+    Expected_Headers =['BinGroup'] + ADDITIONAL_SAMPLEFILE_HEADERS
+    for h in Expected_Headers:
+        if not (h in sampleTable.columns):
+         logging.error(f"expect '{h}' to be found in samples.tsv")
+         exit(1)
+
+    if not sampleTable.index.is_unique:
+        duplicated_samples=', '.join(D.index.duplicated())
+        logging.error( f"Expect Samples to be unique. Found {duplicated_samples} more than once")
+        exit(1)
+
 
 def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv'):
     """
@@ -66,23 +82,41 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
 
     samples = get_samples_from_fastq(path_to_fastq)
 
+    columns= np.array(samples.columns) # R1 and R2 or only R1 , who knows
+
+    if 'R2' not in columns:
+        assert len(columns) == 1, "expect columns to be only ['R1']"
+        columns=['se']
+
     if reads_are_QC:
-        samples.columns= 'Reads_QC_'+samples.columns
+        samples.columns= 'Reads_QC_'+columns
         Headers = ADDITIONAL_SAMPLEFILE_HEADERS
     else:
-        samples.columns= 'Reads_raw_'+samples.columns
-        Headers = list('Reads_QC_'+samples.columns) + ADDITIONAL_SAMPLEFILE_HEADERS
+        samples.columns= 'Reads_raw_'+columns
+        Headers = list('Reads_QC_'+columns) + ADDITIONAL_SAMPLEFILE_HEADERS
 
     for h in Headers:
         samples[h]=np.nan
 
+    samples['BinGroup']= samples.index
+
+    validate_sample_table(samples)
+
     logging.info("Found %d samples under %s" % (len(samples), path_to_fastq))
     if os.path.exists(outfile):
         logging.error(f"Output file {outfile} already exists I don't dare to overwrite it.")
+        exit(1)
     else:
         samples.to_csv(outfile,sep='\t')
 
 
+
+
+def load_sample_table(sample_table='samples.tsv'):
+
+    sampleTable = pd.read_table(sample_table,index_col=0)
+    validate_sample_table(sampleTable)
+    return sampleTable
 
 def make_config(database_dir, threads, assembler, data_type='metagenome',config='config.yaml'):
     """
@@ -112,12 +146,11 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count() if not threads else threads
     conf["preprocess_adapters"] = os.path.join(database_dir, "adapters.fa")
-    conf["contaminant_references"] = {
-                                      #"rRNA":os.path.join(database_dir, "silva_rfam_all_rRNAs.fa"),
-                                      "PhiX":os.path.join(database_dir, "phiX174_virus.fa")
-                                      }
+    conf["contaminant_references"] = {"PhiX":os.path.join(database_dir, "phiX174_virus.fa")}
 
-    #Samples
+    if data_type == 'metatranscriptome':
+        conf["contaminant_references"]["rRNA"]= os.path.join(database_dir, "silva_rfam_all_rRNAs.fa"),
+
     conf["data_type"]= data_type
 
 
@@ -152,7 +185,7 @@ def validate_config(config, workflow):
 )
 @click.argument("path_to_fastq",type=click.Path(readable=True))
 @click.option("-d",
-    "--database-dir",
+    "--db-dir",
     help="location to store databases (need ~50GB)",
     type=click.Path(dir_okay=True,writable=True,resolve_path=True),
     required=True
@@ -183,12 +216,12 @@ def validate_config(config, workflow):
     type=int,
     help="number of threads to use per multi-threaded job",
 )
-@click.option(
-    "--skip-qc",
-    is_flag=True,
-    help="Skip QC, if reads are already pre-processed",
-)
-def run_init(path_to_fastq,database_dir, working_dir, assembler,  data_type, threads,skip_qc):
+# @click.option(
+#     "--skip-qc",
+#     is_flag=True,
+#     help="Skip QC, if reads are already pre-processed",
+# )
+def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, threads,skip_qc=False):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.
 
@@ -198,8 +231,8 @@ def run_init(path_to_fastq,database_dir, working_dir, assembler,  data_type, thr
 
     if not os.path.exists(working_dir): os.makedirs(working_dir)
     config=os.path.join(working_dir,'config.yaml')
-    if not os.path.exists(database_dir): os.makedirs(database_dir)
+    if not os.path.exists(db_dir): os.makedirs(db_dir)
     sample_file= os.path.join(working_dir,'samples.tsv')
 
-    make_config(database_dir, threads, assembler,data_type,config)
+    make_config(db_dir, threads, assembler,data_type,config)
     prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)
