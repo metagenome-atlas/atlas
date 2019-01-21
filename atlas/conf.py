@@ -184,11 +184,13 @@ def validate_config(config, workflow):
     short_help="prepare configuration file and sample table for atlas run",
 )
 @click.argument("path_to_fastq",type=click.Path(readable=True))
-@click.option("-d",
+@click.option(
+    "-d",
     "--db-dir",
-    help="location to store databases (need ~50GB)",
+    default=os.path.join(os.path.realpath("."), "databases"),
     type=click.Path(dir_okay=True,writable=True,resolve_path=True),
-    required=True
+    show_default=True,
+    help="location to store databases (need ~50GB)",
 )
 @click.option("-w",
     "--working-dir",
