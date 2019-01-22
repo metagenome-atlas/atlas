@@ -119,7 +119,7 @@ rule download_checkm_data:
 
 onsuccess:
     print(("All databases have downloaded and validated successfully.\nWhen generating your "
-           "configuration file, use '--database-dir %s'") % config["db_dir"])
+           "configuration file, use '--database-dir %s'") % config["database_dir"])
 
 
 onerror:
