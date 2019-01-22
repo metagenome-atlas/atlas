@@ -304,9 +304,6 @@ rule apply_quality_filter:
             -Xmx{resources.java_mem}G 2> {log}
         """
 
-
-print(" files \n",config["contaminant_references"].values())
-
 # if there are no references, decontamination will be skipped
 if len(config.get("contaminant_references", {}).keys()) > 0:
     PROCESSED_STEPS.append("clean")
