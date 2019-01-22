@@ -60,7 +60,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         threads:
             config.get("threads", 1)
         params:
-            tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
+            tmpdir= os.path.join(config['tmpdir'],"mmseqs"),
             clustermethod = 'linclust' if config['genecatalog']['clustermethod']=='linclust' else 'cluster',
             coverage=config['genecatalog']['coverage'], #0.8,
             minid=config['genecatalog']['minid'], # 0.00
@@ -454,44 +454,36 @@ rule predict_single_copy_genes:
         " mv {input[0]}.scg {output}"
 
 
-
-rule generate_subsets_for_annotation:
+localrules: gene_subsets
+checkpoint gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
-#    wildcards_constraints:
-#        extension="f[n,a]a"
     output:
-        temp(dynamic("Genecatalog/subsets/genes/{subsetID}.faa"))
+        directory("Genecatalog/subsets/genes")
     params:
-        subset_size=200,
-        output_dir= lambda wc, output: os.path.dirname(output[0]),
-        extension= lambda wc, output: os.path.splitext(output[0])[-1]
+        subset_size=config['genecatalog']['SubsetSize'],
     run:
-        i,subset_n=0,0
-        fout= None
-        with open(input[0]) as fin:
-            for line in fin:
-                if i % params.subset_size == 0:
-                    subset_n+=1
-                    if fout is not None:
-                        fout.close()
-                    fout = open(f"{params.output_dir}/subset{subset_n}{params.extension}",'w')
+        from utils import fasta
+        fasta.split(input[0],subset_size,output[0],simplify_headers=True)
 
-                if line[0]=='>':
-                    fout.write(line.split()[0]+'\n')
-                    i+=1
-                else:
-                    fout.write(line)
-        fout.close()
+
+def combine_genecatalog_annotations_input(wildcards):
+    dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
+    Subset_names= glob_wildcards(os.path.join(dir_for_subsets, "{subsetID}.faa")).subsetID
+    return expand("Genecatalog/subsets/genes/{subsetID}.emapper.annotations", subsetID=Subset_names)
+
 
 rule combine_annotations:
     input:
-        faa= dynamic("Genecatalog/subsets/genes/{subsetID}.faa"),
-        eggNOG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.annotations")
+        eggNOG=combine_genecatalog_annotations_input,
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
         # eggNog
+        import sys
+        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile))))
+        from tables import EGGNOG_HEADERS
+
         with open(input.eggNOG[0]) as f:
             first_line= f.readline()
             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."

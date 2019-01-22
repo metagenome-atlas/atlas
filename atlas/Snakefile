@@ -4,6 +4,9 @@ import sys
 import tempfile
 from snakemake.utils import logger, min_version, update_config
 
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
+
 from default_values import *
 from conf import load_sample_table
 
@@ -14,7 +17,7 @@ config = default_config
 sampleTable= load_sample_table()
 
 # minimum required snakemake version
-min_version("5.2.2")
+min_version("5.4")
 
 def get_conda_envs_dir():
     if config.get("yaml_dir"):

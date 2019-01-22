@@ -280,7 +280,7 @@ else:
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
-            temp("{sample}/assembly/contigs.fasta")
+            "{sample}/assembly/contigs.fasta"
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
@@ -311,7 +311,7 @@ else:
     localrules: rename_spades_output
     rule rename_spades_output:
         input:
-            "{sample}/assembly/contigs.fasta"
+            "{{sample}}/assembly/{sequences}.fasta".format(sequences= 'scaffolds' if config['spades_use_scaffolds'] else 'contigs' )
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
@@ -510,12 +510,12 @@ rule align_reads_to_final_contigs:
         fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
         sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
-        unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS))
+        #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+        #                  fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-        unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
+        #unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
         paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
         ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
@@ -540,8 +540,7 @@ rule align_reads_to_final_contigs:
             ref={input.fasta} \
             {params.input} \
             trimreaddescriptions=t \
-            outm={output.sam} \
-            {params.unmapped} \
+            out={output.sam} \
             threads={threads} \
             pairlen={params.max_distance_between_pairs} \
             pairedonly={params.paired_only} \
