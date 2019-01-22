@@ -11,11 +11,12 @@ atlas run --help
 
 
 
-databaseDir="databases"
+databaseDir="./test/databases"
+WD='./test/WD'
 
 rm -f WD/samples.tsv
 #
-atlas init --db-dir $databaseDir --threads 3 --assembler spades -w WD data_debug
+atlas init --db-dir $databaseDir --threads 3 --assembler spades -w $WD example_data
 
 for w in qc assembly genomes genecatalog ; do
 
@@ -23,13 +24,13 @@ for w in qc assembly genomes genecatalog ; do
         Dryrun Workflow $w
       "
 
-  atlas run -w WD $w --dryrun $@
+  atlas run -w $WD $w --dryrun $@
 
 done
 #
-atlas run -w WD --dryrun $@
+atlas run -w $WD --dryrun $@
 #
-atlas run -w WD qc $@
+atlas run -w $WD qc $@
 
 
 
