@@ -27,6 +27,10 @@ assembly_memory: 50
 tmpdir: /tmp
 # directory where databases are downloaded with 'atlas download'
 database_dir: databases
+
+
+
+
 ########################
 # Quality control
 ########################
@@ -48,7 +52,6 @@ preprocess_reference_kmer_match_length: 27
 error_correction_overlapping_pairs: true
 #contamination references can be added such that -- key: /path/to/fasta
 contaminant_references:
-  rRNA: /path/to/databases/silva_rfam_all_rRNAs.fa
   PhiX: /path/to/databases/phiX174_virus.fa
 # We won't allow large indels
 contaminant_max_indel: 20
@@ -124,20 +127,6 @@ minimum_contig_length: 300
 
 
 ########################
-# Gene catalog
-#######################
-genecatalog:
-  clustermethod: linclust # cd-hit-est or cluster or linclust see mmseqs for more details
-  minlength_nt: 100
-  minid: 0.95
-  coverage: 0.9
-  extra: ""
-  SubsetSize: 500000
-
-
-
-
-########################
 # Quantification
 ########################
 
@@ -147,14 +136,6 @@ contig_min_id: 0.76
 contig_map_paired_only: true
 contig_max_distance_between_pairs: 1000
 maximum_counted_map_sites: 10
-
-# Feature count
-#-----------------
-contig_count_multi_mapped_reads: false
-# bp overlap of sequence to predicted gene
-minimum_region_overlap: 1
-feature_counts_allow_overlap: true
-
 
 ########################
 # Binning
@@ -203,28 +184,13 @@ genome_dereplication:
       length: 0
 
 
-
 ########################
-# Annotation
-########################
-translation_table: 11
-diamond_db: /path/to/databases/refseq.dmnd
-diamond_run_mode: fast
-diamond_top_seqs: 2
-diamond_e_value: 1.0e-06
-diamond_min_identity: 50
-diamond_query_coverage: 60
-diamond_gap_open: 11
-diamond_gap_extend: 1
-diamond_block_size: 2
-diamond_index_chunks: 4
-run_prokka: false
-eggnogg_dir: /path/to/databases
-
-# LCA taxonomic annotation
-#--------------------------
-refseq_namemap: /path/to/databases/refseq.db
-refseq_tree: /path/to/databases/refseq.tree
-summary_method: lca
-aggregation_method: lca-majority
-majority_threshold: 0.51
+# Gene catalog
+#######################
+genecatalog:
+  clustermethod: linclust # cd-hit-est or cluster or linclust see mmseqs for more details
+  minlength_nt: 100
+  minid: 0.95
+  coverage: 0.9
+  extra: ""
+  SubsetSize: 500000

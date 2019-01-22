@@ -125,7 +125,6 @@ def get_quality_controlled_reads(wildcards):
 include: "rules/qc.snakefile"
 include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
-include: "rules/gene_annotation.snakefile"
 include: "rules/genecatalog.snakefile"
 include: "rules/download.snakefile"
 

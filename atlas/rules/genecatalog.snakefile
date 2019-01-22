@@ -385,6 +385,88 @@ rule combine_gene_coverages:
         pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
 
 
+###########
+## EGG NOG
+##########
+
+# # this rule specifies the more general eggNOG rules
+
+# output with wildcards "{folder}/{prefix}.emapper.tsv"
+
+
+def get_eggnog_db_file():
+    return expand("{path}/{files}",
+                  path=EGGNOG_DIR,
+                  files=["OG_fasta.tar.gz","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
+                  )
+
+# TODO: make benchmark
+rule eggNOG_homology_search:
+    input:
+        eggnog_db_files=get_eggnog_db_file(),
+        faa = "{folder}/{prefix}.faa",
+    output:
+        temp("{folder}/{prefix}.emapper.seed_orthologs"),
+    params:
+        data_dir = EGGNOG_DIR,
+        prefix = "{folder}/{prefix}"
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
+    threads:
+        config["threads"]
+    conda:
+        "%s/eggNOG.yaml" % CONDAENV
+    log:
+        "{folder}/logs/{prefix}/eggNOG_homology_search_diamond.log"
+    shell:
+        """
+        emapper.py -m diamond --no_annot --no_file_comments \
+            --data_dir {params.data_dir} --cpu {threads} -i {input.faa} \
+            -o {params.prefix} --override 2> >(tee {log})
+        """
+
+
+
+rule eggNOG_annotation:
+    input:
+        eggnog_db_files=get_eggnog_db_file(),
+        seed = rules.eggNOG_homology_search.output
+    output:
+        temp("{folder}/{prefix}.emapper.annotations")
+    params:
+        data_dir = EGGNOG_DIR,
+        prefix = "{folder}/{prefix}"
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem=20
+    conda:
+        "%s/eggNOG.yaml" % CONDAENV
+    log:
+        "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log"
+    shell:
+        """
+        emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
+            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
+        """
+
+
+rule add_eggNOG_header:
+    input:
+        "{folder}/{prefix}.emapper.annotations"
+    output:
+        "{folder}/{prefix}.emapper.tsv"
+    run:
+        import pandas as pd
+
+        D = pd.read_table(input[0], header=None)
+        D.columns = EGGNOG_HEADERS
+        D.to_csv(output[0],sep="\t",index=False)
+
+
+
+
+
 #
 # localrules: get_Genecatalog_annotations
 # rule get_Genecatalog_annotations:

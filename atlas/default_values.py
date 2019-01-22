@@ -175,7 +175,7 @@ def make_default_config():
     conf["minimum_mapped_reads"] = MINIMUM_MAPPED_READS
     conf["contig_trim_bp"] = CONTIG_TRIM_BP
 
-    conf["translation_table"] = 11
+    # conf["translation_table"] = 11
 
     # map reads to contigs and to genes
     conf["minimum_region_overlap"] = MINIMUM_REGION_OVERLAP
@@ -240,17 +240,17 @@ def make_default_config():
                             opt_parameters=""
                                 )
 
-    conf["diamond_run_mode"] = "fast"
-    conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
-    conf["diamond_e_value"] = DIAMOND_E_VALUE
-    conf["diamond_min_identity"] = DIAMOND_MIN_IDENTITY
-    conf["diamond_query_coverage"] = DIAMOND_QUERY_COVERAGE
-    conf["diamond_gap_open"] = DIAMOND_GAP_OPEN
-    conf["diamond_gap_extend"] = DIAMOND_GAP_EXTEND
-    conf["diamond_block_size"] = DIAMOND_BLOCK_SIZE
-    conf["diamond_index_chunks"] = DIAMOND_INDEX_CHUNKS
-    conf["summary_method"] = SUMMARY_METHOD
-    conf["aggregation_method"] = AGGREGATION_METHOD
-    conf["majority_threshold"] = MAJORITY_THRESHOLD
+    # conf["diamond_run_mode"] = "fast"
+    # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
+    # conf["diamond_e_value"] = DIAMOND_E_VALUE
+    # conf["diamond_min_identity"] = DIAMOND_MIN_IDENTITY
+    # conf["diamond_query_coverage"] = DIAMOND_QUERY_COVERAGE
+    # conf["diamond_gap_open"] = DIAMOND_GAP_OPEN
+    # conf["diamond_gap_extend"] = DIAMOND_GAP_EXTEND
+    # conf["diamond_block_size"] = DIAMOND_BLOCK_SIZE
+    # conf["diamond_index_chunks"] = DIAMOND_INDEX_CHUNKS
+    # conf["summary_method"] = SUMMARY_METHOD
+    # conf["aggregation_method"] = AGGREGATION_METHOD
+    # conf["majority_threshold"] = MAJORITY_THRESHOLD
 
     return conf
