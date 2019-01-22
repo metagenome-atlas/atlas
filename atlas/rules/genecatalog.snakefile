@@ -479,11 +479,6 @@ rule combine_annotations:
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
-        # eggNog
-        import sys
-        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile))))
-        from tables import EGGNOG_HEADERS
-
         with open(input.eggNOG[0]) as f:
             first_line= f.readline()
             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."

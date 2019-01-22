@@ -14,18 +14,3 @@ BLAST6 = [
     "evalue",
     "bitscore",
 ]
-
-EGGNOG_HEADERS= [
-"query_name",
-"seed_eggNOG_ortholog",
-"seed_ortholog_evalue",
-"seed_ortholog_score",
-"predicted_gene_name",
-"GO_terms",
-"KEGG_KO",
-"BiGG_Reactions",
-"Annotation_tax_scope",
-"Matching_OGs",
-"best_OG|evalue|score",
-"categories",
-"eggNOG_HMM_model_annotation"]

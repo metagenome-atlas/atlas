@@ -92,6 +92,21 @@ import os
 import sys
 import tempfile
 
+EGGNOG_HEADER = [
+    "query_name",
+    "seed_eggNOG_ortholog",
+    "seed_ortholog_evalue",
+    "seed_ortholog_score",
+    "predicted_gene_name",
+    "GO_terms",
+    "KEGG_KO",
+    "BiGG_Reactions",
+    "Annotation_tax_scope",
+    "Matching_OGs",
+    "best_OG|evalue|score",
+    "categories",
+    "eggNOG_HMM_model_annotation",
+]
 
 def make_default_config():
     """ generates a dict with all the default values, if they exist
