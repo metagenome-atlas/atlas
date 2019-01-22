@@ -779,8 +779,8 @@ rule run_all_checkm_lineage_wf:
             {params.output_dir}
         """
 
-localrules: genomes
-checkpoint genomes:
+localrules: rename_genomes
+checkpoint rename_genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes"
     output:
@@ -861,7 +861,7 @@ rule get_genomes2cluster:
 ### Quantification
 
 def build_db_genomes_input(wildcards):
-    genome_dir = checkpoints.genomes.get(**wildcards).output.dir
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
     path=os.path.join(genome_dir, "{genome}.fasta")
     return expand(path, genome=path.genome)
 
@@ -1104,7 +1104,7 @@ rule run_prokka_bins:
 
 
 def genome_annotation_input(wildcards):
-    genome_dir = checkpoints.genomes.get(**wildcards).output.dir
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
     return expand("annotations/prokka/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
