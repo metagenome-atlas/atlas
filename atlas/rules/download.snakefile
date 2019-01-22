@@ -39,7 +39,7 @@ localrules: download, transfer_files
 rule download:
     input:
         expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
-        "%s/taxon_marker_sets.tsv" % CHECKMDIR,
+        "%s/taxon_marker_sets.tsv" % CHECKMDIR
 
 
 
@@ -118,8 +118,7 @@ rule download_checkm_data:
 
 
 onsuccess:
-    print(("All databases have downloaded and validated successfully.\nWhen generating your "
-           "configuration file, use '--database-dir %s'") % config["database_dir"])
+    print("All databases have downloaded and validated successfully")
 
 
 onerror:

@@ -6,8 +6,7 @@ from snakemake.utils import report
 import warnings
 
 
-localrules: initialize_checkm, \
-            build_qc_report, combine_read_length_stats, \
+localrules: build_qc_report, combine_read_length_stats, \
             combine_insert_stats, combine_read_counts
 
 

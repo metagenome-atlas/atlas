@@ -7,8 +7,6 @@ import click
 
 from atlas import __version__
 from atlas.conf import make_config,prepare_sample_table
-from atlas.parsers import refseq_parser
-from atlas.tables import merge_tables
 from atlas.conf import validate_config,run_init
 
 
@@ -203,6 +201,8 @@ def run_download(db_dir,jobs, snakemake_args):
         exit(1)
 
 
+# from atlas.parsers import refseq_parser
+# from atlas.tables import merge_tables
 
 
 # @cli.command("refseq", short_help="enables tree based LCA and LCA star methods")
