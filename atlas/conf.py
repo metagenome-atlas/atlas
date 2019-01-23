@@ -156,9 +156,9 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
 
     conf["assembler"] = assembler
     conf["database_dir"] = database_dir
-    conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
-    conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
-    conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
+    #conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
+    #conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
+    #conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
 
     if os.path.exists(config):
         logging.warning(f"Config file {config} already exists, I didn't dare to overwrite it. continue...")
