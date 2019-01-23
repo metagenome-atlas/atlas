@@ -125,11 +125,15 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
 
     validate_config(config_file, workflow)
 
+    conf = load_configfile(config_file)
+
+    database_dir = conf['database_dir']
+
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
         "--printshellcmds --jobs {jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock {conda} {dryrun} "
-        "--conda-prefix {conda_prefix} "
+        " {conda_prefix} "
         "{args} {target_rule}"
     ).format(
         snakefile=get_snakefile(),
@@ -140,7 +144,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
         dryrun="--dryrun" if dryrun else "",
         args=" ".join(snakemake_args),
         target_rule=workflow if workflow!="None" else "",
-        conda_prefix= os.path.join(working_dir,'conda_envs')
+        conda_prefix="" if no_conda else "--conda-prefix "+os.path.join(database_dir,'conda_envs')
     )
     logging.info("Executing: %s" % cmd)
     try:
