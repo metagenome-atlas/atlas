@@ -105,14 +105,14 @@ def get_quality_controlled_reads(wildcards):
     """
     checks ={}
     fastq = {}
-
+    import pdb; pdb.set_trace()
     for fraction in MULTIFILE_FRACTIONS:
         checks[fraction]= (("Reads_QC_"+fraction in sampleTable.columns) and
                           (~sampleTable.loc[wildcards.sample,['Reads_QC_'+fraction]].isnull().any()))
         if checks[fraction]:
             fastq[fraction]= sampleTable.loc[wildcards.sample,'Reads_QC_'+fraction]
 
-    if checks['se'] or (checks['R1'] & checks['R2']):
+    if checks.get('se',False) or (checks.get('R1',False) & checks.get('R2',False)):
         #files are in sampletable
         return fastq
 
