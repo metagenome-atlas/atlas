@@ -23,15 +23,22 @@ def get_stats_from_zips(zips):
         sample = zfile.split('/')[0]  # HACK: sample name is first name of path
         # relative path from snakemake
         # sample = zfile.partition(os.path.sep)[0]
-        if "se/boxplot_quality.txt" in zf.namelist():
-            with zf.open("se/boxplot_quality.txt") as f:
+
+        # single end only
+        if "boxplot_quality.txt" in zf.namelist():
+            with zf.open("boxplot_quality.txt") as f:
                 df = pd.read_table(f, index_col=0)
                 quality_se[sample] = df.mean_1
-        if "pe/boxplot_quality.txt" in zf.namelist():
-            with zf.open("pe/boxplot_quality.txt") as f:
-                df = pd.read_table(f, index_col=0)
-                df.columns = [df.columns, [sample] * df.shape[1]]
-                quality_pe = pd.concat((quality_pe, df[["mean_1", "mean_2"]]), axis=1)
+        else:
+            if "se/boxplot_quality.txt" in zf.namelist():
+                with zf.open("se/boxplot_quality.txt") as f:
+                    df = pd.read_table(f, index_col=0)
+                    quality_se[sample] = df.mean_1
+            if "pe/boxplot_quality.txt" in zf.namelist():
+                with zf.open("pe/boxplot_quality.txt") as f:
+                    df = pd.read_table(f, index_col=0)
+                    df.columns = [df.columns, [sample] * df.shape[1]]
+                    quality_pe = pd.concat((quality_pe, df[["mean_1", "mean_2"]]), axis=1)
 
     return quality_pe, quality_se
 
