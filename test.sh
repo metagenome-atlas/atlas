@@ -12,9 +12,9 @@ atlas run --help
 
 
 databaseDir="./test/databases"
-WD='./test/WD'
+WD='.test/WD'
 
-rm -f WD/samples.tsv
+rm -f $WD/samples.tsv
 #
 atlas init --db-dir $databaseDir --threads 3 --assembler spades -w $WD example_data
 
@@ -42,4 +42,6 @@ atlas run -w $WD qc $@
 #atlas init --db-dir $databaseDir --threads 3 --assembler spades --skip-qc -w WD2 WD2/qcreads
 
 
-atlas run -w WD --workflow assembly $@
+atlas run assembly -w $WD $@
+
+atlas run genomes -w $WD $@
