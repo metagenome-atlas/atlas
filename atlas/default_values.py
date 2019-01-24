@@ -113,6 +113,7 @@ def make_default_config():
     """
 
     conf = {}
+    conf['data_type']:'metagenome'
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count()
     conf["java_mem"] = JAVA_MEM
