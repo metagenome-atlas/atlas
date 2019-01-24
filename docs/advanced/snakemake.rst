@@ -58,14 +58,11 @@ call, so even within ``atlas run`` we can do things like::
 
 This results in the call of::
 
-    snakemake -s /anaconda3/lib/python3.5/site-packages/atlas/Snakefile \
-        -d /pic/projects/mint/metaomics/results/subset \
-        -p -j 24 --rerun-incomplete \
-        --configfile config.yaml \
-        --nolock \
-        --use-conda \
-        --config workflow=complete \
-        --summary
+ snakemake --snakefile /path/to/atlas/Snakefile \
+ --directory WD \
+ --printshellcmds --jobs 12 --rerun-incomplete \
+ --configfile 'WD/config.yaml' \
+ --nolock --use-conda all
 
 The output gives details per output file, which rule created the file, the
 creation date, and other information that is relevant to the file's creation.
