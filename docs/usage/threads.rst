@@ -1,5 +1,5 @@
-Jobs and Threads
-================
+Execution of Atlas
+==================
 
 Most steps of the workflow are utilizing applications that can thread or
 otherwise use multiple cores. Leaving this one below the max, in cases where

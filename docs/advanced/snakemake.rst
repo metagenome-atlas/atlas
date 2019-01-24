@@ -52,9 +52,9 @@ Provenance
 ----------
 
 Extra arguments on the command line are passed directly into the snakemake
-call, so even within ``atlas assemble`` we can do things like::
+call, so even within ``atlas run`` we can do things like::
 
-    atlas assemble --jobs 24 --out-dir test-dir config.yaml --summary
+    atlas run --jobs 24 -w test-dir --summary
 
 This results in the call of::
 
