@@ -82,18 +82,18 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
 
     samples = get_samples_from_fastq(path_to_fastq)
 
-    columns= np.array(samples.columns) # R1 and R2 or only R1 , who knows
+    columns= samples.columns # R1 and R2 or only R1 , who knows
 
     if 'R2' not in columns:
         assert len(columns) == 1, "expect columns to be only ['R1']"
-        columns=np.array(['se'])
+        columns=['se']
 
     if reads_are_QC:
-        samples.columns= 'Reads_QC_'+columns
+        samples.columns= ['Reads_QC_'+c for c in columns]
         Headers = ADDITIONAL_SAMPLEFILE_HEADERS
     else:
-        samples.columns= 'Reads_raw_'+columns
-        Headers = list('Reads_QC_'+columns) + ADDITIONAL_SAMPLEFILE_HEADERS
+        samples.columns= ['Reads_raw_'+c for c in columns]
+        Headers = ['Reads_QC_'+c for c in columns] + ADDITIONAL_SAMPLEFILE_HEADERS
 
     for h in Headers:
         samples[h]=np.nan
