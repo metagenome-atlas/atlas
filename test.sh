@@ -24,7 +24,7 @@ for w in qc assembly genomes genecatalog ; do
         Dryrun Workflow $w
       "
 
-  atlas run -w $WD $w --dryrun $@
+  atlas run all -w $WD $w --dryrun $@
 
 done
 #
