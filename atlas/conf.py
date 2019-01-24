@@ -51,7 +51,7 @@ def get_samples_from_fastq(path):
 
     samples= pd.DataFrame(samples).T
 
-    if samples.isna().any().any():
+    if samples.isnull().any().any():
         logging.error(f"Missing files:\n\n {samples}")
         exit(1)
 
