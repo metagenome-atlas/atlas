@@ -20,6 +20,10 @@ For more details see documentation.
 
 
 
+.. image:: ../resources/ATLAS_scheme.png
+  :width: 400
+  :alt: Atlas is a workflow for assembly and binning of metagenomic reads
+
 
 .. toctree::
     :maxdepth: 2
