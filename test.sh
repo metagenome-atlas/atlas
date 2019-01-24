@@ -11,7 +11,7 @@ atlas run --help
 
 
 
-databaseDir="./test/databases"
+databaseDir=".test/databases"
 WD='.test/WD'
 
 rm -f $WD/samples.tsv
