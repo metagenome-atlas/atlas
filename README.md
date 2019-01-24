@@ -1,6 +1,6 @@
 # ATLAS
 
-[![DOI](https://zenodo.org/badge/75199304.svg)](https://zenodo.org/badge/latestdoi/75199304) [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
 
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.4-brightgreen.svg)](https://snakemake.bitbucket.io)
 [Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
@@ -9,90 +9,46 @@
 ![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
 
-# Install
+# Quick Start
 
-All dependencies are installed via [conda](https://www.continuum.io/downloads) using the [bioconda](https://github.com/bioconda/bioconda-recipes) channel.
-The workflow and some dependencies require Python 3.
+Three commands to start analyzing your metagenome data:
+```
+    conda install -c bioconda -c conda-forge metagenome-atlas #may not yet be ready see below
+    atlas init --db-dir databases path/to/fastq/files
+    atlas run
+```
+All databases and dependencies are installed on the fly in the directory `db-dir`.
+You want to run this three commands on the example_data on the GitHub repo.
+If you have more time, then  we recommend you to configure atlas according to your needs.
+  - check the `samples.tsv`
+  - edit the `config.yaml`
+  - run atlas on a cluster system
+For more details see documentation.
 
-The intended usage requires `conda`.
 
-Further dependencies will be installed on the first execution of the assembly
-or annotation protocol and re-used on subsequent executions of the protocols.
+## Install the development version from GitHub
+Atlas is still under active development, therefore you may want to install the up to date atlas from GitHub.
 
-For more information related to bioconda, see: https://bioconda.github.io/
-
-## As a New Environment
-
-With `conda`, execute:
-
+Create an conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```
 conda create -n atlas -c bioconda -c conda-forge python>=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
 ```
-
 Load the environment:
-
 ```
 source activate atlas
 ```
-
-Install `atlas`:
-
-```
-pip install -U metagenome-atlas
-```
-
-or install the up to date atlas from github:
+copy code from GitHub and install:
 ```
 git clone https://github.com/metagenome-atlas/atlas.git
 cd atlas
-pip install .
+pip install --editable .
+```
+Now you should be able to run atlas:
+```
+atlas init --db-dir databases path/to/fastq/files
+atlas run
 ```
 
-
-# Getting Started
-
-After installing, one needs to download the required databases and create a sample configuration file.
-
-
-## Databases
-
-To download the databases and their respective metadata databases:
-
-```
-atlas download -o ~/databases
-```
-
-The downloads use approximately 100 GB of disk space.
-
-
-## Configuration File
-
-To create a configuration file run:
-
-```
-atlas make-config --database-dir ~/databases config.yaml ~/directory_with_fastqs
-```
-
-Sample names and file paths along with default settings will populate
-config.yaml. This [YAML](http://www.yaml.org/start.html) file can be updated
-with any text editor.
-
-Sample names should be A-Z characters and can be dash ("-") delimited.
-
-For complete documentation, please see: [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
-
-
-## Assembly
-
-After editing your configuration file and adjusting any additional parameters
-we run assemblies across our samples using:
-
-```
-atlas assemble config.yaml
-```
-
-By default, this will write results into our current working directory across
-the total number of CPU cores available.
 
 # License
 

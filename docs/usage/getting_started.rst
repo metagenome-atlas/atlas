@@ -10,7 +10,7 @@ Three commands to start analyzing your metagenome data::
 
 All databases and dependencies are installed on the fly in the directory `db-dir`.
 You want to run this three commands on the example_data on the GitHub repo.
-If you have more time, then  we recommend to take care on the following steps.
+If you have more time, then  we recommend you to take care on the following steps.
 
 Step-by-step installation
 =========================
@@ -41,7 +41,7 @@ To reassure you, most of the databases are md5 checked. The downloads use approx
 3. Test installation
 --------------------
 
-Use our example_data on the GitHub repo. The first time you run atlas, it installs all dependecies.
+Use our example_data on the GitHub repo. The first time you run atlas, it installs all dependencies.
 It needs therefore an internet connection and some time.
 
 Usage
