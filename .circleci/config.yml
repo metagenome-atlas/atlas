@@ -11,7 +11,7 @@ version: 2
 jobs:
   build:
     <<: *defaults
-    parallelism: 1
+    parallelism: 4
     steps:
       - checkout
       - run: conda config --add channels conda-forge
@@ -22,20 +22,20 @@ jobs:
       - run: pip install .
       - run: atlas --help
       - run: atlas --version
-      - run: atlas download --help
-      - run: atlas qc --help
-      - run: atlas assemble --help
-      - run: atlas bin-genomes --help
+      - run: atlas run --help
       # make config
       - run: ls example_data
-      - run: atlas make-config --database-dir $DATABASE_DIR --threads $N_THREADS --assembler spades config.yaml example_data
+      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS --assembler spades example_data
       # dryrun
-      - run: atlas download --dryrun
-      - run: atlas qc config.yaml -d $WORKING_DIR --dryrun
-      - run: atlas assemble config.yaml -d $WORKING_DIR --dryrun
-      - run: atlas bin-genomes config.yaml -d $WORKING_DIR --dryrun
-      - run: atlas assemble config.yaml -d $WORKING_DIR --dryrun gene_catalog # run gene catalog
-
+      - run: atlas download --db-dir $DATABASE_DIR --dryrun
+      - run: atlas run qc --dryrun
+      - run: atlas run assemble --dryrun
+      - run: atlas run genomes --dryrun
+      - run: atlas run genecatalog --dryrun
+      - run: atlas run --dryrun
+      - run: atlas run qc
+      - run: atlas run assemble
+#      - run: atlas run
 
 workflows:
   version: 2
