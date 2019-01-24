@@ -168,7 +168,7 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
             yaml.dump(conf, f)
         logging.info(
                      "Configuration file written to %s\n"
-                     "You may want to eddit different options using any text editor."% config
+                     "You may want to edit it using any text editor."% config
                      )
 
 
