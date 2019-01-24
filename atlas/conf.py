@@ -86,7 +86,7 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
 
     if 'R2' not in columns:
         assert len(columns) == 1, "expect columns to be only ['R1']"
-        columns=['se']
+        columns=np.array(['se'])
 
     if reads_are_QC:
         samples.columns= 'Reads_QC_'+columns
@@ -168,7 +168,7 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
             yaml.dump(conf, f)
         logging.info(
                      "Configuration file written to %s\n"
-                     "Cou may want to eddit different options using any text editor."% config
+                     "You may want to eddit different options using any text editor."% config
                      )
 
 
