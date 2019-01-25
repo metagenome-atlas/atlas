@@ -78,18 +78,11 @@ rule combine_coverages:
         "{sample}/binning/coverage/combined_coverage.tsv"
     run:
 
-        import pandas as pd
-        import os
+        from utils.parsers_bbmap import combine_coverages
 
-        combined_cov={}
-        for cov_file in input:
+        combined_cov,_= combine_coverages(input.covstats,get_alls_samples_of_group(wc),'Avg_fold')
 
-            sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
-
-            data.loc[data.Avg_fold<0,'Avg_fold']=0
-            combined_cov[sample]= data.Avg_fold
-        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
+        combined_cov.T.to_csv(output[0],sep='\t')
 
 
 
@@ -1002,21 +995,12 @@ rule combine_coverages_MAGs:
         "genomes/counts/raw_counts_genomes.tsv",
     run:
 
-        import pandas as pd
-        import os
+        from utils.parsers_bbmap import combine_coverages
 
-        combined_cov={}
-        combined_N_reads={}
-        for cov_file in input:
 
-            sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
-            data.loc[data.Median_fold<0,'Median_fold']=0
-            combined_cov[sample]= data.Median_fold
-            combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
+        combined_cov,Counts_contigs = combine_coverages(input.covstats,SAMPLES)
 
-        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
-        Counts_contigs= pd.DataFrame(combined_N_reads)
+        combined_cov.to_csv(output[0],sep='\t')
         Counts_contigs.to_csv(output[1],sep='\t')
 
 
