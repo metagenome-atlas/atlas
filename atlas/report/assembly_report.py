@@ -1,5 +1,6 @@
 import argparse
 import os,sys
+f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
 import pandas as pd
 import plotly.graph_objs as go
 from plotly import offline
@@ -15,7 +16,7 @@ atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
 sys.path.append(os.path.join(atlas_dir,'scripts'))
 
 
-from utils import parsers_bbmap
+from utils.parsers_bbmap import parse_bbmap_log_file
 
 
 
@@ -31,7 +32,7 @@ def parse_map_stats(sample_data, out_tsv):
         df.name = sample
         genes_df = pd.read_table(sample_data[sample]["gene_table"], index_col=0)
         df["N_Predicted_Genes"] = genes_df.shape[0]
-        used_reads,mapped_reads= parsers_bbmap(sample_data[sample]["mapping_log"])
+        used_reads,mapped_reads= parse_bbmap_log_file(sample_data[sample]["mapping_log"])
         df["Assembled_Reads"] = mapped_reads
         df["Percent_Assembled_Reads"] = mapped_reads/used_reads *100
 

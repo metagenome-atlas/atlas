@@ -1,6 +1,7 @@
 import argparse
 import os
 import pandas as pd
+f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
 import plotly.graph_objs as go
 from plotly import offline
 from cufflinks import iplot

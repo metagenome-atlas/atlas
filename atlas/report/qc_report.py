@@ -2,6 +2,7 @@ import argparse
 import os
 import numpy as np
 import pandas as pd
+f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
 import plotly.graph_objs as go
 import zipfile
 from plotly import offline, tools
