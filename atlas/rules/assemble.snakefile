@@ -527,7 +527,7 @@ rule align_reads_to_final_contigs:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log"
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log" # this file is udes for assembly report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -574,7 +574,7 @@ rule pileup:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log" # this file is udes for assembly report
+        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:

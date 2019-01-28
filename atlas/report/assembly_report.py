@@ -1,5 +1,5 @@
 import argparse
-import os
+import os,sys
 import pandas as pd
 import plotly.graph_objs as go
 from plotly import offline
@@ -10,8 +10,12 @@ PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
 
+atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
 
-from atlas.scripts.utils import parsers_bbmap
+sys.path.append(os.path.join(atlas_dir,'scripts'))
+
+
+from utils import parsers_bbmap
 
 
 
@@ -30,7 +34,7 @@ def parse_map_stats(sample_data, out_tsv):
         used_reads,mapped_reads= parsers_bbmap(sample_data[sample]["mapping_log"])
         df["Assembled_Reads"] = mapped_reads
         df["Percent_Assembled_Reads"] = mapped_reads/used_reads *100
-        
+
         stats_df = stats_df.append(df)
     stats_df = stats_df.loc[:, ~ stats_df.columns.str.startswith("scaf_")]
     stats_df.columns = stats_df.columns.str.replace("ctg_", "")
@@ -154,7 +158,7 @@ Downloads
 ---------
 
 """
-    report(report_str, report_out, Table_1=combined_stats, stylesheet=os.path.join(os.path.abspath(os.path.dirname(__file__)), "report.css"))
+    report(report_str, report_out, Table_1=combined_stats, stylesheet=os.path.join(atlas_dir,'report', "report.css"))
 
 
 if __name__ == "__main__":
