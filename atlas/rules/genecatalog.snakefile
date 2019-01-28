@@ -449,19 +449,34 @@ rule eggNOG_annotation:
         emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
+EGGNOG_HEADERS= [
+"query_name",
+"seed_eggNOG_ortholog",
+"seed_ortholog_evalue",
+"seed_ortholog_score",
+"predicted_gene_name",
+"GO_terms",
+"KEGG_KO",
+"BiGG_Reactions",
+"Annotation_tax_scope",
+"Matching_OGs",
+"best_OG|evalue|score",
+"categories",
+"eggNOG_HMM_model_annotation"]
 
+# rule add_eggNOG_header:
+#     input:
+#         "{folder}/{prefix}.emapper.annotations"
+#     output:
+#         "{folder}/{prefix}.emapper.tsv"
+#     run:
+#         import pandas as pd#
 
-rule add_eggNOG_header:
-    input:
-        "{folder}/{prefix}.emapper.annotations"
-    output:
-        "{folder}/{prefix}.emapper.tsv"
-    run:
-        import pandas as pd
+#            where do you take the Headers
 
-        D = pd.read_table(input[0], header=None)
-        D.columns = EGGNOG_HEADERS
-        D.to_csv(output[0],sep="\t",index=False)
+#         D = pd.read_table(input[0], header=None)
+#         D.columns = EGGNOG_HEADERS
+#         D.to_csv(output[0],sep="\t",index=False)
 
 
 
@@ -536,20 +551,9 @@ rule predict_single_copy_genes:
         " mv {input[0]}.scg {output}"
 
 
-localrules: gene_subsets
-rule gene_subsets:
-    input:
-        "Genecatalog/gene_catalog.faa"
-    output:
-        dynamic("Genecatalog/subsets/genes/{subset}.faa")
-    params:
-        subset_size=config['genecatalog']['SubsetSize'],
-    run:
-        from utils import fasta
-        fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
 
-
-# localrules: gene_subsets
+#
+# localrules: gene_subsets,combine_egg_nogg_annotations
 # checkpoint gene_subsets:
 #     input:
 #         "Genecatalog/gene_catalog.faa"
@@ -568,6 +572,38 @@ rule gene_subsets:
 #     return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
 #                   subset=Subset_names)
 
+# rule combine_egg_nogg_annotations:
+#     input:
+#         combine_genecatalog_annotations_input
+#     output:
+#         temp("Genecatalog/annotations/eggNog.emapper.annotations")
+#     shell:
+#         "cat {input} > {output}"
+
+# localrules: add_eggNOG_header
+# rule add_eggNOG_header:
+#     input:
+#         "Genecatalog/annotations/eggNog.emapper.annotations"
+#     output:
+#         "Genecatalog/annotations/eggNog.tsv"
+#     run:
+#         import pandas as pd
+#
+#         D = pd.read_table(input[0], header=None)
+#         D.columns = EGGNOG_HEADERS
+#         D.to_csv(output[0],sep="\t",index=False)
+
+localrules: gene_subsets
+rule gene_subsets:
+    input:
+        "Genecatalog/gene_catalog.faa"
+    output:
+        dynamic("Genecatalog/subsets/genes/{subset}.faa")
+    params:
+        subset_size=config['genecatalog']['SubsetSize'],
+    run:
+        from utils import fasta
+        fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
 
 rule combine_annotations:
     input:
@@ -591,7 +627,7 @@ rule genecatalog:
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/counts/median_coverage.tsv.gz",
         expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        rules.combine_annotations.output
+        "Genecatalog/annotations/eggNog.tsv"
     output:
         temp(touch("finished_genecatalog"))
 
