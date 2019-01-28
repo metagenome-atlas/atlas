@@ -693,7 +693,7 @@ rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
-        mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", sample=SAMPLES),
+        mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:

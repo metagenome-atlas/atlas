@@ -1,4 +1,7 @@
 __version__ = "2.0.0"
+
+from .scripts import utils
+
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 BLAST6 = [
     "qseqid",

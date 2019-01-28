@@ -11,18 +11,9 @@ PLOTLY_PARAMS = dict(
 )
 
 
-def parse_log_file(log_file, keyword, expect_one_value=True):
-    content = open(log_file).read()
-    pos = content.find(keyword)
-    if pos == -1:
-        raise Exception("Didn't find {} in file:\n\n{}".format(keyword, log_file))
+from atlas.scripts.utils import parsers_bbmap
 
-    else:
-        if expect_one_value:
-            return content[pos:].split()[2]
 
-        else:
-            return content[pos:].split()[2:]
 
 
 def parse_map_stats(sample_data, out_tsv):
@@ -36,12 +27,10 @@ def parse_map_stats(sample_data, out_tsv):
         df.name = sample
         genes_df = pd.read_table(sample_data[sample]["gene_table"], index_col=0)
         df["N_Predicted_Genes"] = genes_df.shape[0]
-        df["Assembled_Reads"] = parse_log_file(
-            sample_data[sample]["mapping_log"], "Mapped reads"
-        )
-        df["Percent_Assembled_Reads"] = parse_log_file(
-            sample_data[sample]["mapping_log"], "Percent mapped"
-        )
+        used_reads,mapped_reads= parsers_bbmap(sample_data[sample]["mapping_log"])
+        df["Assembled_Reads"] = mapped_reads
+        df["Percent_Assembled_Reads"] = mapped_reads/used_reads *100
+        
         stats_df = stats_df.append(df)
     stats_df = stats_df.loc[:, ~ stats_df.columns.str.startswith("scaf_")]
     stats_df.columns = stats_df.columns.str.replace("ctg_", "")

@@ -10,29 +10,6 @@ localrules: build_qc_report, combine_read_length_stats, \
             combine_insert_stats, combine_read_counts
 
 
-def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
-    "parse comments at begin of file #Avg: 123"
-    Parsed = {}
-    with open(file) as f:
-        line = f.readline()
-
-        while line.startswith(comment):
-            line_values = line[1:].strip().split(sep)
-            name = line_values[0]
-            if name[-1] == ':':
-                name = name[:-1]
-            values = line_values[1:]
-
-            if len(values) == 1:
-                Parsed[name]=values[0]
-            elif not expect_one_value:
-                Parsed[name]=values
-
-            line= f.readline()
-
-    if len(Parsed)==0:
-        raise Exception("Couldn't parse values from file {} with comment char {} and sep '{}' ".format(file,comment,sep))
-    return Parsed
 
 
 def get_ribosomal_rna_input(wildcards):
@@ -492,6 +469,7 @@ rule combine_read_length_stats:
     run:
         import pandas as pd
         import os
+        from utils.parsers_bbmap import parse_comments
 
         stats = pd.DataFrame()
 
@@ -534,7 +512,8 @@ if PAIRED_END:
         run:
             import pandas as pd
             import os
-
+            from utils.parsers_bbmap import parse_comments
+            
             stats = pd.DataFrame()
 
             for insert_file in input:
