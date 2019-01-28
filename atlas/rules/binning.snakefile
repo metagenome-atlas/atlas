@@ -994,7 +994,7 @@ rule combine_coverages_MAGs:
         "genomes/counts/raw_counts_contigs.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
     run:
-
+        import pandas as pd
         from utils.parsers_bbmap import combine_coverages
 
 
