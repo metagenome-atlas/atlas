@@ -650,7 +650,7 @@ rule get_quality_for_dRep_from_checkm:
 
         D= pd.read_table(input[0],index_col=0)
 
-        D.index+=".fasta"
+        D.index=D.index.astype(str)+".fasta"
         D.index.name="genome"
         D.columns= D.columns.str.lower()
         D.iloc[:,:3].to_csv(output[0])
