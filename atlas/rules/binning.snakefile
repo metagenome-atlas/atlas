@@ -80,7 +80,7 @@ rule combine_coverages:
 
         from utils.parsers_bbmap import combine_coverages
 
-        combined_cov,_= combine_coverages(input.covstats,get_alls_samples_of_group(wc),'Avg_fold')
+        combined_cov,_= combine_coverages(input.covstats,get_alls_samples_of_group(wildcards),'Avg_fold')
 
         combined_cov.T.to_csv(output[0],sep='\t')
 
@@ -855,8 +855,8 @@ rule get_genomes2cluster:
 
 def build_db_genomes_input(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    path=os.path.join(genome_dir, "{genome}.fasta")
-    return expand(path, genome=path.genome)
+    path=  os.path.join(genome_dir, "{genome}.fasta")
+    return expand(path, genome=glob_wildcards(path).genome)
 
 
 rule build_db_genomes:
