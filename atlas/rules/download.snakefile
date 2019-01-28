@@ -28,7 +28,7 @@ FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
          #"refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
          #"refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
          "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
-         "OG_fasta.tar.gz": "8fc6ce2e055d1735dec654af98a641a4",
+         "OG_fasta": "8fc6ce2e055d1735dec654af98a641a4",
          "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
          "eggnog_proteins.dmnd": "5efb0eb18ed4575a20d25773092b83b9",
          "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
@@ -49,7 +49,7 @@ rule transfer_files:
     output:
         "%s/{filename}" % DBDIR
     run:
-        eggnog_files = {"OG_fasta.tar.gz": "OG_fasta.tar.gz",
+        eggnog_files = {"OG_fasta": "OG_fasta.tar.gz",
             "eggnog.db": "eggnog.db.gz",
             "og2level.tsv": "og2level.tsv.gz",
             "eggnog_proteins.dmnd": "eggnog_proteins.dmnd.gz",

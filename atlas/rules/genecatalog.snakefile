@@ -381,8 +381,8 @@ rule combine_gene_coverages:
             combined_cov[sample]= data.Median_fold
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
 
-        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
-        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t',compression='gzip')
+        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t',compression='gzip')
 
 
 ###########
@@ -397,7 +397,7 @@ rule combine_gene_coverages:
 def get_eggnog_db_file():
     return expand("{path}/{files}",
                   path=EGGNOG_DIR,
-                  files=["OG_fasta.tar.gz","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
+                  files=["OG_fasta","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
                   )
 
 # TODO: make benchmark
@@ -537,31 +537,46 @@ rule predict_single_copy_genes:
 
 
 localrules: gene_subsets
-checkpoint gene_subsets:
+rule gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
     output:
-        directory("Genecatalog/subsets/genes")
+        dynamic("Genecatalog/subsets/genes/{subset}.faa")
     params:
         subset_size=config['genecatalog']['SubsetSize'],
     run:
         from utils import fasta
-        fasta.split(input[0],subset_size,output[0],simplify_headers=True)
+        fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
 
 
-def combine_genecatalog_annotations_input(wildcards):
-    dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
-    Subset_names= glob_wildcards(os.path.join(dir_for_subsets, "{subsetID}.faa")).subsetID
-    return expand("Genecatalog/subsets/genes/{subsetID}.emapper.annotations", subsetID=Subset_names)
+# localrules: gene_subsets
+# checkpoint gene_subsets:
+#     input:
+#         "Genecatalog/gene_catalog.faa"
+#     output:
+#         directory("Genecatalog/subsets/genes")
+#     params:
+#         subset_size=config['genecatalog']['SubsetSize'],
+#     run:
+#         from utils import fasta
+#         fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
+#
+#
+# def combine_genecatalog_annotations_input(wildcards):
+#     dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
+#     Subset_names,= glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
+#     return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
+#                   subset=Subset_names)
 
 
 rule combine_annotations:
     input:
-        eggNOG=combine_genecatalog_annotations_input,
+        dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
-        with open(input.eggNOG[0]) as f:
+
+        with open(input[0]) as f:
             first_line= f.readline()
             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
 
