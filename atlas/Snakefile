@@ -192,6 +192,15 @@ rule qc:
 
 
 
+# overwrite commands in rules/download.snakefile
+onsuccess:
+    print("ATLAS finished")
+    print("Find out how to use the output of ATLAS on https://metagenome-atlas.readthedocs.io")
+
+
+onerror:
+    print("Documentation is available at: https://metagenome-atlas.readthedocs.io")
+    print("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
 
 
 
