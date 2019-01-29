@@ -865,7 +865,7 @@ rule get_genomes2cluster:
 
 rule build_db_genomes:
     input:
-        "genomes/genomes""
+        "genomes/genomes"
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
