@@ -132,9 +132,10 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
         "--printshellcmds --jobs {jobs} --rerun-incomplete "
-        "--configfile '{config_file}' {args} --nolock {conda} {dryrun} "
-        " {conda_prefix} "
+        "--configfile '{config_file}' --nolock "
+        " {conda}  {conda_prefix} {dryrun} "
         "{target_rule} "
+        " {args} "
 
     ).format(
         snakefile=get_snakefile(),
