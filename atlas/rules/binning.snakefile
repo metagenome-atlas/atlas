@@ -669,6 +669,8 @@ rule first_dereplication:
         "logs/genomes/pre_dereplication.log"
     conda:
         "%s/dRep.yaml" % CONDAENV
+    shadow:
+        "shallow"
     params:
         filter= " --noQualityFiltering " if config['genome_dereplication']['filter']['noFilter'] else "",
         filter_length= config['genome_dereplication']['filter']['length'],
@@ -715,6 +717,8 @@ rule second_dereplication:
         config['threads']
     log:
         "logs/genomes/dereplication.log"
+    shadow:
+        "shallow"
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
