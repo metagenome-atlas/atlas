@@ -92,12 +92,28 @@ import os
 import sys
 import tempfile
 
+EGGNOG_HEADER = [
+    "query_name",
+    "seed_eggNOG_ortholog",
+    "seed_ortholog_evalue",
+    "seed_ortholog_score",
+    "predicted_gene_name",
+    "GO_terms",
+    "KEGG_KO",
+    "BiGG_Reactions",
+    "Annotation_tax_scope",
+    "Matching_OGs",
+    "best_OG|evalue|score",
+    "categories",
+    "eggNOG_HMM_model_annotation",
+]
 
 def make_default_config():
     """ generates a dict with all the default values, if they exist
     """
 
     conf = {}
+    conf['data_type']='metagenome'
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count()
     conf["java_mem"] = JAVA_MEM
@@ -150,6 +166,7 @@ def make_default_config():
     conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
+    conf["spades_use_scaffolds"] = False
     conf["spades_preset"] = "meta"
     conf["spades_extra"] = ""
     conf["spades_skip_BayesHammer"] = False
@@ -159,7 +176,7 @@ def make_default_config():
     conf["minimum_mapped_reads"] = MINIMUM_MAPPED_READS
     conf["contig_trim_bp"] = CONTIG_TRIM_BP
 
-    conf["translation_table"] = 11
+    # conf["translation_table"] = 11
 
     # map reads to contigs and to genes
     conf["minimum_region_overlap"] = MINIMUM_REGION_OVERLAP
@@ -224,17 +241,17 @@ def make_default_config():
                             opt_parameters=""
                                 )
 
-    conf["diamond_run_mode"] = "fast"
-    conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
-    conf["diamond_e_value"] = DIAMOND_E_VALUE
-    conf["diamond_min_identity"] = DIAMOND_MIN_IDENTITY
-    conf["diamond_query_coverage"] = DIAMOND_QUERY_COVERAGE
-    conf["diamond_gap_open"] = DIAMOND_GAP_OPEN
-    conf["diamond_gap_extend"] = DIAMOND_GAP_EXTEND
-    conf["diamond_block_size"] = DIAMOND_BLOCK_SIZE
-    conf["diamond_index_chunks"] = DIAMOND_INDEX_CHUNKS
-    conf["summary_method"] = SUMMARY_METHOD
-    conf["aggregation_method"] = AGGREGATION_METHOD
-    conf["majority_threshold"] = MAJORITY_THRESHOLD
+    # conf["diamond_run_mode"] = "fast"
+    # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
+    # conf["diamond_e_value"] = DIAMOND_E_VALUE
+    # conf["diamond_min_identity"] = DIAMOND_MIN_IDENTITY
+    # conf["diamond_query_coverage"] = DIAMOND_QUERY_COVERAGE
+    # conf["diamond_gap_open"] = DIAMOND_GAP_OPEN
+    # conf["diamond_gap_extend"] = DIAMOND_GAP_EXTEND
+    # conf["diamond_block_size"] = DIAMOND_BLOCK_SIZE
+    # conf["diamond_index_chunks"] = DIAMOND_INDEX_CHUNKS
+    # conf["summary_method"] = SUMMARY_METHOD
+    # conf["aggregation_method"] = AGGREGATION_METHOD
+    # conf["majority_threshold"] = MAJORITY_THRESHOLD
 
     return conf

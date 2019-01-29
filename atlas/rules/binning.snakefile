@@ -72,24 +72,17 @@ rule get_contig_coverage_from_bb:
 rule combine_coverages:
     input:
         covstats = lambda wc: expand("{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
-                                 sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                                 sample_reads = get_alls_samples_of_group(wc),
                                  sample=wc.sample)
     output:
         "{sample}/binning/coverage/combined_coverage.tsv"
     run:
 
-        import pandas as pd
-        import os
+        from utils.parsers_bbmap import combine_coverages
 
-        combined_cov={}
-        for cov_file in input:
+        combined_cov,_= combine_coverages(input.covstats,get_alls_samples_of_group(wildcards),'Avg_fold')
 
-            sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
-
-            data.loc[data.Avg_fold<0,'Avg_fold']=0
-            combined_cov[sample]= data.Avg_fold
-        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
+        combined_cov.T.to_csv(output[0],sep='\t')
 
 
 
@@ -132,7 +125,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        "{sample}/binning/concoct/cluster_attribution.tmp"
+        "{sample}/binning/concoct/cluster_attribution.tsv"
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -143,7 +136,7 @@ rule convert_concoct_csv_to_tsv:
 rule get_metabat_depth_file:
     input:
         bam = lambda wc: expand("{sample}/sequence_alignment/{sample_reads}.bam",
-                     sample_reads = GROUPS[config['samples'][wc.sample]['group']],
+                     sample_reads = get_alls_samples_of_group(wc),
                      sample=wc.sample)
     output:
         temp("{sample}/binning/metabat/metabat_depth.txt")
@@ -167,7 +160,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        "{sample}/binning/metabat/cluster_attribution.tmp",
+        "{sample}/binning/metabat/cluster_attribution.tsv",
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
@@ -238,36 +231,36 @@ rule maxbin:
 
 
 localrules: get_maxbin_cluster_attribution, get_bins
-localrules: get_unique_cluster_attribution,
-rule get_unique_cluster_attribution:
-    input:
-        "{sample}/binning/{binner}/cluster_attribution.tmp"
-    output:
-        "{sample}/binning/{binner}/cluster_attribution.tsv"
-    run:
-        import pandas as pd
-        import numpy as np
-
-
-        d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
-
-        assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
-
-        old_cluster_ids = list(d.unique())
-        if 0 in old_cluster_ids:
-            old_cluster_ids.remove(0)
-
-        map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_".format(**wildcards) )  ))
-
-        new_d= d.map(map_cluster_ids)
-        new_d.dropna(inplace=True)
-
-        new_d.to_csv(output[0],sep='\t')
-
+# localrules: get_unique_cluster_attribution,
+# rule get_unique_cluster_attribution:
+#     input:
+#         "{sample}/binning/{binner}/cluster_attribution.tmp"
+#     output:
+#         "{sample}/binning/{binner}/cluster_attribution.tsv"
+#     run:
+#         import pandas as pd
+#         import numpy as np
+#
+#
+#         d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
+#
+#         assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
+#
+#         old_cluster_ids = list(d.unique())
+#         if 0 in old_cluster_ids:
+#             old_cluster_ids.remove(0)
+#
+#         map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_".format(**wildcards) )  ))
+#
+#         new_d= d.map(map_cluster_ids)
+#         new_d.dropna(inplace=True)
+#
+#         new_d.to_csv(output[0],sep='\t')
+#
 
 rule get_maxbin_cluster_attribution:
     input:
-        directory("{sample}/binning/maxbin/intermediate_files")
+        "{sample}/binning/maxbin/intermediate_files"
     output:
         "{sample}/binning/maxbin/cluster_attribution.tsv"
     params:
@@ -323,7 +316,7 @@ rule initialize_checkm:
 rule run_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = directory("{sample}/binning/{binner}/bins") # actualy path to fastas
+        bins = "{sample}/binning/{binner}/bins" # actualy path to fastas
     output:
         "{sample}/binning/{binner}/checkm/completeness.tsv"
     params:
@@ -397,7 +390,7 @@ rule checkm_tetra:
 rule checkm_outliers:
     input:
         tetra= "{sample}/binning/{binner}/checkm/tetranucleotides.txt",
-        bin_folder= directory("{sample}/binning/{binner}/bins"),
+        bin_folder= "{sample}/binning/{binner}/bins",
         checkm = "{sample}/binning/{binner}/checkm/completeness.tsv"
     params:
         checkm_folder = lambda wc, input: os.path.dirname(input.checkm),
@@ -431,7 +424,7 @@ rule refine_bins:
 rule find_16S:
     input:
         contigs=BINNING_CONTIGS,
-        bin_dir= directory("{sample}/binning/{binner}/bins")
+        bin_dir= "{sample}/binning/{binner}/bins"
     output:
         summary="{sample}/binning/{binner}/SSU/ssu_summary.tsv",
         fasta="{sample}/binning/{binner}/SSU/ssu.fna",
@@ -598,7 +591,7 @@ if config['final_binner']=='DASTool':
             bins=expand(rules.get_unknown_bins.output.dir,sample=SAMPLES),
             scores= expand(rules.get_unknown_bins.output.scores,sample=SAMPLES)
         output:
-            dir=temp(directory("genomes/all_unknown_bins")),
+            dir=directory("genomes/all_unknown_bins"),
             scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
         run:
             os.mkdir(output.dir)
@@ -623,19 +616,18 @@ if config['final_binner']=='DASTool':
 localrules: get_all_bins
 rule get_all_bins:
     input:
-        bins=expand(directory("{sample}/binning/{binner}/bins"),
+        bins=expand("{sample}/binning/{binner}/bins",
                sample= SAMPLES, binner= config['final_binner']),
         #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
         #       sample= SAMPLES, binner= config['final_binner'])
     output:
-        temp(directory("genomes/all_bins"))
-
+        directory(temp("genomes/all_bins"))
     run:
         os.mkdir(output[0])
         from glob import glob
         import shutil
         for bin_folder in input.bins:
-            for fasta_file in glob(bin_folder+'/*.fasta'):
+            for fasta_file in glob(os.path.join(bin_folder,'*.fasta')):
 
                 #fasta_file_name = os.path.split(fasta_file)[-1]
                 #in_path = os.path.dirname(fasta_file)
@@ -658,7 +650,7 @@ rule get_quality_for_dRep_from_checkm:
 
         D= pd.read_table(input[0],index_col=0)
 
-        D.index+=".fasta"
+        D.index=D.index.astype(str)+".fasta"
         D.index.name="genome"
         D.columns= D.columns.str.lower()
         D.iloc[:,:3].to_csv(output[0])
@@ -667,7 +659,7 @@ rule get_quality_for_dRep_from_checkm:
 
 rule first_dereplication:
     input:
-        directory("genomes/all_bins"),
+        "genomes/all_bins",
         quality= "genomes/quality.csv"
     output:
         directory("genomes/pre_dereplication/dereplicated_genomes")
@@ -677,6 +669,8 @@ rule first_dereplication:
         "logs/genomes/pre_dereplication.log"
     conda:
         "%s/dRep.yaml" % CONDAENV
+    shadow:
+        "shallow"
     params:
         filter= " --noQualityFiltering " if config['genome_dereplication']['filter']['noFilter'] else "",
         filter_length= config['genome_dereplication']['filter']['length'],
@@ -723,6 +717,8 @@ rule second_dereplication:
         config['threads']
     log:
         "logs/genomes/dereplication.log"
+    shadow:
+        "shallow"
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
@@ -758,7 +754,7 @@ rule second_dereplication:
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = directory("genomes/genomes")
+        bins = "genomes/genomes"
     output:
         "genomes/checkm/completeness.tsv"
     params:
@@ -780,12 +776,12 @@ rule run_all_checkm_lineage_wf:
             {params.output_dir}
         """
 
-localrules: rename_final_bins
-rule rename_final_bins:
+localrules: rename_genomes
+rule rename_genomes:
     input:
-        directory("genomes/Dereplication/dereplicated_genomes")
+        "genomes/Dereplication/dereplicated_genomes"
     output:
-        dir=directory("genomes/genomes"),
+        dir= directory("genomes/genomes"),
         map_file="genomes/clustering/contig2genome.tsv",
         old2new = "genomes/clustering/old2newID.tsv"
     params:
@@ -818,12 +814,14 @@ rule rename_final_bins:
                             out_file.write(f"{contig}\t{new_name}\n")
 
 
+
+
 localrules: get_genomes2cluster
 rule get_genomes2cluster:
     input:
         old2new="genomes/clustering/old2newID.tsv",
-        pre_dereplication=directory("genomes/pre_dereplication/dereplicated_genomes"),
-        dereplication= directory("genomes/Dereplication/dereplicated_genomes")
+        pre_dereplication="genomes/pre_dereplication/dereplicated_genomes",
+        dereplication= "genomes/Dereplication/dereplicated_genomes"
     output:
         "genomes/clustering/allbins2genome.tsv"
     run:
@@ -859,10 +857,15 @@ rule get_genomes2cluster:
 
 ### Quantification
 
+# def build_db_genomes_input(wildcards):
+#     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+#     path=  os.path.join(genome_dir, "{genome}.fasta")
+#     return expand(path, genome=glob_wildcards(path).genome)
+
 
 rule build_db_genomes:
     input:
-        fasta_dir = directory("genomes/genomes")
+        "genomes/genomes"
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -875,7 +878,7 @@ rule build_db_genomes:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
         """
-        cat {input.fasta_dir}/* > {output.fasta} 2> {log}
+        cat {input}/*.fasta > {output.fasta} 2> {log}
         bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
 
         """
@@ -995,22 +998,13 @@ rule combine_coverages_MAGs:
         "genomes/counts/raw_counts_contigs.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
     run:
-
         import pandas as pd
-        import os
+        from utils.parsers_bbmap import combine_coverages
 
-        combined_cov={}
-        combined_N_reads={}
-        for cov_file in input:
 
-            sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
-            data.loc[data.Median_fold<0,'Median_fold']=0
-            combined_cov[sample]= data.Median_fold
-            combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
+        combined_cov,Counts_contigs = combine_coverages(input.covstats,SAMPLES)
 
-        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
-        Counts_contigs= pd.DataFrame(combined_N_reads)
+        combined_cov.to_csv(output[0],sep='\t')
         Counts_contigs.to_csv(output[1],sep='\t')
 
 
@@ -1063,6 +1057,14 @@ rule combine_bined_coverages_MAGs:
         Median_abund.to_csv(output.median_abund,sep='\t')
 
 
+
+localrules: make_fasta_available
+rule make_fasta_available:
+    input:
+        "genomes/genomes"
+    output:
+        dynamic("genomes/genomes/{genome}.fasta")
+
 ## annotation
 
 rule run_prokka_bins:
@@ -1092,3 +1094,21 @@ rule run_prokka_bins:
                --cpus {threads} \
                {input}
               """
+
+
+# def genome_annotation_input(wildcards):
+#     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+#     return expand("annotations/prokka/{genome}.tsv",
+#            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
+#
+
+rule aggregate_genome_annotation:
+    input:
+        dynamic("annotations/prokka/{genome}.tsv")
+    output:
+        "genomes/annotations/prokka.tsv"
+    run:
+        import pandas as pd
+        out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
+
+        out.to_csv(output[0],sep='\t')

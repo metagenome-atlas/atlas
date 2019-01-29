@@ -17,11 +17,39 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
+
+DBDIR = os.path.realpath(config["database_dir"])
+CHECKMDIR = os.path.join(DBDIR, "checkm")
+CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
+# note: saving OG_fasta.tar.gz in order to not create secondary "success" file
+FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
+         "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
+         "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
+         #"refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
+         #"refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
+         "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
+         "OG_fasta": "8fc6ce2e055d1735dec654af98a641a4",
+         "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
+         "eggnog_proteins.dmnd": "5efb0eb18ed4575a20d25773092b83b9",
+         "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
+         CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
+
+localrules: download, transfer_files
+
+rule download:
+    input:
+        expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
+        "%s/taxon_marker_sets.tsv" % CHECKMDIR
+
+
+
+
+
 rule transfer_files:
     output:
         "%s/{filename}" % DBDIR
     run:
-        eggnog_files = {"OG_fasta.tar.gz": "OG_fasta.tar.gz",
+        eggnog_files = {"OG_fasta": "OG_fasta.tar.gz",
             "eggnog.db": "eggnog.db.gz",
             "og2level.tsv": "og2level.tsv.gz",
             "eggnog_proteins.dmnd": "eggnog_proteins.dmnd.gz",
@@ -47,7 +75,7 @@ rule transfer_files:
                 raise OSError(2, "Invalid checksum", output[0])
 
 
-rule extract_checkm_data:
+rule download_checkm_data:
     input:
         "%s/%s" % (DBDIR, CHECKM_ARCHIVE)
     output:
@@ -90,8 +118,7 @@ rule extract_checkm_data:
 
 
 onsuccess:
-    print(("All databases have downloaded and validated successfully.\nWhen generating your "
-           "configuration file, use '--database-dir %s'") % config["db_dir"])
+    print("All databases have downloaded and validated successfully")
 
 
 onerror:

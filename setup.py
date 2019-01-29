@@ -66,6 +66,7 @@ setup(
             "atlas/report/assembly_report.py",
             "atlas/report/bin_report.py",
             "scripts/utils/fasta.py",
+            "scripts/utils/parsers_bbmap.py",
             "scripts/utils/__init__.py"
                        ]},
     include_package_data=True,

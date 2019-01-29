@@ -1,6 +1,7 @@
 import argparse
-import os
+import os,sys
 import pandas as pd
+f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
 import plotly.graph_objs as go
 from plotly import offline
 from cufflinks import iplot
@@ -32,7 +33,7 @@ def parse_checkm_output(sample_data, out_tsv):
         ]
         df = df.append(pd.concat([c_df, t_df], axis=1))
     df.to_csv(out_tsv, sep="\t")
-    df["Sample"] = df.index.map( lambda s: s.split(".")[0])
+    df["Sample"] = df.index.map( lambda s: str(s).split(".")[0])
     return df
 
 

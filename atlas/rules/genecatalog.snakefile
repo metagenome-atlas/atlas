@@ -60,7 +60,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         threads:
             config.get("threads", 1)
         params:
-            tmpdir= temp(directory(os.path.join(config['tmpdir'],"mmseqs"))),
+            tmpdir= os.path.join(config['tmpdir'],"mmseqs"),
             clustermethod = 'linclust' if config['genecatalog']['clustermethod']=='linclust' else 'cluster',
             coverage=config['genecatalog']['coverage'], #0.8,
             minid=config['genecatalog']['minid'], # 0.00
@@ -381,8 +381,105 @@ rule combine_gene_coverages:
             combined_cov[sample]= data.Median_fold
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
 
-        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t')
-        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t')
+        pd.DataFrame(combined_cov).to_csv(output[0],sep='\t',compression='gzip')
+        pd.DataFrame(combined_N_reads).to_csv(output[1],sep='\t',compression='gzip')
+
+
+###########
+## EGG NOG
+##########
+
+# # this rule specifies the more general eggNOG rules
+
+# output with wildcards "{folder}/{prefix}.emapper.tsv"
+
+
+def get_eggnog_db_file():
+    return expand("{path}/{files}",
+                  path=EGGNOG_DIR,
+                  files=["OG_fasta","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
+                  )
+
+# TODO: make benchmark
+rule eggNOG_homology_search:
+    input:
+        eggnog_db_files=get_eggnog_db_file(),
+        faa = "{folder}/{prefix}.faa",
+    output:
+        temp("{folder}/{prefix}.emapper.seed_orthologs"),
+    params:
+        data_dir = EGGNOG_DIR,
+        prefix = "{folder}/{prefix}"
+    resources:
+        mem = config.get("java_mem", JAVA_MEM)
+    threads:
+        config["threads"]
+    conda:
+        "%s/eggNOG.yaml" % CONDAENV
+    log:
+        "{folder}/logs/{prefix}/eggNOG_homology_search_diamond.log"
+    shell:
+        """
+        emapper.py -m diamond --no_annot --no_file_comments \
+            --data_dir {params.data_dir} --cpu {threads} -i {input.faa} \
+            -o {params.prefix} --override 2> >(tee {log})
+        """
+
+
+
+rule eggNOG_annotation:
+    input:
+        eggnog_db_files=get_eggnog_db_file(),
+        seed = rules.eggNOG_homology_search.output
+    output:
+        temp("{folder}/{prefix}.emapper.annotations")
+    params:
+        data_dir = EGGNOG_DIR,
+        prefix = "{folder}/{prefix}"
+    threads:
+        config.get("threads", 1)
+    resources:
+        mem=20
+    conda:
+        "%s/eggNOG.yaml" % CONDAENV
+    log:
+        "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log"
+    shell:
+        """
+        emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
+            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
+        """
+EGGNOG_HEADERS= [
+"query_name",
+"seed_eggNOG_ortholog",
+"seed_ortholog_evalue",
+"seed_ortholog_score",
+"predicted_gene_name",
+"GO_terms",
+"KEGG_KO",
+"BiGG_Reactions",
+"Annotation_tax_scope",
+"Matching_OGs",
+"best_OG|evalue|score",
+"categories",
+"eggNOG_HMM_model_annotation"]
+
+# rule add_eggNOG_header:
+#     input:
+#         "{folder}/{prefix}.emapper.annotations"
+#     output:
+#         "{folder}/{prefix}.emapper.tsv"
+#     run:
+#         import pandas as pd#
+
+#            where do you take the Headers
+
+#         D = pd.read_table(input[0], header=None)
+#         D.columns = EGGNOG_HEADERS
+#         D.to_csv(output[0],sep="\t",index=False)
+
+
+
 
 
 #
@@ -455,34 +552,71 @@ rule predict_single_copy_genes:
 
 
 
-rule generate_subsets_for_annotation:
+#
+# localrules: gene_subsets,combine_egg_nogg_annotations
+# checkpoint gene_subsets:
+#     input:
+#         "Genecatalog/gene_catalog.faa"
+#     output:
+#         directory("Genecatalog/subsets/genes")
+#     params:
+#         subset_size=config['genecatalog']['SubsetSize'],
+#     run:
+#         from utils import fasta
+#         fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
+#
+#
+# def combine_genecatalog_annotations_input(wildcards):
+#     dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
+#     Subset_names,= glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
+#     return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
+#                   subset=Subset_names)
+
+# rule combine_egg_nogg_annotations:
+#     input:
+#         combine_genecatalog_annotations_input
+#     output:
+#         temp("Genecatalog/annotations/eggNog.emapper.annotations")
+#     shell:
+#         "cat {input} > {output}"
+
+# localrules: add_eggNOG_header
+# rule add_eggNOG_header:
+#     input:
+#         "Genecatalog/annotations/eggNog.emapper.annotations"
+#     output:
+#         "Genecatalog/annotations/eggNog.tsv"
+#     run:
+#         import pandas as pd
+#
+#         D = pd.read_table(input[0], header=None)
+#         D.columns = EGGNOG_HEADERS
+#         D.to_csv(output[0],sep="\t",index=False)
+
+localrules: gene_subsets
+rule gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
-#    wildcards_constraints:
-#        extension="f[n,a]a"
     output:
-        temp(dynamic("Genecatalog/subsets/genes/{subsetID}.faa"))
+        dynamic("Genecatalog/subsets/genes/{subset}.faa")
     params:
         subset_size=config['genecatalog']['SubsetSize'],
-        output_dir= lambda wc, output: os.path.dirname(output[0]),
     run:
         from utils import fasta
 
-        fasta.split(input[0],subset_size,out_dir,simplify_headers=True)
+        output_dir=os.path.dirname(output[0])
+        os.removedirs(output_dir)
+
+        fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
 
 rule combine_annotations:
     input:
-        faa= dynamic("Genecatalog/subsets/genes/{subsetID}.faa"),
-        eggNOG= dynamic("Genecatalog/subsets/genes/{subsetID}.emapper.annotations")
+        dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
-        # eggNog
-        import sys
-        sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile))))
-        from tables import EGGNOG_HEADERS
 
-        with open(input.eggNOG[0]) as f:
+        with open(input[0]) as f:
             first_line= f.readline()
             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
 
@@ -491,15 +625,7 @@ rule combine_annotations:
         shell("cat {input.eggNOG} >> {output.eggNOG}")
 
 
-rule gene_catalog:
-    input:
-        "Genecatalog/gene_catalog.fna",
-        "Genecatalog/gene_catalog.faa",
-        "Genecatalog/counts/median_coverage.tsv.gz",
-        expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        rules.combine_annotations.output
-    output:
-        temp(touch("Genecatalog/genecatalog_finished"))
+
 
 
 # after combination need to add eggNOG headerself.

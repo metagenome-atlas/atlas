@@ -280,7 +280,8 @@ else:
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
-            temp("{sample}/assembly/contigs.fasta")
+            "{sample}/assembly/contigs.fasta",
+            "{sample}/assembly/scaffolds.fasta"
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
@@ -311,7 +312,7 @@ else:
     localrules: rename_spades_output
     rule rename_spades_output:
         input:
-            "{sample}/assembly/contigs.fasta"
+            "{{sample}}/assembly/{sequences}.fasta".format(sequences= 'scaffolds' if config['spades_use_scaffolds'] else 'contigs' )
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
@@ -502,7 +503,7 @@ rule finalize_contigs:
     run:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
-
+ruleorder: bam_2_sam_contigs > align_reads_to_final_contigs
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
@@ -510,12 +511,12 @@ rule align_reads_to_final_contigs:
         fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
         sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
-        unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-                          fraction=MULTIFILE_FRACTIONS))
+        #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
+        #                  fraction=MULTIFILE_FRACTIONS))
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-        unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
+        #unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
         paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
         ambiguous = 'all' if CONTIG_COUNT_MULTI_MAPPED_READS else 'best',
@@ -526,7 +527,7 @@ rule align_reads_to_final_contigs:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log"
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log" # this file is udes for assembly report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -540,8 +541,7 @@ rule align_reads_to_final_contigs:
             ref={input.fasta} \
             {params.input} \
             trimreaddescriptions=t \
-            outm={output.sam} \
-            {params.unmapped} \
+            out={output.sam} \
             threads={threads} \
             pairlen={params.max_distance_between_pairs} \
             pairedonly={params.paired_only} \
@@ -560,6 +560,25 @@ rule align_reads_to_final_contigs:
         """
 
 
+rule bam_2_sam_contigs:
+    input:
+        "{sample}/sequence_alignment/{sample}.bam"
+    output:
+        temp("{sample}/sequence_alignment/{sample}.sam")
+    threads:
+        config['threads']
+    resources:
+        mem = config["java_mem"],
+    shadow:
+        "shallow"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    shell:
+        """
+        reformat.sh in={input} out={output} sam=1.3
+        """
+
+
 rule pileup:
     input:
         fasta = "{sample}/{sample}_contigs.fasta",
@@ -574,7 +593,7 @@ rule pileup:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log" # this file is udes for assembly report
+        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
@@ -632,13 +651,68 @@ rule create_bam_index:
     shell:
         "samtools index {input}"
 
+rule predict_genes:
+    input:
+        "{sample}/{sample}_contigs.fasta"
+    output:
+        fna = "{sample}/annotation/predicted_genes/{sample}.fna",
+        faa = "{sample}/annotation/predicted_genes/{sample}.faa",
+        gff = "{sample}/annotation/predicted_genes/{sample}.gff"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "{sample}/logs/gene_annotation/prodigal.txt"
+    benchmark:
+        "logs/benchmarks/prokka/{sample}.txt"
+    threads:
+        1
+    shell:
+        """
+        prodigal -i {input} -o {output.gff} -d {output.fna} \
+            -a {output.faa} -p meta -f gff 2> >(tee {log})
+        """
+
+
+
+localrules: get_contigs_from_gene_names
+rule get_contigs_from_gene_names:
+    input:
+        faa = "{sample}/annotation/predicted_genes/{sample}.faa",
+    output:
+        tsv= "{sample}/annotation/predicted_genes/{sample}.tsv"
+    run:
+        header = ["gene_id", "Contig", "Gene_nr", "Start", "Stop", "Strand", "Annotation"]
+        with open(output.tsv, "w") as tsv:
+            tsv.write("\t".join(header) + "\n")
+            with open(input.faa) as fin:
+                gene_idx = 0
+                for line in fin:
+                    if line[0] == ">":
+                        text = line[1:].strip().split(" # ")
+                        old_gene_name = text[0]
+                        text.remove(old_gene_name)
+                        old_gene_name_split = old_gene_name.split("_")
+                        gene_nr = old_gene_name_split[-1]
+                        contig_nr = old_gene_name_split[-2]
+                        sample = "_".join(old_gene_name_split[:len(old_gene_name_split) - 2])
+                        tsv.write("{gene_id}\t{sample}_{contig_nr}\t{gene_nr}\t{text}\n".format(
+                            text="\t".join(text),
+                            gene_id=old_gene_name,
+                            i=gene_idx,
+                            sample=sample,
+                            gene_nr=gene_nr,
+                            contig_nr=contig_nr))
+                        gene_idx += 1
+    #
+
+
 
 localrules: build_assembly_report
 rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
-        mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", sample=SAMPLES),
+        mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:
