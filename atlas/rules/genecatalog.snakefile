@@ -625,15 +625,7 @@ rule combine_annotations:
         shell("cat {input.eggNOG} >> {output.eggNOG}")
 
 
-rule genecatalog:
-    input:
-        "Genecatalog/gene_catalog.fna",
-        "Genecatalog/gene_catalog.faa",
-        "Genecatalog/counts/median_coverage.tsv.gz",
-        expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        "Genecatalog/annotations/eggNog.tsv"
-    output:
-        temp(touch("finished_genecatalog"))
+
 
 
 # after combination need to add eggNOG headerself.

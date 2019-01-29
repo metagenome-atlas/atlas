@@ -44,4 +44,4 @@ atlas run -w $WD qc $@
 
 atlas run assembly -w $WD $@
 
-atlas run genomes -w $WD $@
+atlas run genecatalog -w $WD $@
