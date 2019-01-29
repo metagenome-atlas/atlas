@@ -503,7 +503,7 @@ rule finalize_contigs:
     run:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
-
+ruleorder: bam_2_sam_contigs > align_reads_to_final_contigs
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
@@ -557,6 +557,25 @@ rule align_reads_to_final_contigs:
             maxsites={params.maxsites} \
             -Xmx{resources.java_mem}G \
             2> {log}
+        """
+
+
+rule bam_2_sam_contigs:
+    input:
+        "{sample}/sequence_alignment/{sample}.bam"
+    output:
+        temp("{sample}/sequence_alignment/{sample}.sam")
+    threads:
+        config['threads']
+    resources:
+        mem = config["java_mem"],
+    shadow:
+        "shallow"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    shell:
+        """
+        reformat.sh in={input} out={output} sam=1.3
         """
 
 
