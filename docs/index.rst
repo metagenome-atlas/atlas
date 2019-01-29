@@ -6,7 +6,7 @@ Quick Start
 -----------
 
 Three commands to start analyzing your metagenome data::
-    conda install -c bioconda -c conda-forge metagenome-atlas #may not yet be ready see below
+    conda install -c bioconda -c conda-forge metagenome-atlas
     atlas init --db-dir databases path/to/fastq/files
     atlas run
 
@@ -28,30 +28,9 @@ For more details see documentation.
 .. toctree::
     :maxdepth: 2
     :caption: Install
-
     getting_started
     threads
 
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Assembly Protocol
-
-    assembly/samples
-    assembly/threads
-    assembly/preprocessing
-    assembly/assembly
-    assembly/annotation
-    assembly/advanced
-    assembly/example_configuration
-    assembly/output
-
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Annotation Protocol
-
-    annotation/samples
 
 
 Indices and tables
