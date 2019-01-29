@@ -603,7 +603,11 @@ rule gene_subsets:
         subset_size=config['genecatalog']['SubsetSize'],
     run:
         from utils import fasta
-        fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
+
+        output_dir=os.path.dirname(output[0])
+        os.removedirs(output_dir)
+
+        fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
 
 rule combine_annotations:
     input:

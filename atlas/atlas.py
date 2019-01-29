@@ -134,9 +134,8 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
         "--printshellcmds --jobs {jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {conda}  {conda_prefix} {dryrun} "
-        "{target_rule} "
+        " {target_rule} "
         " {args} "
-
     ).format(
         snakefile=get_snakefile(),
         working_dir=working_dir,
