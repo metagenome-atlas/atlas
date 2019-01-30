@@ -513,7 +513,7 @@ if PAIRED_END:
             import pandas as pd
             import os
             from utils.parsers_bbmap import parse_comments
-            
+
             stats = pd.DataFrame()
 
             for insert_file in input:
