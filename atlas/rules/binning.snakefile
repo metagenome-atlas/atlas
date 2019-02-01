@@ -1036,7 +1036,8 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        "genomes/genomes/{genome}.fasta"
+        "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"
+        #"genomes/genomes/{genome}.fasta"
     output:
         fna = "genomes/annotations/genes/{genome}.fna",
         faa = "genomes/annotations/genes/{genome}.faa",

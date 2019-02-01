@@ -164,6 +164,7 @@ rule genomes:
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
         "genomes/taxonomy/taxonomy_names.tsv",
+        dynamic("genomes/annotations/genes/{genome}.faa"),
         "finished_assembly"
     output:
         temp(touch("finished_genomes"))
