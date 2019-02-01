@@ -1,7 +1,6 @@
 
 import os, shutil,sys
 import argparse
-from snakemake.shell import shell
 from snakemake.io import glob_wildcards
 
 from atlas import utils
@@ -26,8 +25,6 @@ def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir):
             old2new_mapping_file.write(f"{binid}\t{new_name}\n")
 
             fasta_out = os.path.join(output_dir,f"{new_name}.fasta")
-            ## bbmap rename
-            shell(f"rename.sh in={fasta_in} out={fasta_out} prefix={new_name} ")
 
             # write names of contigs in mapping file
             with open(fasta_in) as ffi, open(fasta_out,'w') as ffo :
