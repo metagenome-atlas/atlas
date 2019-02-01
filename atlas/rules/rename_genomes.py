@@ -34,7 +34,7 @@ def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir):
                         Nseq+=1
                         new_header=f'{new_name}_{Nseq}'
                         out_contigs.write(f"{new_header}\t{new_name}\n")
-                        ffo.write(f">new_header\n")
+                        ffo.write(f">{new_header}\n")
                     else:
                         ffo.write(line)
 
