@@ -22,7 +22,7 @@ java_mem: 32
 # can be a subset of threads or altered if rule run_spades or run_megahit are being defined differently in your cluster configuration
 assembly_threads: 8
 # in GB
-assembly_memory: 50
+assembly_memory: 250
 # Local directory for temp files, useful for cluster execution without shared file system
 tmpdir: /tmp
 # directory where databases are downloaded with 'atlas download'
@@ -182,6 +182,14 @@ genome_dereplication:
       contamination: 5
       N50: 0.5
       length: 0
+
+########################
+# taxonomy
+#######################
+# Diamond needs up to 100 GB of memory for building the taxonomy database
+# If you prefer you can dowload an existing CAT database, see docs.
+diamond_mem: 100
+diamond_threads: 12
 
 
 ########################

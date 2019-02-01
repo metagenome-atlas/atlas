@@ -79,6 +79,8 @@ CONDAENV = get_conda_envs_dir()
 TMPDIR = get_temp_dir(config)
 DBDIR = os.path.realpath(config["database_dir"])
 EGGNOG_DIR = DBDIR
+CAT_DIR= os.path.join(DBDIR,'CAT')
+CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
 CHECKMDIR = os.path.join(DBDIR, "checkm")
 SAMPLES = sampleTable.index.values
 
@@ -126,6 +128,7 @@ include: "rules/qc.snakefile"
 include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
 include: "rules/genecatalog.snakefile"
+include: "rules/cat_taxonomy.smk"
 include: "rules/download.snakefile"
 
 
@@ -161,6 +164,7 @@ rule genomes:
         "genomes/clustering/contig2genome.tsv",
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
+        "genomes/taxonomy/taxonomy_names.tsv",
         "finished_assembly"
     output:
         temp(touch("finished_genomes"))

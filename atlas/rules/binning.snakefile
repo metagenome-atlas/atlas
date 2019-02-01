@@ -1058,8 +1058,8 @@ rule combine_bined_coverages_MAGs:
 
 
 
-localrules: make_fasta_available
-rule make_fasta_available:
+localrules: make_genome_available
+rule make_genome_available:
     input:
         "genomes/genomes"
     output:

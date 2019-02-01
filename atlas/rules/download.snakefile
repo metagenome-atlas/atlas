@@ -117,6 +117,21 @@ rule download_checkm_data:
         "tar -zxf {input} --directory {params.path}"
 
 
+rule download_cat_db:
+    output:
+        touch(CAT_flag_downloaded)
+    params:
+        db_folder=CAT_DIR
+    resources:
+        mem= config['diamond_mem']
+    threads:
+        config['diamond_threads']
+    conda:
+        "%s/cat.yaml" % CONDAENV
+    shell:
+        " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
+
+
 onsuccess:
     print("All databases have downloaded and validated successfully")
 

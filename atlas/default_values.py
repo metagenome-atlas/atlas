@@ -117,6 +117,8 @@ def make_default_config():
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count()
     conf["java_mem"] = JAVA_MEM
+    conf["diamond_mem"] = 100
+    conf["diamond_threads"] = 12
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
     conf["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
