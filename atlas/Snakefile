@@ -93,7 +93,7 @@ def get_alls_samples_of_group(wildcards):
 
 
 PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
-RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+RAW_INPUT_FRACTIONS = ['R1', 'R2'] if sampleTable.columns.str.contains('R2').any() else ['se']
 MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
 
 

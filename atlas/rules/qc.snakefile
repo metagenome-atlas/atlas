@@ -7,7 +7,7 @@ import warnings
 
 
 localrules: build_qc_report, combine_read_length_stats, \
-            combine_insert_stats, combine_read_counts
+            combine_read_counts
 
 
 
@@ -504,6 +504,7 @@ rule combine_read_length_stats:
 
 
 if PAIRED_END:
+    localrules: combine_insert_stats
     rule combine_insert_stats:
         input:
             expand("{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",sample=SAMPLES),
