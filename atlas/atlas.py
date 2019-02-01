@@ -119,8 +119,8 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
     sample_file=os.path.join(working_dir,'samples.tsv')
 
     if not os.path.exists(sample_file):
-        logging.critical(f"sample.tsv not found in the workind dir."
-                         "generate one with 'atlas init'")
+        logging.critical(f"sample.tsv not found in the working directory. "
+                         "Generate one with 'atlas init'")
         sys.exit(1)
 
     validate_config(config_file, workflow)
