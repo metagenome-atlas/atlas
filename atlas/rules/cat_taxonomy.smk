@@ -12,8 +12,8 @@ rule get_genome_for_cat:
         "shallow"
     run:
 
-        import os
-        genome_path= os.path.join(input[0],'{genome}.fasta')
+        import os,shutil
+        genome_path= shutil.path.join(input[0],'{genome}.fasta')
         Genomes = glob_wildcards(genome_path).genome
 
         for genome in Genomes:

@@ -1033,6 +1033,30 @@ rule combine_bined_coverages_MAGs:
         Median_abund.to_csv(output.median_abund,sep='\t')
 
 
+
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        fna = "genomes/annotations/genes/{genome}.fna",
+        faa = "genomes/annotations/genes/{genome}.faa",
+        gff = "genomes/annotations/genes/{genome}.gff"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal/{genome}.txt"
+    threads:
+        1
+    shell:
+        """
+        prodigal -i {input} -o {output.gff} -d {output.fna} \
+            -a {output.faa} -p meta -f gff 2> >(tee {log})
+        """
+
+
+
+
+
 ## detached from DAG
 
 ## annotation
