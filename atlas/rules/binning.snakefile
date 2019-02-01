@@ -1057,13 +1057,7 @@ rule combine_bined_coverages_MAGs:
         Median_abund.to_csv(output.median_abund,sep='\t')
 
 
-
-localrules: make_genome_available
-rule make_genome_available:
-    input:
-        "genomes/genomes"
-    output:
-        dynamic("genomes/genomes/{genome}.fasta")
+## detached from DAG
 
 ## annotation
 

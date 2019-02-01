@@ -2,14 +2,26 @@
 
 
 # this is a HACK because
-localrules: get_genome
-rule get_genome:
+localrules: get_genome_for_cat
+rule get_genome_for_cat:
     input:
-        "genomes/genomes/{genome}.fasta"
+        "genomes/genomes"
     output:
-        "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"
-    shell:
-        "ln -sr {input} {output}"
+        dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"))
+    shadow:
+        "shallow"
+    run:
+
+        import os
+        genome_path= os.path.join(input[0],'{genome}.fasta')
+        Genomes = glob_wildcards(genome_path).genome
+
+        for genome in Genomes:
+            os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}")
+            os.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
+
+
+
 # CAT output files with 'CAT' as prefix
 #CAT.bin2classification.txt  CAT.concatenated.alignment.diamond  CAT.concatenated.predicted_proteins.faa  CAT.log          summary.txt
 #CAT.bin2name.txt            CAT.concatenated.fasta              CAT.concatenated.predicted_proteins.gff  CAT.ORF2LCA.txt
@@ -22,6 +34,7 @@ rule cat_on_bin:
         "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
     params:
         db_folder=CAT_DIR,
+        bin_folder=lambda wc,input: os.path.dirname(input.genome)
         extension=".fasta",
         out_prefix= lambda wc,output: os.path.join(os.path.dirname(output[0]),wc.genome)
     resources:
@@ -33,8 +46,9 @@ rule cat_on_bin:
     log:
         "logs/genomes/taxonomy/{genome}.log"
     shell:
-        " CAT bins -d {params.db_folder} -t {params.db_folder} --nproc {threads} "
-        " -b {input.binfolder} "
+        " CAT bins "
+        " -b {params.bin_folder} "
+        "-d {params.db_folder} -t {params.db_folder} --nproc {threads} "
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 
