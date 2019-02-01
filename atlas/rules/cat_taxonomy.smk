@@ -29,7 +29,8 @@ rule get_genome_for_cat:
 rule cat_on_bin:
     input:
         flag=CAT_flag_downloaded,
-        genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"
+        genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta",
+        proteins= "genomes/annotations/genes/{genome}.faa"
     output:
         "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
     params:
@@ -47,7 +48,7 @@ rule cat_on_bin:
         "logs/genomes/taxonomy/{genome}.log"
     shell:
         " CAT bins "
-        " -b {params.bin_folder} "
+        " -b {params.bin_folder} -p {input.proteins} "
         "-d {params.db_folder} -t {params.db_folder} --nproc {threads} "
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
