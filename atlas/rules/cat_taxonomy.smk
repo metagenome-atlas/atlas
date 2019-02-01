@@ -17,7 +17,7 @@ rule get_genome_for_cat:
         Genomes = glob_wildcards(genome_path).genome
 
         for genome in Genomes:
-            os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}")
+            os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}",exist_ok=True)
             shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
 
 
