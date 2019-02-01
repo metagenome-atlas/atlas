@@ -93,12 +93,15 @@ def get_alls_samples_of_group(wildcards):
 
 
 PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
-RAW_INPUT_FRACTIONS = ['R1', 'R2'] if sampleTable.columns.str.contains('R2').any() else ['se']
+RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
 
 
 def get_input_fastq(wildcards):
-    return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
+    if not config.get('interleaved_fastqs',False):
+        return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
+    else:
+        return list(sampleTable.loc[wildcards.sample,['Reads_raw_se']])
 
 def get_quality_controlled_reads(wildcards):
     """Gets quality controlled reads for two cases. When preprocessed with
