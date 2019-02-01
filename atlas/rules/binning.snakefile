@@ -784,37 +784,10 @@ rule rename_genomes:
         "genomes/Dereplication/dereplicated_genomes"
     output:
         dir= directory("genomes/genomes"),
-        map_file="genomes/clustering/contig2genome.tsv",
-        old2new = "genomes/clustering/old2newID.tsv"
-    params:
-        file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
-    run:
-        import shutil
-        bin_ids, = glob_wildcards(params.file_name)
-
-        old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
-        os.makedirs(output.dir)
-
-
-        with open(output.map_file,'w') as out_file, open(output.old2new,'w') as old2new_mapping_file :
-            old2new_mapping_file.write(f"BinID\tMAG\n")
-            for binid in bin_ids:
-
-                fasta_in = params.file_name.format(binid=binid)
-                new_name= old2new_name[binid]
-
-                old2new_mapping_file.write(f"{binid}\t{new_name}\n")
-
-                fasta_out = os.path.join(output.dir,f"{new_name}.fasta")
-                ## bbmap rename
-                shell(f"rename.sh in={fasta_in} out={fasta_out} prefix={new_name})
-
-                # write names of contigs in mapping file
-                with open(fasta_out) as bin_file:
-                    for line in bin_file:
-                        if line[0]==">":
-                            contig = line[1:].strip().split()[0]
-                            out_file.write(f"{contig}\t{new_name}\n")
+        mapfile_contigs="genomes/clustering/contig2genome.tsv",
+        mapfile_genomes = "genomes/clustering/old2newID.tsv"
+    script:
+        "rename_genomes.py"
 
 
 

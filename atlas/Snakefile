@@ -7,6 +7,8 @@ from snakemake.utils import logger, min_version, update_config
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
 
+from utils import gen_names_for_range
+
 from default_values import *
 from conf import load_sample_table
 
@@ -63,12 +65,6 @@ def input_params_for_bbwrap(wildcards, input):
                                                        n=len(input)))
         sys.exit(1)
     return flag
-
-def gen_names_for_range(N,prefix='',start=1):
-    """generates a range of IDS with leading zeros so sorting will be ok"""
-    n_leading_zeros= len(str(N))
-    format_int=prefix+'{:0'+str(n_leading_zeros)+'d}'
-    return [format_int.format(i) for i in range(start,N+start)]
 
 
 
