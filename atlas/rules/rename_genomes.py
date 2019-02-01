@@ -1,6 +1,5 @@
 
 import os, shutil,sys
-f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
 import argparse
 from snakemake.shell import shell
 from snakemake.io import glob_wildcards
@@ -28,14 +27,19 @@ def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir):
 
             fasta_out = os.path.join(output_dir,f"{new_name}.fasta")
             ## bbmap rename
-            shell(f"rename.sh in={fasta_in} out={fasta_out} prefix={new_name}")
+            shell(f"rename.sh in={fasta_in} out={fasta_out} prefix={new_name} ")
 
             # write names of contigs in mapping file
-            with open(fasta_out) as bin_file:
-                for line in bin_file:
+            with open(fasta_in) as ffi, open(fasta_out,'w') as ffo :
+                Nseq=0
+                for line in ffi:
                     if line[0]==">":
-                        contig = line[1:].strip().split()[0]
-                        out_contigs.write(f"{contig}\t{new_name}\n")
+                        Nseq+=1
+                        new_header=f'{new_name}_{Nseq}'
+                        out_contigs.write(f"{new_header}\t{new_name}\n")
+                        ffo.write(f">new_header\n")
+                    else:
+                        ffo.write(line)
 
 
 if __name__ == "__main__":
