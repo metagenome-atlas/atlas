@@ -806,10 +806,11 @@ rule rename_genomes:
                 old2new_mapping_file.write(f"{binid}\t{new_name}\n")
 
                 fasta_out = os.path.join(output.dir,f"{new_name}.fasta")
-                shutil.copy(fasta_in,fasta_out)
+                ## bbmap rename
+                shell(f"rename.sh in={fasta_in} out={fasta_out} prefix={new_name})
 
                 # write names of contigs in mapping file
-                with open(fasta_in) as bin_file:
+                with open(fasta_out) as bin_file:
                     for line in bin_file:
                         if line[0]==">":
                             contig = line[1:].strip().split()[0]
