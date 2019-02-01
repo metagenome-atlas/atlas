@@ -34,7 +34,7 @@ rule cat_on_bin:
         "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
     params:
         db_folder=CAT_DIR,
-        bin_folder=lambda wc,input: os.path.dirname(input.genome)
+        bin_folder=lambda wc,input: os.path.dirname(input.genome),
         extension=".fasta",
         out_prefix= lambda wc,output: os.path.join(os.path.dirname(output[0]),wc.genome)
     resources:
