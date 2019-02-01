@@ -13,12 +13,12 @@ rule get_genome_for_cat:
     run:
 
         import os,shutil
-        genome_path= shutil.path.join(input[0],'{genome}.fasta')
+        genome_path= os.path.join(input[0],'{genome}.fasta')
         Genomes = glob_wildcards(genome_path).genome
 
         for genome in Genomes:
             os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}")
-            os.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
+            shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
 
 
 
