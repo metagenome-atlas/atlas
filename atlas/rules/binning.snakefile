@@ -687,7 +687,7 @@ rule first_dereplication:
         sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
-        " rm -rf {params.work_directory} "
+        " rm -rf {params.work_directory} ;"
         " dRep dereplicate "
         " {params.filter} "
         " --genomes {input[0]}/*.fasta "
@@ -734,7 +734,7 @@ rule second_dereplication:
         sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
-        " rm -rf {params.work_directory} "
+        " rm -rf {params.work_directory} ;"
         " dRep dereplicate "
         " --genomes {input[0]}/*.fasta "
         " --genomeInfo {input.quality} "
