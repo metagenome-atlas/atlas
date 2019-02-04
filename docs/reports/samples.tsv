@@ -1,0 +1,3 @@
+	Reads_raw_R1	Reads_raw_R2	Reads_QC_R1	Reads_QC_R2	BinGroup
+S001	/Users/silas/Documents/metagenomics/data/S001_R1.fastq.gz	/Users/silas/Documents/metagenomics/data/S001_R2.fastq.gz			Cage1
+S002	/Users/silas/Documents/metagenomics/data/S002_R1.fastq.gz	/Users/silas/Documents/metagenomics/data/S002_R2.fastq.gz			Cage1
