@@ -2,25 +2,25 @@
 
 
 # this is a HACK because
-# localrules: get_genome_for_cat
-# rule get_genome_for_cat:
-#     input:
-#         "genomes/genomes"
-#     output:
-#         dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"))
-#     shadow:
-#         "shallow"
-#     run:
-#
-#         import os,shutil
-#         genome_path= os.path.join(input[0],'{genome}.fasta')
-#         Genomes = glob_wildcards(genome_path).genome
-#
-#         for genome in Genomes:
-#             os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}",exist_ok=True)
-#             shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
-#
-#
+localrules: get_genome_for_cat
+rule get_genome_for_cat:
+    input:
+        "genomes/genomes"
+    output:
+        dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"))
+    shadow:
+        "shallow"
+    run:
+
+        import os,shutil
+        genome_path= os.path.join(input[0],'{genome}.fasta')
+        Genomes = glob_wildcards(genome_path).genome
+
+        for genome in Genomes:
+            os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}",exist_ok=True)
+            shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
+
+
 
 # CAT output files with 'CAT' as prefix
 #CAT.bin2classification.txt  CAT.concatenated.alignment.diamond  CAT.concatenated.predicted_proteins.faa  CAT.log          summary.txt
@@ -29,10 +29,13 @@
 rule cat_on_bin:
     input:
         flag=CAT_flag_downloaded,
-        genome= "genomes/genomes/{genome}.fasta",
-        proteins= "genomes/annotations/genes/{genome}.faa"
+        genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta",
+        #proteins= "genomes/annotations/genes/{genome}.faa"
     output:
-        "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
+        expand("genomes/taxonomy/intermediate_files/{{genome}}/{{genome}}.{extension}",
+        extension=["bin2classification.txt",
+        "concatenated.predicted_proteins.faa"
+        "concatenated.predicted_proteins.gff"])
     params:
         db_folder=CAT_DIR,
         bin_folder=lambda wc,input: os.path.dirname(input.genome),
@@ -48,12 +51,24 @@ rule cat_on_bin:
         "logs/genomes/taxonomy/{genome}.log"
     shell:
         " CAT bins "
-        " -b {params.bin_folder} -p {input.proteins} "
+        " -b {params.bin_folder} "#"-p {input.proteins} "
         "-d {params.db_folder} -t {params.db_folder} --nproc {threads} "
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 
-
+localrules: store_faa
+rule store_faa:
+    input:
+        expand("genomes/taxonomy/intermediate_files/{{genome}}/{{genome}}.{extension}",
+        extension=["bin2classification.txt",
+        "concatenated.predicted_proteins.faa",
+        "concatenated.predicted_proteins.gff"])
+    output:
+        expand("genomes/annotations/genes/{{genome}}.{extension}",
+                extension=[".faa",".gff"])
+    shell:
+        "mv {input[1]} > {output[0]}; "
+        "mv {input[2]} > {output[1]}; "
 
 localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:

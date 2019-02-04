@@ -756,12 +756,11 @@ rule second_dereplication:
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = dynamic("genomes/genomes/{genomes}.fasta")
+        bins = "genomes/genomes"
     output:
         "genomes/checkm/completeness.tsv"
     params:
-        output_dir = lambda wc, output: os.path.dirname(output[0]),
-        in_dir =lambda wc, input: os.path.dirname(input[0]),
+        output_dir = lambda wc, output: os.path.dirname(output[0])
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads:
@@ -775,7 +774,7 @@ rule run_all_checkm_lineage_wf:
             --quiet \
             --extension fasta \
             --threads {threads} \
-            {params.in_dir} \
+            {input.bins} \
             {params.output_dir}
         """
 
@@ -784,21 +783,14 @@ rule rename_genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes"
     output:
-        dir= directory("genomes/genomes"), #needs to be a directory
+        dir= directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes = "genomes/clustering/old2newID.tsv"
     script:
         "rename_genomes.py"
 
-#HACK: this is actually produced earlier
-localrules: get_genomes
-rule get_genomes:
-        input:
-            rules.rename_genomes.output
-        output:
-            dynamic("genomes/genomes/{genome}.fasta")
-        run:
-            assert len(os.listdir(os.path.dirname(output[0])) ) >0, "there are no genomes, rerun atlas with '-R rename_genomes', but check first the 'genomes/Dereplication/dereplicated_genomes'"
+
+
 
 localrules: get_genomes2cluster
 rule get_genomes2cluster:
@@ -849,7 +841,7 @@ rule get_genomes2cluster:
 
 rule build_db_genomes:
     input:
-        dynamic("genomes/genomes/{genome}.fasta")
+        "genomes/genomes"
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -862,7 +854,7 @@ rule build_db_genomes:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
         """
-        cat {input} > {output.fasta} 2> {log}
+        cat {input}/*.fasta > {output.fasta} 2> {log}
         bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
 
         """
@@ -1046,25 +1038,25 @@ rule combine_bined_coverages_MAGs:
 
 
 
-rule predict_genes_genomes:
-    input:
-        "genomes/genomes/{genome}.fasta"
-    output:
-        fna = "genomes/annotations/genes/{genome}.fna",
-        faa = "genomes/annotations/genes/{genome}.faa",
-        gff = "genomes/annotations/genes/{genome}.gff"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    log:
-        "logs/genomes/prodigal/{genome}.txt"
-    threads:
-        1
-    shell:
-        """
-        prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
-        """
-
+# rule predict_genes_genomes:
+#     input:
+#         "genomes/genomes/{genome}.fasta"
+#     output:
+#         fna = "genomes/annotations/genes/{genome}.fna",
+#         faa = "genomes/annotations/genes/{genome}.faa",
+#         gff = "genomes/annotations/genes/{genome}.gff"
+#     conda:
+#         "%s/required_packages.yaml" % CONDAENV
+#     log:
+#         "logs/genomes/prodigal/{genome}.txt"
+#     threads:
+#         1
+#     shell:
+#         """
+#         prodigal -i {input} -o {output.gff} -d {output.fna} \
+#             -a {output.faa} -p meta -f gff 2> >(tee {log})
+#         """
+#
 
 
 
