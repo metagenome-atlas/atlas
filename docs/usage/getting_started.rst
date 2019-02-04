@@ -19,11 +19,12 @@ Then install metagenome-atlas::
 -----------------------------------------------
 Atlas is still under active development, therefore you may want to install the up to date atlas from GitHub.
 
-Create an conda environment with all primary dependencies. All further dependencies are installed on the fly.
-::
+Create an conda environment with all primary dependencies. All further dependencies are installed on the fly::
+
   conda create -n atlasenv -c bioconda -c conda-forge python>=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
 
 Load the environment::
+
   source activate atlasenv
 
 copy code from GitHub and install::
@@ -88,19 +89,24 @@ This command creates a ``samples.tsv`` and a ``config.yaml`` in the working dire
 Have a look at them with a normal text editor and check if the samples names are inferred correctly.
 Samples should be alphanumeric names and cam be dash delimited. Underscores should be fine too.
 
-You can find an example here. ADDLINK
+See the  :download:`example sample table <../reports/samples.tsv>`
+
+
+.. .. include:: ../reports/samples.tsv
+
+
 
 The ``BinGroup`` parameter is used during the genomic binning.
 In short: all samples in which you expect the same strain to
 be found should belong to the same group,
-e.g. all metagenome samples from mice in the same cage. ADDLINK
+e.g. all metagenome samples from mice in the same cage.
 
 You should also check the ``config.yaml`` file, especially:
 
-- You may want to change the resources configuration, depending on the system you run atlas. ADDLINK
-- You may want to add ad host genomes to be removed. ADDLINK
+- You may want to change the resources configuration, depending on the :ref:`system <execution_system>` you run atlas on.
+- You may want to add ad :ref:`host genomes <contaminants>` to be removed.
 
-Details about the parameters can be found here. ADDLINK
+Details about the parameters can be found in the section :ref:`Configuration`
 
 atlas run
 ----------
@@ -134,6 +140,15 @@ atlas run
 
 ``atlas run`` need to know the working directory with a ``samples.tsv`` inside it.
 
-Take note of the ``--dryrun`` parameter, see here for other handy snakemake arguments. ADDLINK
+Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for other handy snakemake arguments.
 
-If you want to run atlas on a cluster system you want to read this section.
+If you want to run atlas on a cluster system you want to read the section :ref:`execution_system`.
+
+
+
+Example config file
+-------------------
+
+
+.. include:: ../../atlas/template_config.yaml
+  :code:

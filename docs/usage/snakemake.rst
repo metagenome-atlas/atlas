@@ -1,3 +1,5 @@
+.. _snakemake:
+
 Snakemake
 =========
 

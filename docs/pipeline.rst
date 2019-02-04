@@ -11,6 +11,7 @@ Quality control
 ---------------
 
 ::
+
   atlas run qc
 
 
@@ -19,15 +20,20 @@ Runs quality control of single or paired end reads.
 Main output files:
 
   - `reports/QC_report.html`_
-  - Different statis in ``stats``
+  - Different stats in ``stats``
 
 
 .. _reports/QC_report.html: reports/QC_report.html
+
+.. raw:: html
+    :file: ../reports/QC_report.html
 
 Per sample:
 
   - {sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz
   - Various quality stats in {sample}/sequence_quality_control/read_stats
+
+.. _fractions:
 
 Fractions:
 ``````````
@@ -38,6 +44,19 @@ The se are seamlessly integrated in the next steps.
 
 Assembly
 ---------------
+
+Besides the `reports/assembly_report.html`_ this rule outputs the following files per sample:
+
+  -  "{sample}/{sample}_contigs.fasta",
+  - "{sample}/sequence_alignment/{sample}.bam",
+  -  "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
+  -      "{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
+  -      "{sample}/assembly/contig_stats/final_contig_stats.txt"
+
+
+.. _reports/assembly_report.html:
+
+
 
 Genomes
 ---------------
