@@ -1047,6 +1047,8 @@ rule predict_genes_genomes:
         "%s/required_packages.yaml" % CONDAENV
     log:
         "logs/genomes/prodigal.log"
+    shadow:
+        "shallow"
     threads:
         1
     script:
