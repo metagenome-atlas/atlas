@@ -784,7 +784,7 @@ rule rename_genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes"
     output:
-        #dir= dynamic("genomes/genomes/{genome}.fasta"),
+        dir= directory("genomes/genomes"), #needs to be a directory
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes = "genomes/clustering/old2newID.tsv"
     script:
