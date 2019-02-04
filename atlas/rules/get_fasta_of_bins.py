@@ -42,13 +42,13 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
 
 
 if __name__ == "__main__":
-    if snakemake is not None:
+    try:
         get_fasta_of_bins(
             snakemake.input.cluster_attribution,
             snakemake.input.contigs,
             snakemake.output[0],
         )
-    else:
+    except NameError:
         p = argparse.ArgumentParser()
         p.add_argument("--cluster-attribution")
         p.add_argument("--contigs")

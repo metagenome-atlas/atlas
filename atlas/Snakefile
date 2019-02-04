@@ -165,7 +165,7 @@ rule genomes:
         "genomes/SSU/ssu_summary.tsv",
         "genomes/taxonomy/taxonomy_names.tsv",
         "genomes/genomes",
-        dynamic("genomes/annotations/genes/{genome}.faa"),
+        "genomes/annotations/genes",
         "finished_assembly"
     output:
         temp(touch("finished_genomes"))

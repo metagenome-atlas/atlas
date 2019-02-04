@@ -5,20 +5,24 @@
 localrules: get_genome_for_cat
 rule get_genome_for_cat:
     input:
-        "genomes/genomes"
+        genomes="genomes/genomes",
+        proteins="genomes/annotations/genes"
     output:
-        dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta"))
+        genomes=dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")),
+        proteins=dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.faa"))
     shadow:
         "shallow"
     run:
 
         import os,shutil
-        genome_path= os.path.join(input[0],'{genome}.fasta')
+        genome_path= os.path.join(input.genomes,'{genome}.fasta')
+        protein_path=os.path.join(input.proteins,'{genome}.faa')
         Genomes = glob_wildcards(genome_path).genome
 
         for genome in Genomes:
             os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}",exist_ok=True)
             shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
+            shutil.copy(protein_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.faa")
 
 
 

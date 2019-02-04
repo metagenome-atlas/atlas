@@ -786,6 +786,8 @@ rule rename_genomes:
         dir= directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes = "genomes/clustering/old2newID.tsv"
+    shadow:
+        "shallow"
     script:
         "rename_genomes.py"
 
@@ -1035,6 +1037,20 @@ rule combine_bined_coverages_MAGs:
         Median_abund= binCov.groupby(cluster_attribution.loc[binCov.index.get_level_values(0)].values).median().T
 
         Median_abund.to_csv(output.median_abund,sep='\t')
+
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes"
+    output:
+        "genomes/annotations/genes"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal.log"
+    threads:
+        1
+    script:
+        "predict_genes_of_genomes.py"
 
 
 
