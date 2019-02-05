@@ -50,6 +50,8 @@ rule cat_on_bin:
         config['threads']
     conda:
         "%s/cat.yaml" % CONDAENV
+    shadow:
+        "shallow"
     log:
         "logs/genomes/taxonomy/{genome}.log"
     shell:
