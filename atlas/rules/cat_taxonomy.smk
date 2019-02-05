@@ -34,17 +34,16 @@ rule cat_on_bin:
     input:
         flag=CAT_flag_downloaded,
         genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta",
-        #proteins= "genomes/annotations/genes/{genome}.faa"
+        proteins= "genomes/taxonomy/intermediate_files/{genome}/{genome}.faa"
     output:
-        expand("genomes/taxonomy/intermediate_files/{{genome}}/{{genome}}.{extension}",
-        extension=["bin2classification.txt",
-        "concatenated.predicted_proteins.faa"
-        "concatenated.predicted_proteins.gff"])
+        "genomes/taxonomy/intermediate_files/{{genome}}/{{genome}}.bin2classification.txt"
     params:
         db_folder=CAT_DIR,
         bin_folder=lambda wc,input: os.path.dirname(input.genome),
         extension=".fasta",
         out_prefix= lambda wc,output: os.path.join(os.path.dirname(output[0]),wc.genome)
+        r=config['cat_range'],
+        f=config['cat_fraction']
     resources:
         mem= config['java_mem']
     threads:
@@ -55,8 +54,9 @@ rule cat_on_bin:
         "logs/genomes/taxonomy/{genome}.log"
     shell:
         " CAT bins "
-        " -b {params.bin_folder} "#"-p {input.proteins} "
-        "-d {params.db_folder} -t {params.db_folder} --nproc {threads} "
+        " -b {params.bin_folder} -p {input.proteins} "
+        " -f {params.f} -r {params.r} "
+        " -d {params.db_folder} -t {params.db_folder} --nproc {threads} "
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 

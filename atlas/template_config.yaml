@@ -190,6 +190,10 @@ genome_dereplication:
 # If you prefer you can dowload an existing CAT database, see docs.
 diamond_mem: 100
 diamond_threads: 12
+# number of top hits considered for taxonomic annotation
+cat_range: 5
+# fraction of support needed for classification, <0.5 can give rise to duble classification.
+cat_fraction: 0.3
 
 
 ########################

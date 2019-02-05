@@ -243,6 +243,9 @@ def make_default_config():
                             opt_parameters=""
                                 )
 
+    conf['cat_range']=5
+    conf['cat_fraction']=0.3
+
     # conf["diamond_run_mode"] = "fast"
     # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
     # conf["diamond_e_value"] = DIAMOND_E_VALUE
