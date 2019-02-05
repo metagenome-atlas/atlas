@@ -7,7 +7,7 @@ rule get_genome_for_cat:
     input:
         genomes="genomes/genomes",
     output:
-        genomes=dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")),
+        genomes=dynamic(temp("genomes/taxonomy/{genome}/{genome}.fasta")),
     shadow:
         "shallow"
     run:
@@ -17,8 +17,8 @@ rule get_genome_for_cat:
         Genomes = glob_wildcards(genome_path).genome
 
         for genome in Genomes:
-            os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}",exist_ok=True)
-            shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
+            os.makedirs(f"genomes/taxonomy/{genome}",exist_ok=True)
+            shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/{genome}/{genome}.fasta")
 
 
 
@@ -29,9 +29,9 @@ rule get_genome_for_cat:
 rule cat_on_bin:
     input:
         flag=CAT_flag_downloaded,
-        genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta",
+        genome= "genomes/taxonomy/{genome}/{genome}.fasta",
     output:
-        "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
+        "genomes/taxonomy/{genome}/{genome}.bin2classification.txt"
     params:
         db_folder=CAT_DIR,
         bin_folder=lambda wc,input: os.path.dirname(input.genome),
@@ -60,7 +60,7 @@ rule cat_on_bin:
 localrules: store_faa
 rule store_faa:
     input:
-        expand("genomes/taxonomy/intermediate_files/{{genome}}/{{genome}}.{extension}",
+        expand("genomes/taxonomy/{{genome}}/{{genome}}.{extension}",
         extension=["bin2classification.txt",
         "concatenated.predicted_proteins.faa",
         "concatenated.predicted_proteins.gff"])
