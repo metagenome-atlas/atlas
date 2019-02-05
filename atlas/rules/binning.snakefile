@@ -1078,7 +1078,6 @@ rule predict_genes_genomes:
 
 
 
-
 ## detached from DAG
 
 ## annotation
