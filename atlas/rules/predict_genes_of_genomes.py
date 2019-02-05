@@ -7,8 +7,8 @@ from snakemake.io import glob_wildcards
 
 def predict_genes(genome,fasta,out_dir,log):
 
-        fna = f"{out_dir}/{genome}.fna",
-        faa = f"{out_dir}/{genome}.faa",
+        fna = f"{out_dir}/{genome}.fna"
+        faa = f"{out_dir}/{genome}.faa"
         gff = f"{out_dir}/{genome}.gff"
 
     shell(
