@@ -1,9 +1,9 @@
 Quality control of reads
-========================
+-------------------------
 
 
 Adapter Trimming
-----------------
+``````````````````````````
 
 FASTA file paths for adapter sequences to be trimmed from the sequence ends.
 
@@ -15,7 +15,7 @@ We provide the adapter reference FASTA included in `bbmap` for various
 
 
 Quality Trimming
-----------------
+``````````````````````````
 
 Trim regions with an average quality below this threshold. Higher is more
 stringent.
@@ -26,7 +26,7 @@ stringent.
 
 
 Adapter Trimming at Read Tips
------------------------------
+````````````````````````````````````````````````````
 
 Allow shorter kmer matches down to `mink` at the read ends. 0 disables.
 
@@ -36,7 +36,7 @@ Allow shorter kmer matches down to `mink` at the read ends. 0 disables.
 
 
 Allowable Mismatches in Adapter Hits
-------------------------------------
+````````````````````````````````````````````````````
 
 Maximum number of substitutions between the target adapter kmer and the query
 sequence kmer. Lower is more stringent.
@@ -47,7 +47,7 @@ sequence kmer. Lower is more stringent.
 
 
 Contaminant Kmer Length
------------------------
+``````````````````````````
 
 Kmer length used for finding contaminants. Contaminant matches shorter than
 this length will not be found.
@@ -58,7 +58,7 @@ this length will not be found.
 
 
 Read Length Threshold
----------------------
+``````````````````````````
 
 This is applied after quality and adapter trimming have been applied to the
 sequence.
@@ -69,7 +69,7 @@ sequence.
 
 
 Sequence Complexity Filter
---------------------------
+``````````````````````````
 
 Require this fraction of each nucleotide per sequence to eliminate low
 complexity reads.
@@ -80,7 +80,7 @@ complexity reads.
 
 
 Contamination Parameters
-------------------------
+``````````````````````````
 
 Contamination reference sequences in the form of nucleotide FASTA files can be
 provided and filtered from the reads using the following parameters.
@@ -101,6 +101,7 @@ Don't look for indels longer than this::
 Fraction of max alignment score required to keep a site::
 
     contaminant_min_ratio: 0.65
+    
 mapping kmer length; range 8-15; longer is faster but uses more memory; shorter is more sensitive::
 
     contaminant_kmer_length: 12

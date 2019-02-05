@@ -92,9 +92,6 @@ Samples should be alphanumeric names and cam be dash delimited. Underscores shou
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 
-.. .. include:: ../reports/samples.tsv
-
-
 
 The ``BinGroup`` parameter is used during the genomic binning.
 In short: all samples in which you expect the same strain to
@@ -143,12 +140,3 @@ atlas run
 Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for other handy snakemake arguments.
 
 If you want to run atlas on a cluster system you want to read the section :ref:`execution_system`.
-
-
-
-Example config file
--------------------
-
-
-.. include:: ../../atlas/template_config.yaml
-  :code:
