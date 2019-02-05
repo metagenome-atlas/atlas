@@ -41,7 +41,7 @@ rule cat_on_bin:
         db_folder=CAT_DIR,
         bin_folder=lambda wc,input: os.path.dirname(input.genome),
         extension=".fasta",
-        out_prefix= lambda wc,output: os.path.join(os.path.dirname(output[0]),wc.genome)
+        out_prefix= lambda wc,output: os.path.join(os.path.dirname(output[0]),wc.genome),
         r=config['cat_range'],
         f=config['cat_fraction']
     resources:
