@@ -1,8 +1,8 @@
 Pre-Assambly-processing
-=======================
+------------------------
 
 Normalization Parameters
-------------------------
+``````````````````````````
 
 To improve assembly time and often assemblies themselves, coverage is
 normalized across kmers to a target depth and can be set using::
@@ -17,7 +17,7 @@ normalized across kmers to a target depth and can be set using::
 
 
 Error Correction
-----------------
+``````````````````````````
 
 Optionally perform error correction using ``tadpole.sh`` from BBTools::
 
@@ -26,11 +26,11 @@ Optionally perform error correction using ``tadpole.sh`` from BBTools::
 
 
 Assembly Parameters
-===================
+------------------------
 
 
 Assembler
----------
+``````````````````````````
 
 Currently, the supported assemblers are 'spades' and 'megahit' with the
 default setting of::
@@ -60,7 +60,7 @@ Both assemblers have settings that can be altered in the configuration::
 
 
 Contig Filtering
-----------------
+``````````````````````````
 
 After assembly, contigs can be filtered based on several metrics::
 
