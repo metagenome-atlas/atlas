@@ -36,7 +36,7 @@ rule cat_on_bin:
         genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta",
         proteins= "genomes/taxonomy/intermediate_files/{genome}/{genome}.faa"
     output:
-        "genomes/taxonomy/intermediate_files/{{genome}}/{{genome}}.bin2classification.txt"
+        "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
     params:
         db_folder=CAT_DIR,
         bin_folder=lambda wc,input: os.path.dirname(input.genome),
