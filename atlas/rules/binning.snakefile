@@ -1042,7 +1042,7 @@ rule predict_genes_genomes:
     input:
         "genomes/genomes"
     output:
-        "genomes/annotations/genes"
+        directory("genomes/annotations/genes")
     conda:
         "%s/required_packages.yaml" % CONDAENV
     log:
