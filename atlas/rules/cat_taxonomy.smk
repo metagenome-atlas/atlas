@@ -6,23 +6,19 @@ localrules: get_genome_for_cat
 rule get_genome_for_cat:
     input:
         genomes="genomes/genomes",
-        proteins="genomes/annotations/genes"
     output:
         genomes=dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")),
-        proteins=dynamic(temp("genomes/taxonomy/intermediate_files/{genome}/{genome}.faa"))
     shadow:
         "shallow"
     run:
 
         import os,shutil
         genome_path= os.path.join(input.genomes,'{genome}.fasta')
-        protein_path=os.path.join(input.proteins,'{genome}.faa')
         Genomes = glob_wildcards(genome_path).genome
 
         for genome in Genomes:
             os.makedirs(f"genomes/taxonomy/intermediate_files/{genome}",exist_ok=True)
             shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta")
-            shutil.copy(protein_path.format(genome=genome), f"genomes/taxonomy/intermediate_files/{genome}/{genome}.faa")
 
 
 
@@ -34,7 +30,6 @@ rule cat_on_bin:
     input:
         flag=CAT_flag_downloaded,
         genome= "genomes/taxonomy/intermediate_files/{genome}/{genome}.fasta",
-        proteins= "genomes/taxonomy/intermediate_files/{genome}/{genome}.faa"
     output:
         "genomes/taxonomy/intermediate_files/{genome}/{genome}.bin2classification.txt"
     params:
@@ -56,7 +51,7 @@ rule cat_on_bin:
         "logs/genomes/taxonomy/{genome}.log"
     shell:
         " CAT bins "
-        " -b {params.bin_folder} -p {input.proteins} "
+        " -b {params.bin_folder} "
         " -f {params.f} -r {params.r} "
         " -d {params.db_folder} -t {params.db_folder} --nproc {threads} "
         " --bin_suffix {params.extension} "
