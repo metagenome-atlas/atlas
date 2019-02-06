@@ -113,15 +113,14 @@ Gene Catalog
 
 ::
 
+  atlas run all
+  # or
   atlas run genecatalog
 
-The gene catalog takes all genes predicted and clusters them
+The gene catalog takes all genes predicted from the genomes and clusters them
 according to the configuration.
 This rule produces the following output file for the whole dataset.
 
   - ``Genecatalog/gene_catalog.fna``
   - ``Genecatalog/gene_catalog.faa``
-  - ``Genecatalog/counts/median_coverage.tsv.gz``
-  - ``Genecatalog/annotation/single_copy_genes_bacteria.tsv``
-  - ``Genecatalog/annotation/single_copy_genes_archaea.tsv``
   - ``Genecatalog/annotations/eggNog.tsv``
