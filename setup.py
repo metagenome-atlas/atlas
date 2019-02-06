@@ -35,14 +35,14 @@ setup(
     package_data={'': [
             "atlas/*",
                        ]},
-    data_files=[(".", ["README.md", "LICENSE.txt",'requirements.txt'])],
+    data_files=[(".", ["README.md", "LICENSE.txt"])],
     include_package_data=True,
     install_requires= [
-            "snakemake>=5.2,<6",
-            "pandas >=0.20,<0.24",
-            "click==7.*",
-            "ruamel.yaml==0.15.*",
-            "biopython>=1.70,<2"
+            "snakemake",
+            "pandas",
+            "click",
+            "ruamel.yaml",
+            "biopython"
     ],
     # install via conda: click, pandas, pyyaml, snakemake
     entry_points={
