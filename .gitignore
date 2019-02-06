@@ -30,7 +30,9 @@ wheels/
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-.test
+.test/*
+!.test/dryrun.sh
+!.test/test_assembly.sh
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

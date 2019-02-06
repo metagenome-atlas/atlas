@@ -19,22 +19,16 @@ jobs:
       - run: conda config --set always_yes true
       - run: conda config --set quiet true
       - run: conda install python>=3.6 snakemake pandas bbmap=37.78 click ruamel.yaml biopython
-      - run: pip install .
+      - run: python setup.py install
       - run: atlas --help
       - run: atlas --version
-      - run: atlas run --help
+      - run: cd .test
       # make config
-      - run: ls example_data
-      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS --assembler spades example_data
-      # dryrun
-      - run: atlas download --db-dir $DATABASE_DIR --dryrun
-      - run: atlas run qc --dryrun
-      - run: atlas run assemble --dryrun
-      - run: atlas run genomes --dryrun
-      - run: atlas run genecatalog --dryrun
-      - run: atlas run --dryrun
-      - run: atlas run qc
-      - run: atlas run assemble
+      - run: ls ../example_data
+      - run: ./dryrun.sh
+      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR ../example_data
+      - run: atlas run qc -w $WORKING_DIR
+      - run: atlas run assemble -w $WORKING_DIR
 #      - run: atlas run
 
 workflows:

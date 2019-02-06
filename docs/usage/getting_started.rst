@@ -47,11 +47,11 @@ May be you want to make sure that all databases are downloaded correctly. Simply
 
 To reassure you, most of the databases are md5 checked. The downloads use approximately 30 GB of disk space.
 
-3. Test installation
---------------------
-
-Use our example_data on the GitHub repo. The first time you run atlas, it installs all dependencies.
-It needs therefore an internet connection and some time.
+.. 3. Test installation
+.. --------------------
+..
+.. Use our example_data on the GitHub repo. The first time you run atlas, it installs all dependencies.
+.. It needs therefore an internet connection and some time.
 
 Usage
 =====
