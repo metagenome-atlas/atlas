@@ -10,12 +10,12 @@ atlas --version
 
 
 
-databaseDir="databases"
-WD='WD'
+databaseDir=".test/databases"
+WD='.test/WD'
 
 rm -fr $WD
 #
-atlas init --db-dir $databaseDir --threads 3  -w $WD ../example_data
+atlas init --db-dir $databaseDir --threads 3  -w $WD example_data
 
 
 atlas run -w $WD qc $@

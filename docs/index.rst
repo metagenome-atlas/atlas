@@ -27,7 +27,7 @@ ATLAS
 Quick Start
 -----------
 
-Three commands to start analyzing your metagenome data::
+Three commands to start analysing your metagenome data::
 
     conda install -c bioconda -c conda-forge metagenome-atlas
     atlas init --db-dir databases path/to/fastq/files
