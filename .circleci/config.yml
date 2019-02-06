@@ -23,12 +23,12 @@ jobs:
       - run: atlas --help
       - run: atlas --version
       # make config
-      - run: ls example_data
-      - run: .test/dryrun.sh
-      - run: rm -rf $WORKING_DIR
-      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
-      - run: atlas run qc -w $WORKING_DIR
-      - run: atlas run assemble -w $WORKING_DIR
+      # - run: ls example_data
+      # - run: .test/dryrun.sh
+      # - run: rm -rf $WORKING_DIR
+      # - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
+      # - run: atlas run qc -w $WORKING_DIR
+      # - run: atlas run assemble -w $WORKING_DIR
 #      - run: atlas run
 
 workflows:
