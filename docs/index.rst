@@ -1,6 +1,9 @@
 .. image:: https://img.shields.io/conda/dn/bioconda/metagenome-atlas.svg?label=Bioconda
     :target: https://bioconda.github.io/recipes/metagenome-atlas/README.html
 
+  .. image:: https://circleci.com/gh/metagenome-atlas/atlas/tree/master.svg?style=svg
+      :target: https://circleci.com/gh/metagenome-atlas/atlas/tree/master
+
 .. .. image:: https://img.shields.io/pypi/pyversions/metagenome-atlas.svg
     :target: https://www.python.org
 
