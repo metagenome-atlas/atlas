@@ -2,8 +2,8 @@ defaults: &defaults
   docker:
     - image: continuumio/miniconda3
   environment:
-    DATABASE_DIR: databases
-    WORKING_DIR: WD
+    DATABASE_DIR: .test/databases
+    WORKING_DIR: .test/WD
     N_THREADS: 4
 
 version: 2
@@ -22,11 +22,10 @@ jobs:
       - run: python setup.py install
       - run: atlas --help
       - run: atlas --version
-      - run: cd .test
       # make config
-      - run: ls ../example_data
-      - run: ./dryrun.sh
-      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR ../example_data
+      - run: ls example_data
+      - run: .test/dryrun.sh
+      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
       - run: atlas run qc -w $WORKING_DIR
       - run: atlas run assemble -w $WORKING_DIR
 #      - run: atlas run
