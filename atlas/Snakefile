@@ -136,7 +136,7 @@ rule all:
     input:
         "finished_QC",
         "finished_assembly",
-        "finished_genomes"
+        "finished_genomes",
         "finished_genecatalog"
 
 
