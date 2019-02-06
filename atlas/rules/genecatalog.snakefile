@@ -625,7 +625,7 @@ rule gene_subsets:
 
 rule combine_annotations:
     input:
-        dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
+        eggNOG=dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
     output:
         eggNOG= "Genecatalog/annotations/eggNog.tsv"
     run:
