@@ -687,6 +687,7 @@ rule first_dereplication:
         sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
+        " rm -rf {params.work_directory} ;"
         " dRep dereplicate "
         " {params.filter} "
         " --genomes {input[0]}/*.fasta "
@@ -733,6 +734,7 @@ rule second_dereplication:
         sketch_size= config['genome_dereplication']['sketch_size']
 
     shell:
+        " rm -rf {params.work_directory} ;"
         " dRep dereplicate "
         " --genomes {input[0]}/*.fasta "
         " --genomeInfo {input.quality} "
@@ -782,36 +784,14 @@ rule rename_genomes:
         "genomes/Dereplication/dereplicated_genomes"
     output:
         dir= directory("genomes/genomes"),
-        map_file="genomes/clustering/contig2genome.tsv",
-        old2new = "genomes/clustering/old2newID.tsv"
-    params:
-        file_name = lambda wc, input: "{folder}/{{binid}}.fasta".format(folder=input[0], **wc)
-    run:
-        import shutil
-        bin_ids, = glob_wildcards(params.file_name)
-
-        old2new_name= dict(zip(bin_ids,gen_names_for_range(len(bin_ids),prefix='MAG')))
-        os.makedirs(output.dir)
+        mapfile_contigs="genomes/clustering/contig2genome.tsv",
+        mapfile_genomes = "genomes/clustering/old2newID.tsv"
+    shadow:
+        "shallow"
+    script:
+        "rename_genomes.py"
 
 
-        with open(output.map_file,'w') as out_file, open(output.old2new,'w') as old2new_mapping_file :
-            old2new_mapping_file.write(f"BinID\tMAG\n")
-            for binid in bin_ids:
-
-                fasta_in = params.file_name.format(binid=binid)
-                new_name= old2new_name[binid]
-
-                old2new_mapping_file.write(f"{binid}\t{new_name}\n")
-
-                fasta_out = os.path.join(output.dir,f"{new_name}.fasta")
-                shutil.copy(fasta_in,fasta_out)
-
-                # write names of contigs in mapping file
-                with open(fasta_in) as bin_file:
-                    for line in bin_file:
-                        if line[0]==">":
-                            contig = line[1:].strip().split()[0]
-                            out_file.write(f"{contig}\t{new_name}\n")
 
 
 
@@ -894,8 +874,11 @@ rule align_reads_to_MAGs:
         ref = rules.build_db_genomes.output.index,
     output:
         sam = temp("genomes/alignments/{sample}.sam"),
+        unmapped = expand("genomes/alignments/unmapped/{{sample}}_{fraction}.fastq.gz",
+                          fraction=MULTIFILE_FRACTIONS)
     params:
         input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
         paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
@@ -919,7 +902,8 @@ rule align_reads_to_MAGs:
             build=3 \
             {params.input} \
             trimreaddescriptions=t \
-            out={output.sam} \
+            outm={output.sam} \
+            {params.unmapped} \
             threads={threads} \
             pairlen={params.max_distance_between_pairs} \
             pairedonly={params.paired_only} \
@@ -1056,6 +1040,47 @@ rule combine_bined_coverages_MAGs:
 
         Median_abund.to_csv(output.median_abund,sep='\t')
 
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes"
+    output:
+        directory("genomes/annotations/genes")
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal.log"
+    shadow:
+        "shallow"
+    threads:
+        1
+    script:
+        "predict_genes_of_genomes.py"
+
+
+
+# rule predict_genes_genomes:
+#     input:
+#         "genomes/genomes/{genome}.fasta"
+#     output:
+#         fna = "genomes/annotations/genes/{genome}.fna",
+#         faa = "genomes/annotations/genes/{genome}.faa",
+#         gff = "genomes/annotations/genes/{genome}.gff"
+#     conda:
+#         "%s/required_packages.yaml" % CONDAENV
+#     log:
+#         "logs/genomes/prodigal/{genome}.txt"
+#     threads:
+#         1
+#     shell:
+#         """
+#         prodigal -i {input} -o {output.gff} -d {output.fna} \
+#             -a {output.faa} -p meta -f gff 2> >(tee {log})
+#         """
+#
+
+
+
+## detached from DAG
 
 
 localrules: make_fasta_available

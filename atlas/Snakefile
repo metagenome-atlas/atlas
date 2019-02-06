@@ -7,6 +7,8 @@ from snakemake.utils import logger, min_version, update_config
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
 
+from utils import gen_names_for_range
+
 from default_values import *
 from conf import load_sample_table
 
@@ -64,12 +66,6 @@ def input_params_for_bbwrap(wildcards, input):
         sys.exit(1)
     return flag
 
-def gen_names_for_range(N,prefix='',start=1):
-    """generates a range of IDS with leading zeros so sorting will be ok"""
-    n_leading_zeros= len(str(N))
-    format_int=prefix+'{:0'+str(n_leading_zeros)+'d}'
-    return [format_int.format(i) for i in range(start,N+start)]
-
 
 
 CONDAENV = get_conda_envs_dir()
@@ -79,6 +75,8 @@ CONDAENV = get_conda_envs_dir()
 TMPDIR = get_temp_dir(config)
 DBDIR = os.path.realpath(config["database_dir"])
 EGGNOG_DIR = DBDIR
+CAT_DIR= os.path.join(DBDIR,'CAT')
+CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
 CHECKMDIR = os.path.join(DBDIR, "checkm")
 SAMPLES = sampleTable.index.values
 
@@ -96,7 +94,10 @@ MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
 
 
 def get_input_fastq(wildcards):
-    return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
+    if not config.get('interleaved_fastqs',False):
+        return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
+    else:
+        return list(sampleTable.loc[wildcards.sample,['Reads_raw_se']])
 
 def get_quality_controlled_reads(wildcards):
     """Gets quality controlled reads for two cases. When preprocessed with
@@ -126,6 +127,7 @@ include: "rules/qc.snakefile"
 include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
 include: "rules/genecatalog.snakefile"
+include: "rules/cat_taxonomy.smk"
 include: "rules/download.snakefile"
 
 
@@ -134,18 +136,18 @@ rule all:
     input:
         "finished_QC",
         "finished_assembly",
-        "finished_genomes"
-        #"finished_genecatalog"
+        "finished_genomes",
+        "finished_genecatalog"
 
 
 rule genecatalog:
     input:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
-        "Genecatalog/counts/median_coverage.tsv.gz",
-        expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
+        #"Genecatalog/counts/median_coverage.tsv.gz",
+        # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
         "Genecatalog/annotations/eggNog.tsv",
-        "finished_assembly"
+        "finished_genomes"
     output:
         temp(touch("finished_genecatalog"))
 
@@ -161,6 +163,9 @@ rule genomes:
         "genomes/clustering/contig2genome.tsv",
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
+        "genomes/taxonomy/taxonomy_names.tsv",
+        "genomes/genomes",
+        "genomes/annotations/genes",
         "finished_assembly"
     output:
         temp(touch("finished_genomes"))
@@ -200,10 +205,11 @@ rule qc:
 # overwrite commands in rules/download.snakefile
 onsuccess:
     print("ATLAS finished")
-    print("Find out how to use the output of ATLAS on https://metagenome-atlas.readthedocs.io")
+    print("The last rule shows you the main output files")
 
 
 onerror:
+    print("Note the path to the log file for debugging.")
     print("Documentation is available at: https://metagenome-atlas.readthedocs.io")
     print("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
 

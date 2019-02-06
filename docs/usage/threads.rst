@@ -1,7 +1,7 @@
+.. _execution_system:
+
 Execution of Atlas
 ==================
-
-Most steps of the workflow are utilizing applications that can thread or
 otherwise use multiple cores. The number of threads used **for each step** can be configured in the config file::
 
   threads: 8

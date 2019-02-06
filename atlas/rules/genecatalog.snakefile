@@ -2,19 +2,32 @@ import os
 
 
 
+if config['genecatalog']['source']=='contigs':
 
-localrules: concat_genes
-rule concat_genes:
-    input:
-        faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
-        fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
-    output:
-        faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
-        fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-    shell:
-        " cat {input.faa} >  {output.faa} ;"
-        " cat {input.fna} > {output.fna}"
+    localrules: concat_genes
+    rule concat_genes:
+        input:
+            faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
+            fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
+        output:
+            faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
+            fna = temp("Genecatalog/all_genes_unfiltered.fna"),
+        shell:
+            " cat {input.faa} >  {output.faa} ;"
+            " cat {input.fna} > {output.fna}"
 
+else:
+
+    localrules: concat_genes
+    rule concat_genes:
+        input:
+            "genomes/annotations/genes"
+        output:
+            faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
+            fna = temp("Genecatalog/all_genes_unfiltered.fna"),
+        shell:
+            " cat {input}/*.faa >  {output.faa} ;"
+            " cat {input}/*.fna > {output.fna}"
 
 
 localrules: filter_genes
@@ -449,6 +462,7 @@ rule eggNOG_annotation:
         emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
+
 EGGNOG_HEADERS= [
 "query_name",
 "seed_eggNOG_ortholog",

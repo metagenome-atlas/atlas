@@ -103,6 +103,9 @@ def parse_bbmap_log_file(log_file):
                 N_results+=1
                 assert N_results<=2, "you have more than one library in this log file"
 
+        if used==0:
+            raise IOError(f"I couldn't parse the log file, probably the job didn't finish properly: {log_file}")
+
         assert used >= mapped, "something is wrong, you have more than 100% mapped reads?"
 
         return used,mapped

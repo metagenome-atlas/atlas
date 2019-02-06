@@ -117,6 +117,8 @@ def make_default_config():
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = multiprocessing.cpu_count()
     conf["java_mem"] = JAVA_MEM
+    conf["diamond_mem"] = 100
+    conf["diamond_threads"] = 12
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
     conf["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
@@ -189,7 +191,8 @@ def make_default_config():
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     # gene cluster
-    conf['genecatalog']={'clustermethod':'linclust',
+    conf['genecatalog']={'source':'genomes',
+                        'clustermethod':'linclust',
                          'minlength':100,
                            'minid':0.95,
                            'coverage':0.9,
@@ -240,6 +243,9 @@ def make_default_config():
                             sketch_size=5000,
                             opt_parameters=""
                                 )
+
+    conf['cat_range']=5
+    conf['cat_fraction']=0.3
 
     # conf["diamond_run_mode"] = "fast"
     # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
