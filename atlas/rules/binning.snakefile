@@ -794,6 +794,8 @@ rule rename_genomes:
 
 
 
+
+
 localrules: get_genomes2cluster
 rule get_genomes2cluster:
     input:
@@ -1079,6 +1081,14 @@ rule predict_genes_genomes:
 
 
 ## detached from DAG
+
+
+localrules: make_fasta_available
+rule make_fasta_available:
+    input:
+        "genomes/genomes"
+    output:
+        dynamic("genomes/genomes/{genome}.fasta")
 
 ## annotation
 
