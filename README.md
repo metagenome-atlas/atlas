@@ -9,15 +9,15 @@
 
 # Quick Start
 
-Three commands to start analyzing your metagenome data:
+Three commands to start analysing your metagenome data:
 ```
     conda install -c bioconda -c conda-forge metagenome-atlas #may not yet be ready see below
     atlas init --db-dir databases path/to/fastq/files
     atlas run
 ```
 All databases and dependencies are installed on the fly in the directory `db-dir`.
-You want to run this three commands on the example_data on the GitHub repo.
-If you have more time, then  we recommend you to configure atlas according to your needs.
+You want to run these three commands on the example_data on the GitHub repo.
+If you have more time, then we recommend you configure atlas according to your needs.
   - check the `samples.tsv`
   - edit the `config.yaml`
   - run atlas on any cluster system
@@ -31,9 +31,9 @@ Atlas is a easy to use metagenomic pipeline
 
 
 ## Install the development version from GitHub
-Atlas is still under active development, therefore you may want to install the up to date atlas from GitHub.
+Atlas is still under active development; therefore, you may want to install the up to date atlas from GitHub. Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
 
-Create an conda environment with all primary dependencies. All further dependencies are installed on the fly.
+Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```
 conda create -n atlas -c bioconda -c conda-forge python>=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
 ```
