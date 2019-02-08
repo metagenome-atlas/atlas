@@ -31,7 +31,10 @@ rule cat_on_bin:
         flag=CAT_flag_downloaded,
         genome= "genomes/taxonomy/{genome}/{genome}.fasta",
     output:
-        "genomes/taxonomy/{genome}/{genome}.bin2classification.txt"
+        expand("genomes/taxonomy/{genome}/{genome}.{extension}",
+        extension=['bin2classification.txt',
+                   'concatenated.alignment.diamond',
+                   'ORF2LCA.txt','log'])
     params:
         db_folder=CAT_DIR,
         bin_folder=lambda wc,input: os.path.dirname(input.genome),
@@ -57,19 +60,6 @@ rule cat_on_bin:
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 
-localrules: store_faa
-rule store_faa:
-    input:
-        expand("genomes/taxonomy/{{genome}}/{{genome}}.{extension}",
-        extension=["bin2classification.txt",
-        "concatenated.predicted_proteins.faa",
-        "concatenated.predicted_proteins.gff"])
-    output:
-        expand("genomes/annotations/genes/{{genome}}.{extension}",
-                extension=[".faa",".gff"])
-    shell:
-        "mv {input[1]} > {output[0]}; "
-        "mv {input[2]} > {output[1]}; "
 
 localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:
