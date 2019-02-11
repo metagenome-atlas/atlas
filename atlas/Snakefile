@@ -73,11 +73,6 @@ CONDAENV = get_conda_envs_dir()
 
 #    config = update_config_file_paths(config)
 TMPDIR = get_temp_dir(config)
-DBDIR = os.path.realpath(config["database_dir"])
-EGGNOG_DIR = DBDIR
-CAT_DIR= os.path.join(DBDIR,'CAT')
-CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
-CHECKMDIR = os.path.join(DBDIR, "checkm")
 SAMPLES = sampleTable.index.values
 
 #GROUPS = sampleTable.BinGroup.unique()

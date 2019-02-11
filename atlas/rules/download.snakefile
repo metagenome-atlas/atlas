@@ -17,10 +17,15 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
-
+# this values are incuded in the snakefile
 DBDIR = os.path.realpath(config["database_dir"])
 CHECKMDIR = os.path.join(DBDIR, "checkm")
 CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
+CAT_DIR= os.path.join(DBDIR,'CAT')
+CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
+EGGNOG_DIR = DBDIR
+
+
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
 FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
          "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
