@@ -31,7 +31,7 @@ rule cat_on_bin:
         flag=CAT_flag_downloaded,
         genome= "genomes/taxonomy/{genome}/{genome}.fasta",
     output:
-        expand("genomes/taxonomy/{genome}/{genome}.{extension}",
+        expand("genomes/taxonomy/{{genome}}/{{genome}}.{extension}",
         extension=['bin2classification.txt',
                    'concatenated.alignment.diamond',
                    'ORF2LCA.txt','log'])
