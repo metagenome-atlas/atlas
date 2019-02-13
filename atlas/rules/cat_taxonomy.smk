@@ -64,7 +64,7 @@ rule cat_on_bin:
 localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:
     input:
-        taxid=dynamic(rules.cat_on_bin.output),
+        taxid=dynamic("genomes/taxonomy/{genome}/{genome}.bin2classification.txt"),
         genomes=dynamic("genomes/taxonomy/{genome}/{genome}.fasta") # to keep them untill all is finished
     output:
         "genomes/taxonomy/taxonomy_ids.tsv"
@@ -72,7 +72,7 @@ rule merge_taxonomy:
         1
     run:
         import pandas as pd
-        out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
+        out= pd.concat([pd.read_table(file,index_col=0) for file in input.taxid],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
 
