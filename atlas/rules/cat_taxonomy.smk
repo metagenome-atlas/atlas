@@ -65,6 +65,7 @@ localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:
     input:
         taxid=dynamic(rules.cat_on_bin.output),
+        genomes=dynamic("genomes/taxonomy/{genome}/{genome}.fasta") # to keep them untill all is finished
     output:
         "genomes/taxonomy/taxonomy_ids.tsv"
     threads:
