@@ -258,7 +258,7 @@ Downloads
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--samples", nargs="+")
+    p.add_argument("--samples", nargs="+") #is not used
     p.add_argument("--report_out")
     p.add_argument("--read_counts")
     p.add_argument("--zipfiles_raw", nargs="+")
