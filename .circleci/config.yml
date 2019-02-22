@@ -4,14 +4,14 @@ defaults: &defaults
   environment:
     DATABASE_DIR: .test/databases
     WORKING_DIR: .test/WD
-    N_THREADS: 4
+    N_THREADS: 1
 
 version: 2
 
 jobs:
   build:
     <<: *defaults
-    parallelism: 4
+    parallelism: 1
     steps:
       - checkout
       - run: conda config --add channels conda-forge
@@ -26,9 +26,9 @@ jobs:
       - run: ls example_data
       - run: .test/dryrun.sh
       - run: rm -rf $WORKING_DIR
-      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
-      - run: atlas run qc -w $WORKING_DIR
-      - run: atlas run assemble -w $WORKING_DIR
+      #- run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
+      #- run: atlas run qc -w $WORKING_DIR
+      #- run: atlas run assemble -w $WORKING_DIR
 #      - run: atlas run
 
 workflows:
