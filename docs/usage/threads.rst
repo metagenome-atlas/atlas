@@ -19,5 +19,7 @@ We recommend you to execute Atlas on a cluster system. Thank to the underlying, 
 Each job get submitted to your cluster system with the memory (in GB) and threads specified in the config file. The ``--jobs`` command line argument now defines
 *how many jobs you want to run simultaneously on the cluster system.* The default is still the number of cores on your computer but you can set it higher ``--jobs 99``.
 
-Have a look at the snakemake doc how to execute snakemake pipelines on clusters. If you have a common cluster system (Slurm, LSF, toque ...) you can use our snakemake profile.
+Have a look at the snakemake doc how to execute snakemake pipelines on clusters. If you have a common cluster system (Slurm, LSF, toque ...) you can use our `snakemake profile`_.
 Note, in atlas memory is specified in GB.
+
+.. _`snakemake profile`: https://github.com/metagenome-atlas/generic

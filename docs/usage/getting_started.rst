@@ -28,10 +28,13 @@ Load the environment::
   source activate atlasenv
 
 copy code from GitHub and install::
+
   git clone https://github.com/metagenome-atlas/atlas.git
   cd atlas
   pip install --editable .
+
 Now you should be able to run atlas::
+
   atlas init --db-dir databases path/to/fastq/files
   atlas run
 
@@ -139,4 +142,4 @@ atlas run
 
 Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for other handy snakemake arguments.
 
-If you want to run atlas on a cluster system you want to read the section :ref:`execution_system`.
+If you want to run atlas on a cluster system you want to read the section :ref:`execution_system`_.
