@@ -107,6 +107,8 @@ rule get_read_stats:
     run:
         import datetime
         import shutil
+        import sys
+        sys.stderr = open(log[0], 'w')
 
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d-%X')
 
