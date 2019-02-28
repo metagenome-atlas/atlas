@@ -58,7 +58,7 @@ def get_snakefile(file="Snakefile"):
 @click.argument(
     "workflow",
     default="all",
-    type=click.Choice(["qc","assembly","genomes","genecatalog","None","all"]),
+    type=click.Choice(["qc","assembly","binning","genomes","genecatalog","None","all"]),
 #    show_default=True,
 #    help="Execute only subworkflow.",
 )

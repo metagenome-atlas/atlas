@@ -131,6 +131,7 @@ rule all:
     input:
         "finished_QC",
         "finished_assembly",
+        "finished_binning",
         "finished_genomes",
         "finished_genecatalog"
 
@@ -142,16 +143,12 @@ rule genecatalog:
         "Genecatalog/clustering/orf2gene.tsv",
         #"Genecatalog/counts/median_coverage.tsv.gz",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        "Genecatalog/annotations/eggNog.tsv",
-        "finished_genomes"
+        "Genecatalog/annotations/eggNog.tsv"
     output:
         temp(touch("finished_genecatalog"))
 
 rule genomes:
     input:
-        expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-               binner=config['final_binner'], sample =SAMPLES),
-        expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
         "genomes/Dereplication/dereplicated_genomes",
         "genomes/checkm/taxonomy.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
@@ -162,9 +159,19 @@ rule genomes:
         "genomes/taxonomy/taxonomy_names.tsv",
         "genomes/genomes",
         "genomes/annotations/genes",
-        "finished_assembly"
+        "finished_binning"
     output:
         temp(touch("finished_genomes"))
+
+rule binning:
+    input:
+        expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+               binner=config['final_binner'], sample =SAMPLES),
+        expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+        "finished_assembly"
+    output:
+        temp(touch("finished_binning"))
+
 
 rule assembly_one_sample:
     input:
