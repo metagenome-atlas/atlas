@@ -288,7 +288,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
 
     rule build_decontamination_db:
         input:
-            config["contaminant_references"].values()
+            ancient(config["contaminant_references"].values())
         output:
             "ref/genome/1/summary.txt"
         threads:
