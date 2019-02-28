@@ -17,6 +17,9 @@ rm -fr $WD
 #
 atlas init --db-dir $databaseDir --threads 3 -w $WD example_data
 
+
+atlas download --db-dir $databaseDir -n
+
 for w in qc assembly genomes genecatalog ; do
 
   echo "
