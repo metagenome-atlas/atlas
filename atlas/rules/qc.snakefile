@@ -370,7 +370,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
 PROCESSED_STEPS.append("QC")
 
 localrules: qcreads
-checkpoint qcreads:
+rule qcreads:
     input:
         unpack(get_ribosomal_rna_input)
     output:
