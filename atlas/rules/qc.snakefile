@@ -581,8 +581,7 @@ rule build_qc_report:
         report = "reports/QC_report.html"
     params:
         min_quality = config["preprocess_minimum_base_quality"],
-        snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/report.yaml" % CONDAENV
     script:
-         "../report/qc_report.py "
+         "../report/qc_report.py"

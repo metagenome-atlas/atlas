@@ -259,7 +259,7 @@ Downloads
 if __name__ == "__main__":
 
     try:
-        main(report_out=snakemake.output[0],
+        main(report_out=snakemake.output.report,
             read_counts=snakemake.input.read_counts,
             zipfiles_raw=snakemake.input.zipfiles_raw,
             zipfiles_QC=snakemake.input.zipfiles_QC,
