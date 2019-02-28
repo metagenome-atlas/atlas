@@ -120,7 +120,7 @@ def draw_se_read_quality(df,quality_range,**kwargs):
 
 
 
-def main(samples, report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
+def main(report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
     div = {}
 
     # N reads / N bases
@@ -258,7 +258,6 @@ Downloads
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--samples", nargs="+") #is not used
     p.add_argument("--report_out")
     p.add_argument("--read_counts")
     p.add_argument("--zipfiles_raw", nargs="+")
