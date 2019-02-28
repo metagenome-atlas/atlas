@@ -32,10 +32,6 @@ def get_temp_dir(config):
 
 
 
-
-
-
-
 def input_params_for_bbwrap(wildcards, input):
     """This function generates the input flag needed for bbwrap for all cases
     possible for get_quality_controlled_reads.
@@ -115,7 +111,7 @@ include: "rules/binning.snakefile"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
 
-
+CONDAENV = "envs" # overwrite definition in download.smk
 
 localrules: all, qc, assembly_one_sample, assembly, genomes
 rule all:
