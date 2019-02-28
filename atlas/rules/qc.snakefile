@@ -584,12 +584,5 @@ rule build_qc_report:
         snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/report.yaml" % CONDAENV
-    shell:
-         """
-         python {params.snakefile_folder}/report/qc_report.py \
-            --report_out {output.report} \
-            --zipfiles_QC {input.zipfiles_QC} \
-            --zipfiles_raw {input.zipfiles_raw} \
-            --min_quality {params.min_quality} \
-            --read_counts {input.read_counts}
-         """
+    script:
+         "../report/qc_report.py "

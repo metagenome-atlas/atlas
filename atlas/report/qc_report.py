@@ -257,12 +257,21 @@ Downloads
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--report_out")
-    p.add_argument("--read_counts")
-    p.add_argument("--zipfiles_raw", nargs="+")
-    p.add_argument("--zipfiles_QC", nargs="+")
-    p.add_argument("--min_quality")
-    args = p.parse_args()
 
-    main(**vars(args))
+    try:
+        main(report_out=snakemake.output[0],
+            read_counts=snakemake.input.read_counts,
+            zipfiles_raw=snakemake.input.zipfiles_raw,
+            zipfiles_QC=snakemake.input.zipfiles_QC,
+            min_quality=snakemake.params.min_quality,
+        )
+    except NameError:
+        p = argparse.ArgumentParser()
+        p.add_argument("--report_out")
+        p.add_argument("--read_counts")
+        p.add_argument("--zipfiles_raw", nargs="+")
+        p.add_argument("--zipfiles_QC", nargs="+")
+        p.add_argument("--min_quality")
+        args = p.parse_args()
+
+        main(**vars(args))
