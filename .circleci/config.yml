@@ -30,7 +30,7 @@ jobs:
       - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
       - run: atlas run qc -w $WORKING_DIR --create-envs-only
       - run: atlas run qc -w $WORKING_DIR --config java_mem=$MEM assembly_mem=$MEM
-      - run: atlas run --create-envs-only
+      - run: atlas run all --create-envs-only
 
 workflows:
   version: 2
