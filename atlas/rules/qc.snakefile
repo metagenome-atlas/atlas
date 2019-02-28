@@ -580,7 +580,6 @@ rule build_qc_report:
     output:
         report = "reports/QC_report.html"
     params:
-        samples = SAMPLES,
         min_quality = config["preprocess_minimum_base_quality"],
         snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
@@ -588,7 +587,6 @@ rule build_qc_report:
     shell:
          """
          python {params.snakefile_folder}/report/qc_report.py \
-            --samples {params.samples} \
             --report_out {output.report} \
             --zipfiles_QC {input.zipfiles_QC} \
             --zipfiles_raw {input.zipfiles_raw} \
