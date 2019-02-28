@@ -21,15 +21,6 @@ sampleTable= load_sample_table()
 # minimum required snakemake version
 min_version("5.2")
 
-def get_conda_envs_dir():
-    if config.get("yaml_dir"):
-        yaml_dir = config.get("yaml_dir")
-    else:
-        yaml_dir = os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "envs")
-    if not os.path.exists(yaml_dir):
-        sys.exit("Unable to locate the environmental dependencies file; tried %s" % yaml_dir)
-    return yaml_dir
-
 
 def get_temp_dir(config):
     if config.get("tmpdir"):
@@ -68,7 +59,7 @@ def input_params_for_bbwrap(wildcards, input):
 
 
 
-CONDAENV = get_conda_envs_dir()
+
 #if config.get("workflow") != "download":
 
 #    config = update_config_file_paths(config)

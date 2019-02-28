@@ -17,6 +17,16 @@ def md5(fname):
     return hash_md5.hexdigest()
 
 
+def get_conda_envs_dir():
+    if config.get("yaml_dir"):
+        yaml_dir = config.get("yaml_dir")
+    else:
+        yaml_dir = os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "envs")
+    if not os.path.exists(yaml_dir):
+        sys.exit("Unable to locate the environmental dependencies file; tried %s" % yaml_dir)
+    return yaml_dir
+
+
 # this values are incuded in the snakefile
 DBDIR = os.path.realpath(config["database_dir"])
 CHECKMDIR = os.path.join(DBDIR, "checkm")
@@ -25,6 +35,7 @@ CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
 EGGNOG_DIR = DBDIR
 
+CONDAENV = get_conda_envs_dir()
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
 FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
