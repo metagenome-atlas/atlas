@@ -130,7 +130,7 @@ rule download_cat_db:
     resources:
         mem= config.get('diamond_mem',10)
     threads:
-        config['diamond_threads']
+        config.get('diamond_threads',10)
     conda:
         "%s/cat.yaml" % CONDAENV
     shell:
