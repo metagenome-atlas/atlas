@@ -128,7 +128,7 @@ rule download_cat_db:
     params:
         db_folder=CAT_DIR
     resources:
-        mem= config['diamond_mem']
+        mem= config.get('diamond_mem',10)
     threads:
         config['diamond_threads']
     conda:
