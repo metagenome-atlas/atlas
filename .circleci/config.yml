@@ -4,7 +4,8 @@ defaults: &defaults
   environment:
     DATABASE_DIR: .test/databases
     WORKING_DIR: .test/WD
-    N_THREADS: 1
+    N_THREADS: 4
+    MEM: 4
 
 version: 2
 
@@ -26,8 +27,8 @@ jobs:
       - run: ls example_data
       - run: .test/dryrun.sh
       - run: rm -rf $WORKING_DIR
-      #- run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
-      #- run: atlas run qc -w $WORKING_DIR
+      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
+      - run: atlas run qc -w $WORKING_DIR --config java_mem=$MEM assembly_mem=$MEM
       #- run: atlas run assemble -w $WORKING_DIR
 #      - run: atlas run
 
