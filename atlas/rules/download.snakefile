@@ -25,7 +25,7 @@ CHECKMDIR = os.path.join(DBDIR, "checkm")
 CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
-EGGNOG_DIR = DBDIR
+EGGNOG_DIR = os.path.join(DBDIR,'EggNOG')
 
 CONDAENV = "../envs"
 
@@ -33,8 +33,8 @@ CONDAENV = "../envs"
 FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
          "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
          "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
-         #"refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
-         #"refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
+         "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
+         "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
          "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
          "OG_fasta": "8fc6ce2e055d1735dec654af98a641a4",
          "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
@@ -42,52 +42,8 @@ FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
          "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
          CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
-localrules: download, transfer_files
 
-rule download:
-    input:
-        expand("{dir}/{filename}", dir=DBDIR, filename=list(FILES.keys())),
-        "%s/taxon_marker_sets.tsv" % CHECKMDIR
-
-
-
-
-
-rule transfer_files:
-    output:
-        "%s/{filename}" % DBDIR
-    run:
-        eggnog_files = {"OG_fasta": "OG_fasta.tar.gz",
-            "eggnog.db": "eggnog.db.gz",
-            "og2level.tsv": "og2level.tsv.gz",
-            "eggnog_proteins.dmnd": "eggnog_proteins.dmnd.gz",
-        }
-
-# OG_fasta.tar.gz will be unzipped to a directory !!
-
-        if wildcards.filename in eggnog_files:
-            dl_filename = eggnog_files[wildcards.filename]
-            dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-            shell("curl 'http://eggnogdb.embl.de/download/emapperdb-%s/%s' -s > %s" % (EGGNOG_VERSION, dl_filename, dl_output))
-            # validate the download
-            if not FILES[wildcards.filename] == md5(dl_output):
-                raise OSError(2, "Invalid checksum", dl_output)
-            # handle extraction/decompression
-            if dl_output.endswith(".tar.gz"):
-                shell("tar -zxf %s --directory {DBDIR}" % dl_output)
-            else:
-                shell("gunzip %s" % dl_output)
-        else:
-            shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
-            if not FILES[wildcards.filename] == md5(output[0]):
-                raise OSError(2, "Invalid checksum", output[0])
-
-
-rule download_checkm_data:
-    input:
-        "%s/%s" % (DBDIR, CHECKM_ARCHIVE)
-    output:
-        "%s/taxon_marker_sets.tsv" % CHECKMDIR,
+CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
         "%s/selected_marker_sets.tsv" % CHECKMDIR,
         "%s/pfam/tigrfam2pfam.tsv" % CHECKMDIR,
         "%s/pfam/Pfam-A.hmm.dat" % CHECKMDIR,
@@ -119,6 +75,70 @@ rule download_checkm_data:
         "%s/distributions/td_dist.txt" % CHECKMDIR,
         "%s/distributions/gc_dist.txt" % CHECKMDIR,
         "%s/distributions/cd_dist.txt" % CHECKMDIR
+        ]
+
+
+
+localrules: download, download_eggNOG_fastas,download_eggNOG_files,download_atlas_files,unpack_checkm_data
+ruleorder: download_eggNOG_fastas > download_eggNOG_files > download_atlas_files
+
+rule download:
+    input:
+        expand("{dir}/{filename}", dir=DBDIR,
+               filename=["adapters.fa","phiX174_virus.fa"]),
+        expand("{dir}/{filename}", dir=EGGNOG_DIR,
+               filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
+        CHECKMFILES,
+        CAT_flag_downloaded
+
+
+
+rule download_eggNOG_fastas:
+    output:
+        protected(ancient(directory(f"{EGGNOG_DIR}/OG_fasta"))),
+    run:
+        dl_filename = "OG_fasta.tar.gz"
+        dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
+
+        shell(f"curl 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' -s > {dl_output}" )
+        # validate the download
+        if not FILES['OG_fasta'] == md5(dl_output):
+            raise OSError(2, "Invalid checksum", dl_output)
+        # handle extraction/decompression
+        shell("tar -zxf %s --directory {EGGNOG_DIR}" % dl_output)
+
+rule download_eggNOG_files:
+    output:
+        protected(ancient(f"{EGGNOG_DIR}/{{filename}}")),
+    threads:
+        1
+    run:
+        dl_filename = wildcards.filename+'.gz'
+        dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
+        shell(f"curl 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' -s > {dl_output}" )
+        # validate the download
+        if not FILES[wildcards.filename] == md5(dl_output):
+            raise OSError(2, "Invalid checksum", dl_output)
+        # handle extraction/decompression
+        shell("gunzip %s" % dl_output)
+
+
+rule download_atlas_files:
+    output:
+        protected(ancient(f"{DBDIR}/{{filename}}"))
+    threads:
+        1
+    run:
+        shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
+        if not FILES[wildcards.filename] == md5(output[0]):
+            raise OSError(2, "Invalid checksum", output[0])
+
+
+rule unpack_checkm_data:
+    input:
+        os.path.join(DBDIR, CHECKM_ARCHIVE)
+    output:
+        CHECKMFILES
     params:
         path = CHECKMDIR
     shell:
@@ -148,3 +168,4 @@ onerror:
     print("An error occurred while downloading reference databases.")
     print("ATLAS databases can be manually downloaded from: https://zenodo.org/record/%s" % ZENODO_ARCHIVE)
     print("eggNOG databases can be manually downloaded from: http://eggnogdb.embl.de/download/emapperdb-%s" % EGGNOG_VERSION)
+    print("CAT databases can be manually downloaded from: https://github.com/dutilh/CAT")
