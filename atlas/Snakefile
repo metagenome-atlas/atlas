@@ -21,15 +21,6 @@ sampleTable= load_sample_table()
 # minimum required snakemake version
 min_version("5.2")
 
-def get_conda_envs_dir():
-    if config.get("yaml_dir"):
-        yaml_dir = config.get("yaml_dir")
-    else:
-        yaml_dir = os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "envs")
-    if not os.path.exists(yaml_dir):
-        sys.exit("Unable to locate the environmental dependencies file; tried %s" % yaml_dir)
-    return yaml_dir
-
 
 def get_temp_dir(config):
     if config.get("tmpdir"):
@@ -37,10 +28,6 @@ def get_temp_dir(config):
     else:
         tmp_dir = tempfile.gettempdir()
     return tmp_dir
-
-
-
-
 
 
 
@@ -68,7 +55,7 @@ def input_params_for_bbwrap(wildcards, input):
 
 
 
-CONDAENV = get_conda_envs_dir()
+
 #if config.get("workflow") != "download":
 
 #    config = update_config_file_paths(config)
@@ -124,13 +111,14 @@ include: "rules/binning.snakefile"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
 
-
+CONDAENV = "envs" # overwrite definition in download.smk
 
 localrules: all, qc, assembly_one_sample, assembly, genomes
 rule all:
     input:
         "finished_QC",
         "finished_assembly",
+        "finished_binning",
         "finished_genomes",
         "finished_genecatalog"
 
@@ -142,16 +130,12 @@ rule genecatalog:
         "Genecatalog/clustering/orf2gene.tsv",
         #"Genecatalog/counts/median_coverage.tsv.gz",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        "Genecatalog/annotations/eggNog.tsv",
-        "finished_genomes"
+        "Genecatalog/annotations/eggNog.tsv"
     output:
         temp(touch("finished_genecatalog"))
 
 rule genomes:
     input:
-        expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-               binner=config['final_binner'], sample =SAMPLES),
-        expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
         "genomes/Dereplication/dereplicated_genomes",
         "genomes/checkm/taxonomy.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
@@ -162,9 +146,19 @@ rule genomes:
         "genomes/taxonomy/taxonomy_names.tsv",
         "genomes/genomes",
         "genomes/annotations/genes",
-        "finished_assembly"
+        "finished_binning"
     output:
         temp(touch("finished_genomes"))
+
+rule binning:
+    input:
+        expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+               binner=config['final_binner'], sample =SAMPLES),
+        expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+        "finished_assembly"
+    output:
+        temp(touch("finished_binning"))
+
 
 rule assembly_one_sample:
     input:

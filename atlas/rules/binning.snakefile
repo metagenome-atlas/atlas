@@ -125,7 +125,7 @@ rule convert_concoct_csv_to_tsv:
     input:
         rules.run_concoct.output[0]
     output:
-        "{sample}/binning/concoct/cluster_attribution.tsv"
+        "{sample}/binning/concoct/cluster_attribution.tmp"
     run:
         with open(input[0]) as fin, open(output[0],'w') as fout:
             for line in fin:
@@ -160,7 +160,7 @@ rule metabat:
         depth_file = rules.get_metabat_depth_file.output,
         contigs = BINNING_CONTIGS
     output:
-        "{sample}/binning/metabat/cluster_attribution.tsv",
+        "{sample}/binning/metabat/cluster_attribution.tmp",
     params:
           sensitivity = 500 if config['metabat']['sensitivity'] == 'sensitive' else 200,
           min_contig_len = config['metabat']["min_contig_length"],
@@ -230,39 +230,43 @@ rule maxbin:
 
 
 
-localrules: get_maxbin_cluster_attribution, get_bins
-# localrules: get_unique_cluster_attribution,
-# rule get_unique_cluster_attribution:
-#     input:
-#         "{sample}/binning/{binner}/cluster_attribution.tmp"
-#     output:
-#         "{sample}/binning/{binner}/cluster_attribution.tsv"
-#     run:
-#         import pandas as pd
-#         import numpy as np
-#
-#
-#         d= pd.read_table(input[0],index_col=0, squeeze=True, header=None)
-#
-#         assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
-#
-#         old_cluster_ids = list(d.unique())
-#         if 0 in old_cluster_ids:
-#             old_cluster_ids.remove(0)
-#
-#         map_cluster_ids = dict(zip(old_cluster_ids, gen_names_for_range(len(old_cluster_ids), prefix="{sample}_{binner}_".format(**wildcards) )  ))
-#
-#         new_d= d.map(map_cluster_ids)
-#         new_d.dropna(inplace=True)
-#
-#         new_d.to_csv(output[0],sep='\t')
+localrules: get_bins
+localrules: get_unique_cluster_attribution
+rule get_unique_cluster_attribution:
+    input:
+        "{sample}/binning/{binner}/cluster_attribution.tmp"
+    output:
+        "{sample}/binning/{binner}/cluster_attribution.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+
+
+        d= pd.read_csv(input[0],index_col=0, squeeze=True, header=None,sep='\t')
+
+        assert type(d) == pd.Series, "expect the input to be a two column file: {}".format(input[0])
+
+        old_cluster_ids = list(d.unique())
+        if 0 in old_cluster_ids:
+            old_cluster_ids.remove(0)
+
+        map_cluster_ids = dict(zip(old_cluster_ids,
+                                   gen_names_for_range(
+                                       len(old_cluster_ids),
+                                        prefix="{sample}_{binner}_".format(**wildcards)
+                                         )
+                                   ))
+
+        new_d= d.map(map_cluster_ids)
+        new_d.dropna(inplace=True)
+        new_d.to_csv(output[0],sep='\t')
 #
 
 rule get_maxbin_cluster_attribution:
     input:
         "{sample}/binning/maxbin/intermediate_files"
     output:
-        "{sample}/binning/maxbin/cluster_attribution.tsv"
+        "{sample}/binning/maxbin/cluster_attribution.tmp"
     params:
         file_name = lambda wc, input: "{folder}/{sample}.{{binid}}.fasta".format(folder=input[0], **wc)
     run:
@@ -274,9 +278,7 @@ rule get_maxbin_cluster_attribution:
                     for line in bin_file:
                         if line.startswith(">"):
                             fasta_header = line[1:].strip().split()[0]
-                            out_file.write("{fasta_header}\t{sample}_maxbin_{binid}\n".format(binid=binid,
-                                                                                              fasta_header=fasta_header,
-                                                                                              sample=wildcards.sample))
+                            out_file.write(f"{fasta_header}\t{binid}\n")
                 os.remove(params.file_name.format(binid=binid))
 
 
@@ -293,24 +295,7 @@ rule get_bins:
 
 ## Checkm
 # TODO generalize checkm rules
-rule initialize_checkm:
-    # input:
-    output:
-        touched_output = "logs/checkm_init.txt"
-    params:
-        database_dir = CHECKMDIR,
-        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    log:
-        "logs/initialize_checkm.log"
-    shell:
-        """
-        python {params.script_dir}/rules/initialize_checkm.py \
-            {params.database_dir} \
-            {output.touched_output} \
-            {log}
-        """
+
 
 
 rule run_checkm_lineage_wf:

@@ -120,7 +120,7 @@ def draw_se_read_quality(df,quality_range,**kwargs):
 
 
 
-def main(samples, report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
+def main(report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
     div = {}
 
     # N reads / N bases
@@ -257,13 +257,21 @@ Downloads
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--samples", nargs="+") #is not used
-    p.add_argument("--report_out")
-    p.add_argument("--read_counts")
-    p.add_argument("--zipfiles_raw", nargs="+")
-    p.add_argument("--zipfiles_QC", nargs="+")
-    p.add_argument("--min_quality")
-    args = p.parse_args()
 
-    main(**vars(args))
+    try:
+        main(report_out=snakemake.output.report,
+            read_counts=snakemake.input.read_counts,
+            zipfiles_raw=snakemake.input.zipfiles_raw,
+            zipfiles_QC=snakemake.input.zipfiles_QC,
+            min_quality=snakemake.params.min_quality,
+        )
+    except NameError:
+        p = argparse.ArgumentParser()
+        p.add_argument("--report_out")
+        p.add_argument("--read_counts")
+        p.add_argument("--zipfiles_raw", nargs="+")
+        p.add_argument("--zipfiles_QC", nargs="+")
+        p.add_argument("--min_quality")
+        args = p.parse_args()
+
+        main(**vars(args))

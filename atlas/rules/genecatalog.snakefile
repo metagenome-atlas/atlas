@@ -408,10 +408,10 @@ rule combine_gene_coverages:
 
 
 def get_eggnog_db_file():
-    return expand("{path}/{files}",
+    return ancient(expand("{path}/{files}",
                   path=EGGNOG_DIR,
                   files=["OG_fasta","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
-                  )
+                  ))
 
 # TODO: make benchmark
 rule eggNOG_homology_search:

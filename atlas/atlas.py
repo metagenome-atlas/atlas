@@ -58,7 +58,7 @@ def get_snakefile(file="Snakefile"):
 @click.argument(
     "workflow",
     default="all",
-    type=click.Choice(["qc","assembly","genomes","genecatalog","None","all"]),
+    type=click.Choice(["qc","assembly","binning","genomes","genecatalog","None","all"]),
 #    show_default=True,
 #    help="Execute only subworkflow.",
 )
@@ -127,7 +127,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
 
     conf = load_configfile(config_file)
 
-    database_dir = conf['database_dir']
+    db_dir = conf['database_dir']
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
@@ -145,7 +145,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
         dryrun="--dryrun" if dryrun else "",
         args=" ".join(snakemake_args),
         target_rule=workflow if workflow!="None" else "",
-        conda_prefix="" if no_conda else "--conda-prefix "+os.path.join(database_dir,'conda_envs')
+        conda_prefix="" if no_conda else "--conda-prefix "+os.path.join(db_dir,'conda_envs')
     )
     logging.info("Executing: %s" % cmd)
     try:
@@ -187,13 +187,14 @@ def run_download(db_dir,jobs, snakemake_args):
     cmd = (
         "snakemake --snakefile {snakefile} "
         "--printshellcmds --jobs {jobs} --rerun-incomplete "
-        "--nolock "
+        "--nolock  --use-conda  --conda-prefix {conda_prefix} "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
         snakefile=get_snakefile("rules/download.snakefile"),
         jobs=jobs,
         db_dir=db_dir,
+        conda_prefix=os.path.join(db_dir,'conda_envs'),
         add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
         args=" ".join(snakemake_args),
     )

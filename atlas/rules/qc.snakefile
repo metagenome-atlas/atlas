@@ -222,7 +222,7 @@ rule apply_quality_filter:
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2]),
-        config.get("preprocess_adapters")
+        ancient(config["preprocess_adapters"])
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
@@ -288,7 +288,7 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
 
     rule build_decontamination_db:
         input:
-            config["contaminant_references"].values()
+            ancient(config["contaminant_references"].values())
         output:
             "ref/genome/1/summary.txt"
         threads:
@@ -580,18 +580,8 @@ rule build_qc_report:
     output:
         report = "reports/QC_report.html"
     params:
-        samples = SAMPLES,
         min_quality = config["preprocess_minimum_base_quality"],
-        snakefile_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/report.yaml" % CONDAENV
-    shell:
-         """
-         python {params.snakefile_folder}/report/qc_report.py \
-            --samples {params.samples} \
-            --report_out {output.report} \
-            --zipfiles_QC {input.zipfiles_QC} \
-            --zipfiles_raw {input.zipfiles_raw} \
-            --min_quality {params.min_quality} \
-            --read_counts {input.read_counts}
-         """
+    script:
+         "../report/qc_report.py"
