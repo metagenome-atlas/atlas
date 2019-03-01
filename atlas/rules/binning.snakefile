@@ -1106,7 +1106,7 @@ def genome_all_prokka_input(wildcards):
 
 rule all_prokka:
     input:
-        genome_annotation_input
+        genome_all_prokka_input
     output:
         "genomes/annotations/prokka.tsv"
     run:

@@ -56,11 +56,7 @@ rule cat_on_bin:
 def merge_taxonomy_input(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
     Genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
-
-
-    return dict(taxid=expand("genomes/taxonomy/{genome}/{genome}.bin2classification.txt",genome=Genomes),
-                taxid=expand("genomes/taxonomy/{genome}/{genome}.fasta",genome=Genomes)# to keep them untill all is finished
-                )
+    return expand("genomes/taxonomy/{genome}/{genome}.bin2classification.txt",genome=Genomes)
 
 
 
@@ -68,14 +64,14 @@ def merge_taxonomy_input(wildcards):
 localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:
     input:
-        upack(merge_taxonomy_input)
+        merge_taxonomy_input
     output:
         "genomes/taxonomy/taxonomy_ids.tsv"
     threads:
         1
     run:
         import pandas as pd
-        out= pd.concat([pd.read_table(file,index_col=0) for file in input.taxid],axis=0).sort_index()
+        out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
 
