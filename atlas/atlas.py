@@ -187,13 +187,14 @@ def run_download(db_dir,jobs, snakemake_args):
     cmd = (
         "snakemake --snakefile {snakefile} "
         "--printshellcmds --jobs {jobs} --rerun-incomplete "
-        "--nolock "
+        "--nolock  --use-conda  --conda-prefix {conda_prefix} "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
         snakefile=get_snakefile("rules/download.snakefile"),
         jobs=jobs,
         db_dir=db_dir,
+        conda_prefix=os.path.join(database_dir,'conda_envs'),
         add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
         args=" ".join(snakemake_args),
     )
