@@ -90,7 +90,7 @@ rule download:
                filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
         CHECKMFILES,
         CAT_flag_downloaded,
-        "logs/checkm_init.txt"
+
 
 
 
