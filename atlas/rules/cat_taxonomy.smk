@@ -1,24 +1,17 @@
 
 
 
-# this is a HACK because
+# copy genome so CAt has only one genome per bin folder and paralelizes
 localrules: get_genome_for_cat
 rule get_genome_for_cat:
     input:
-        genomes="genomes/genomes",
+        genomes="genomes/genomes/{genome}.fasta",
     output:
-        genomes=dynamic(temp("genomes/taxonomy/{genome}/{genome}.fasta")),
-    shadow:
-        "shallow"
+        genomes=temp("genomes/taxonomy/{genome}/{genome}.fasta"),
     run:
-
         import os,shutil
-        genome_path= os.path.join(input.genomes,'{genome}.fasta')
-        Genomes = glob_wildcards(genome_path).genome
-
-        for genome in Genomes:
-            os.makedirs(f"genomes/taxonomy/{genome}",exist_ok=True)
-            shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/{genome}/{genome}.fasta")
+        os.makedirs(os.dirname(output[0]),exist_ok=True)
+        shutil.copy(input[0], output[0])
 
 
 
@@ -60,12 +53,22 @@ rule cat_on_bin:
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 
+def merge_taxonomy_input(wildcards):
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+    Genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
+
+
+    return dict(taxid=expand("genomes/taxonomy/{genome}/{genome}.bin2classification.txt",genome=Genomes),
+                taxid=expand("genomes/taxonomy/{genome}/{genome}.fasta",genome=Genomes)# to keep them untill all is finished
+                )
+
+
+
 
 localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:
     input:
-        taxid=dynamic("genomes/taxonomy/{genome}/{genome}.bin2classification.txt"),
-        genomes=dynamic("genomes/taxonomy/{genome}/{genome}.fasta") # to keep them untill all is finished
+        upack(merge_taxonomy_input)
     output:
         "genomes/taxonomy/taxonomy_ids.tsv"
     threads:
