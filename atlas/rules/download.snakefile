@@ -89,7 +89,8 @@ rule download:
         expand("{dir}/{filename}", dir=EGGNOG_DIR,
                filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
         CHECKMFILES,
-        CAT_flag_downloaded
+        CAT_flag_downloaded,
+        "logs/checkm_init.txt"
 
 
 
@@ -144,6 +145,26 @@ rule unpack_checkm_data:
     shell:
         "tar -zxf {input} --directory {params.path}"
 
+
+rule initialize_checkm:
+    input:
+        CHECKMFILES
+    output:
+        touched_output = "logs/checkm_init.txt"
+    params:
+        database_dir = CHECKMDIR,
+        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    log:
+        "logs/initialize_checkm.log"
+    shell:
+        """
+        python {params.script_dir}/rules/initialize_checkm.py \
+            {params.database_dir} \
+            {output.touched_output} \
+            {log}
+        """
 
 rule download_cat_db:
     output:

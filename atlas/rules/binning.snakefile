@@ -295,24 +295,7 @@ rule get_bins:
 
 ## Checkm
 # TODO generalize checkm rules
-rule initialize_checkm:
-    # input:
-    output:
-        touched_output = "logs/checkm_init.txt"
-    params:
-        database_dir = CHECKMDIR,
-        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    log:
-        "logs/initialize_checkm.log"
-    shell:
-        """
-        python {params.script_dir}/rules/initialize_checkm.py \
-            {params.database_dir} \
-            {output.touched_output} \
-            {log}
-        """
+
 
 
 rule run_checkm_lineage_wf:
