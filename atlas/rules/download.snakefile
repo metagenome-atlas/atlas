@@ -148,7 +148,7 @@ rule unpack_checkm_data:
 
 rule initialize_checkm:
     input:
-        CHECKMFILES
+        ancient(CHECKMFILES)
     output:
         touched_output = "logs/checkm_init.txt"
     params:

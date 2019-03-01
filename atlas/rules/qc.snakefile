@@ -222,7 +222,7 @@ rule apply_quality_filter:
     input:
         expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2]),
-        config.get("preprocess_adapters")
+        ancient(config["preprocess_adapters"])
     output:
         temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
