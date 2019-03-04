@@ -139,7 +139,7 @@ rule unpack_checkm_data:
     input:
         os.path.join(DBDIR, CHECKM_ARCHIVE)
     output:
-        CHECKMFILES
+        protected(CHECKMFILES)
     params:
         path = CHECKMDIR
     shell:
