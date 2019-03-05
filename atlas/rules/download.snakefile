@@ -139,7 +139,7 @@ rule unpack_checkm_data:
     input:
         os.path.join(DBDIR, CHECKM_ARCHIVE)
     output:
-        CHECKMFILES
+        protected(CHECKMFILES)
     params:
         path = CHECKMDIR
     shell:
@@ -172,13 +172,23 @@ rule download_cat_db:
     params:
         db_folder=CAT_DIR
     resources:
-        mem= config.get('diamond_mem',10)
+        mem= config.get('diamond_mem',100)
     threads:
         config.get('diamond_threads',10)
     conda:
         "%s/cat.yaml" % CONDAENV
     shell:
         " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
+
+# output:
+#         "{dir}/{date}.{extension}",
+#         extension=["nr.fastaid2LCAtaxid",
+#                    "nr.dmnd",
+#                    "nr.taxids_with_multiple_offspring",
+#                    ,"prot.accession2taxid.gz"]
+#         "names.dmp",
+#         "nodes.dmp"
+#         temp("{dir}/{date}.nr.gz")
 
 
 onsuccess:
