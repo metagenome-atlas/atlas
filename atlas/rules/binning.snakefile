@@ -469,19 +469,11 @@ rule build_bin_report:
         report = "reports/bin_report_{binner}.html",
         bin_table = "reports/genomic_bins_{binner}.tsv"
     params:
-        samples = " ".join(SAMPLES),
-        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
+        samples = SAMPLES,
     conda:
         "%s/report.yaml" % CONDAENV
-    shell:
-        """
-        python {params.script_dir}/report/bin_report.py \
-            --samples {params.samples} \
-            --completeness {input.completeness_files} \
-            --taxonomy {input.taxonomy_files} \
-            --report-out {output.report} \
-            --bin-table {output.bin_table}
-        """
+    script:
+        "../report/bin_report.py"
 
 localrules: get_unique_bin_ids
 rule get_unique_bin_ids:
