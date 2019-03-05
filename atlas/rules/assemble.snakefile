@@ -712,23 +712,15 @@ rule build_assembly_report:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
-        mapping_log_files = expand("{sample}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log", sample=SAMPLES),
+        mapping_logs = expand("{sample}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log", sample=SAMPLES),
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:
         report = "reports/assembly_report.html",
         combined_contig_stats = 'stats/combined_contig_stats.tsv'
     params:
-        samples = " ".join(SAMPLES)
+        samples = SAMPLES
     conda:
         "%s/report.yaml" % CONDAENV
-    shell:
-        """
-        python %s/report/assembly_report.py \
-            --samples {params.samples} \
-            --contig-stats {input.contig_stats} \
-            --gene-tables {input.gene_tables} \
-            --mapping-logs {input.mapping_log_files} \
-            --report-out {output.report} \
-            --combined-stats {output.combined_contig_stats}
-        """ % os.path.dirname(os.path.abspath(workflow.snakefile))
+    script:
+        "../report/assembly_report.py"
