@@ -22,7 +22,7 @@ If you have more time, then we recommend you configure atlas according to your n
   - check the `samples.tsv`
   - edit the `config.yaml`
   - run atlas on any cluster system
-For more details see documentation.
+For more details see [documentation](https://metagenome-atlas.rtfd.io/).
 
 # Assembly based metagenomics
 
