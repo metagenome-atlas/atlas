@@ -273,6 +273,19 @@ else:
 
         return params
 
+    def spades_output(wc):
+        if config['spades_preset']=='rna':
+            output_name='transcripts'
+        elif (config['spades_preset']=='meta') or (config['spades_preset']=='normal'):
+            if config['spades_use_scaffolds']:
+                output_name= "scaffolds"
+            else:
+                output_name= "contigs"
+        else:
+            raise Exception("Don't know 'spades_preset' in config file.")
+
+        return f"{wc.sample}/assembly/{output_name}.fasta"
+
 
     rule run_spades:
         input:
@@ -280,8 +293,7 @@ else:
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
-            "{sample}/assembly/contigs.fasta",
-            "{sample}/assembly/scaffolds.fasta"
+            spades_output
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
@@ -312,7 +324,7 @@ else:
     localrules: rename_spades_output
     rule rename_spades_output:
         input:
-            "{{sample}}/assembly/{sequences}.fasta".format(sequences= 'scaffolds' if config['spades_use_scaffolds'] else 'contigs' )
+            rules.run_spades.output[0]
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
