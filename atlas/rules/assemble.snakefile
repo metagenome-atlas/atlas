@@ -273,19 +273,6 @@ else:
 
         return params
 
-    def spades_output(wc):
-        if config['spades_preset']=='rna':
-            output_name='transcripts'
-        elif (config['spades_preset']=='meta') or (config['spades_preset']=='normal'):
-            if config['spades_use_scaffolds']:
-                output_name= "scaffolds"
-            else:
-                output_name= "contigs"
-        else:
-            raise Exception("Don't know 'spades_preset' in config file.")
-
-        return f"{wc.sample}/assembly/{output_name}.fasta"
-
 
     rule run_spades:
         input:
@@ -293,7 +280,8 @@ else:
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
-            spades_output
+            "{sample}/assembly/contigs.fasta",
+            "{sample}/assembly/scaffolds.fasta"
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
@@ -319,12 +307,58 @@ else:
             " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
 
+    rule run_rna_spades:
+        input:
+            expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                fraction=ASSEMBLY_FRACTIONS,
+                assembly_preprocessing_steps=assembly_preprocessing_steps)
+        output:
+            "{sample}/assembly/transcripts.fasta",
+        benchmark:
+            "logs/benchmarks/assembly/rnaspades/{sample}.txt"
+        params:
+            p= lambda wc,input: spades_parameters(wc,input),
+            k = config.get("spades_k", SPADES_K),
+        log:
+            "{sample}/logs/assembly/rnaspades.log"
+        conda:
+            "%s/required_packages.yaml" % CONDAENV
+        threads:
+            config.get("assembly_threads", ASSEMBLY_THREADS)
+        resources:
+            mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
+        shell:
+            "spades.py "
+            " --threads {threads} "
+            " --memory {resources.mem} "
+            " -o {params.p[outdir]} "
+            " -k {params.k}"
+            " {params.p[preset]} "
+            " {params.p[extra]} "
+            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[skip_error_correction]} "
+            " > {log} 2>&1 "
+
+
+
+    def spades_output(wc):
+        if config['spades_preset']=='rna':
+            output_name='transcripts'
+        elif (config['spades_preset']=='meta') or (config['spades_preset']=='normal'):
+            if config['spades_use_scaffolds']:
+                output_name= "scaffolds"
+            else:
+                output_name= "contigs"
+        else:
+            raise Exception("Don't know 'spades_preset' in config file.")
+
+        return f"{wc.sample}/assembly/{output_name}.fasta"
 
 
     localrules: rename_spades_output
     rule rename_spades_output:
         input:
-            rules.run_spades.output[0]
+            spades_output
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
