@@ -108,6 +108,7 @@ include: "rules/download.snakefile" # contains hard coded variables
 include: "rules/qc.snakefile"
 include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
+include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
 
