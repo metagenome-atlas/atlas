@@ -111,6 +111,7 @@ include: "rules/binning.snakefile"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
+#include: "rules/tree.smk"
 
 CONDAENV = "envs" # overwrite definition in download.smk
 
@@ -144,7 +145,7 @@ rule genomes:
         "genomes/clustering/contig2genome.tsv",
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
-        "genomes/taxonomy/taxonomy_names.tsv",
+        "genomes/taxonomy/taxonomy.tsv",
         "genomes/genomes",
         "genomes/annotations/genes",
         "finished_binning"
