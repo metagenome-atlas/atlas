@@ -32,24 +32,35 @@ def get_temp_dir(config):
 
 
 
-def input_params_for_bbwrap(wildcards, input):
-    """This function generates the input flag needed for bbwrap for all cases
+def io_params_for_bbwrap(wildcards, io,key='in'):
+    """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
+
+    params:
+        io  input or otoup element from snakemake
+        key 'in' or 'out'
+
+        if io contains attributes:
+            se -> in={se}
+            R1,R2,se -> in1={R1},se in2={R2},null
+            R1,R2 -> in1={R1} in2={R2}
+
     """
-    if hasattr(input, 'R1') and hasattr(input, 'R2'):
-        if hasattr(input, 'se'):
-            flag = "in1={R1},{se} in2={R2},null".format(**input)
+
+    if hasattr(io, 'R1') and hasattr(io, 'R2'):
+        if hasattr(io, 'se'):
+            flag = "{key}1={R1},{se} {key}2={R2},null".format(key=key,**io)
         else:
-            flag = "in1={R1} in2={R2}".format(**input)
-    elif hasattr(input, 'se'):
-        flag = "in1={se}".format(**input)
+            flag = "{key}1={R1} {key}2={R2}".format(key=key,**io)
+    elif hasattr(io, 'se'):
+        flag = "{key}1={se}".format(key=key,**io)
     else:
-        logger.critical(("File input expectation is one of: "
+        logger.critical(("File input/output expectation is one of: "
                          "1 file = single-end, "
                          "2 files = R1,R2, or"
                          "3 files = R1,R2,se"
-                         "got: {n} files:\n{}").format('\n'.join(input),
-                                                       n=len(input)))
+                         "got: {n} files:\n{}").format('\n'.join(io),
+                                                       n=len(io)))
         sys.exit(1)
     return flag
 
@@ -72,7 +83,13 @@ def get_alls_samples_of_group(wildcards):
 
 PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
 RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
-MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+
+colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
+if len(colum_headers_QC)>0:
+    MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
+else:
+    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+
 
 
 def get_input_fastq(wildcards):

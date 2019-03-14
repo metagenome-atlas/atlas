@@ -218,11 +218,11 @@ def validate_config(config, workflow):
     type=int,
     help="number of threads to use per multi-threaded job",
 )
-# @click.option(
-#     "--skip-qc",
-#     is_flag=True,
-#     help="Skip QC, if reads are already pre-processed",
-# )
+@click.option(
+    "--skip-qc",
+    is_flag=True,
+    help="Skip QC, if reads are already pre-processed",
+)
 def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, threads,skip_qc=False):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.

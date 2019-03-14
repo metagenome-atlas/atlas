@@ -36,7 +36,11 @@ rule init_pre_assembly_processing:
     run:
     # make symlink
         fraction = wildcards.fraction
-        os.symlink(os.path.relpath(input[fraction],os.path.dirname(output[0])),output[0])
+        if fraction=='se' and (not hasattr(input,'se')):
+            #create empty se file ehen not available.
+            touch(output[0])
+        else:
+            os.symlink(os.path.relpath(input[fraction],os.path.dirname(output[0])),output[0])
 
 rule normalize_coverage_across_kmers:
     input:
@@ -95,10 +99,18 @@ rule normalize_coverage_across_kmers:
         """
 
 
+def error_correction_input(wildcards):
+
+    return dict(zip(MULTIFILE_FRACTIONS,expand("{sample}/assembly/reads/{previous_steps}_{fraction}.fastq.gz",
+        fraction=MULTIFILE_FRACTIONS,**wildcards)))
+
+
+
+
+
 rule error_correction:
     input:
-        expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS)
+        unpack( error_correction_input)
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS))
@@ -112,8 +124,8 @@ rule error_correction:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     params:
-        inputs = lambda wc, input: "in1={0},{2} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
-        outputs = lambda wc, output: "out1={0},{2} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output)
+        inputs = lambda wc, input : io_params_for_bbwrap(wc, input),
+        outputs = lambda wc, output: io_params_for_bbwrap(wc, output,key='out')
     threads:
         config.get("threads", 1)
     shell:
@@ -131,10 +143,10 @@ rule error_correction:
 rule merge_pairs:
     input:
         expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS)
+            fraction=['R1','R2'])
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
-            fraction=ASSEMBLY_FRACTIONS))
+            fraction=['R1','R2','me']))
     threads:
         config.get("threads", 1)
     resources:
@@ -160,9 +172,16 @@ rule merge_pairs:
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
-
-        cp {input[2]} {output[2]} 2>> {log}
         """
+localrules: passtrough_se_merged
+rule passtrough_se_merged:
+    input:
+        "{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz
+    output:
+        temp("{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz")
+    shell:
+        "cp {input} {output}"
+
 
 assembly_params={}
 if config.get("assembler", "megahit") == "megahit":
@@ -170,24 +189,28 @@ if config.get("assembler", "megahit") == "megahit":
 
     if PAIRED_END and config.get("merge_pairs_before_assembly", True):
 
-        localrules: merge_se_me_for_megahit
-        rule merge_se_me_for_megahit:
-            input:
-                expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                fraction=['se','me'], assembly_preprocessing_steps=assembly_preprocessing_steps)
-            output:
-                temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                            fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
-            shell:
-                "cat {input} > {output}"
+        if 'se' in MULTIFILE_FRACTIONS:
 
-        ASSEMBLY_FRACTIONS = ['R1','R2','co']
+            localrules: merge_se_me_for_megahit
+            rule merge_se_me_for_megahit:
+                input:
+                    expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                    fraction=['se','me'], assembly_preprocessing_steps=assembly_preprocessing_steps)
+                output:
+                    temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                                fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
+                shell:
+                    "cat {input} > {output}"
+
+            ASSEMBLY_FRACTIONS = ['R1','R2','co']
+        else:
+            ASSEMBLY_FRACTIONS = ['R1','R2','me']
 
 
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
+            fraction=ASSEMBLY_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/megahit/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -372,7 +395,7 @@ if config['filter_contigs']:
         output:
             sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
         params:
-            input = lambda wc, input : input_params_for_bbwrap(wc, input),
+            input = lambda wc, input : io_params_for_bbwrap(wc, input),
             maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
             max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
             paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
@@ -514,7 +537,7 @@ rule align_reads_to_final_contigs:
         #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
         #                  fraction=MULTIFILE_FRACTIONS))
     params:
-        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        input = lambda wc, input : io_params_for_bbwrap(wc, input),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         #unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
