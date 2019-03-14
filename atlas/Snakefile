@@ -2,6 +2,8 @@ import os
 import re
 import sys
 import tempfile
+import pandas as pd
+import numpy as np
 from snakemake.utils import logger, min_version, update_config
 
 
@@ -32,7 +34,7 @@ def get_temp_dir(config):
 
 
 
-def io_params_for_bbwrap(wildcards, io,key='in'):
+def io_params_for_bbwrap(io,key='in'):
     """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
 
@@ -46,14 +48,13 @@ def io_params_for_bbwrap(wildcards, io,key='in'):
             R1,R2 -> in1={R1} in2={R2}
 
     """
-
-    if hasattr(io, 'R1') and hasattr(io, 'R2'):
-        if hasattr(io, 'se'):
-            flag = "{key}1={R1},{se} {key}2={R2},null".format(key=key,**io)
-        else:
-            flag = "{key}1={R1} {key}2={R2}".format(key=key,**io)
-    elif hasattr(io, 'se'):
-        flag = "{key}1={se}".format(key=key,**io)
+    N= len(io)
+    if N==1:
+        flag = f"{key}1={io[0]}"
+    elif N==2:
+        flag= f"{key}1={io[0]} {key}2={io[1]}"
+    elif N==3:
+        flag= f"{key}1={io[0]},{io[2]} {key}2={io[1]},null"
     else:
         logger.critical(("File input/output expectation is one of: "
                          "1 file = single-end, "
@@ -85,10 +86,28 @@ PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interle
 RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 
 colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
-if len(colum_headers_QC)>0:
+if len(colum_headers_QC)>=1:
     MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
+
+    def get_quality_controlled_reads(wildcards):
+        """Gets quality controlled reads for two cases. When preprocessed with
+        ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
+        externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
+        """
+        return sampleTable.loc[wildcards.sample,['Reads_QC_'+f for f in MULTIFILE_FRACTIONS]]
+
 else:
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+
+
+    def get_quality_controlled_reads(wildcards):
+        """Gets quality controlled reads for two cases. When preprocessed with
+        ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
+        externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
+        """
+
+        return expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz",
+                    fraction=MULTIFILE_FRACTIONS)
 
 
 
@@ -98,28 +117,6 @@ def get_input_fastq(wildcards):
     else:
         return list(sampleTable.loc[wildcards.sample,['Reads_raw_se']])
 
-def get_quality_controlled_reads(wildcards):
-    """Gets quality controlled reads for two cases. When preprocessed with
-    ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
-    externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
-    """
-    checks ={}
-    fastq = {}
-
-    for fraction in MULTIFILE_FRACTIONS:
-        checks[fraction]= (("Reads_QC_"+fraction in sampleTable.columns) and
-                          (~sampleTable.loc[wildcards.sample,['Reads_QC_'+fraction]].isnull().any()))
-        if checks[fraction]:
-            fastq[fraction]= sampleTable.loc[wildcards.sample,'Reads_QC_'+fraction]
-
-    if checks.get('se',False) or (checks.get('R1',False) & checks.get('R2',False)):
-        #files are in sampletable
-        return fastq
-
-    else:
-        return dict(zip(MULTIFILE_FRACTIONS,
-                expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz",
-                    fraction=MULTIFILE_FRACTIONS)))
 
 include: "rules/download.snakefile" # contains hard coded variables
 include: "rules/qc.snakefile"

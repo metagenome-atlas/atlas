@@ -403,7 +403,7 @@ rule qcreads:
 if PAIRED_END:
     rule calculate_insert_size:
         input:
-            unpack(get_quality_controlled_reads)
+            get_quality_controlled_reads
         output:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
@@ -426,7 +426,7 @@ if PAIRED_END:
         shell:
             """
             bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
-                in1={input.R1} in2={input.R2} \
+                in1={input[0]} in2={input[1]} \
                 {params.flags} k={params.kmer} \
                 extend2={params.extend2} \
                 ihist={output.ihist} merge=f \
@@ -434,14 +434,14 @@ if PAIRED_END:
                 prealloc=t prefilter=t \
                 minprob={params.minprob} 2> >(tee {log})
 
-            readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input[0]} in2={input[1]} out={output.read_length} 2> >(tee {log})
             """
 
 
 else:
     rule calculate_read_length_hist:
         input:
-            unpack(get_quality_controlled_reads)
+            get_quality_controlled_reads
         output:
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
         params:
@@ -459,7 +459,7 @@ else:
     #        "qc"
         shell:
             """
-            readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input[0]} out={output.read_length} 2> >(tee {log})
             """
 
 
@@ -562,7 +562,7 @@ rule combine_read_counts:
 
 rule finalize_sample_qc:
     input:
-        unpack(get_quality_controlled_reads),
+        get_quality_controlled_reads,
         quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
         read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
