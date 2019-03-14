@@ -13,7 +13,7 @@ if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
 
 def get_preprocessing_steps(config):
     preprocessing_steps = ['QC']
-    if config.get("normalize_reads_before_assembly", True):
+    if config.get("normalize_reads_before_assembly", False):
         preprocessing_steps.append("normalized")
 
     if config.get("error_correction_before_assembly", True):
