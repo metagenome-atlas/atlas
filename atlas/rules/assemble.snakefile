@@ -104,6 +104,20 @@ def error_correction_input(wildcards):
     return dict(zip(MULTIFILE_FRACTIONS,expand("{sample}/assembly/reads/{previous_steps}_{fraction}.fastq.gz",
         fraction=MULTIFILE_FRACTIONS,**wildcards)))
 
+def error_correction_parse_output(output):
+    Nfiles=len(output)
+
+    if Nfiles==1:
+        out= f"out={output[0]}"
+    elif Nfiles==2:
+        out= f"out1={output[0]} out2={output[1]}"
+    elif Nfiles ==3:
+        out= f"out1={output[0]},{output[2]} out2={output[1]}"
+    else:
+        raise IOError("expect 1,2, or three files")
+    return out
+
+
 
 rule error_correction:
     input:
@@ -122,7 +136,7 @@ rule error_correction:
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     params:
         inputs = lambda wc, input : io_params_for_bbwrap(wc, input),
-        outputs = lambda wc, output: io_params_for_bbwrap(wc, output,key='out')
+        outputs = lambda wc, output: error_correction_parse_output(output)
     threads:
         config.get("threads", 1)
     shell:
@@ -165,7 +179,7 @@ rule merge_pairs:
         """
         bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
-            outmerged={output[3]} \
+            outmerged={output[2]} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
@@ -173,7 +187,7 @@ rule merge_pairs:
 localrules: passtrough_se_merged
 rule passtrough_se_merged:
     input:
-        "{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz
+        "{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz"
     output:
         temp("{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz")
     shell:
