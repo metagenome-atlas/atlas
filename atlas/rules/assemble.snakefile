@@ -184,10 +184,22 @@ if config.get("assembler", "megahit") == "megahit":
         ASSEMBLY_FRACTIONS = ['R1','R2','co']
 
 
+    def megahit_input_parsing(input):
+        Nfiles=len(input)
+
+        if Nfiles==1:
+            out= f"--read {input[0]}"
+        else:
+            out= f"-1 {input[0]} -2 {input[1]} "
+
+            if Nfiles ==3:
+                out+= f"--read {output[2]}"
+        return out
+
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
+            fraction=ASSEMBLY_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/megahit/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -206,7 +218,7 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs = lambda wc, input: "-1 {0} -2 {1} ".format(*input) if PAIRED_END else "--read {0}".format(*input),
+            inputs = lambda wc, input: megahit_input_parsing(input),
             preset = assembly_params['megahit'][config['megahit_preset']],
         conda:
             "%s/required_packages.yaml" % CONDAENV
