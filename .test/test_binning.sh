@@ -25,4 +25,4 @@ rm -f $WD/samples.tsv
 #
 atlas init --db-dir $databaseDir --threads 3  -w $WD $reads_dir
 
-atlas run binning -w $WD $ressource_args assembler=spades $@
+atlas run binning -w $WD $ressource_args assembler=spades final_binner=metabat $@
