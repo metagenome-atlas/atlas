@@ -143,7 +143,7 @@ def get_files_from_sampleTable(sample,Headers):
     files= sampleTable.loc[sample,Headers]
 
     if files.isnull().all():
-        raise FileNotInSampleTableException("The following files were not available for this sample in the SampleTable"+Error_details,files=files)
+        raise FileNotInSampleTableException("The following files were not available for this sample in the SampleTable"+Error_details)
 
     elif files.isnull().any():
         raise IOError(f"Not all of the files are in sampleTable, something went wrong."+Error_details)
