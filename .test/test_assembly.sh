@@ -42,7 +42,7 @@ reads_dir=".test/reads/stub_qc"
 
 
 rm -f $WD2/samples.tsv
-mkdir -p $WD2/qcreads
+mkdir -p $reads_dir
 cp $WD/*/sequence_quality_control/*_QC_R?.fastq.gz $reads_dir
 
 
