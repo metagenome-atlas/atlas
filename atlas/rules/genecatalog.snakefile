@@ -299,12 +299,12 @@ rule rename_gene_catalog:
 
 rule align_reads_to_Genecatalog:
     input:
-        unpack(get_quality_controlled_reads),
+        reads=get_quality_controlled_reads,
         fasta = "Genecatalog/gene_catalog.fna",
     output:
         sam = temp("Genecatalog/alignments/{sample}.sam")
     params:
-        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        input = lambda wc, input : input_params_for_bbwrap( input.reads),
         maxsites = 4,
         ambiguous = 'all',
         minid = config['genecatalog']['minid'],

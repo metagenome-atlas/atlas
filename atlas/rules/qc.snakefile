@@ -11,7 +11,6 @@ localrules: build_qc_report, combine_read_length_stats, \
 
 
 
-
 def get_ribosomal_rna_input(wildcards):
     data_type = config["data_type"]
 
@@ -35,7 +34,32 @@ def get_ribosomal_rna_input(wildcards):
 #     return inputs
 
 
-PROCESSED_STEPS = ['raw']
+if SKIP_QC:
+    PROCESSED_STEPS = ['QC']
+
+    get_input_fastq=get_quality_controlled_reads
+
+else:
+    PROCESSED_STEPS = ['raw']
+
+
+
+    def get_input_fastq(wildcards):
+
+        if not config.get('interleaved_fastqs',False):
+            Raw_Headers= ['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]
+        else:
+            Raw_Headers= ['Reads_raw_se']
+
+        if not (wildcards.sample in sampleTable.index):
+            return expand("Impossible/file/{sample}_{fraction}.fastq.gz",sample=wildcards.sample,fraction=RAW_INPUT_FRACTIONS)
+            logger.debug(f"Searched for qc reads for inexisitng sample. wildcards: {wildcards}")
+        else:
+            try:
+                return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
+            except FileNotInSampleTableException:
+                raise Exception(f"Raw files are not in sampleTable. Are you trying to run QC on files that are already quality controlled?\nsample: {wildcards.sample}\nHeaders: {Raw_Headers}")
+
 
 
 
@@ -47,9 +71,9 @@ rule initialize_qc:
                     fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
     priority: 80
     params:
-        inputs = lambda wc, input: "in=%s" % input[0] if len(input) == 1 else "in=%s in2=%s" % tuple(input),
+        inputs = lambda wc, input: io_params_for_tadpole(input,'in'),
         interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False )else "f",
-        outputs = lambda wc, output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
+        outputs = lambda wc, output: io_params_for_tadpole(output,'out'),
         verifypaired = "t" if PAIRED_END else "f"
     log:
         "{sample}/logs/QC/init.log"
@@ -173,169 +197,82 @@ rule get_read_stats:
         shutil.make_archive(params.folder, 'zip', params.folder)
         shutil.rmtree(params.folder)
 
+if not SKIP_QC:
 
-if config.get('deduplicate', True):
-    PROCESSED_STEPS.append("deduplicated")
-    rule deduplicate_reads:
+    if config.get('deduplicate', True):
+        PROCESSED_STEPS.append("deduplicated")
+        rule deduplicate_reads:
+            input:
+                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    step=PROCESSED_STEPS[-2], fraction=RAW_INPUT_FRACTIONS)
+            output:
+                temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
+            benchmark:
+                "logs/benchmarks/QC/deduplicate/{sample}.txt"
+            params:
+                inputs = lambda wc, input: io_params_for_tadpole(input,'in'),
+                outputs = lambda wc,output: io_params_for_tadpole(output,'out'),
+                dupesubs = config.get('duplicates_allow_substitutions', DUPLICATES_ALLOW_SUBSTITUTIONS),
+                only_optical = 't' if config.get('duplicates_only_optical', DUPLICATES_ONLY_OPTICAL) else 'f'
+            log:
+                "{sample}/logs/QC/deduplicate.log"
+            conda:
+                "%s/required_packages.yaml" % CONDAENV
+            threads:
+                config.get("threads", 1)
+            resources:
+                mem = config.get("java_mem", JAVA_MEM),
+                java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        #    group:
+        #        "qc"
+            shell:
+                """
+                clumpify.sh \
+                    {params.inputs} \
+                    {params.outputs} \
+                    overwrite=true\
+                    dedupe=t \
+                    dupesubs={params.dupesubs} \
+                    optical={params.only_optical}\
+                    threads={threads} \
+                    -Xmx{resources.java_mem}G 2> {log}
+                """
+
+
+    PROCESSED_STEPS.append("filtered")
+
+
+    rule apply_quality_filter:
         input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=PROCESSED_STEPS[-2], fraction=RAW_INPUT_FRACTIONS)
-        output:
-            temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-1]))
-        benchmark:
-            "logs/benchmarks/QC/deduplicate/{sample}.txt"
-        params:
-            inputs = lambda wc, input: "in=%s in2=%s" % (input[0], input[1]) if PAIRED_END else "in=%s" % input[0],
-            outputs = lambda wc,output: "out1={0} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output),
-            dupesubs = config.get('duplicates_allow_substitutions', DUPLICATES_ALLOW_SUBSTITUTIONS),
-            only_optical = 't' if config.get('duplicates_only_optical', DUPLICATES_ONLY_OPTICAL) else 'f'
-        log:
-            "{sample}/logs/QC/deduplicate.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        threads:
-            config.get("threads", 1)
-        resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-    #    group:
-    #        "qc"
-        shell:
-            """
-            clumpify.sh \
-                {params.inputs} \
-                {params.outputs} \
-                overwrite=true\
-                dedupe=t \
-                dupesubs={params.dupesubs} \
-                optical={params.only_optical}\
-                threads={threads} \
-                -Xmx{resources.java_mem}G 2> {log}
-            """
-
-
-PROCESSED_STEPS.append("filtered")
-
-
-rule apply_quality_filter:
-    input:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2]),
-        ancient(config["preprocess_adapters"])
-    output:
-        temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
-        stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
-    benchmark:
-        "logs/benchmarks/QC/quality_filter/{sample}.txt"
-    params:
-        ref = "ref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
-        mink = "" if not config.get("preprocess_adapters") else "mink=%d" % config.get("preprocess_adapter_min_k", PREPROCESS_ADAPTER_MIN_K),
-        ktrim = "" if not config.get("preprocess_adapters") else "ktrim=%s" % config.get("preprocess_kmer_trim", PREPROCESS_KMER_TRIM),
-        trimq = config.get("preprocess_minimum_base_quality", PREPROCESS_MINIMUM_BASE_QUALITY),
-        hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
-        k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
-        qtrim = config.get("qtrim", QTRIM),
-        error_correction_pe = "t" if PAIRED_END and config.get('error_correction_overlapping_pairs',True) else "f",
-        minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
-        minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
-        # we require the user to reformat to R1 and R2, non-interleaved files
-        interleaved = "f",
-        maxns = config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
-        prealloc = config.get("preallocate_ram", PREALLOCATE_RAM),
-        inputs = lambda wc, input:"in={0} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
-        outputs = lambda wc, output:"out={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
-    log:
-        "{sample}/logs/QC/quality_filter.log"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-#    group:
-#        "qc"
-    shell:
-        """
-        bbduk.sh {params.inputs} \
-            {params.ref} \
-            interleaved={params.interleaved} \
-            {params.outputs} \
-            stats={output.stats} \
-            overwrite=true \
-            qout=33 \
-            trd=t \
-            {params.hdist} \
-            {params.k} \
-            {params.ktrim} \
-            {params.mink} \
-            trimq={params.trimq} \
-            qtrim={params.qtrim} \
-            threads={threads} \
-            minlength={params.minlength} \
-            maxns={params.maxns} \
-            minbasefrequency={params.minbasefrequency} \
-            ecco={params.error_correction_pe} \
-            prealloc={params.prealloc} \
-            -Xmx{resources.java_mem}G 2> {log}
-        """
-
-# if there are no references, decontamination will be skipped
-if len(config.get("contaminant_references", {}).keys()) > 0:
-    PROCESSED_STEPS.append("clean")
-
-    rule build_decontamination_db:
-        input:
-            ancient(config["contaminant_references"].values())
-        output:
-            "ref/genome/1/summary.txt"
-        threads:
-            config.get("threads", 1)
-        resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-        log:
-            "logs/QC/build_decontamination_db.log"
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        params:
-            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-            refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
-        shell:
-            """
-            bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} \
-                threads={threads} k={params.k} local=t 2> {log}
-            """
-
-
-    rule run_decontamination:
-        input:
-            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=PROCESSED_STEPS[-2], fraction=MULTIFILE_FRACTIONS),
-            db = "ref/genome/1/summary.txt"
+            reads=expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                fraction=RAW_INPUT_FRACTIONS, step=PROCESSED_STEPS[-2]),
+            adapters=ancient(config["preprocess_adapters"])
         output:
             temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
-            contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
-                    db=list(config["contaminant_references"].keys()),
-                    fraction=MULTIFILE_FRACTIONS),
-            stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt"
+            stats = "{sample}/logs/{sample}_quality_filtering_stats.txt"
         benchmark:
-            "logs/benchmarks/QC/decontamination/{sample}.txt"
+            "logs/benchmarks/QC/quality_filter/{sample}.txt"
         params:
-            contaminant_folder = lambda wc, output: os.path.dirname(output.contaminants[0]),
-            maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
-            minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
-            minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
-            ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
-            k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
-            paired= "true" if PAIRED_END else "false",
-            input_single= lambda wc,input: input[2] if PAIRED_END else input[0],
-            output_single= lambda wc,output: output[2] if PAIRED_END else output[0]
+            ref = "ref=%s" % config.get("preprocess_adapters") if config.get("preprocess_adapters") else "",
+            mink = "" if not config.get("preprocess_adapters") else "mink=%d" % config.get("preprocess_adapter_min_k", PREPROCESS_ADAPTER_MIN_K),
+            ktrim = "" if not config.get("preprocess_adapters") else "ktrim=%s" % config.get("preprocess_kmer_trim", PREPROCESS_KMER_TRIM),
+            trimq = config.get("preprocess_minimum_base_quality", PREPROCESS_MINIMUM_BASE_QUALITY),
+            hdist = "" if not config.get("preprocess_adapters") else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches", PREPROCESS_ALLOWABLE_KMER_MISMATCHES),
+            k = "" if not config.get("preprocess_adapters") else "k=%d" % config.get("preprocess_reference_kmer_match_length", PREPROCESS_REFERENCE_KMER_MATCH_LENGTH),
+            qtrim = config.get("qtrim", QTRIM),
+            error_correction_pe = "t" if PAIRED_END and config.get('error_correction_overlapping_pairs',True) else "f",
+            minlength = config.get("preprocess_minimum_passing_read_length", PREPROCESS_MINIMUM_PASSING_READ_LENGTH),
+            minbasefrequency = config.get("preprocess_minimum_base_frequency", PREPROCESS_MINIMUM_BASE_FREQUENCY),
+            # we require the user to reformat to R1 and R2, non-interleaved files
+            interleaved = "f",
+            maxns = config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
+            prealloc = config.get("preallocate_ram", PREALLOCATE_RAM),
+            inputs = lambda wc, input: io_params_for_tadpole(input.reads),
+            outputs = lambda wc, output:"out={0} out2={1} outs={2}".format(*output) if PAIRED_END else "out={0}".format(*output)
         log:
-            "{sample}/logs/QC/decontamination.log"
+            "{sample}/logs/QC/quality_filter.log"
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads:
@@ -347,63 +284,151 @@ if len(config.get("contaminant_references", {}).keys()) > 0:
     #        "qc"
         shell:
             """
-            if [ "{params.paired}" = true ] ; then
-                bbsplit.sh in1={input[0]} in2={input[1]} \
-                    outu1={output[0]} outu2={output[1]} \
-                    basename="{params.contaminant_folder}/%_R#.fastq.gz" \
-                    maxindel={params.maxindel} minratio={params.minratio} \
-                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
-                    threads={threads} k={params.k} local=t \
-                    -Xmx{resources.java_mem}G 2> {log}
-            fi
-
-            bbsplit.sh in={params.input_single}  \
-                outu={params.output_single} \
-                basename="{params.contaminant_folder}/%_se.fastq.gz" \
-                maxindel={params.maxindel} minratio={params.minratio} \
-                minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
-                interleaved=f threads={threads} k={params.k} local=t \
-                -Xmx{resources.java_mem}G 2>> {log}
+            bbduk.sh {params.inputs} \
+                {params.ref} \
+                interleaved={params.interleaved} \
+                {params.outputs} \
+                stats={output.stats} \
+                overwrite=true \
+                qout=33 \
+                trd=t \
+                {params.hdist} \
+                {params.k} \
+                {params.ktrim} \
+                {params.mink} \
+                trimq={params.trimq} \
+                qtrim={params.qtrim} \
+                threads={threads} \
+                minlength={params.minlength} \
+                maxns={params.maxns} \
+                minbasefrequency={params.minbasefrequency} \
+                ecco={params.error_correction_pe} \
+                prealloc={params.prealloc} \
+                -Xmx{resources.java_mem}G 2> {log}
             """
 
+    # if there are no references, decontamination will be skipped
+    if len(config.get("contaminant_references", {}).keys()) > 0:
+        PROCESSED_STEPS.append("clean")
 
-PROCESSED_STEPS.append("QC")
-
-localrules: qcreads
-rule qcreads:
-    input:
-        unpack(get_ribosomal_rna_input)
-    output:
-        expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-            step=PROCESSED_STEPS[-1], fraction=MULTIFILE_FRACTIONS)
-    threads:
-        1
-#    group:
-#        "qc"
-    run:
-        import shutil
-        import pandas as pd
-        for i in range(len(MULTIFILE_FRACTIONS)):
-
-            with open(output[i], 'wb') as outFile:
-                with open(input.clean_reads[i], 'rb') as infile1:
-                    shutil.copyfileobj(infile1, outFile)
-                    if hasattr(input, 'rrna_reads'):
-                        with open(input.rrna_reads[i], 'rb') as infile2:
-                            shutil.copyfileobj(infile2, outFile)
-
-        # save to sampleTable
-            sampleTable.loc[wildcards.sample,'Reads_QC_'+MULTIFILE_FRACTIONS[i]] = output[i]
-        sampleTable.to_csv('samples.tsv',sep='\t')
+        rule build_decontamination_db:
+            input:
+                ancient(config["contaminant_references"].values())
+            output:
+                "ref/genome/1/summary.txt"
+            threads:
+                config.get("threads", 1)
+            resources:
+                mem = config.get("java_mem", JAVA_MEM),
+                java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            log:
+                "logs/QC/build_decontamination_db.log"
+            conda:
+                "%s/required_packages.yaml" % CONDAENV
+            params:
+                k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
+                refs_in = " ".join(["ref_%s=%s" % (n, fa) for n, fa in config["contaminant_references"].items()]),
+            shell:
+                """
+                bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} \
+                    threads={threads} k={params.k} local=t 2> {log}
+                """
 
 
+        rule run_decontamination:
+            input:
+                expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    step=PROCESSED_STEPS[-2], fraction=MULTIFILE_FRACTIONS),
+                db = "ref/genome/1/summary.txt"
+            output:
+                temp(expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    fraction=MULTIFILE_FRACTIONS, step=PROCESSED_STEPS[-1])),
+                contaminants = expand("{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
+                        db=list(config["contaminant_references"].keys()),
+                        fraction=MULTIFILE_FRACTIONS),
+                stats = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt"
+            benchmark:
+                "logs/benchmarks/QC/decontamination/{sample}.txt"
+            params:
+                contaminant_folder = lambda wc, output: os.path.dirname(output.contaminants[0]),
+                maxindel = config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
+                minratio = config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
+                minhits = config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
+                ambiguous = config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
+                k = config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
+                paired= "true" if PAIRED_END else "false",
+                input_single= lambda wc,input: input[2] if PAIRED_END else input[0],
+                output_single= lambda wc,output: output[2] if PAIRED_END else output[0]
+            log:
+                "{sample}/logs/QC/decontamination.log"
+            conda:
+                "%s/required_packages.yaml" % CONDAENV
+            threads:
+                config.get("threads", 1)
+            resources:
+                mem = config.get("java_mem", JAVA_MEM),
+                java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        #    group:
+        #        "qc"
+            shell:
+                """
+                if [ "{params.paired}" = true ] ; then
+                    bbsplit.sh in1={input[0]} in2={input[1]} \
+                        outu1={output[0]} outu2={output[1]} \
+                        basename="{params.contaminant_folder}/%_R#.fastq.gz" \
+                        maxindel={params.maxindel} minratio={params.minratio} \
+                        minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+                        threads={threads} k={params.k} local=t \
+                        -Xmx{resources.java_mem}G 2> {log}
+                fi
 
+                bbsplit.sh in={params.input_single}  \
+                    outu={params.output_single} \
+                    basename="{params.contaminant_folder}/%_se.fastq.gz" \
+                    maxindel={params.maxindel} minratio={params.minratio} \
+                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
+                    interleaved=f threads={threads} k={params.k} local=t \
+                    -Xmx{resources.java_mem}G 2>> {log}
+                """
+
+
+    PROCESSED_STEPS.append("QC")
+
+    localrules: qcreads
+    rule qcreads:
+        input:
+            unpack(get_ribosomal_rna_input)
+        output:
+            expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                step=PROCESSED_STEPS[-1], fraction=MULTIFILE_FRACTIONS)
+        threads:
+            1
+    #    group:
+    #        "qc"
+        run:
+            import shutil
+            import pandas as pd
+            for i in range(len(MULTIFILE_FRACTIONS)):
+
+                with open(output[i], 'wb') as outFile:
+                    with open(input.clean_reads[i], 'rb') as infile1:
+                        shutil.copyfileobj(infile1, outFile)
+                        if hasattr(input, 'rrna_reads'):
+                            with open(input.rrna_reads[i], 'rb') as infile2:
+                                shutil.copyfileobj(infile2, outFile)
+
+            # save to sampleTable
+                sampleTable.loc[wildcards.sample,'Reads_QC_'+MULTIFILE_FRACTIONS[i]] = output[i]
+            sampleTable.to_csv('samples.tsv',sep='\t')
+
+
+#### STATS
 
 
 if PAIRED_END:
     rule calculate_insert_size:
         input:
-            unpack(get_quality_controlled_reads)
+            get_quality_controlled_reads
         output:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
@@ -426,7 +451,7 @@ if PAIRED_END:
         shell:
             """
             bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
-                in1={input.R1} in2={input.R2} \
+                in1={input[0]} in2={input[1]} \
                 {params.flags} k={params.kmer} \
                 extend2={params.extend2} \
                 ihist={output.ihist} merge=f \
@@ -434,14 +459,14 @@ if PAIRED_END:
                 prealloc=t prefilter=t \
                 minprob={params.minprob} 2> >(tee {log})
 
-            readlength.sh in={input.R1} in2={input.R2} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input[0]} in2={input[1]} out={output.read_length} 2> >(tee {log})
             """
 
 
 else:
     rule calculate_read_length_hist:
         input:
-            unpack(get_quality_controlled_reads)
+            get_quality_controlled_reads
         output:
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
         params:
@@ -459,7 +484,7 @@ else:
     #        "qc"
         shell:
             """
-            readlength.sh in={input.se} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input[0]} out={output.read_length} 2> >(tee {log})
             """
 
 
@@ -562,8 +587,8 @@ rule combine_read_counts:
 
 rule finalize_sample_qc:
     input:
-        unpack(get_quality_controlled_reads),
-        quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
+        get_quality_controlled_reads,
+        #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
         read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
     output:
@@ -571,14 +596,27 @@ rule finalize_sample_qc:
 
 
 
+def zipfile_input(wildcards):
+    """
+        returns dict of list with all the zipfiles of stats.
+        when QC is skipped only the QC stats are returned.
+    """
+    output=dict(zipfiles_QC = expand('{sample}/sequence_quality_control/read_stats/QC.zip', sample=SAMPLES))
+
+    if not SKIP_QC:
+        output['zipfiles_raw'] = expand('{sample}/sequence_quality_control/read_stats/raw.zip', sample=SAMPLES)
+
+    return output
+
 rule build_qc_report:
     input:
+        unpack(zipfile_input),
         read_counts = "stats/read_counts.tsv",
         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
-        zipfiles_QC = expand('{sample}/sequence_quality_control/read_stats/QC.zip', sample=SAMPLES),
-        zipfiles_raw = expand('{sample}/sequence_quality_control/read_stats/raw.zip', sample=SAMPLES),
     output:
         report = "reports/QC_report.html"
+    log:
+        "logs/reports/QC_report.log"
     params:
         min_quality = config["preprocess_minimum_base_quality"],
     conda:
