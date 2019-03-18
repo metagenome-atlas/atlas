@@ -193,7 +193,7 @@ if config.get("assembler", "megahit") == "megahit":
             out= f"-1 {input[0]} -2 {input[1]} "
 
             if Nfiles ==3:
-                out+= f"--read {output[2]}"
+                out+= f"--read {input[2]}"
         return out
 
     rule run_megahit:
