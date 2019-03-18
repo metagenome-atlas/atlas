@@ -168,7 +168,7 @@ rule merge_pairs:
 localrules: passtrough_se_merged
 rule passtrough_se_merged:
     input:
-        "{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz"
+        "{sample}/assembly/reads/{previous_steps}_se.fastq.gz"
     output:
         temp("{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz")
     shell:
@@ -392,10 +392,12 @@ rule combine_sample_contig_stats:
 
 if config['filter_contigs']:
 
+    ruleorder: align_reads_to_prefilter_contigs > align_reads_to_final_contigs 
+
     rule align_reads_to_prefilter_contigs:
         input:
             reads= get_quality_controlled_reads,
-            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+            fasta = rules.rename_contigs.output
         output:
             sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
         params:
@@ -510,7 +512,7 @@ else: # no filter
     localrules: do_not_filter_contigs
     rule do_not_filter_contigs:
         input:
-            "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+            rules.rename_contigs.output
         output:
             "{sample}/assembly/{sample}_final_contigs.fasta"
         threads:

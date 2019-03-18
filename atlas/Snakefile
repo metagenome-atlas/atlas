@@ -88,30 +88,44 @@ RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
 if len(colum_headers_QC)>=1:
     MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
-
-    def get_quality_controlled_reads(wildcards):
-        """Gets quality controlled reads for two cases. When preprocessed with
-        ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
-        externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
-        """
-        return sampleTable.loc[wildcards.sample,['Reads_QC_'+f for f in MULTIFILE_FRACTIONS]]
-
 else:
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
 
+def get_quality_controlled_reads(wildcards):
+    """Gets quality controlled reads for two cases. When preprocessed with
+    ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
+    externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
+    """
 
-    def get_quality_controlled_reads(wildcards):
-        """Gets quality controlled reads for two cases. When preprocessed with
-        ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
-        externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
-        """
+    QC_Headers=['Reads_QC_'+f for f in MULTIFILE_FRACTIONS]
 
-        return expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz",
-                    fraction=MULTIFILE_FRACTIONS)
+
+    if (sampleTable.columns.isin(QC_Headers).sum() == len(QC_Headers)) and (wildcards.sample in sampleTable.index):
+
+
+        read_files= sampleTable.loc[wildcards.sample,QC_Headers]
+
+        if not read_files.isnull(how='any'):
+
+            if not read_files.isnull(how='all'):
+                raise IOError(f"Some but not all files in sampletable are empty:\nSample: {wildcards.sample}\nFiles: {list(read_files)}")
+
+
+            return list(read_files)
+            # reruns files from sample table
+
+
+    # return files as nabed by atlas pipeline
+    return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
+                    fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
 
 
 
 def get_input_fastq(wildcards):
+
+    if not (wildcards.sample in sampleTable.index):
+        return expand("Impossible/file/{sample}_{fraction}.fastq.gz",sample=wildcards.sample,fraction=RAW_INPUT_FRACTIONS)
+
     if not config.get('interleaved_fastqs',False):
         return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
     else:

@@ -90,10 +90,10 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
 
     if reads_are_QC:
         samples.columns= ['Reads_QC_'+c for c in columns]
-        Headers = ADDITIONAL_SAMPLEFILE_HEADERS
     else:
         samples.columns= ['Reads_raw_'+c for c in columns]
-        Headers = ['Reads_QC_'+c for c in columns] + ADDITIONAL_SAMPLEFILE_HEADERS
+
+    Headers = ADDITIONAL_SAMPLEFILE_HEADERS
 
     for h in Headers:
         samples[h]=np.nan
