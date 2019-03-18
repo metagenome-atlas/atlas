@@ -27,6 +27,7 @@ atlas init --db-dir $databaseDir --threads 3  -w $WD $reads_dir
 
 atlas run binning -w $WD $ressource_args assembler=spades final_binner=metabat $@
 
-atlas run genomes -w $WD $ressource_args assembler=spades final_binner=metabat $@
+# genomes need databases
+atlas run None -w $WD $ressource_args assembler=spades final_binner=metabat genomes/genomes $@
 
-atlas run all -w $WD $ressource_args assembler=spades final_binner=metabat $@
+#atlas run all -w $WD $ressource_args assembler=spades final_binner=metabat $@
