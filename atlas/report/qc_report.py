@@ -10,6 +10,9 @@ from cufflinks import iplot
 from snakemake.utils import report
 
 
+sys.stdout= open(snakemake.log[0],"w")
+
+
 PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
@@ -35,6 +38,7 @@ def get_stats_from_zips(zips):
                 with zf.open("se/boxplot_quality.txt") as f:
                     df = pd.read_table(f, index_col=0)
                     quality_se[sample] = df.mean_1
+
             if "pe/boxplot_quality.txt" in zf.namelist():
                 with zf.open("pe/boxplot_quality.txt") as f:
                     df = pd.read_table(f, index_col=0)
@@ -145,6 +149,7 @@ def main(report_out, read_counts,zipfiles_QC, min_quality,zipfiles_raw=None):
             )
 
 
+
     Report_numbers = """
 
 Total reads per sample
@@ -154,14 +159,7 @@ Total reads per sample
 
     {div[Total_Reads]}
 
-============   ===================================
-Step           Output
-============   ===================================
-raw            the input reads
-deduplicated   after (optional) deduplication step
-filtered       trimmed, PhiX filtered
-qc             passing reads
-============   ===================================
+{Legend}
 
 Total bases per sample
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -171,6 +169,22 @@ Total bases per sample
 
 For details see Table Table1_.
 """
+    if data.shape[1]>1:
+        Legend="""
+============   ===================================
+Step           Output
+============   ===================================
+raw            the input reads
+deduplicated   after (optional) deduplication step
+filtered       trimmed, PhiX filtered
+qc             passing reads
+============   ===================================
+"""
+    else:
+        Legend=""
+
+
+
 
     Report_read_quality_qc = """
 
@@ -179,6 +193,8 @@ Reads quality after QC
 """
 
     Quality_pe, Quality_se = get_stats_from_zips(zipfiles_QC)
+
+
     max_quality = 1 + np.nanmax((Quality_pe.max().max(), Quality_se.max().max()))
     if Quality_pe.shape[0] > 0:
         div['quality_qc_pe'] = get_pe_read_quality_plot(Quality_pe,[min_quality,max_quality])
@@ -192,20 +208,28 @@ Paired end
 
 """
 
-    if Quality_se.shape[0] > 0:
+
+    if (Quality_se.shape[0] > 0):
+
+
+        if (Quality_se.shape[0] > 0)& (Quality_se.shape[0] > 0):
+            Report_read_quality_qc += """
+Single end
++++++++++++
+
+Paired end reads that lost their mate during filtering.
+
+"""
 
         div['quality_qc_se'] = draw_se_read_quality(Quality_se,[min_quality,max_quality])
         Report_read_quality_qc += """
-Single end
-**********
-
-Paired end reads that lost their mate during filtering.
 
 .. raw:: html
 
     {div[quality_qc_se]}
 
 """
+
 
     if zipfiles_raw is None:
         Report_read_quality_raw=""

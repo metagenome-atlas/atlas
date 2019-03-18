@@ -615,6 +615,8 @@ rule build_qc_report:
         read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
     output:
         report = "reports/QC_report.html"
+    log:
+        "logs/reports/QC_report.log"
     params:
         min_quality = config["preprocess_minimum_base_quality"],
     conda:
