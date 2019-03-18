@@ -10,6 +10,9 @@ Genomes={
 }
 
 
+logger.info("Generate dataset for testing")
+
+
 rule all:
     input:
         expand("{genome}_{fraction}.fastq.gz",

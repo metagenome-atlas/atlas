@@ -9,18 +9,21 @@ rm -rf WD
 atlas --version
 atlas run --help
 
-# gen randomreads
-#very low number only for assembly
-snakemake -s atlas/rules/testing.smk -d .test/reads --config reads=5000
 
 
 databaseDir=".test/databases"
-WD='.test/WD'
+WD='.test/Dryrun'
+reads_dir=".test/reads/stub"
 
 rm -fr $WD
 #
+# gen randomreads
+#very low number only for assembly
+snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=1000
 
-atlas init --db-dir $databaseDir --threads 3 -w $WD .test/reads
+
+
+atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
 
 
 atlas download --db-dir $databaseDir -n
