@@ -94,9 +94,16 @@ RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
 if len(colum_headers_QC)>=1:
     MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
+    SKIP_QC=True
+
+    if (len(MULTIFILE_FRACTIONS)==1 ) and config.get('interleaved_fastqs',False):
+        raise NotImplementedError("To start from QC reads that are interleaved is not implemented."
+                                  "Do deinterleave the fastq files with e.g."
+                                  "reformat.sh in=file.fastq.gz out1=file_R1.fastq.gz out2=file_R2.fastq.gz"
+                                  )
 else:
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-
+    SKIP_QC=False
 
 
 class FileNotInSampleTableException(Exception):
@@ -158,21 +165,6 @@ def get_quality_controlled_reads(wildcards):
 
 
 
-def get_input_fastq(wildcards):
-
-    if not config.get('interleaved_fastqs',False):
-        Raw_Headers= ['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]
-    else:
-        Raw_Headers= ['Reads_raw_se']
-
-    if not (wildcards.sample in sampleTable.index):
-        return expand("Impossible/file/{sample}_{fraction}.fastq.gz",sample=wildcards.sample,fraction=RAW_INPUT_FRACTIONS)
-        logger.debug(f"Searched for qc reads for inexisitng sample. wildcards: {wildcards}")
-    else:
-        try:
-            return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
-        except FileNotInSampleTableException:
-            raise Exception(f"Raw files are not in sampleTable. Are you trying to run QC on files that are already quality controlled?\nsample: {wildcards.sample}\nHeaders: {Raw_Headers}")
 
 
 
@@ -183,6 +175,8 @@ include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
+
+
 
 CONDAENV = "envs" # overwrite definition in download.smk
 
@@ -256,9 +250,14 @@ rule assembly:
 rule qc:
     input:
         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-        "reports/QC_report.html",
+        read_counts = "stats/read_counts.tsv",
+        read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
+        report= "reports/QC_report.html",
     output:
         temp(touch("finished_QC"))
+
+
+
 
 
 

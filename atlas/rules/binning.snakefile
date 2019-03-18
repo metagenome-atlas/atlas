@@ -855,7 +855,7 @@ rule align_reads_to_MAGs:
                           fraction=MULTIFILE_FRACTIONS)
     params:
         input = lambda wc, input : input_params_for_bbwrap( input.reads),
-        unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
+        unmapped = lambda wc, output: io_params_for_tadpole(output.unmapped,key='outu'  ),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
         paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
