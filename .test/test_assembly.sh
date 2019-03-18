@@ -46,6 +46,6 @@ mkdir -p $reads_dir
 cp $WD/*/sequence_quality_control/*_QC_R?.fastq.gz $reads_dir
 
 
-atlas init --db-dir $databaseDir --threads 4 --assembler megahit --skip-qc -w $WD $reads_dir
+atlas init --db-dir $databaseDir --threads 4 --assembler megahit --skip-qc -w $WD2 $reads_dir
 
 atlas run -w $WD2 assembly $ressource_args $@
