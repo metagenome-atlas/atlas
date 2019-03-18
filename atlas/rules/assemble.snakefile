@@ -116,8 +116,8 @@ rule error_correction:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     params:
-        inputs = lambda wc, input : io_params_for_bbwrap(input),
-        outputs = lambda wc, output: io_params_for_bbwrap(output,key='out')
+        inputs = lambda wc, input : io_params_for_tadpole(input),
+        outputs = lambda wc, output: io_params_for_tadpole(output,key='out')
     threads:
         config.get("threads", 1)
     shell:
@@ -208,7 +208,7 @@ if config.get("assembler", "megahit") == "megahit":
             out= f"-1 {input[0]} -2 {input[1]} "
 
             if Nfiles ==3:
-                out+= f"--read {output[2]}"
+                out+= f"--read {input[2]}"
         return out
 
     rule run_megahit:
@@ -392,7 +392,7 @@ rule combine_sample_contig_stats:
 
 if config['filter_contigs']:
 
-    ruleorder: align_reads_to_prefilter_contigs > align_reads_to_final_contigs 
+    ruleorder: align_reads_to_prefilter_contigs > align_reads_to_final_contigs
 
     rule align_reads_to_prefilter_contigs:
         input:
@@ -401,7 +401,7 @@ if config['filter_contigs']:
         output:
             sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
         params:
-            input = lambda wc, input : io_params_for_bbwrap( input.reads),
+            input = lambda wc, input : input_params_for_bbwrap( input.reads),
             maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
             max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
             paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
@@ -543,7 +543,7 @@ rule align_reads_to_final_contigs:
         #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
         #                  fraction=MULTIFILE_FRACTIONS))
     params:
-        input = lambda wc, input : io_params_for_bbwrap( input.reads),
+        input = lambda wc, input : input_params_for_bbwrap( input.reads),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         #unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),

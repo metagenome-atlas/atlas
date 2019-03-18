@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 from snakemake.utils import logger, min_version, update_config
 
-
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
 
 from utils import gen_names_for_range
@@ -34,17 +33,18 @@ def get_temp_dir(config):
 
 
 
-def io_params_for_bbwrap(io,key='in'):
+
+def io_params_for_tadpole(io,key='in'):
     """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
 
     params:
-        io  input or otoup element from snakemake
+        io  input or otpoup element from snakemake
         key 'in' or 'out'
 
         if io contains attributes:
             se -> in={se}
-            R1,R2,se -> in1={R1},se in2={R2},null
+            R1,R2,se -> in1={R1},se in2={R2}
             R1,R2 -> in1={R1} in2={R2}
 
     """
@@ -54,7 +54,7 @@ def io_params_for_bbwrap(io,key='in'):
     elif N==2:
         flag= f"{key}1={io[0]} {key}2={io[1]}"
     elif N==3:
-        flag= f"{key}1={io[0]},{io[2]} {key}2={io[1]},null"
+        flag= f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
     else:
         logger.critical(("File input/output expectation is one of: "
                          "1 file = single-end, "
@@ -65,7 +65,13 @@ def io_params_for_bbwrap(io,key='in'):
         sys.exit(1)
     return flag
 
+def input_params_for_bbwrap(input):
 
+    if len(input)==3:
+        return f"in1={input[0]},{input[2]} in2={input[1]},null"
+
+    else:
+        return io_params_for_tadpole(input)
 
 
 #if config.get("workflow") != "download":
@@ -91,6 +97,49 @@ if len(colum_headers_QC)>=1:
 else:
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
 
+
+
+class FileNotInSampleTableException(Exception):
+    """
+        Exception with sampleTable
+    """
+    def __init__(self, message):
+        super(FileNotInSampleTableException, self).__init__(message)
+
+
+def get_files_from_sampleTable(sample,Headers):
+    """
+        Function that gets some filenames form the sampleTable for a given sample and Headers.
+        It checks various possibilities for errors and throws either a
+        FileNotInSampleTableException or a IOError, when something went really wrong.
+    """
+
+    if not (sample in sampleTable.index):
+        raise IOError(f"Sample name {sample} is not in sampleTable")
+
+
+    Error_details=f"\nsample: {sample}\nFiles: {Headers}"
+
+    if type(Headers) == str: Headers= [Headers]
+
+    NheadersFound= sampleTable.columns.isin(Headers).sum()
+
+    if  NheadersFound==0 :
+        raise FileNotInSampleTableException(f"None of the Files ar in sampleTable, they should be added to the sampleTable later in the workflow"+Error_details)
+    elif NheadersFound < len(Headers):
+        raise IOError(f"Not all of the Headers are in sampleTable, found only {NheadersFound}, something went wrong."+Error_details)
+
+    files= sampleTable.loc[sample,Headers]
+
+    if files.isnull().all():
+        raise FileNotInSampleTableException("The following files were not available for this sample in the SampleTable"+Error_details,files=files)
+
+    elif files.isnull().any():
+        raise IOError(f"Not all of the files are in sampleTable, something went wrong."+Error_details)
+
+    return list(files)
+
+
 def get_quality_controlled_reads(wildcards):
     """Gets quality controlled reads for two cases. When preprocessed with
     ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
@@ -99,37 +148,33 @@ def get_quality_controlled_reads(wildcards):
 
     QC_Headers=['Reads_QC_'+f for f in MULTIFILE_FRACTIONS]
 
+    try:
+        return get_files_from_sampleTable(wildcards.sample,QC_Headers)
+    except FileNotInSampleTableException:
 
-    if (sampleTable.columns.isin(QC_Headers).sum() == len(QC_Headers)) and (wildcards.sample in sampleTable.index):
-
-
-        read_files= sampleTable.loc[wildcards.sample,QC_Headers]
-
-        if not read_files.isnull(how='any'):
-
-            if not read_files.isnull(how='all'):
-                raise IOError(f"Some but not all files in sampletable are empty:\nSample: {wildcards.sample}\nFiles: {list(read_files)}")
-
-
-            return list(read_files)
-            # reruns files from sample table
-
-
-    # return files as nabed by atlas pipeline
-    return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
-                    fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
+        # return files as nabed by atlas pipeline
+        return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
+                        fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
 
 
 
 def get_input_fastq(wildcards):
 
+    if not config.get('interleaved_fastqs',False):
+        Raw_Headers= ['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]
+    else:
+        Raw_Headers= ['Reads_raw_se']
+
     if not (wildcards.sample in sampleTable.index):
         return expand("Impossible/file/{sample}_{fraction}.fastq.gz",sample=wildcards.sample,fraction=RAW_INPUT_FRACTIONS)
-
-    if not config.get('interleaved_fastqs',False):
-        return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
+        logger.debug(f"Searched for qc reads for inexisitng sample. wildcards: {wildcards}")
     else:
-        return list(sampleTable.loc[wildcards.sample,['Reads_raw_se']])
+        try:
+            return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
+        except FileNotInSampleTableException:
+            raise Exception(f"Raw files are not in sampleTable. Are you trying to run QC on files that are already quality controlled?\nsample: {wildcards.sample}\nHeaders: {Raw_Headers}")
+
+
 
 
 include: "rules/download.snakefile" # contains hard coded variables

@@ -304,7 +304,7 @@ rule align_reads_to_Genecatalog:
     output:
         sam = temp("Genecatalog/alignments/{sample}.sam")
     params:
-        input = lambda wc, input : io_params_for_bbwrap( input.reads),
+        input = lambda wc, input : input_params_for_bbwrap( input.reads),
         maxsites = 4,
         ambiguous = 'all',
         minid = config['genecatalog']['minid'],

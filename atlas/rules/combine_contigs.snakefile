@@ -143,7 +143,7 @@ rule align_reads_to_combined_contigs:
     benchmark:
         "logs/benchmarks/sequence_alignment_{Reference}/{sample}.txt"
     params:
-        input= lambda wc,input : io_params_for_bbwrap(input.reads),
+        input= lambda wc,input : input_params_for_bbwrap(input.reads),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         unmapped= lambda wc,output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs=config.get('contig_max_distance_between_pairs',CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
