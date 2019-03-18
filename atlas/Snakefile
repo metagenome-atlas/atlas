@@ -79,7 +79,7 @@ def input_params_for_bbwrap(input):
 #    config = update_config_file_paths(config)
 TMPDIR = get_temp_dir(config)
 SAMPLES = sampleTable.index.values
-
+SKIP_QC=False
 #GROUPS = sampleTable.BinGroup.unique()
 def get_alls_samples_of_group(wildcards):
     group_of_sample= sampleTable.loc[wildcards.sample,'BinGroup']
@@ -94,7 +94,6 @@ RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
 if len(colum_headers_QC)>=1:
     MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
-    SKIP_QC=True
 
     if (len(MULTIFILE_FRACTIONS)==1 ) and config.get('interleaved_fastqs',False):
         raise NotImplementedError("To start from QC reads that are interleaved is not implemented."
@@ -103,7 +102,12 @@ if len(colum_headers_QC)>=1:
                                   )
 else:
     MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
-    SKIP_QC=False
+
+colum_headers_raw= sampleTable.columns[sampleTable.columns.str.startswith("Reads_raw_")]
+if len(colum_headers_raw) ==0:
+    SKIP_QC=True
+
+    logger.info("Didn't find raw reads in sampleTable - skip QC")
 
 
 class FileNotInSampleTableException(Exception):
