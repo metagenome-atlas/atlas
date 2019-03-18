@@ -19,7 +19,7 @@ rm -fr $WD
 #
 # gen randomreads
 #very low number only for assembly
-snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=1000
+#snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=1000
 
 
 
