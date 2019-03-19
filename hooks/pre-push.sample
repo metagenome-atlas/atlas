@@ -1,5 +1,5 @@
 #!/bin/bash
 
 cd $GIT_DIR
-
+echo "Run DryRun Test before pushing"
 .test/dryrun.sh
