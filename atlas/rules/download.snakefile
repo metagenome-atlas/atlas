@@ -96,7 +96,7 @@ rule download:
 
 rule download_eggNOG_fastas:
     output:
-        protected(directory(f"{EGGNOG_DIR}/OG_fasta")),
+        directory(f"{EGGNOG_DIR}/OG_fasta"),
     run:
         dl_filename = "OG_fasta.tar.gz"
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
@@ -110,7 +110,7 @@ rule download_eggNOG_fastas:
 
 rule download_eggNOG_files:
     output:
-        protected(f"{EGGNOG_DIR}/{{filename}}"),
+        f"{EGGNOG_DIR}/{{filename}}",
     threads:
         1
     run:
@@ -126,7 +126,7 @@ rule download_eggNOG_files:
 
 rule download_atlas_files:
     output:
-        protected(f"{DBDIR}/{{filename}}")
+        f"{DBDIR}/{{filename}}"
     threads:
         1
     run:
@@ -139,7 +139,7 @@ rule unpack_checkm_data:
     input:
         os.path.join(DBDIR, CHECKM_ARCHIVE)
     output:
-        protected(CHECKMFILES)
+        CHECKMFILES
     params:
         path = CHECKMDIR
     shell:
