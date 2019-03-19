@@ -74,7 +74,7 @@ rule merge_taxonomy:
         out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
-
+localrules: cat_get_name, parse_cat_output
 rule cat_get_name:
     input:
         "genomes/taxonomy/taxonomy_ids.tsv"
@@ -89,3 +89,13 @@ rule cat_get_name:
     shell:
         " CAT add_names -i {input} -t {params.db_folder} "
         " -o {output} --only_official "
+
+rule parse_cat_output:
+    input:
+        rules.cat_get_name.output[0]
+    output:
+        "genomes/taxonomy/taxonomy.tsv"
+    threads:
+        1
+    script:
+        "../scripts/parse_cat_taxonomy.py"

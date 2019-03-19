@@ -162,20 +162,35 @@ Downloads
     report(report_str, report_out, Table_1=combined_stats, stylesheet=os.path.join(atlas_dir,'report', "report.css"))
 
 
+
+
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--samples", nargs="+")
-    p.add_argument("--contig-stats", nargs="+")
-    p.add_argument("--gene-tables", nargs="+")
-    p.add_argument("--mapping-logs", nargs="+")
-    p.add_argument("--report-out")
-    p.add_argument("--combined-stats")
-    args = p.parse_args()
-    main(
-        args.samples,
-        args.contig_stats,
-        args.gene_tables,
-        args.mapping_logs,
-        args.report_out,
-        args.combined_stats,
-    )
+
+    try:
+        main(
+            samples=snakemake.params.samples,
+            contig_stats=snakemake.input.contig_stats,
+            gene_tables=snakemake.input.gene_tables,
+            mapping_logs=snakemake.input.mapping_logs,
+            report_out=snakemake.output.report,
+            combined_stats=snakemake.output.combined_contig_stats
+        )
+
+    except NameError:
+
+        p = argparse.ArgumentParser()
+        p.add_argument("--samples", nargs="+")
+        p.add_argument("--contig-stats", nargs="+")
+        p.add_argument("--gene-tables", nargs="+")
+        p.add_argument("--mapping-logs", nargs="+")
+        p.add_argument("--report-out")
+        p.add_argument("--combined-stats")
+        args = p.parse_args()
+        main(
+            args.samples,
+            args.contig_stats,
+            args.gene_tables,
+            args.mapping_logs,
+            args.report_out,
+            args.combined_stats,
+        )

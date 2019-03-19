@@ -12,52 +12,51 @@ PLOTLY_PARAMS = dict(
 )
 
 
-def parse_checkm_output(sample_data, out_tsv):
-    df = pd.DataFrame()
-    for sample in sample_data.keys():
-        c_df = pd.read_table(sample_data[sample]["completeness"], index_col=0)[
-            ["Completeness", "Contamination", "Strain heterogeneity"]
+def read_checkm_output(taxonomy_table, completness_table):
+
+    c_df = pd.read_csv(completness_table, index_col=0,sep='\t')[
+        ["Completeness", "Contamination", "Strain heterogeneity"]
+    ]
+    t_df = pd.read_csv(taxonomy_table, index_col=0,sep='\t')[
+        [
+            "# unique markers (of 43)",
+            "# multi-copy",
+            "Insertion branch UID",
+            "Taxonomy (contained)",
+            "Taxonomy (sister lineage)",
+            "GC",
+            "Genome size (Mbp)",
+            "Gene count",
+            "Coding density",
         ]
-        t_df = pd.read_table(sample_data[sample]["taxonomy"], index_col=0)[
-            [
-                "# unique markers (of 43)",
-                "# multi-copy",
-                "Insertion branch UID",
-                "Taxonomy (contained)",
-                "Taxonomy (sister lineage)",
-                "GC",
-                "Genome size (Mbp)",
-                "Gene count",
-                "Coding density",
-            ]
-        ]
-        df = df.append(pd.concat([c_df, t_df], axis=1))
-    df.to_csv(out_tsv, sep="\t")
-    df["Sample"] = df.index.map( lambda s: str(s).split(".")[0])
+    ]
+    df = pd.concat([c_df, t_df], axis=1)
     return df
+
 
 
 def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
     sample_data = {}
     div = {}
-    for sample in samples:
-        sample_data[sample] = {}
-        for completeness_file in completeness_files:
-            # underscore version was for simplified local testing
-            # if "%s_" % sample in completeness_file:
-            if "%s/" % sample in completeness_file:
-                sample_data[sample]["completeness"] = completeness_file
-        for taxonomy_file in taxonomy_files:
-            # if "%s_" % sample in taxonomy_file:
-            if "%s/" % sample in taxonomy_file:
-                sample_data[sample]["taxonomy"] = taxonomy_file
-    df = parse_checkm_output(sample_data, bin_table)
+
+    df= pd.DataFrame()
+
+    for i,sample in enumerate(samples):
+        sample_data= read_checkm_output(taxonomy_table=taxonomy_files[i],
+                                        completness_table=completeness_files[i])
+        sample_data['Sample']= sample
+
+        df= df.append(sample_data)
+
+
+    df.to_csv(bin_table,sep='\t')
+
     div["bin_scatter"] = offline.plot(
         {
             "data": [
                 {
-                    "x": df[df["Sample"] == sample]["Completeness"],
-                    "y": df[df["Sample"] == sample]["Contamination"],
+                    "x": df.loc[df["Sample"] == sample,"Completeness"],
+                    "y": df.loc[df["Sample"] == sample,"Contamination"],
                     "name": sample,
                     "mode": "markers",
                     "text": df.index[df["Sample"] == sample],
@@ -156,13 +155,24 @@ Downloads
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser()
-    p.add_argument("--samples", nargs="+")
-    p.add_argument("--completeness", nargs="+")
-    p.add_argument("--taxonomy", nargs="+")
-    p.add_argument("--report-out")
-    p.add_argument("--bin-table")
-    args = p.parse_args()
-    main(
-        args.samples, args.completeness, args.taxonomy, args.report_out, args.bin_table
-    )
+
+    try:
+        main(
+            samples=snakemake.params.samples,
+            taxonomy_files=snakemake.input.taxonomy_files,
+            completeness_files=snakemake.input.completeness_files,
+            report_out=snakemake.output.report,
+            bin_table=snakemake.output.bin_table
+        )
+
+    except NameError:
+        p = argparse.ArgumentParser()
+        p.add_argument("--samples", nargs="+")
+        p.add_argument("--completeness", nargs="+")
+        p.add_argument("--taxonomy", nargs="+")
+        p.add_argument("--report-out")
+        p.add_argument("--bin-table")
+        args = p.parse_args()
+        main(
+            args.samples, args.completeness, args.taxonomy, args.report_out, args.bin_table
+        )

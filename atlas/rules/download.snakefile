@@ -90,13 +90,13 @@ rule download:
                filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
         CHECKMFILES,
         CAT_flag_downloaded,
-        "logs/checkm_init.txt"
+
 
 
 
 rule download_eggNOG_fastas:
     output:
-        protected(ancient(directory(f"{EGGNOG_DIR}/OG_fasta"))),
+        protected(directory(f"{EGGNOG_DIR}/OG_fasta")),
     run:
         dl_filename = "OG_fasta.tar.gz"
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
@@ -110,7 +110,7 @@ rule download_eggNOG_fastas:
 
 rule download_eggNOG_files:
     output:
-        protected(ancient(f"{EGGNOG_DIR}/{{filename}}")),
+        protected(f"{EGGNOG_DIR}/{{filename}}"),
     threads:
         1
     run:
@@ -126,7 +126,7 @@ rule download_eggNOG_files:
 
 rule download_atlas_files:
     output:
-        protected(ancient(f"{DBDIR}/{{filename}}"))
+        protected(f"{DBDIR}/{{filename}}")
     threads:
         1
     run:
@@ -139,7 +139,7 @@ rule unpack_checkm_data:
     input:
         os.path.join(DBDIR, CHECKM_ARCHIVE)
     output:
-        CHECKMFILES
+        protected(CHECKMFILES)
     params:
         path = CHECKMDIR
     shell:
@@ -148,7 +148,7 @@ rule unpack_checkm_data:
 
 rule initialize_checkm:
     input:
-        CHECKMFILES
+        ancient(CHECKMFILES)
     output:
         touched_output = "logs/checkm_init.txt"
     params:
@@ -172,13 +172,23 @@ rule download_cat_db:
     params:
         db_folder=CAT_DIR
     resources:
-        mem= config.get('diamond_mem',10)
+        mem= config.get('diamond_mem',100)
     threads:
         config.get('diamond_threads',10)
     conda:
         "%s/cat.yaml" % CONDAENV
     shell:
         " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
+
+# output:
+#         "{dir}/{date}.{extension}",
+#         extension=["nr.fastaid2LCAtaxid",
+#                    "nr.dmnd",
+#                    "nr.taxids_with_multiple_offspring",
+#                    ,"prot.accession2taxid.gz"]
+#         "names.dmp",
+#         "nodes.dmp"
+#         temp("{dir}/{date}.nr.gz")
 
 
 onsuccess:

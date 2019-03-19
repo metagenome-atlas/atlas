@@ -29,7 +29,8 @@ jobs:
       - run: rm -rf $WORKING_DIR
       - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
       - run: atlas run all -w $WORKING_DIR --create-envs-only
-      - run: atlas run qc -w $WORKING_DIR --config java_mem=$MEM assembly_mem=$MEM
+      - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
+      - run: .test/test_assembly.sh
 
 
 workflows:
