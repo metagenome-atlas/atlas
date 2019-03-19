@@ -12,7 +12,7 @@ atlas run --help
 
 databaseDir=".test/databases"
 WD='.test/Dryrun'
-reads_dir=example_data
+reads_dir='.test/reads/stub'
 
 rm -fr $WD
 
