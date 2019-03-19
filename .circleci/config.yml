@@ -3,7 +3,7 @@ defaults: &defaults
     - image: continuumio/miniconda3
   environment:
     DATABASE_DIR: .test/databases
-    WORKING_DIR: .test/WD
+    WORKING_DIR: .test/Dryrun
     N_THREADS: 4
     MEM: 4
 
@@ -25,10 +25,8 @@ jobs:
       - run: atlas --version
       # make config
       - run: .test/dryrun.sh
-      - run: rm -rf $WORKING_DIR
-      - run: atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w $WORKING_DIR example_data
       - run: atlas run all -w $WORKING_DIR --create-envs-only
-      - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
+    #  - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
       - run: .test/test_assembly.sh
 
 
