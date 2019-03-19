@@ -10,7 +10,6 @@ atlas --version
 atlas run --help
 
 
-
 databaseDir=".test/databases"
 WD='.test/Dryrun'
 reads_dir=example_data
