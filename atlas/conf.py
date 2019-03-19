@@ -114,7 +114,7 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
 
 def load_sample_table(sample_table='samples.tsv'):
 
-    sampleTable = pd.read_table(sample_table,index_col=0)
+    sampleTable = pd.read_csv(sample_table,index_col=0,sep='\t')
     validate_sample_table(sampleTable)
     return sampleTable
 

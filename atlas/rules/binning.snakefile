@@ -450,7 +450,7 @@ rule get_all_16S:
 
         for file in input.summaries:
             try:
-                d = pd.read_table(file,index_col=0)
+                d = pd.read_csv(file,index_col=0,sep='\t')
                 summary=summary.append(d)
             except:
                 pd.errors.EmptyDataError
@@ -551,7 +551,7 @@ if config['final_binner']=='DASTool':
                 score_file = input.score_files[i]
                 bin_dir = input.bin_dirs[i]
 
-                S = pd.read_table(score_file,index_col=0)
+                S = pd.read_csv(score_file,index_col=0,sep='\t')
 
                 S= S.loc[S.SCG_completeness==0]
                 Scores= Scores.append(S)
@@ -580,7 +580,7 @@ if config['final_binner']=='DASTool':
 
             import pandas as pd
 
-            all_scores= [pd.read_table(file,index_col=0)  for file in input.scores]
+            all_scores= [pd.read_csv(file,index_col=0,sep='\t')  for file in input.scores]
 
             pd.concat(all_scores,axis=0).to_csv(output.scores,sep='\t')
 

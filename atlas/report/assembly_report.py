@@ -24,13 +24,13 @@ from utils.parsers_bbmap import parse_bbmap_log_file
 def parse_map_stats(sample_data, out_tsv):
     stats_df = pd.DataFrame()
     for sample in sample_data.keys():
-        df = pd.read_table(sample_data[sample]["contig_stats"])
+        df = pd.read_csv(sample_data[sample]["contig_stats"],sep='\t')
         assert df.shape[0] == 1, "Assumed only one row in file {}; found {}".format(
             sample_data[sample]["contig_stats"], df.iloc[0]
         )
         df = df.iloc[0]
         df.name = sample
-        genes_df = pd.read_table(sample_data[sample]["gene_table"], index_col=0)
+        genes_df = pd.read_csv(sample_data[sample]["gene_table"], index_col=0,sep='\t')
         df["N_Predicted_Genes"] = genes_df.shape[0]
         used_reads,mapped_reads= parse_bbmap_log_file(sample_data[sample]["mapping_log"])
         df["Assembled_Reads"] = mapped_reads

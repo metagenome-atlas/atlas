@@ -125,7 +125,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         run:
             import pandas as pd
             # CLuterID    GeneID    empty third column
-            gene2proteins= pd.read_table(input.cluster_attribution,index_col=1, header=None)
+            gene2proteins= pd.read_csv(input.cluster_attribution,index_col=1, header=None,sep='\t')
 
             protein_clusters_old_names= gene2proteins[0].unique()
 
@@ -246,7 +246,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
             import pandas as pd
             from Bio import SeqIO
 
-            orf2gene= pd.read_table(input.orf2gene,index_col=0)
+            orf2gene= pd.read_csv(input.orf2gene,index_col=0,sep='\t')
 
             # rename gene repr to Gene0000XX
 
@@ -280,7 +280,7 @@ rule rename_gene_catalog:
             for line in fasta:
                 if line[0]=='>': representatives.append(line[1:].split()[0])
 
-        map_names= pd.read_table(input.orf2gene,index_col=0).loc[representatives,'Gene']
+        map_names= pd.read_csv(input.orf2gene,index_col=0,sep='\t').loc[representatives,'Gene']
 
         # rename fna
         faa_parser = SeqIO.parse(input.faa,'fasta')
@@ -389,7 +389,7 @@ rule combine_gene_coverages:
         for cov_file in input:
 
             sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
+            data= pd.read_csv(cov_file,index_col=0,sep='\t')
             data.loc[data.Median_fold<0,'Median_fold']=0
             combined_cov[sample]= data.Median_fold
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
@@ -488,7 +488,7 @@ EGGNOG_HEADERS= [
 
 #            where do you take the Headers
 
-#         D = pd.read_table(input[0], header=None)
+#         D = pd.read_csv(input[0], header=None,sep='\t')
 #         D.columns = EGGNOG_HEADERS
 #         D.to_csv(output[0],sep="\t",index=False)
 
@@ -517,15 +517,15 @@ EGGNOG_HEADERS= [
 #
 #         eggNOG=pd.DataFrame()
 #         for annotation_file in input.eggNOG:
-#             eggNOG=eggNOG.append(pd.read_table(annotation_file, index_col=0))
+#             eggNOG=eggNOG.append(pd.read_csv(annotation_file, index_col=0,sep='\t'))
 #
 #         refseq=pd.DataFrame()
 #         for annotation_file in input.refseq:
-#             refseq=refseq.append(pd.read_table(annotation_file, index_col=1))
+#             refseq=refseq.append(pd.read_csv(annotation_file, index_col=1,sep='\t'))
 #
 #         scg=pd.DataFrame()
 #         for annotation_file in input.scg:
-#             d= pd.read_table(annotation_file, index_col=0,header=None)
+#             d= pd.read_csv(annotation_file, index_col=0,header=None,sep='\t')
 #             d.columns = 'scg_'+ os.path.splitext(annotation_file)[0].split('_')[-1] # bacteria or archaea
 #             scg=scg.append(d)
 #
@@ -603,7 +603,7 @@ rule predict_single_copy_genes:
 #     run:
 #         import pandas as pd
 #
-#         D = pd.read_table(input[0], header=None)
+#         D = pd.read_csv(input[0], header=None,sep='\t')
 #         D.columns = EGGNOG_HEADERS
 #         D.to_csv(output[0],sep="\t",index=False)
 
@@ -658,7 +658,7 @@ rule combine_annotations:
 #         run:
 #             import pandas as pd
 #
-#             D= pd.read_table(input[0], index_col=0)
+#             D= pd.read_csv(input[0], index_col=0,sep='\t')
 #             D.index= D.index.map(lambda s: s.split()[0])
 #             D=D.astype(int)
 #             D.to_csv(output[0],sep='\t',header=False)

@@ -21,7 +21,7 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
         shutil.rmtree(out_folder)
     os.makedirs(out_folder)
 
-    CA = pd.read_table(cluster_attribution, header=None, index_col=1)
+    CA = pd.read_csv(cluster_attribution, header=None, index_col=1,sep='\t')
 
     assert CA.shape[1] == 1, "File should have only two columns " + cluster_attribution
     CA = CA.iloc[:, 0]

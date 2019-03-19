@@ -107,8 +107,8 @@
 #     #     run:
 #     #         import pandas as pd
 #     #
-#     #         tsv = pd.read_table(input.tsv, index_col=0, usecols=[0, 1], squeeze=True)
-#     #         hits = pd.read_table(input.hits, header=None)
+#     #         tsv = pd.read_csv(input.tsv, index_col=0, usecols=[0, 1], squeeze=True,sep='\t')
+#     #         hits = pd.read_csv(input.hits, header=None,sep='\t')
 #     #         contigs = tsv.loc[hits.iloc[:, 0]]
 #     #         hits.insert(0, contigs.name, contigs.values)
 #     #         hits.sort_values([contigs.name, 0, 2], inplace=True)

@@ -72,7 +72,7 @@ rule merge_taxonomy:
         1
     run:
         import pandas as pd
-        out= pd.concat([pd.read_table(file,index_col=0) for file in input.taxid],axis=0).sort_index()
+        out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input.taxid],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
 localrules: cat_get_name, parse_cat_output

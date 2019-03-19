@@ -35,7 +35,7 @@ rule get_quality_for_dRep_from_checkm:
     run:
         import pandas as pd
 
-        D= pd.read_table(input[0],index_col=0)
+        D= pd.read_csv(input[0],index_col=0,sep='\t')
 
         D.index=D.index.astype(str)+".fasta"
         D.index.name="genome"
@@ -214,7 +214,7 @@ rule get_genomes2cluster:
         Genome_map = Genome_map.str.replace('.fasta','')
 
 
-        old2new_name= pd.read_table(input.old2new, index_col=0,squeeze=True)
+        old2new_name= pd.read_csv(input.old2new, index_col=0,squeeze=True,sep='\t')
         Genome_map= Genome_map.map(old2new_name)
 
         Genome_map.sort_values(inplace=True)
@@ -380,7 +380,7 @@ rule combine_coverages_MAGs:
         Counts_contigs.to_csv(output[1],sep='\t')
 
 
-        cluster_attribution = pd.read_table(input.cluster_attribution,header=None,index_col=0,squeeze=True)
+        cluster_attribution = pd.read_csv(input.cluster_attribution,header=None,index_col=0,squeeze=True,sep='\t')
 
         Counts_genome= Counts_contigs.groupby(cluster_attribution,axis=1).sum().T
         Counts_genome.index.name='Sample'
@@ -404,7 +404,7 @@ rule combine_bined_coverages_MAGs:
         import os
 
         def read_coverage_binned(covarage_binned_file):
-            return pd.read_table(covarage_binned_file,
+            return pd.read_csv(covarage_binned_file,sep='\t',
                              skiprows=2,
                              index_col=[0,2],
                              usecols=[0,1,2],
@@ -422,7 +422,7 @@ rule combine_bined_coverages_MAGs:
         binCov.index.names=['Contig','Position']
         binCov.to_csv(output.binned_cov,sep='\t',compression='gzip')
 
-        cluster_attribution = pd.read_table(input.cluster_attribution,header=None,index_col=0,squeeze=True)
+        cluster_attribution = pd.read_csv(input.cluster_attribution,header=None,index_col=0,squeeze=True,sep='\t')
 
         Median_abund= binCov.groupby(cluster_attribution.loc[binCov.index.get_level_values(0)].values).median().T
 
@@ -522,6 +522,6 @@ rule aggregate_genome_annotation:
         "genomes/annotations/prokka.tsv"
     run:
         import pandas as pd
-        out= pd.concat([pd.read_table(file,index_col=0) for file in input],axis=0).sort_index()
+        out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
