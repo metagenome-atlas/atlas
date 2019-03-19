@@ -19,7 +19,7 @@ ressource_args=" --config java_mem=4 assembly_mem=4"
 
 # gen randomreads
 #very low number only for assembly
-snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=1000
+#snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=1000
 
 
 rm -f $WD/samples.tsv
