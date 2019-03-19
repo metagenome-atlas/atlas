@@ -29,7 +29,7 @@ def parse_comments(file, comment='#',sep='\t',expect_one_value=True):
 
 
 def read_coverage_binned(covarage_binned_file):
-    return pd.read_table(covarage_binned_file,
+    return pd.read_csv(covarage_binned_file,sep='\t',
                      skiprows=2,
                      index_col=[0,2],
                      usecols=[0,1,2],
@@ -55,7 +55,7 @@ def combine_coverages(coverage_files,sample_names,coverage_measure='Median_fold'
     for i in range(len(coverage_files)):
 
         sample= sample_names[i]
-        data= pd.read_table(coverage_files[i],index_col=0)
+        data= pd.read_csv(coverage_files[i],index_col=0,sep='\t')
 
         data.loc[data[coverage_measure]<0,coverage_measure]=0
         combined_cov[sample]= data[coverage_measure]

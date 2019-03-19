@@ -10,6 +10,9 @@ from cufflinks import iplot
 from snakemake.utils import report
 
 
+sys.stdout= open(snakemake.log[0],"w")
+
+
 PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
@@ -28,16 +31,17 @@ def get_stats_from_zips(zips):
         # single end only
         if "boxplot_quality.txt" in zf.namelist():
             with zf.open("boxplot_quality.txt") as f:
-                df = pd.read_table(f, index_col=0)
+                df = pd.read_csv(f, index_col=0,sep='\t')
                 quality_se[sample] = df.mean_1
         else:
             if "se/boxplot_quality.txt" in zf.namelist():
                 with zf.open("se/boxplot_quality.txt") as f:
-                    df = pd.read_table(f, index_col=0)
+                    df = pd.read_csv(f, index_col=0,sep='\t')
                     quality_se[sample] = df.mean_1
+
             if "pe/boxplot_quality.txt" in zf.namelist():
                 with zf.open("pe/boxplot_quality.txt") as f:
-                    df = pd.read_table(f, index_col=0)
+                    df = pd.read_csv(f, index_col=0,sep='\t')
                     df.columns = [df.columns, [sample] * df.shape[1]]
                     quality_pe = pd.concat((quality_pe, df[["mean_1", "mean_2"]]), axis=1)
 
@@ -120,13 +124,19 @@ def draw_se_read_quality(df,quality_range,**kwargs):
 
 
 
-def main(report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
+def main(report_out, read_counts,zipfiles_QC, min_quality,zipfiles_raw=None):
     div = {}
 
     # N reads / N bases
-    df = pd.read_table(read_counts, index_col=[0, 1])
+    df = pd.read_csv(read_counts, index_col=[0, 1],sep='\t')
     for variable in ['Total_Reads','Total_Bases']:
-        data = df[variable].unstack()[df.loc[df.index[0][0]].index.drop('clean')]
+
+
+        data = df[variable].unstack()[df.loc[df.index[0][0]].index]
+
+        if 'clean' in data.columns:
+            data.drop('clean',axis=1,inplace=True)
+
         div[variable] = offline.plot(
                 data.iplot(
                     asFigure=True,
@@ -139,6 +149,7 @@ def main(report_out, read_counts, zipfiles_raw,zipfiles_QC, min_quality):
             )
 
 
+
     Report_numbers = """
 
 Total reads per sample
@@ -148,14 +159,7 @@ Total reads per sample
 
     {div[Total_Reads]}
 
-============   ===================================
-Step           Output
-============   ===================================
-raw            the input reads
-deduplicated   after (optional) deduplication step
-filtered       trimmed, PhiX filtered
-qc             passing reads
-============   ===================================
+{Legend}
 
 Total bases per sample
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -165,6 +169,22 @@ Total bases per sample
 
 For details see Table Table1_.
 """
+    if data.shape[1]>1:
+        Legend="""
+============   ===================================
+Step           Output
+============   ===================================
+raw            the input reads
+deduplicated   after (optional) deduplication step
+filtered       trimmed, PhiX filtered
+qc             passing reads
+============   ===================================
+"""
+    else:
+        Legend=""
+
+
+
 
     Report_read_quality_qc = """
 
@@ -173,6 +193,8 @@ Reads quality after QC
 """
 
     Quality_pe, Quality_se = get_stats_from_zips(zipfiles_QC)
+
+
     max_quality = 1 + np.nanmax((Quality_pe.max().max(), Quality_se.max().max()))
     if Quality_pe.shape[0] > 0:
         div['quality_qc_pe'] = get_pe_read_quality_plot(Quality_pe,[min_quality,max_quality])
@@ -183,20 +205,38 @@ Paired end
 
     {div[quality_qc_pe]}
 
+
+"""
+
+
+    if (Quality_se.shape[0] > 0):
+
+
+        if (Quality_se.shape[0] > 0)& (Quality_se.shape[0] > 0):
+            Report_read_quality_qc += """
 Single end
-**********
++++++++++++
 
 Paired end reads that lost their mate during filtering.
 
 """
-    div['quality_qc_se'] = draw_se_read_quality(Quality_se,[min_quality,max_quality])
-    Report_read_quality_qc += """
+
+        div['quality_qc_se'] = draw_se_read_quality(Quality_se,[min_quality,max_quality])
+        Report_read_quality_qc += """
+
 .. raw:: html
 
     {div[quality_qc_se]}
 
 """
-    Report_read_quality_raw = """
+
+
+    if zipfiles_raw is None:
+        Report_read_quality_raw=""
+    else:
+
+
+        Report_read_quality_raw = """
 
 Reads quality before QC
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,13 +246,13 @@ Reads quality before QC
     {div[quality_raw]}
 
 """
-    Quality_pe, Quality_se = get_stats_from_zips(zipfiles_raw)
-    if Quality_pe.shape[0] > 0:
-        div['quality_raw'] = get_pe_read_quality_plot(Quality_pe,[min_quality,max_quality])
-    elif Quality_se.shape[0] > 0:
-        div['quality_raw'] = draw_se_read_quality(Quality_se,[min_quality,max_quality])
-    else:
-        raise IndexError()
+        Quality_pe, Quality_se = get_stats_from_zips(zipfiles_raw)
+        if Quality_pe.shape[0] > 0:
+            div['quality_raw'] = get_pe_read_quality_plot(Quality_pe,[min_quality,max_quality])
+        elif Quality_se.shape[0] > 0:
+            div['quality_raw'] = draw_se_read_quality(Quality_se,[min_quality,max_quality])
+        else:
+            raise IndexError()
 
     report_str = """
 
@@ -261,7 +301,7 @@ if __name__ == "__main__":
     try:
         main(report_out=snakemake.output.report,
             read_counts=snakemake.input.read_counts,
-            zipfiles_raw=snakemake.input.zipfiles_raw,
+            zipfiles_raw= snakemake.input.zipfiles_raw if hasattr(snakemake.input,'zipfiles_raw') else None,
             zipfiles_QC=snakemake.input.zipfiles_QC,
             min_quality=snakemake.params.min_quality,
         )

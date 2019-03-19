@@ -135,7 +135,7 @@ rule call_genes:
 
 rule align_reads_to_combined_contigs:
     input:
-        unpack(get_quality_controlled_reads),
+        reads=get_quality_controlled_reads,
         fasta = "{folder}/{Reference}.fasta",
     output:
         sam = temp("{folder}/sequence_alignment_{Reference}/{sample}.sam.gz"),
@@ -143,7 +143,7 @@ rule align_reads_to_combined_contigs:
     benchmark:
         "logs/benchmarks/sequence_alignment_{Reference}/{sample}.txt"
     params:
-        input= lambda wc,input : input_params_for_bbwrap(wc,input),
+        input= lambda wc,input : input_params_for_bbwrap(input.reads),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         unmapped= lambda wc,output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs=config.get('contig_max_distance_between_pairs',CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
@@ -254,7 +254,7 @@ rule combine_coverages_of_combined_contigs:
         for cov_file in input:
 
             sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
+            data= pd.read_csv(cov_file,index_col=0,sep='\t')
 
             if cov_file == input[0]:
                 data[['Length','Ref_GC']].to_csv(output.gc_stats,sep='\t')
@@ -283,7 +283,7 @@ rule combine_bined_coverages_of_combined_contigs:
 
             sample= os.path.split(cov_file)[-1].split('_')[0]
 
-            binCov[sample] = pd.read_table(cov_file,compression='gzip',comment='#',header=None,index_col=[0,2],usecols=[0,1,2],squeeze=True)
+            binCov[sample] = pd.read_csv(cov_file,compression='gzip',sep='\t',comment='#',header=None,index_col=[0,2],usecols=[0,1,2],squeeze=True)
 
         binCov = pd.DataFrame(binCov)
         binCov.index.names=['Contig','Position']
@@ -385,7 +385,7 @@ rule combine_gene_counts:
 
 
         for file in input:
-            D= pd.read_table(file,index_col=0,comment='#')
+            D= pd.read_csv(file,index_col=0,comment='#',sep='\t')
             # contigs/sequence_alignment_combined_contigs/S1/S1.bam
             sample= D.columns[-1].split('/')[-2]
             C[sample]= D.iloc[:,-1]

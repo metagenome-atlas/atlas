@@ -11,24 +11,36 @@ atlas run --help
 
 
 databaseDir=".test/databases"
-WD='.test/WD'
+WD='.test/Dryrun'
+reads_dir='.test/reads/stub'
 
 rm -fr $WD
-#
-atlas init --db-dir $databaseDir --threads 3 -w $WD example_data
 
 
 atlas download --db-dir $databaseDir -n
 
-for w in qc assembly genomes genecatalog ; do
 
-  echo "
-        Dryrun Workflow $w
-      "
+atlas init --db-dir $databaseDir --threads 3 -w $WD --assembler spades $reads_dir
 
-  atlas run $w -w $WD --dryrun $@
 
-done
+# for w in qc assembly genomes genecatalog ; do
+#
+#   echo "
+#         Dryrun Workflow $w
+#       "
+#
+#   atlas run $w -w $WD --dryrun $@
+#
+# done
 #
 atlas run -w $WD --dryrun $@
 #
+
+# # skip QC
+#
+# WD=${WD}/noQC
+# rm -fr $WD
+# atlas init --db-dir $databaseDir --threads 3 --skip-qc -w $WD --assembler megahit $reads_dir
+#
+#
+# atlas run all -w $WD --dryrun $@

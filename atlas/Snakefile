@@ -2,8 +2,9 @@ import os
 import re
 import sys
 import tempfile
+import pandas as pd
+import numpy as np
 from snakemake.utils import logger, min_version, update_config
-
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
 
@@ -19,7 +20,7 @@ config = default_config
 sampleTable= load_sample_table()
 
 # minimum required snakemake version
-min_version("5.2")
+min_version("5.4.1")
 
 
 def get_temp_dir(config):
@@ -32,28 +33,45 @@ def get_temp_dir(config):
 
 
 
-def input_params_for_bbwrap(wildcards, input):
-    """This function generates the input flag needed for bbwrap for all cases
+
+def io_params_for_tadpole(io,key='in'):
+    """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
+
+    params:
+        io  input or otpoup element from snakemake
+        key 'in' or 'out'
+
+        if io contains attributes:
+            se -> in={se}
+            R1,R2,se -> in1={R1},se in2={R2}
+            R1,R2 -> in1={R1} in2={R2}
+
     """
-    if hasattr(input, 'R1') and hasattr(input, 'R2'):
-        if hasattr(input, 'se'):
-            flag = "in1={R1},{se} in2={R2},null".format(**input)
-        else:
-            flag = "in1={R1} in2={R2}".format(**input)
-    elif hasattr(input, 'se'):
-        flag = "in1={se}".format(**input)
+    N= len(io)
+    if N==1:
+        flag = f"{key}1={io[0]}"
+    elif N==2:
+        flag= f"{key}1={io[0]} {key}2={io[1]}"
+    elif N==3:
+        flag= f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
     else:
-        logger.critical(("File input expectation is one of: "
+        logger.critical(("File input/output expectation is one of: "
                          "1 file = single-end, "
                          "2 files = R1,R2, or"
                          "3 files = R1,R2,se"
-                         "got: {n} files:\n{}").format('\n'.join(input),
-                                                       n=len(input)))
+                         "got: {n} files:\n{}").format('\n'.join(io),
+                                                       n=len(io)))
         sys.exit(1)
     return flag
 
+def input_params_for_bbwrap(input):
 
+    if len(input)==3:
+        return f"in1={input[0]},{input[2]} in2={input[1]},null"
+
+    else:
+        return io_params_for_tadpole(input)
 
 
 #if config.get("workflow") != "download":
@@ -61,7 +79,7 @@ def input_params_for_bbwrap(wildcards, input):
 #    config = update_config_file_paths(config)
 TMPDIR = get_temp_dir(config)
 SAMPLES = sampleTable.index.values
-
+SKIP_QC=False
 #GROUPS = sampleTable.BinGroup.unique()
 def get_alls_samples_of_group(wildcards):
     group_of_sample= sampleTable.loc[wildcards.sample,'BinGroup']
@@ -72,44 +90,99 @@ def get_alls_samples_of_group(wildcards):
 
 PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
 RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
-MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+
+colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
+if len(colum_headers_QC)>=1:
+    MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
+
+    if (len(MULTIFILE_FRACTIONS)==1 ) and config.get('interleaved_fastqs',False):
+        raise NotImplementedError("To start from QC reads that are interleaved is not implemented."
+                                  "Do deinterleave the fastq files with e.g."
+                                  "reformat.sh in=file.fastq.gz out1=file_R1.fastq.gz out2=file_R2.fastq.gz"
+                                  )
+else:
+    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+
+colum_headers_raw= sampleTable.columns[sampleTable.columns.str.startswith("Reads_raw_")]
+if len(colum_headers_raw) ==0:
+    SKIP_QC=True
+
+    logger.info("Didn't find raw reads in sampleTable - skip QC")
 
 
-def get_input_fastq(wildcards):
-    if not config.get('interleaved_fastqs',False):
-        return list(sampleTable.loc[wildcards.sample,['Reads_raw_'+f for f in  RAW_INPUT_FRACTIONS]])
-    else:
-        return list(sampleTable.loc[wildcards.sample,['Reads_raw_se']])
+class FileNotInSampleTableException(Exception):
+    """
+        Exception with sampleTable
+    """
+    def __init__(self, message):
+        super(FileNotInSampleTableException, self).__init__(message)
+
+
+def get_files_from_sampleTable(sample,Headers):
+    """
+        Function that gets some filenames form the sampleTable for a given sample and Headers.
+        It checks various possibilities for errors and throws either a
+        FileNotInSampleTableException or a IOError, when something went really wrong.
+    """
+
+    if not (sample in sampleTable.index):
+        raise IOError(f"Sample name {sample} is not in sampleTable")
+
+
+    Error_details=f"\nsample: {sample}\nFiles: {Headers}"
+
+    if type(Headers) == str: Headers= [Headers]
+
+    NheadersFound= sampleTable.columns.isin(Headers).sum()
+
+    if  NheadersFound==0 :
+        raise FileNotInSampleTableException(f"None of the Files ar in sampleTable, they should be added to the sampleTable later in the workflow"+Error_details)
+    elif NheadersFound < len(Headers):
+        raise IOError(f"Not all of the Headers are in sampleTable, found only {NheadersFound}, something went wrong."+Error_details)
+
+    files= sampleTable.loc[sample,Headers]
+
+    if files.isnull().all():
+        raise FileNotInSampleTableException("The following files were not available for this sample in the SampleTable"+Error_details)
+
+    elif files.isnull().any():
+        raise IOError(f"Not all of the files are in sampleTable, something went wrong."+Error_details)
+
+    return list(files)
+
 
 def get_quality_controlled_reads(wildcards):
     """Gets quality controlled reads for two cases. When preprocessed with
     ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
     externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
     """
-    checks ={}
-    fastq = {}
 
-    for fraction in MULTIFILE_FRACTIONS:
-        checks[fraction]= (("Reads_QC_"+fraction in sampleTable.columns) and
-                          (~sampleTable.loc[wildcards.sample,['Reads_QC_'+fraction]].isnull().any()))
-        if checks[fraction]:
-            fastq[fraction]= sampleTable.loc[wildcards.sample,'Reads_QC_'+fraction]
+    QC_Headers=['Reads_QC_'+f for f in MULTIFILE_FRACTIONS]
 
-    if checks.get('se',False) or (checks.get('R1',False) & checks.get('R2',False)):
-        #files are in sampletable
-        return fastq
+    try:
+        return get_files_from_sampleTable(wildcards.sample,QC_Headers)
+    except FileNotInSampleTableException:
 
-    else:
-        return dict(zip(MULTIFILE_FRACTIONS,
-                expand("{{sample}}/sequence_quality_control/{{sample}}_QC_{fraction}.fastq.gz",
-                    fraction=MULTIFILE_FRACTIONS)))
+        # return files as nabed by atlas pipeline
+        return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
+                        fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
+
+
+
+
+
+
 
 include: "rules/download.snakefile" # contains hard coded variables
 include: "rules/qc.snakefile"
 include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
+include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
+#include: "rules/tree.smk"
+
+
 
 CONDAENV = "envs" # overwrite definition in download.smk
 
@@ -143,7 +216,7 @@ rule genomes:
         "genomes/clustering/contig2genome.tsv",
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
-        "genomes/taxonomy/taxonomy_names.tsv",
+        "genomes/taxonomy/taxonomy.tsv",
         "genomes/genomes",
         "genomes/annotations/genes",
         "finished_binning"
@@ -183,9 +256,14 @@ rule assembly:
 rule qc:
     input:
         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-        "reports/QC_report.html",
+        read_counts = "stats/read_counts.tsv",
+        read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
+        report= "reports/QC_report.html",
     output:
         temp(touch("finished_QC"))
+
+
+
 
 
 

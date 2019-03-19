@@ -1,24 +1,17 @@
 
 
 
-# this is a HACK because
+# copy genome so CAt has only one genome per bin folder and paralelizes
 localrules: get_genome_for_cat
 rule get_genome_for_cat:
     input:
-        genomes="genomes/genomes",
+        genomes="genomes/genomes/{genome}.fasta",
     output:
-        genomes=dynamic(temp("genomes/taxonomy/{genome}/{genome}.fasta")),
-    shadow:
-        "shallow"
+        genomes=temp("genomes/taxonomy/{genome}/{genome}.fasta"),
     run:
-
         import os,shutil
-        genome_path= os.path.join(input.genomes,'{genome}.fasta')
-        Genomes = glob_wildcards(genome_path).genome
-
-        for genome in Genomes:
-            os.makedirs(f"genomes/taxonomy/{genome}",exist_ok=True)
-            shutil.copy(genome_path.format(genome=genome), f"genomes/taxonomy/{genome}/{genome}.fasta")
+        os.makedirs(os.dirname(output[0]),exist_ok=True)
+        shutil.copy(input[0], output[0])
 
 
 
@@ -60,22 +53,29 @@ rule cat_on_bin:
         " --bin_suffix {params.extension} "
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 
+def merge_taxonomy_input(wildcards):
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+    Genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
+    return expand("genomes/taxonomy/{genome}/{genome}.bin2classification.txt",genome=Genomes)
+
+
+
 
 localrules: merge_taxonomy, cat_get_name
 rule merge_taxonomy:
     input:
-        taxid=dynamic("genomes/taxonomy/{genome}/{genome}.bin2classification.txt"),
-        genomes=dynamic("genomes/taxonomy/{genome}/{genome}.fasta") # to keep them untill all is finished
+        merge_taxonomy_input
     output:
         "genomes/taxonomy/taxonomy_ids.tsv"
     threads:
         1
     run:
         import pandas as pd
-        out= pd.concat([pd.read_table(file,index_col=0) for file in input.taxid],axis=0).sort_index()
+
+        out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
-
+localrules: cat_get_name, parse_cat_output
 rule cat_get_name:
     input:
         "genomes/taxonomy/taxonomy_ids.tsv"
@@ -90,3 +90,13 @@ rule cat_get_name:
     shell:
         " CAT add_names -i {input} -t {params.db_folder} "
         " -o {output} --only_official "
+
+rule parse_cat_output:
+    input:
+        rules.cat_get_name.output[0]
+    output:
+        "genomes/taxonomy/taxonomy.tsv"
+    threads:
+        1
+    script:
+        "../scripts/parse_cat_taxonomy.py"

@@ -4,7 +4,6 @@
 [![Bioconda](https://img.shields.io/conda/dn/bioconda/metagenome-atlas.svg?label=Bioconda )](https://anaconda.org/bioconda/metagenome-atlas)
 [![CircleCI](https://circleci.com/gh/metagenome-atlas/atlas/tree/master.svg?style=svg)](https://circleci.com/gh/metagenome-atlas/atlas/tree/master)
 [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.2-brightgreen.svg)](https://snakemake.bitbucket.io)
 [![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd)
 [Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
 
@@ -33,10 +32,11 @@ Atlas is a easy to use metagenomic pipeline
 
 ## Install the development version from GitHub
 Atlas is still under active development; therefore, you may want to install the up to date atlas from GitHub. Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.1-brightgreen.svg)](https://snakemake.bitbucket.io)
 
 Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```
-conda create -n atlas -c bioconda -c conda-forge python>=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
+conda create -n atlas -c bioconda -c conda-forge python=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
 ```
 Load the environment:
 ```

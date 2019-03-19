@@ -13,8 +13,11 @@ if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
 
 def get_preprocessing_steps(config):
     preprocessing_steps = ['QC']
-    if config.get("normalize_reads_before_assembly", True):
-        preprocessing_steps.append("normalized")
+    if config.get("normalize_reads_before_assembly", False):
+        #preprocessing_steps.append("normalized")
+        raise NotImplementedError("Normalization is depricated. It showed to reduce assembly performance at least for metagenomics."
+                                  "remove the line 'normalize_reads_before_assembly' in your config file."
+                                  " If you would like to have added the feature again write an issue.")
 
     if config.get("error_correction_before_assembly", True):
         preprocessing_steps.append("errorcorr")
@@ -30,69 +33,70 @@ assembly_preprocessing_steps = get_preprocessing_steps(config)
 localrules: init_pre_assembly_processing
 rule init_pre_assembly_processing:
     input:
-        unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
+        get_quality_controlled_reads #expect SE or R1,R2 or R1,R2,SE
     output:
          temp("{sample}/assembly/reads/QC_{fraction}.fastq.gz")
     run:
     # make symlink
-        fraction = wildcards.fraction
-        os.symlink(os.path.relpath(input[fraction],os.path.dirname(output[0])),output[0])
+        infile = input[MULTIFILE_FRACTIONS.index(wildcards.fraction)]
+        os.symlink(os.path.relpath(infile,os.path.dirname(output[0])),output[0])
+#
+# rule normalize_coverage_across_kmers:
+#     input:
+#         get_quality_controlled_reads #expect SE or R1,R2 or R1,R2,SE
+#     output:
+#         temp(expand("{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
+#             fraction=MULTIFILE_FRACTIONS))
+#     params:
+#         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+#         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
+#         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
+#         input_single = lambda wc, input: "in=%s" % input.se if hasattr(input, 'se') else "null",
+#         extra_single = lambda wc, input: "extra={0},{1}" % (**input) if len(input)==3 else "",
+#         has_paired_end_files = lambda wc, input: "t" if len(input)>1 else "f",
+#         input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input, 'R1') else "null",
+#         extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input, 'se') else "",
+#         output_single = lambda wc, output, input: "out=%s" % output[2] if hasattr(input, 'R1') else "out=%s" % output[0],
+#         output_paired = lambda wc, output, input: "out=%s out2=%s" % (output[0], output[1]) if hasattr(input, 'R1') else "null",
+#         tmpdir = "tmpdir=%s" % TMPDIR if TMPDIR else ""
+#     log:
+#         "{sample}/logs/assembly/pre_process/normalization.log"
+#     benchmark:
+#         "logs/benchmarks/assembly/pre_process/normalization/{sample}.txt"
+#     conda:
+#         "%s/required_packages.yaml" % CONDAENV
+#     threads:
+#         config.get("threads", 1)
+#     resources:
+#         mem = config.get("java_mem", JAVA_MEM),
+#         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+#     shell:
+#         """
+#         if [ {params.input_single} != "null" ];
+#         then
+#             bbnorm.sh {params.input_single} \
+#                 {params.extra_single} \
+#                 {params.output_single} \
+#                 {params.tmpdir} \
+#                 k={params.k} target={params.t} \
+#                 minkmers={params.minkmers} prefilter=t \
+#                 threads={threads} \
+#                 -Xmx{resources.java_mem}G 2> {log}
+#         fi
+#
+#         if [ {params.has_paired_end_files} = "t" ];
+#         then
+#             bbnorm.sh {params.input_paired} \
+#                 {params.extra_paired} \
+#                 {params.output_paired} \
+#                 {params.tmpdir} \
+#                 k={params.k} target={params.t} \
+#                 minkmers={params.minkmers} prefilter=t \
+#                 threads={threads} \
+#                 -Xmx{resources.java_mem}G 2>> {log}
+#         fi
+#         """
 
-rule normalize_coverage_across_kmers:
-    input:
-        unpack(get_quality_controlled_reads) #expect SE or R1,R2 or R1,R2,SE
-    output:
-        temp(expand("{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS))
-    params:
-        k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-        t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
-        minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-        input_single = lambda wc, input: "in=%s" % input.se if hasattr(input, 'se') else "null",
-        extra_single = lambda wc, input: "extra=%s,%s" % (input.R1, input.R2) if hasattr(input, 'R1') else "",
-        has_paired_end_files = lambda wc, input: "t" if hasattr(input, 'R1') else "f",
-        input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input, 'R1') else "null",
-        extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input, 'se') else "",
-        output_single = lambda wc, output, input: "out=%s" % output[2] if hasattr(input, 'R1') else "out=%s" % output[0],
-        output_paired = lambda wc, output, input: "out=%s out2=%s" % (output[0], output[1]) if hasattr(input, 'R1') else "null",
-        tmpdir = "tmpdir=%s" % TMPDIR if TMPDIR else ""
-    log:
-        "{sample}/logs/assembly/pre_process/normalization.log"
-    benchmark:
-        "logs/benchmarks/assembly/pre_process/normalization/{sample}.txt"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
-    shell:
-        """
-        if [ {params.input_single} != "null" ];
-        then
-            bbnorm.sh {params.input_single} \
-                {params.extra_single} \
-                {params.output_single} \
-                {params.tmpdir} \
-                k={params.k} target={params.t} \
-                minkmers={params.minkmers} prefilter=t \
-                threads={threads} \
-                -Xmx{resources.java_mem}G 2> {log}
-        fi
-
-        if [ {params.has_paired_end_files} = "t" ];
-        then
-            bbnorm.sh {params.input_paired} \
-                {params.extra_paired} \
-                {params.output_paired} \
-                {params.tmpdir} \
-                k={params.k} target={params.t} \
-                minkmers={params.minkmers} prefilter=t \
-                threads={threads} \
-                -Xmx{resources.java_mem}G 2>> {log}
-        fi
-        """
 
 
 rule error_correction:
@@ -112,8 +116,8 @@ rule error_correction:
         mem = config.get("java_mem", JAVA_MEM),
         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
     params:
-        inputs = lambda wc, input: "in1={0},{2} in2={1}".format(*input) if PAIRED_END else "in={0}".format(*input),
-        outputs = lambda wc, output: "out1={0},{2} out2={1}".format(*output) if PAIRED_END else "out={0}".format(*output)
+        inputs = lambda wc, input : io_params_for_tadpole(input),
+        outputs = lambda wc, output: io_params_for_tadpole(output,key='out')
     threads:
         config.get("threads", 1)
     shell:
@@ -131,10 +135,10 @@ rule error_correction:
 rule merge_pairs:
     input:
         expand("{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS)
+            fraction=['R1','R2'])
     output:
         temp(expand("{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
-            fraction=ASSEMBLY_FRACTIONS))
+            fraction=['R1','R2','me']))
     threads:
         config.get("threads", 1)
     resources:
@@ -156,13 +160,20 @@ rule merge_pairs:
         """
         bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
             in1={input[0]} in2={input[1]} \
-            outmerged={output[3]} \
+            outmerged={output[2]} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
-
-        cp {input[2]} {output[2]} 2>> {log}
         """
+localrules: passtrough_se_merged
+rule passtrough_se_merged:
+    input:
+        "{sample}/assembly/reads/{previous_steps}_se.fastq.gz"
+    output:
+        temp("{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz")
+    shell:
+        "cp {input} {output}"
+
 
 assembly_params={}
 if config.get("assembler", "megahit") == "megahit":
@@ -170,24 +181,52 @@ if config.get("assembler", "megahit") == "megahit":
 
     if PAIRED_END and config.get("merge_pairs_before_assembly", True):
 
-        localrules: merge_se_me_for_megahit
-        rule merge_se_me_for_megahit:
-            input:
-                expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                fraction=['se','me'], assembly_preprocessing_steps=assembly_preprocessing_steps)
-            output:
-                temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-                            fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
-            shell:
-                "cat {input} > {output}"
+        if 'se' in MULTIFILE_FRACTIONS:
 
-        ASSEMBLY_FRACTIONS = ['R1','R2','co']
+            localrules: merge_se_me_for_megahit
+            rule merge_se_me_for_megahit:
+                input:
+                    expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                    fraction=['se','me'], assembly_preprocessing_steps=assembly_preprocessing_steps)
+                output:
+                    temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                                fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
+                shell:
+                    "cat {input} > {output}"
 
+            ASSEMBLY_FRACTIONS = ['R1','R2','co']
+        else:
+            ASSEMBLY_FRACTIONS = ['R1','R2','me']
+
+
+    def megahit_input_parsing(input):
+        Nfiles=len(input)
+
+        if Nfiles==1:
+            out= f"--read {input[0]}"
+        else:
+            out= f"-1 {input[0]} -2 {input[1]} "
+
+            if Nfiles ==3:
+                out+= f"--read {input[2]}"
+        return out
+
+    def megahit_input_parsing(input):
+        Nfiles=len(input)
+
+        if Nfiles==1:
+            out= f"--read {input[0]}"
+        else:
+            out= f"-1 {input[0]} -2 {input[1]} "
+
+            if Nfiles ==3:
+                out+= f"--read {input[2]}"
+        return out
 
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
+            fraction=ASSEMBLY_FRACTIONS, assembly_preprocessing_steps=assembly_preprocessing_steps)
         output:
             temp("{sample}/assembly/megahit/{sample}_prefilter.contigs.fa")
         benchmark:
@@ -206,7 +245,7 @@ if config.get("assembler", "megahit") == "megahit":
             low_local_ratio = config.get("megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO),
             min_contig_len = config.get("prefilter_minimum_contig_length", PREFILTER_MINIMUM_CONTIG_LENGTH),
             outdir = lambda wc, output: os.path.dirname(output[0]),
-            inputs = lambda wc, input: "-1 {0} -2 {1} ".format(*input) if PAIRED_END else "--read {0}".format(*input),
+            inputs = lambda wc, input: megahit_input_parsing(input),
             preset = assembly_params['megahit'][config['megahit_preset']],
         conda:
             "%s/required_packages.yaml" % CONDAENV
@@ -357,7 +396,7 @@ rule combine_sample_contig_stats:
 
         c = pd.DataFrame()
         for f in input:
-            df = pd.read_table(f)
+            df = pd.read_csv(f,sep='\t')
             assembly_step = os.path.basename(f).replace("_contig_stats.txt", "")
             c.loc[assembly_step]
 
@@ -365,14 +404,16 @@ rule combine_sample_contig_stats:
 
 if config['filter_contigs']:
 
+    ruleorder: align_reads_to_prefilter_contigs > align_reads_to_final_contigs
+
     rule align_reads_to_prefilter_contigs:
         input:
-            unpack(get_quality_controlled_reads),
-            fasta = "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+            reads= get_quality_controlled_reads,
+            fasta = rules.rename_contigs.output
         output:
             sam = temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam")
         params:
-            input = lambda wc, input : input_params_for_bbwrap(wc, input),
+            input = lambda wc, input : input_params_for_bbwrap( input.reads),
             maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
             max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),
             paired_only = 't' if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else 'f',
@@ -483,7 +524,7 @@ else: # no filter
     localrules: do_not_filter_contigs
     rule do_not_filter_contigs:
         input:
-            "{sample}/assembly/{sample}_prefilter_contigs.fasta"
+            rules.rename_contigs.output
         output:
             "{sample}/assembly/{sample}_final_contigs.fasta"
         threads:
@@ -507,14 +548,14 @@ ruleorder: bam_2_sam_contigs > align_reads_to_final_contigs
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
-        unpack(get_quality_controlled_reads),
+        reads=get_quality_controlled_reads,
         fasta = "{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
         sam = temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
         #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
         #                  fraction=MULTIFILE_FRACTIONS))
     params:
-        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        input = lambda wc, input : input_params_for_bbwrap( input.reads),
         maxsites = config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
         #unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
         max_distance_between_pairs = config.get('contig_max_distance_between_pairs', CONTIG_MAX_DISTANCE_BETWEEN_PAIRS),

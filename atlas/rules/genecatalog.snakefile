@@ -125,7 +125,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         run:
             import pandas as pd
             # CLuterID    GeneID    empty third column
-            gene2proteins= pd.read_table(input.cluster_attribution,index_col=1, header=None)
+            gene2proteins= pd.read_csv(input.cluster_attribution,index_col=1, header=None,sep='\t')
 
             protein_clusters_old_names= gene2proteins[0].unique()
 
@@ -246,7 +246,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
             import pandas as pd
             from Bio import SeqIO
 
-            orf2gene= pd.read_table(input.orf2gene,index_col=0)
+            orf2gene= pd.read_csv(input.orf2gene,index_col=0,sep='\t')
 
             # rename gene repr to Gene0000XX
 
@@ -280,7 +280,7 @@ rule rename_gene_catalog:
             for line in fasta:
                 if line[0]=='>': representatives.append(line[1:].split()[0])
 
-        map_names= pd.read_table(input.orf2gene,index_col=0).loc[representatives,'Gene']
+        map_names= pd.read_csv(input.orf2gene,index_col=0,sep='\t').loc[representatives,'Gene']
 
         # rename fna
         faa_parser = SeqIO.parse(input.faa,'fasta')
@@ -299,12 +299,12 @@ rule rename_gene_catalog:
 
 rule align_reads_to_Genecatalog:
     input:
-        unpack(get_quality_controlled_reads),
+        reads=get_quality_controlled_reads,
         fasta = "Genecatalog/gene_catalog.fna",
     output:
         sam = temp("Genecatalog/alignments/{sample}.sam")
     params:
-        input = lambda wc, input : input_params_for_bbwrap(wc, input),
+        input = lambda wc, input : input_params_for_bbwrap( input.reads),
         maxsites = 4,
         ambiguous = 'all',
         minid = config['genecatalog']['minid'],
@@ -389,7 +389,7 @@ rule combine_gene_coverages:
         for cov_file in input:
 
             sample= os.path.split(cov_file)[-1].split('_')[0]
-            data= pd.read_table(cov_file,index_col=0)
+            data= pd.read_csv(cov_file,index_col=0,sep='\t')
             data.loc[data.Median_fold<0,'Median_fold']=0
             combined_cov[sample]= data.Median_fold
             combined_N_reads[sample] = data.Plus_reads+data.Minus_reads
@@ -488,7 +488,7 @@ EGGNOG_HEADERS= [
 
 #            where do you take the Headers
 
-#         D = pd.read_table(input[0], header=None)
+#         D = pd.read_csv(input[0], header=None,sep='\t')
 #         D.columns = EGGNOG_HEADERS
 #         D.to_csv(output[0],sep="\t",index=False)
 
@@ -517,15 +517,15 @@ EGGNOG_HEADERS= [
 #
 #         eggNOG=pd.DataFrame()
 #         for annotation_file in input.eggNOG:
-#             eggNOG=eggNOG.append(pd.read_table(annotation_file, index_col=0))
+#             eggNOG=eggNOG.append(pd.read_csv(annotation_file, index_col=0,sep='\t'))
 #
 #         refseq=pd.DataFrame()
 #         for annotation_file in input.refseq:
-#             refseq=refseq.append(pd.read_table(annotation_file, index_col=1))
+#             refseq=refseq.append(pd.read_csv(annotation_file, index_col=1,sep='\t'))
 #
 #         scg=pd.DataFrame()
 #         for annotation_file in input.scg:
-#             d= pd.read_table(annotation_file, index_col=0,header=None)
+#             d= pd.read_csv(annotation_file, index_col=0,header=None,sep='\t')
 #             d.columns = 'scg_'+ os.path.splitext(annotation_file)[0].split('_')[-1] # bacteria or archaea
 #             scg=scg.append(d)
 #
@@ -566,78 +566,78 @@ rule predict_single_copy_genes:
 
 
 
-#
-# localrules: gene_subsets,combine_egg_nogg_annotations
-# checkpoint gene_subsets:
-#     input:
-#         "Genecatalog/gene_catalog.faa"
-#     output:
-#         directory("Genecatalog/subsets/genes")
-#     params:
-#         subset_size=config['genecatalog']['SubsetSize'],
-#     run:
-#         from utils import fasta
-#         fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
-#
-#
-# def combine_genecatalog_annotations_input(wildcards):
-#     dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
-#     Subset_names,= glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
-#     return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
-#                   subset=Subset_names)
 
-# rule combine_egg_nogg_annotations:
-#     input:
-#         combine_genecatalog_annotations_input
-#     output:
-#         temp("Genecatalog/annotations/eggNog.emapper.annotations")
-#     shell:
-#         "cat {input} > {output}"
-
-# localrules: add_eggNOG_header
-# rule add_eggNOG_header:
-#     input:
-#         "Genecatalog/annotations/eggNog.emapper.annotations"
-#     output:
-#         "Genecatalog/annotations/eggNog.tsv"
-#     run:
-#         import pandas as pd
-#
-#         D = pd.read_table(input[0], header=None)
-#         D.columns = EGGNOG_HEADERS
-#         D.to_csv(output[0],sep="\t",index=False)
-
-localrules: gene_subsets
-rule gene_subsets:
+localrules: gene_subsets,combine_egg_nogg_annotations
+checkpoint gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
     output:
-        dynamic("Genecatalog/subsets/genes/{subset}.faa")
+        directory("Genecatalog/subsets/genes")
     params:
         subset_size=config['genecatalog']['SubsetSize'],
     run:
         from utils import fasta
+        fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
 
-        output_dir=os.path.dirname(output[0])
-        os.removedirs(output_dir)
 
-        fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
+def combine_genecatalog_annotations_input(wildcards):
+    dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
+    Subset_names,= glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
+    return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
+                  subset=Subset_names)
 
-rule combine_annotations:
+rule combine_egg_nogg_annotations:
     input:
-        eggNOG=dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
+        combine_genecatalog_annotations_input
     output:
-        eggNOG= "Genecatalog/annotations/eggNog.tsv"
+        temp("Genecatalog/annotations/eggNog.emapper.annotations")
+    shell:
+        "cat {input} > {output}"
+
+localrules: add_eggNOG_header
+rule add_eggNOG_header:
+    input:
+        "Genecatalog/annotations/eggNog.emapper.annotations"
+    output:
+        "Genecatalog/annotations/eggNog.tsv"
     run:
+        import pandas as pd
 
-        with open(input[0]) as f:
-            first_line= f.readline()
-            assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
+        D = pd.read_table(input[0], header=None)
+        D.columns = EGGNOG_HEADERS
+        D.to_csv(output[0],sep="\t",index=False)
 
-        with open(output.eggNOG,'w') as f:
-            f.write("\t".join(EGGNOG_HEADERS) + '\n')
-        shell("cat {input.eggNOG} >> {output.eggNOG}")
-
+# localrules: gene_subsets
+# rule gene_subsets:
+#     input:
+#         "Genecatalog/gene_catalog.faa"
+#     output:
+#         dynamic("Genecatalog/subsets/genes/{subset}.faa")
+#     params:
+#         subset_size=config['genecatalog']['SubsetSize'],
+#     run:
+#         from utils import fasta
+#
+#         output_dir=os.path.dirname(output[0])
+#         os.removedirs(output_dir)
+#
+#         fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
+#
+# rule combine_annotations:
+#     input:
+#         eggNOG=dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
+#     output:
+#         eggNOG= "Genecatalog/annotations/eggNog.tsv"
+#     run:
+#
+#         with open(input[0]) as f:
+#             first_line= f.readline()
+#             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
+#
+#         with open(output.eggNOG,'w') as f:
+#             f.write("\t".join(EGGNOG_HEADERS) + '\n')
+#         shell("cat {input.eggNOG} >> {output.eggNOG}")
+#
 
 
 
@@ -658,7 +658,7 @@ rule combine_annotations:
 #         run:
 #             import pandas as pd
 #
-#             D= pd.read_table(input[0], index_col=0)
+#             D= pd.read_csv(input[0], index_col=0,sep='\t')
 #             D.index= D.index.map(lambda s: s.split()[0])
 #             D=D.astype(int)
 #             D.to_csv(output[0],sep='\t',header=False)
