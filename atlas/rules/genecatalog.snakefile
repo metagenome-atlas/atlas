@@ -566,78 +566,78 @@ rule predict_single_copy_genes:
 
 
 
-#
-# localrules: gene_subsets,combine_egg_nogg_annotations
-# checkpoint gene_subsets:
-#     input:
-#         "Genecatalog/gene_catalog.faa"
-#     output:
-#         directory("Genecatalog/subsets/genes")
-#     params:
-#         subset_size=config['genecatalog']['SubsetSize'],
-#     run:
-#         from utils import fasta
-#         fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
-#
-#
-# def combine_genecatalog_annotations_input(wildcards):
-#     dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
-#     Subset_names,= glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
-#     return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
-#                   subset=Subset_names)
 
-# rule combine_egg_nogg_annotations:
-#     input:
-#         combine_genecatalog_annotations_input
-#     output:
-#         temp("Genecatalog/annotations/eggNog.emapper.annotations")
-#     shell:
-#         "cat {input} > {output}"
-
-# localrules: add_eggNOG_header
-# rule add_eggNOG_header:
-#     input:
-#         "Genecatalog/annotations/eggNog.emapper.annotations"
-#     output:
-#         "Genecatalog/annotations/eggNog.tsv"
-#     run:
-#         import pandas as pd
-#
-#         D = pd.read_csv(input[0], header=None,sep='\t')
-#         D.columns = EGGNOG_HEADERS
-#         D.to_csv(output[0],sep="\t",index=False)
-
-localrules: gene_subsets
-rule gene_subsets:
+localrules: gene_subsets,combine_egg_nogg_annotations
+checkpoint gene_subsets:
     input:
         "Genecatalog/gene_catalog.faa"
     output:
-        dynamic("Genecatalog/subsets/genes/{subset}.faa")
+        directory("Genecatalog/subsets/genes")
     params:
         subset_size=config['genecatalog']['SubsetSize'],
     run:
         from utils import fasta
+        fasta.split(input[0],params.subset_size,output[0],simplify_headers=True)
 
-        output_dir=os.path.dirname(output[0])
-        os.removedirs(output_dir)
 
-        fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
+def combine_genecatalog_annotations_input(wildcards):
+    dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
+    Subset_names,= glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
+    return expand("Genecatalog/subsets/genes/{subset}.emapper.annotations",
+                  subset=Subset_names)
 
-rule combine_annotations:
+rule combine_egg_nogg_annotations:
     input:
-        eggNOG=dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
+        combine_genecatalog_annotations_input
     output:
-        eggNOG= "Genecatalog/annotations/eggNog.tsv"
+        temp("Genecatalog/annotations/eggNog.emapper.annotations")
+    shell:
+        "cat {input} > {output}"
+
+localrules: add_eggNOG_header
+rule add_eggNOG_header:
+    input:
+        "Genecatalog/annotations/eggNog.emapper.annotations"
+    output:
+        "Genecatalog/annotations/eggNog.tsv"
     run:
+        import pandas as pd
 
-        with open(input[0]) as f:
-            first_line= f.readline()
-            assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
+        D = pd.read_table(input[0], header=None)
+        D.columns = EGGNOG_HEADERS
+        D.to_csv(output[0],sep="\t",index=False)
 
-        with open(output.eggNOG,'w') as f:
-            f.write("\t".join(EGGNOG_HEADERS) + '\n')
-        shell("cat {input.eggNOG} >> {output.eggNOG}")
-
+# localrules: gene_subsets
+# rule gene_subsets:
+#     input:
+#         "Genecatalog/gene_catalog.faa"
+#     output:
+#         dynamic("Genecatalog/subsets/genes/{subset}.faa")
+#     params:
+#         subset_size=config['genecatalog']['SubsetSize'],
+#     run:
+#         from utils import fasta
+#
+#         output_dir=os.path.dirname(output[0])
+#         os.removedirs(output_dir)
+#
+#         fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
+#
+# rule combine_annotations:
+#     input:
+#         eggNOG=dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
+#     output:
+#         eggNOG= "Genecatalog/annotations/eggNog.tsv"
+#     run:
+#
+#         with open(input[0]) as f:
+#             first_line= f.readline()
+#             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
+#
+#         with open(output.eggNOG,'w') as f:
+#             f.write("\t".join(EGGNOG_HEADERS) + '\n')
+#         shell("cat {input.eggNOG} >> {output.eggNOG}")
+#
 
 
 

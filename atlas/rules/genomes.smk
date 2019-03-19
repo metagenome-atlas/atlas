@@ -167,7 +167,7 @@ rule run_all_checkm_lineage_wf:
         """
 
 localrules: rename_genomes
-rule rename_genomes:
+checkpoint rename_genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes"
     output:
@@ -225,15 +225,15 @@ rule get_genomes2cluster:
 
 ### Quantification
 
-# def build_db_genomes_input(wildcards):
-#     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-#     path=  os.path.join(genome_dir, "{genome}.fasta")
-#     return expand(path, genome=glob_wildcards(path).genome)
+def build_db_genomes_input(wildcards):
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+    path=  os.path.join(genome_dir, "{genome}.fasta")
+    return expand(path, genome=glob_wildcards(path).genome)
 
 
 rule build_db_genomes:
     input:
-        "genomes/genomes"
+        build_db_genomes_input
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -246,7 +246,7 @@ rule build_db_genomes:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
         """
-        cat {input}/*.fasta > {output.fasta} 2> {log}
+        cat {input} > {output.fasta} 2> {log}
         bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
 
         """
@@ -464,19 +464,12 @@ rule predict_genes_genomes:
 #         prodigal -i {input} -o {output.gff} -d {output.fna} \
 #             -a {output.faa} -p meta -f gff 2> >(tee {log})
 #         """
-#
+
 
 
 
 ## detached from DAG
 
-
-localrules: make_fasta_available
-rule make_fasta_available:
-    input:
-        "genomes/genomes"
-    output:
-        dynamic("genomes/genomes/{genome}.fasta")
 
 ## annotation
 
@@ -509,15 +502,14 @@ rule run_prokka_bins:
               """
 
 
-# def genome_annotation_input(wildcards):
-#     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-#     return expand("annotations/prokka/{genome}.tsv",
-#            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
-#
+def genome_all_prokka_input(wildcards):
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+    return expand("annotations/prokka/{genome}.tsv",
+           genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
-rule aggregate_genome_annotation:
+rule all_prokka:
     input:
-        dynamic("annotations/prokka/{genome}.tsv")
+        genome_all_prokka_input
     output:
         "genomes/annotations/prokka.tsv"
     run:
