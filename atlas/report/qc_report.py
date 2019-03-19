@@ -31,17 +31,17 @@ def get_stats_from_zips(zips):
         # single end only
         if "boxplot_quality.txt" in zf.namelist():
             with zf.open("boxplot_quality.txt") as f:
-                df = pd.read_table(f, index_col=0)
+                df = pd.read_csv(f, index_col=0,sep='\t')
                 quality_se[sample] = df.mean_1
         else:
             if "se/boxplot_quality.txt" in zf.namelist():
                 with zf.open("se/boxplot_quality.txt") as f:
-                    df = pd.read_table(f, index_col=0)
+                    df = pd.read_csv(f, index_col=0,sep='\t')
                     quality_se[sample] = df.mean_1
 
             if "pe/boxplot_quality.txt" in zf.namelist():
                 with zf.open("pe/boxplot_quality.txt") as f:
-                    df = pd.read_table(f, index_col=0)
+                    df = pd.read_csv(f, index_col=0,sep='\t')
                     df.columns = [df.columns, [sample] * df.shape[1]]
                     quality_pe = pd.concat((quality_pe, df[["mean_1", "mean_2"]]), axis=1)
 
@@ -128,7 +128,7 @@ def main(report_out, read_counts,zipfiles_QC, min_quality,zipfiles_raw=None):
     div = {}
 
     # N reads / N bases
-    df = pd.read_table(read_counts, index_col=[0, 1])
+    df = pd.read_csv(read_counts, index_col=[0, 1],sep='\t')
     for variable in ['Total_Reads','Total_Bases']:
 
 

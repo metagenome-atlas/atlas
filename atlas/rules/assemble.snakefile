@@ -396,7 +396,7 @@ rule combine_sample_contig_stats:
 
         c = pd.DataFrame()
         for f in input:
-            df = pd.read_table(f)
+            df = pd.read_csv(f,sep='\t')
             assembly_step = os.path.basename(f).replace("_contig_stats.txt", "")
             c.loc[assembly_step]
 
