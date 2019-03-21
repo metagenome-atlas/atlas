@@ -65,28 +65,21 @@ contaminant_ambiguous: best
 # Pre-assembly-processing
 ########################
 
-normalize_reads_before_assembly : false
-# target kmer depth
-normalization_target_depth: 10000
-normalization_kmer_length: 21
-normalization_minimum_kmers: 3
-
 error_correction_before_assembly : true
 
 # join R1 and R2 at overlap; unjoined reads are still utilized
 merge_pairs_before_assembly : true
+merging_k: 62
 # extend reads while merging to this many nucleotides
 merging_extend2: 40
 # Iterations are performed until extend2 x iterations
-merging_flags: ecct iterations=5
-merging_k: 62
-
+merging_flags: "ecct iterations=5"
 
 ########################
 # Assembly
 ########################
 # megahit OR spades
-assembler: megahit
+assembler: spades
 
 # Megahit
 #-----------
@@ -103,7 +96,7 @@ megahit_preset: default
 
 # Spades
 #------------
-spades_skip_BayesHammer: False
+spades_skip_BayesHammer: true
 spades_use_scaffolds: false # use contigs
 #Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order).
 spades_k: auto
@@ -169,14 +162,14 @@ DASTool:
   score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
 
 genome_dereplication:
-  ANI: 0.99
+  ANI: 0.95
   overlap: 0.6
   opt_parameters: ""
   filter:
       noFilter: false
       length: 5000
-      completeness: 75
-      contamination: 15
+      completeness: 50
+      contamination: 10
   score:
       completeness: 1
       contamination: 5
@@ -203,7 +196,7 @@ genecatalog:
   source: genomes  # which predicted proteins should be used for the gene catalog
   clustermethod: linclust # cd-hit-est or cluster or linclust see mmseqs for more details
   minlength_nt: 100
-  minid: 0.95
+  minid: 0.9
   coverage: 0.9
   extra: ""
   SubsetSize: 500000

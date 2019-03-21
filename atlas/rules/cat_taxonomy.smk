@@ -10,7 +10,7 @@ rule get_genome_for_cat:
         genomes=temp("genomes/taxonomy/{genome}/{genome}.fasta"),
     run:
         import os,shutil
-        os.makedirs(os.dirname(output[0]),exist_ok=True)
+        os.makedirs(os.path.dirname(output[0]),exist_ok=True)
         shutil.copy(input[0], output[0])
 
 

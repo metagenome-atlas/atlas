@@ -13,7 +13,7 @@ PREPROCESS_MINIMUM_PASSING_READ_LENGTH = 51
 PREPROCESS_MINIMUM_BASE_FREQUENCY = 0.05
 PREPROCESS_MAX_NS = -1
 
-MERGING_FLAGS = "ecct vstrict"
+MERGING_FLAGS = "ecct iterations=1"
 MERGING_EXTEND2 = 50
 MERGING_K = 62
 
@@ -33,7 +33,7 @@ NORMALIZATION_TARGET_DEPTH = 10000  # 500
 # allow very low represented kmers to remain
 NORMALIZATION_MINIMUM_KMERS = 3  # 15
 
-ASSEMBLY_MEMORY = 50
+ASSEMBLY_MEMORY = 250
 ASSEMBLY_THREADS = 8
 MEGAHIT_MIN_COUNT = 2
 MEGAHIT_K_MIN = 21
@@ -154,7 +154,7 @@ def make_default_config():
     conf["merging_extend2"] = MERGING_EXTEND2
     conf["merging_flags"] = MERGING_FLAGS
 
-    conf["assembler"] = "megahit"
+    conf["assembler"] = "spades"
     conf["assembly_memory"] = ASSEMBLY_MEMORY
     conf["assembly_threads"] = ASSEMBLY_THREADS
     conf["megahit_min_count"] = MEGAHIT_MIN_COUNT
@@ -194,7 +194,7 @@ def make_default_config():
     conf['genecatalog']={'source':'genomes',
                         'clustermethod':'linclust',
                          'minlength':100,
-                           'minid':0.95,
+                           'minid':0.9,
                            'coverage':0.9,
                            'extra':"",
                            'SubsetSize': 500000}
@@ -230,15 +230,15 @@ def make_default_config():
                             filter = dict(
                                 noFilter=False,
                                 length=5000,
-                                completeness=75,
-                                contamination=15),
+                                completeness=50,
+                                contamination=10),
                             score = dict(
                                     completeness=1,
                                     contamination=5,
                                     strain_heterogeneity=0, #not in table
                                     N50=0.5,
                                     length=0),
-                            ANI=0.99,
+                            ANI=0.95,
                             overlap=0.6,
                             sketch_size=5000,
                             opt_parameters=""
