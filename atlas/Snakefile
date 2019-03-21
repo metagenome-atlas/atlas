@@ -180,7 +180,7 @@ include: "rules/binning.snakefile"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
-#include: "rules/tree.smk"
+include: "rules/tree.smk"
 
 
 
