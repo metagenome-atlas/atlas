@@ -51,15 +51,13 @@ else:
         else:
             Raw_Headers= ['Reads_raw_se']
 
+        #get file
         if not (wildcards.sample in sampleTable.index):
             return expand("Impossible/file/{sample}_{fraction}.fastq.gz",sample=wildcards.sample,fraction=RAW_INPUT_FRACTIONS)
             logger.debug(f"Searched for qc reads for inexisitng sample. wildcards: {wildcards}")
         else:
-            try:
-                return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
-            except FileNotInSampleTableException:
-                raise Exception(f"Raw files are not in sampleTable. Are you trying to run QC on files that are already quality controlled?\nsample: {wildcards.sample}\nHeaders: {Raw_Headers}")
 
+            return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
 
 
 
