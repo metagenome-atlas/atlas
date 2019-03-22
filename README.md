@@ -32,7 +32,7 @@ Atlas is a easy to use metagenomic pipeline
 
 ## Install the development version from GitHub
 Atlas is still under active development; therefore, you may want to install the up to date atlas from GitHub. Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.1-brightgreen.svg)](https://snakemake.bitbucket.io)
+[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.3-brightgreen.svg)](https://snakemake.bitbucket.io)
 
 Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```

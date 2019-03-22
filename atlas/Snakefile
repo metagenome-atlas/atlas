@@ -20,7 +20,7 @@ config = default_config
 sampleTable= load_sample_table()
 
 # minimum required snakemake version
-min_version("5.4.1")
+min_version("5.4.3")
 
 
 def get_temp_dir(config):
