@@ -486,6 +486,8 @@ rule run_prokka_bins:
     params:
         outdir = lambda wc, output: os.path.dirname(output[0]),
         kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
+    shadow:
+        "shallow"
     conda:
         "%s/prokka.yaml" % CONDAENV
     threads:
@@ -504,7 +506,7 @@ rule run_prokka_bins:
 
 def genome_all_prokka_input(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    return expand("annotations/prokka/{genome}.tsv",
+    return expand("genomes/annotations/prokka/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
 rule all_prokka:
