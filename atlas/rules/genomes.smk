@@ -487,7 +487,7 @@ rule run_prokka_bins:
         outdir = lambda wc, output: os.path.dirname(output[0]),
         kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
     shadow:
-        "shallow"
+        "full"
     conda:
         "%s/prokka.yaml" % CONDAENV
     threads:
