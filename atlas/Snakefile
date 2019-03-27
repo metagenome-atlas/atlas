@@ -247,7 +247,8 @@ rule assembly_one_sample:
 rule assembly:
     input:
         expand(rules.assembly_one_sample.output,sample=SAMPLES),
-        "reports/assembly_report.html"
+        "reports/assembly_report.html",
+        "finished_QC"
     output:
         temp(touch("finished_assembly"))
 
