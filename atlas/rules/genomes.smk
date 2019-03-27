@@ -506,7 +506,7 @@ rule run_prokka_bins:
 
 def genome_all_prokka_input(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    return expand("genomes/annotations/prokka/{genome}.tsv",
+    return expand("genomes/annotations/prokka/{genome}/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
 rule all_prokka:
