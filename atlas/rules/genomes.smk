@@ -477,17 +477,17 @@ rule run_prokka_bins:
     input:
         "genomes/genomes/{genome}.fasta"
     output:
-        expand("genomes/annotations/prokka/{{genome}}.{extension}",
+        expand("genomes/annotations/prokka/{{genome}}/{{genome}}.{extension}",
                extension= ["err","faa","ffn",
                            "fna","fsa","gff",
                            "tbl","tsv","txt"])
     log:
-        "genomes/annotations/prokka/{genome}.log"
+        "genomes/annotations/prokka/{genome}/{genome}.log"
     params:
         outdir = lambda wc, output: os.path.dirname(output[0]),
         kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
     shadow:
-        "full"
+        "shallow"
     conda:
         "%s/prokka.yaml" % CONDAENV
     threads:
