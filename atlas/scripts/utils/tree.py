@@ -3,6 +3,8 @@
 import ete3
 from ete3 import TreeStyle
 
+from .. import parsers_checkm
+
 
 def load_tree(netwik_file):
     return ete3.Tree(load_tree,quoted_node_names=True,format=1)
@@ -44,21 +46,11 @@ def render_tree(T,out):
     T.render(out,tree_style=ts,layout=black_circles)
 
 
-def load_checkm_tax(checkm_taxonomy_file):
-
-    checkmTax= pd.read_table(checkm_taxonomy_file,index_col=0)
-
-    checkmTax = pd.DataFrame(list(checkmTax['Taxonomy (contained)'].apply(lambda s: s.split(';'))),
-                       index=checkmTax.index)
-
-    checkmTax.columns=['kindom','phylum','class','order','family','genus','species']
-    return checkmTax
-
 if __name__ == "__main__":
 
 
     T= load_tree(snakemake.input.tree)
-    phyla= load_checkm_tax(snakemake.input.taxonomy).phylum
+    phyla= parsers_checkm.load_checkm_tax(snakemake.input.taxonomy).phylum
 
     root_tree_by_phyla(T,phyla)
 
