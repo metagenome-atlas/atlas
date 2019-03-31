@@ -477,15 +477,17 @@ rule run_prokka_bins:
     input:
         "genomes/genomes/{genome}.fasta"
     output:
-        expand("genomes/annotations/prokka/{{genome}}.{extension}",
+        expand("genomes/annotations/prokka/{{genome}}/{{genome}}.{extension}",
                extension= ["err","faa","ffn",
                            "fna","fsa","gff",
                            "tbl","tsv","txt"])
     log:
-        "genomes/annotations/prokka/{genome}.log"
+        "genomes/annotations/prokka/{genome}/{genome}.log"
     params:
         outdir = lambda wc, output: os.path.dirname(output[0]),
         kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
+    shadow:
+        "shallow"
     conda:
         "%s/prokka.yaml" % CONDAENV
     threads:
@@ -504,7 +506,7 @@ rule run_prokka_bins:
 
 def genome_all_prokka_input(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    return expand("annotations/prokka/{genome}.tsv",
+    return expand("genomes/annotations/prokka/{genome}/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
 rule all_prokka:
