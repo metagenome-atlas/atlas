@@ -213,11 +213,9 @@ rule genomes:
         "genomes/checkm/taxonomy.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
-        "genomes/clustering/contig2genome.tsv",
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
         "genomes/taxonomy/taxonomy.tsv",
-        "genomes/genomes",
         "genomes/annotations/genes",
         "finished_binning"
     output:
