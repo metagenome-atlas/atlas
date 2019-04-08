@@ -19,13 +19,13 @@ def predict_genes(genome,fasta,out_dir,log):
 
 
 
-def predict_genes_genomes(in_dir,out_dir,log):
+def predict_genes_genomes(genomes_fastas,out_dir,log):
 
-    path= os.path.join(in_dir,'{genome}.fasta')
     os.makedirs(out_dir,exist_ok=True)
 
-    for genome in glob_wildcards(path).genome:
-        predict_genes(genome,path.format(genome=genome),out_dir,log)
+    for fasta in genomes_fastas:
+        genome_name= os.path.splitext(os.path.split(fasta)[-1])[0]
+        predict_genes(genome_name,fasta,out_dir,log)
 
 
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     try:
 
         predict_genes_genomes(
-            snakemake.input[0],
+            snakemake.input,
             snakemake.output[0],
             snakemake.log[0]
         )
