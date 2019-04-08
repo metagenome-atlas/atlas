@@ -139,34 +139,6 @@ rule second_dereplication:
         " &> {log} "
 
 
-
-rule run_all_checkm_lineage_wf:
-    input:
-        touched_output = "logs/checkm_init.txt",
-        genomes = get_genomes_fasta
-    output:
-        "genomes/checkm/completeness.tsv",
-        "genomes/checkm/storage/tree/concatenated.fasta"
-    params:
-        output_dir = lambda wc, output: os.path.dirname(output[0]),
-        input_dir = lambda wc, input: os.path.dirname(input.genomes[0])
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
-    shell:
-        """
-        rm -r {params.output_dir}
-        checkm lineage_wf \
-            --file {params.output_dir}/completeness.tsv \
-            --tab_table \
-            --quiet \
-            --extension fasta \
-            --threads {threads} \
-            {params.input_dir} \
-            {params.output_dir}
-        """
-
 localrules: rename_genomes
 checkpoint rename_genomes:
     input:
@@ -226,7 +198,33 @@ rule get_genomes2cluster:
 
         Genome_map.to_csv(output[0],sep='\t')
 
-
+rule run_all_checkm_lineage_wf:
+    input:
+        touched_output = "logs/checkm_init.txt",
+        genomes = get_genomes_fasta
+    output:
+        "genomes/checkm/completeness.tsv",
+        "genomes/checkm/storage/tree/concatenated.fasta"
+    params:
+        output_dir = lambda wc, output: os.path.dirname(output[0]),
+        input_dir = lambda wc, input: os.path.dirname(input.genomes[0])
+    conda:
+        "%s/checkm.yaml" % CONDAENV
+    threads:
+        config.get("threads", 1)
+    shell:
+        """
+        rm -r {params.output_dir}
+        checkm lineage_wf \
+            --file {params.output_dir}/completeness.tsv \
+            --tab_table \
+            --quiet \
+            --extension fasta \
+            --threads {threads} \
+            {params.input_dir} \
+            {params.output_dir}
+        """
+        
 ### Quantification
 
 
