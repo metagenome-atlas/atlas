@@ -607,37 +607,6 @@ rule add_eggNOG_header:
         D.columns = EGGNOG_HEADERS
         D.to_csv(output[0],sep="\t",index=False)
 
-# localrules: gene_subsets
-# rule gene_subsets:
-#     input:
-#         "Genecatalog/gene_catalog.faa"
-#     output:
-#         dynamic("Genecatalog/subsets/genes/{subset}.faa")
-#     params:
-#         subset_size=config['genecatalog']['SubsetSize'],
-#     run:
-#         from utils import fasta
-#
-#         output_dir=os.path.dirname(output[0])
-#         os.removedirs(output_dir)
-#
-#         fasta.split(input[0],params.subset_size,output_dir,simplify_headers=True)
-#
-# rule combine_annotations:
-#     input:
-#         eggNOG=dynamic("Genecatalog/subsets/genes/{subset}.emapper.annotations")
-#     output:
-#         eggNOG= "Genecatalog/annotations/eggNog.tsv"
-#     run:
-#
-#         with open(input[0]) as f:
-#             first_line= f.readline()
-#             assert len(first_line.split('\t')) == len(EGGNOG_HEADERS), "number of eggnog headers doesn't correspond to number of fields."
-#
-#         with open(output.eggNOG,'w') as f:
-#             f.write("\t".join(EGGNOG_HEADERS) + '\n')
-#         shell("cat {input.eggNOG} >> {output.eggNOG}")
-#
 
 
 
