@@ -3,7 +3,7 @@
 import ete3
 from ete3 import TreeStyle
 
-from .. import parsers_checkm
+import parsers_checkm
 
 
 def load_tree(netwik_file):
