@@ -22,7 +22,7 @@ rule root_tree:
         tree="genomes/checkm/storage/tree/fasttree.nwk",
         taxonomy="genomes/checkm/taxonomy.tsv"
     output:
-        tree="genomes/tree.nwk",
+        tree="genomes/tree/tree.nwk",
     conda:
         "%s/tree.yaml" % CONDAENV
     threads:
