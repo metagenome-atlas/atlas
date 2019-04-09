@@ -43,7 +43,7 @@ def render_tree(T,out):
     ts.scale=200
     ts.show_scale=False
 
-    T.render(out,tree_style=ts,layout=black_circles)
+    T.render(out,tree_style=ts,layout=layout_black_circles)
 
 
 if __name__ == "__main__":
