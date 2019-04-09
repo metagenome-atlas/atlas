@@ -19,7 +19,7 @@ rule fasttree:
 localrules: root_and_plot_tree
 rule root_and_plot_tree:
     input:
-        tree="genomes/checkm/storage/tree/concatenated.fasta",
+        tree="genomes/checkm/storage/tree/fasttree.nwk",
         taxonomy="genomes/checkm/taxonomy.tsv"
     output:
         tree="genomes/tree/tree.nwk",
