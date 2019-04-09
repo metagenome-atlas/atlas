@@ -16,15 +16,13 @@ rule fasttree:
         "export OMP_NUM_THREADS={threads}; "
         "FastTree -log {log} {input} > {output} "
 
-localrules: root_and_plot_tree
-rule root_and_plot_tree:
+localrules: root_tree
+rule root_tree:
     input:
         tree="genomes/checkm/storage/tree/fasttree.nwk",
         taxonomy="genomes/checkm/taxonomy.tsv"
     output:
-        tree="genomes/tree/tree.nwk",
-        svg="genomes/tree/tree.svg",
-        pdf="genomes/tree/tree.pdf"
+        tree="genomes/tree.nwk",
     conda:
         "%s/tree.yaml" % CONDAENV
     threads:

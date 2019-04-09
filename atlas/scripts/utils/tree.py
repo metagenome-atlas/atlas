@@ -56,6 +56,3 @@ if __name__ == "__main__":
     root_tree_by_phyla(T,phyla)
 
     T.write(outfile=snakemake.output.tree)
-
-    render_tree(T,snakemake.output.svg)
-    render_tree(T,snakemake.output.pdf)
