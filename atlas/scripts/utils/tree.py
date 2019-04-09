@@ -1,4 +1,5 @@
-
+import os
+os.environ['QT_QPA_PLATFORM']='offscreen' # because we might not have a X server
 
 import ete3
 from ete3 import TreeStyle
