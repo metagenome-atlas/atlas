@@ -7,7 +7,7 @@ import parsers_checkm
 
 
 def load_tree(netwik_file):
-    return ete3.Tree(load_tree,quoted_node_names=True,format=1)
+    return ete3.Tree(netwik_file,quoted_node_names=True,format=1)
 
 def root_tree_by_phyla(T,phyla):
     """ Root the tree next to the least frequent phyla if possible
