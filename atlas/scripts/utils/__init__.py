@@ -1,2 +1,2 @@
-from . import parsers_bbmap, parsers_checkm, tree
+from . import parsers_bbmap, parsers_checkm
 from .utils import gen_names_for_range
