@@ -8,7 +8,7 @@ rule get_all_bins:
         #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
         #       sample= SAMPLES, binner= config['final_binner'])
     output:
-        directory(temp("genomes/all_bins"))
+        temp(directory("genomes/all_bins"))
     run:
         os.mkdir(output[0])
         from glob import glob
@@ -224,7 +224,7 @@ rule run_all_checkm_lineage_wf:
             {params.input_dir} \
             {params.output_dir}
         """
-        
+
 ### Quantification
 
 

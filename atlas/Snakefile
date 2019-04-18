@@ -211,6 +211,7 @@ rule genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes",
         "genomes/checkm/taxonomy.tsv",
+        "genomes/tree/tree.nwk",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
