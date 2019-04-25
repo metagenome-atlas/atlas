@@ -2,7 +2,7 @@ import os
 os.environ['QT_QPA_PLATFORM']='offscreen' # because we might not have a X server
 
 import ete3
-from ete3 import TreeStyle
+
 
 from . import parsers_checkm
 
@@ -37,7 +37,8 @@ def layout_black_circles(node):
         node.img_style["size"]=0
 
 def render_tree(T,out):
-
+    from ete3 import TreeStyle
+    
     ts = TreeStyle()
     ts.show_leaf_name= False
     ts.mode = "c"
