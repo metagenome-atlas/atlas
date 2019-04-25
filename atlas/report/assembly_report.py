@@ -12,10 +12,7 @@ PLOTLY_PARAMS = dict(
 )
 
 atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-
 sys.path.append(os.path.join(atlas_dir,'scripts'))
-
-
 from utils.parsers_bbmap import parse_bbmap_log_file
 
 

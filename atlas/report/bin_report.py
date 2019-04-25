@@ -11,7 +11,8 @@ PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
 
-
+atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
+sys.path.append(os.path.join(atlas_dir,'scripts'))
 from utils.parsers_checkm import read_checkm_output
 
 
