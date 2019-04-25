@@ -156,7 +156,15 @@ checkpoint rename_genomes:
 def get_genomes_fasta(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
     path=  os.path.join(genome_dir, "{genome}.fasta")
-    return expand(path, genome=glob_wildcards(path).genome)
+    genomes=expand(path, genome=glob_wildcards(path).genome)
+
+    if len(genomes)==0:
+        logger.critical("No genomes found after dereplication. "
+                        "You don't have any Metagenome assembled genomes with sufficient quality. "
+                        "You may want to change the assembly, binning or filtering parameters. "
+                        "Or focus on the genecatalog workflow only.")
+        exit(1)
+    return genomes
 
 
 
