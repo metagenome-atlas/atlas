@@ -205,7 +205,7 @@ rule get_genomes2cluster:
         Genome_map.sort_values(inplace=True)
         Genome_map.name='MAG'
 
-        Genome_map.to_csv(output[0],sep='\t')
+        Genome_map.to_csv(output[0],sep='\t',header=True)
 
 rule run_all_checkm_lineage_wf:
     input:
