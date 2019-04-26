@@ -143,11 +143,12 @@ localrules: rename_genomes
 checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
-        mapping_file="genomes/clustering/allbins2genome.tsv" # to make shure this is produced before.
+        dereplication= "genomes/Dereplication/dereplicated_genomes"
     output:
         dir= directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
-        mapfile_genomes = "genomes/clustering/old2newID.tsv"
+        mapfile_genomes = "genomes/clustering/old2newID.tsv",
+        mapfile_bins= "genomes/clustering/allbins2genome.tsv"
     shadow:
         "shallow"
     script:
@@ -169,43 +170,7 @@ def get_genomes_fasta(wildcards):
 
 
 
-localrules: get_genomes2cluster
-rule get_genomes2cluster:
-    input:
-        old2new="genomes/clustering/old2newID.tsv",
-        pre_dereplication="genomes/pre_dereplication/dereplicated_genomes",
-        dereplication= "genomes/Dereplication/dereplicated_genomes"
-    output:
-        "genomes/clustering/allbins2genome.tsv"
-    run:
-        import pandas as pd
 
-
-        def genome2cluster(Drep_folder):
-
-            Cdb= pd.read_csv(os.path.join(Drep_folder,'..','data_tables','Cdb.csv'))
-            Cdb.index= Cdb.genome # location changes
-
-            Wdb= pd.read_csv(os.path.join(Drep_folder,'..','data_tables','Wdb.csv'))
-            Wdb.index = Wdb.cluster
-            map_genome2cluster =  Cdb.secondary_cluster.map(Wdb.genome)
-
-            return map_genome2cluster
-
-        Genome_map= genome2cluster(input.pre_dereplication).\
-        map(genome2cluster(input.dereplication))
-
-        Genome_map.index= Genome_map.index.str.replace('.fasta','')
-        Genome_map = Genome_map.str.replace('.fasta','')
-
-
-        old2new_name= pd.read_csv(input.old2new, index_col=0,squeeze=True,sep='\t')
-        Genome_map= Genome_map.map(old2new_name)
-
-        Genome_map.sort_values(inplace=True)
-        Genome_map.name='MAG'
-
-        Genome_map.to_csv(output[0],sep='\t',header=True)
 
 rule run_all_checkm_lineage_wf:
     input:
