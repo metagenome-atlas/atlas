@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     try:
         rename_genomes(
-            input_folder=snakemake.input[0],
+            input_folder=snakemake.input.genomes,
             output_dir=snakemake.output.dir,
             mapfile_genomes=snakemake.output.mapfile_genomes,
             mapfile_contigs=snakemake.output.mapfile_contigs

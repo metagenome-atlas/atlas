@@ -142,7 +142,8 @@ rule second_dereplication:
 localrules: rename_genomes
 checkpoint rename_genomes:
     input:
-        "genomes/Dereplication/dereplicated_genomes"
+        genomes="genomes/Dereplication/dereplicated_genomes",
+        mapping_file="genomes/clustering/allbins2genome.tsv" # to make shure this is produced before.
     output:
         dir= directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
