@@ -26,8 +26,8 @@ jobs:
       # make config
       - run: .test/dryrun.sh
       - run: atlas run all -w $WORKING_DIR --create-envs-only
-    #  - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
-    #  - run: .test/test_assembly.sh
+      - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
+      - run: .test/test_assembly.sh
 
 
 
