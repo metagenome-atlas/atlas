@@ -54,7 +54,7 @@ def genome2cluster(Drep_folder):
 
     return map_genome2cluster
 
-def get_mapfile_bins(mapfile_bins,pre_dereplication,dereplication,old2new)
+def get_mapfile_bins(mapfile_bins,pre_dereplication,dereplication,old2new):
 
     Genome_map= genome2cluster(pre_dereplication).\
     map(genome2cluster(dereplication))
