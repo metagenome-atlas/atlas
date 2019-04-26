@@ -161,7 +161,7 @@ def get_genome_dir_():
         assert os.path.exists(genome_dir)
 
     else:
-        genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+        genome_dir = checkpoints.rename_genomes.get().output.dir
     return genome_dir
 
 def get_genomes_():
