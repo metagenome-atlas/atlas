@@ -143,7 +143,7 @@ localrules: rename_genomes
 checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
-        dereplication= "genomes/Dereplication/dereplicated_genomes"
+        pre_dereplication= "genomes/pre_dereplication/dereplicated_genomes"
     output:
         dir= directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
