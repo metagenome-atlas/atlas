@@ -155,15 +155,18 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-def get_genomes_():
+def get_genome_dir_():
     if 'genome_dir' in config:
         genome_dir= config['genome_dir']
         assert os.path.exists(genome_dir)
 
     else:
         genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+    return genome_dir
 
-    genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
+def get_genomes_():
+
+    genomes= glob_wildcards(os.path.join(get_genome_dir_(), "{genome}.fasta")).genome
 
     if len(genomes)==0:
         logger.critical("No genomes found after dereplication. "
@@ -176,7 +179,7 @@ def get_genomes_():
 
 def get_genomes_fasta(wildcards):
 
-    path=  os.path.join(genome_dir, "{genome}.fasta")
+    path=  os.path.join(get_genome_dir_(), "{genome}.fasta")
     genomes=expand(path, genome=get_genomes_())
 
 
