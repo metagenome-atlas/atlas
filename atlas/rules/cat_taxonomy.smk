@@ -5,7 +5,7 @@
 localrules: get_genome_for_cat
 rule get_genome_for_cat:
     input:
-        genomes= os.path.join(get_genome_dir_(),"{genome}.fasta"),
+        genomes= lambda wc: os.path.join(get_genome_dir_(),"{genome}.fasta"),
     output:
         genomes=temp("genomes/taxonomy/{genome}/{genome}.fasta"),
     run:
