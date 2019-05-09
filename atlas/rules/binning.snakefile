@@ -527,63 +527,6 @@ rule run_das_tool:
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
 
 
-# # unknown bins and contigs
-#
-if config['final_binner']=='DASTool':
-    localrules: get_unknown_bins
-    rule get_unknown_bins:
-        input:
-            score_files=expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
-            bin_dirs=expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
-        output:
-            dir= directory("{sample}/binning/Unknown/bins"),
-            scores= "{sample}/binning/Unknown/scores.tsv"
-
-        run:
-            import pandas as pd
-            import shutil
-            import os
-
-            os.makedirs(output.dir)
-
-            Scores= pd.DataFrame()
-            for i in range(len(config['binner'])):
-                score_file = input.score_files[i]
-                bin_dir = input.bin_dirs[i]
-
-                S = pd.read_csv(score_file,index_col=0,sep='\t')
-
-                S= S.loc[S.SCG_completeness==0]
-                Scores= Scores.append(S)
-
-                for bin_id in S.index:
-                    shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'),
-                                os.path.join(output.dir,bin_id+'.fasta') )
-
-            Scores.to_csv(output.scores,sep='\t')
-
-    localrules: get_all_unknown_bins
-    rule get_all_unknown_bins:
-        input:
-            bins=expand(rules.get_unknown_bins.output.dir,sample=SAMPLES),
-            scores= expand(rules.get_unknown_bins.output.scores,sample=SAMPLES)
-        output:
-            dir=directory("genomes/all_unknown_bins"),
-            scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
-        run:
-            os.mkdir(output.dir)
-            from glob import glob
-            import shutil
-            for bin_folder in input.bins:
-                for fasta_file in glob(bin_folder+'/*.fasta'):
-                    shutil.copy(fasta_file,output.dir)
-
-            import pandas as pd
-
-            all_scores= [pd.read_csv(file,index_col=0,sep='\t')  for file in input.scores]
-
-            pd.concat(all_scores,axis=0).to_csv(output.scores,sep='\t')
-
 
 
     #
