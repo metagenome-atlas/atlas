@@ -145,7 +145,7 @@ rule unpack_checkm_data:
     shell:
         "tar -zxf {input} --directory {params.path}"
 
-
+localrules: initialize_checkm
 rule initialize_checkm:
     input:
         ancient(CHECKMFILES)

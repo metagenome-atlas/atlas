@@ -9,7 +9,7 @@ rule fasttree:
     log:
         "logs/genomes/tree/FastTree.log"
     threads:
-        config['threads']
+        max(config['threads'],3)
     conda:
         "%s/tree.yaml" % CONDAENV
     shell:

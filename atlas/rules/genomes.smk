@@ -155,10 +155,18 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-def get_genomes_fasta(wildcards):
-    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    path=  os.path.join(genome_dir, "{genome}.fasta")
-    genomes=expand(path, genome=glob_wildcards(path).genome)
+def get_genome_dir_():
+    if 'genome_dir' in config:
+        genome_dir= config['genome_dir']
+        assert os.path.exists(genome_dir)
+
+    else:
+        genome_dir = checkpoints.rename_genomes.get().output.dir
+    return genome_dir
+
+def get_genomes_():
+
+    genomes= glob_wildcards(os.path.join(get_genome_dir_(), "{genome}.fasta")).genome
 
     if len(genomes)==0:
         logger.critical("No genomes found after dereplication. "
@@ -166,6 +174,15 @@ def get_genomes_fasta(wildcards):
                         "You may want to change the assembly, binning or filtering parameters. "
                         "Or focus on the genecatalog workflow only.")
         exit(1)
+
+    return genomes
+
+def get_genomes_fasta(wildcards):
+
+    path=  os.path.join(get_genome_dir_(), "{genome}.fasta")
+    genomes=expand(path, genome=get_genomes_())
+
+
     return genomes
 
 

@@ -5,7 +5,7 @@
 localrules: get_genome_for_cat
 rule get_genome_for_cat:
     input:
-        genomes="genomes/genomes/{genome}.fasta",
+        genomes= lambda wc: os.path.join(get_genome_dir_(),"{genome}.fasta"),
     output:
         genomes=temp("genomes/taxonomy/{genome}/{genome}.fasta"),
     run:
@@ -54,8 +54,7 @@ rule cat_on_bin:
         " --out_prefix {params.out_prefix} &> >(tee {log})"
 
 def merge_taxonomy_input(wildcards):
-    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    Genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
+    Genomes= get_genomes_()
     return expand("genomes/taxonomy/{genome}/{genome}.bin2classification.txt",genome=Genomes)
 
 
