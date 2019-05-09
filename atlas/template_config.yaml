@@ -160,7 +160,7 @@ maxbin:
 
 DASTool:
   search_engine: 'diamond'
-  score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
+  score_threshold: 0              #Score threshold until selection algorithm will keep selecting bins [0..1]
 
 genome_dereplication:
   ANI: 0.95
