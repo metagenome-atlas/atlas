@@ -106,6 +106,7 @@ if len(colum_headers_raw) ==0:
     SKIP_QC=True
 
     logger.info("Didn't find raw reads in sampleTable - skip QC")
+    RAW_INPUT_FRACTIONS = MULTIFILE_FRACTIONS
 else:
     RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
 

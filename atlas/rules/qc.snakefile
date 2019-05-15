@@ -70,7 +70,7 @@ rule initialize_qc:
     priority: 80
     params:
         inputs = lambda wc, input: io_params_for_tadpole(input,'in'),
-        interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False )else "f",
+        interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False) else "f",
         outputs = lambda wc, output: io_params_for_tadpole(output,'out'),
         verifypaired = "t" if PAIRED_END else "f"
     log:
