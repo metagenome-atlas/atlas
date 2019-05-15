@@ -11,28 +11,9 @@ PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
 
-
-def read_checkm_output(taxonomy_table, completness_table):
-
-    c_df = pd.read_csv(completness_table, index_col=0,sep='\t')[
-        ["Completeness", "Contamination", "Strain heterogeneity"]
-    ]
-    t_df = pd.read_csv(taxonomy_table, index_col=0,sep='\t')[
-        [
-            "# unique markers (of 43)",
-            "# multi-copy",
-            "Insertion branch UID",
-            "Taxonomy (contained)",
-            "Taxonomy (sister lineage)",
-            "GC",
-            "Genome size (Mbp)",
-            "Gene count",
-            "Coding density",
-        ]
-    ]
-    df = pd.concat([c_df, t_df], axis=1)
-    return df
-
+atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
+sys.path.append(os.path.join(atlas_dir,'scripts'))
+from utils.parsers_checkm import read_checkm_output
 
 
 def main(samples, completeness_files, taxonomy_files, report_out, bin_table):

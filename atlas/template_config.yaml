@@ -35,6 +35,7 @@ database_dir: databases
 # Quality control
 ########################
 data_type: metagenome # metagenome or metatranscriptome
+interleaved_fastqs: false
 # remove (PCR)-duplicated reads using clumpify
 deduplicate: true
 duplicates_only_optical: false

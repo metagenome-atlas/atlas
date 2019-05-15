@@ -221,13 +221,12 @@ rule genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes",
         "genomes/checkm/taxonomy.tsv",
+        "genomes/tree/tree.nwk",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
-        "genomes/clustering/contig2genome.tsv",
         "genomes/clustering/allbins2genome.tsv",
         "genomes/SSU/ssu_summary.tsv",
         "genomes/taxonomy/taxonomy.tsv",
-        "genomes/genomes",
         "genomes/annotations/genes",
         "finished_binning"
     output:
@@ -257,7 +256,8 @@ rule assembly_one_sample:
 rule assembly:
     input:
         expand(rules.assembly_one_sample.output,sample=SAMPLES),
-        "reports/assembly_report.html"
+        "reports/assembly_report.html",
+        "finished_QC"
     output:
         temp(touch("finished_assembly"))
 

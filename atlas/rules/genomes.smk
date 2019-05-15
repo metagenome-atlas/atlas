@@ -8,7 +8,7 @@ rule get_all_bins:
         #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
         #       sample= SAMPLES, binner= config['final_binner'])
     output:
-        directory(temp("genomes/all_bins"))
+        temp(directory("genomes/all_bins"))
     run:
         os.mkdir(output[0])
         from glob import glob
@@ -139,16 +139,49 @@ rule second_dereplication:
         " &> {log} "
 
 
+localrules: rename_genomes
+checkpoint rename_genomes:
+    input:
+        genomes="genomes/Dereplication/dereplicated_genomes",
+        pre_dereplication= "genomes/pre_dereplication/dereplicated_genomes"
+    output:
+        dir= directory("genomes/genomes"),
+        mapfile_contigs="genomes/clustering/contig2genome.tsv",
+        mapfile_genomes = "genomes/clustering/old2newID.tsv",
+        mapfile_bins= "genomes/clustering/allbins2genome.tsv"
+    shadow:
+        "shallow"
+    script:
+        "rename_genomes.py"
+
+
+def get_genomes_fasta(wildcards):
+    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
+    path=  os.path.join(genome_dir, "{genome}.fasta")
+    genomes=expand(path, genome=glob_wildcards(path).genome)
+
+    if len(genomes)==0:
+        logger.critical("No genomes found after dereplication. "
+                        "You don't have any Metagenome assembled genomes with sufficient quality. "
+                        "You may want to change the assembly, binning or filtering parameters. "
+                        "Or focus on the genecatalog workflow only.")
+        exit(1)
+    return genomes
+
+
+
+
 
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        bins = "genomes/genomes"
+        genomes = get_genomes_fasta
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta"
     params:
-        output_dir = lambda wc, output: os.path.dirname(output[0])
+        output_dir = lambda wc, output: os.path.dirname(output[0]),
+        input_dir = lambda wc, input: os.path.dirname(input.genomes[0])
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads:
@@ -162,78 +195,18 @@ rule run_all_checkm_lineage_wf:
             --quiet \
             --extension fasta \
             --threads {threads} \
-            {input.bins} \
+            {params.input_dir} \
             {params.output_dir}
         """
 
-localrules: rename_genomes
-checkpoint rename_genomes:
-    input:
-        "genomes/Dereplication/dereplicated_genomes"
-    output:
-        dir= directory("genomes/genomes"),
-        mapfile_contigs="genomes/clustering/contig2genome.tsv",
-        mapfile_genomes = "genomes/clustering/old2newID.tsv"
-    shadow:
-        "shallow"
-    script:
-        "rename_genomes.py"
-
-
-
-
-
-
-localrules: get_genomes2cluster
-rule get_genomes2cluster:
-    input:
-        old2new="genomes/clustering/old2newID.tsv",
-        pre_dereplication="genomes/pre_dereplication/dereplicated_genomes",
-        dereplication= "genomes/Dereplication/dereplicated_genomes"
-    output:
-        "genomes/clustering/allbins2genome.tsv"
-    run:
-        import pandas as pd
-
-
-        def genome2cluster(Drep_folder):
-
-            Cdb= pd.read_csv(os.path.join(Drep_folder,'..','data_tables','Cdb.csv'))
-            Cdb.index= Cdb.genome # location changes
-
-            Wdb= pd.read_csv(os.path.join(Drep_folder,'..','data_tables','Wdb.csv'))
-            Wdb.index = Wdb.cluster
-            map_genome2cluster =  Cdb.secondary_cluster.map(Wdb.genome)
-
-            return map_genome2cluster
-
-        Genome_map= genome2cluster(input.pre_dereplication).\
-        map(genome2cluster(input.dereplication))
-
-        Genome_map.index= Genome_map.index.str.replace('.fasta','')
-        Genome_map = Genome_map.str.replace('.fasta','')
-
-
-        old2new_name= pd.read_csv(input.old2new, index_col=0,squeeze=True,sep='\t')
-        Genome_map= Genome_map.map(old2new_name)
-
-        Genome_map.sort_values(inplace=True)
-        Genome_map.name='MAG'
-
-        Genome_map.to_csv(output[0],sep='\t')
-
-
 ### Quantification
 
-def build_db_genomes_input(wildcards):
-    genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    path=  os.path.join(genome_dir, "{genome}.fasta")
-    return expand(path, genome=glob_wildcards(path).genome)
+
 
 
 rule build_db_genomes:
     input:
-        build_db_genomes_input
+        get_genomes_fasta
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -430,7 +403,7 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        "genomes/genomes"
+        get_genomes_fasta
     output:
         directory("genomes/annotations/genes")
     conda:
@@ -477,15 +450,17 @@ rule run_prokka_bins:
     input:
         "genomes/genomes/{genome}.fasta"
     output:
-        expand("genomes/annotations/prokka/{{genome}}.{extension}",
+        expand("genomes/annotations/prokka/{{genome}}/{{genome}}.{extension}",
                extension= ["err","faa","ffn",
                            "fna","fsa","gff",
                            "tbl","tsv","txt"])
     log:
-        "genomes/annotations/prokka/{genome}.log"
+        "genomes/annotations/prokka/{genome}/{genome}.log"
     params:
         outdir = lambda wc, output: os.path.dirname(output[0]),
         kingdom = config.get("prokka_kingdom", PROKKA_KINGDOM)
+    shadow:
+        "shallow"
     conda:
         "%s/prokka.yaml" % CONDAENV
     threads:
@@ -504,7 +479,7 @@ rule run_prokka_bins:
 
 def genome_all_prokka_input(wildcards):
     genome_dir = checkpoints.rename_genomes.get(**wildcards).output.dir
-    return expand("annotations/prokka/{genome}.tsv",
+    return expand("genomes/annotations/prokka/{genome}/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
 rule all_prokka:
