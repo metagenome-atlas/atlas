@@ -307,7 +307,7 @@ else:
                 if 'se' in ASSEMBLY_FRACTIONS:
                     params['inputs']+= "-pe1-s {se} ".format(**reads)
                 if 'me' in ASSEMBLY_FRACTIONS:
-                    params['inputs']+= "-pe1-m {me} ".format(**reads)
+                    params['inputs']+= "--pe1-m {me} ".format(**reads)
 
             # Long reads:
 
