@@ -313,10 +313,10 @@ else:
 
             if config['longread_type'] is not None:
 
-                long_read_file = get_files_from_sampleTable(wc.sample,'longread')
-                params['longread'] = " --{t} {f} ".format(t=config['longread_type'],f=long_read_file)
+                long_read_file = get_files_from_sampleTable(wc.sample,'longreads')
+                params['longreads'] = " --{t} {f} ".format(t=config['longread_type'],f=long_read_file)
             else:
-                params['longread'] = ""
+                params['longreads'] = ""
 
 
             params['preset'] = assembly_params['spades'][config['spades_preset']]
@@ -330,7 +330,7 @@ else:
                       "preset":"",
                       "skip_error_correction":"",
                       "extra":"",
-                      "longread":""}
+                      "longreads":""}
 
         params['outdir']= "{sample}/assembly".format(sample=wc.sample)
 
