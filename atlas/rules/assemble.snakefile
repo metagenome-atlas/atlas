@@ -325,7 +325,7 @@ else:
 
 
         else:
-            logger.info("restart spades from last checkpoint for sample {sample}".format(sample=wc.sample))
+            
             params = {"inputs": "--restart-from last",
                       "preset":"",
                       "skip_error_correction":"",
