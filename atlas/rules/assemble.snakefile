@@ -246,7 +246,7 @@ if config.get("assembler", "megahit") == "megahit":
             inputs = lambda wc, input: megahit_input_parsing(input),
             preset = assembly_params['megahit'][config['megahit_preset']],
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "%s/assembly.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
@@ -307,7 +307,7 @@ else:
                 if 'se' in ASSEMBLY_FRACTIONS:
                     params['inputs']+= "-pe1-s {se} ".format(**reads)
                 if 'me' in ASSEMBLY_FRACTIONS:
-                    params['inputs']+= "-pe1-m {me} ".format(**reads)
+                    params['inputs']+= "--pe1-m {me} ".format(**reads)
 
             # Long reads:
 
@@ -353,7 +353,7 @@ else:
         log:
             "{sample}/logs/assembly/spades.log"
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "%s/assembly.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
