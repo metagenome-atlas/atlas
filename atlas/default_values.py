@@ -172,6 +172,7 @@ def make_default_config():
     conf["spades_preset"] = "meta"
     conf["spades_extra"] = ""
     conf["spades_skip_BayesHammer"] = False
+    conf['longread_type'] = None
     conf["filter_contigs"] = True
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
     conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
