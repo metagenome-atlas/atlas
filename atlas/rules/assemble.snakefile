@@ -7,9 +7,7 @@ import warnings
 from copy import copy
 
 
-ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
-if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
-    ASSEMBLY_FRACTIONS += ['me']
+
 
 def get_preprocessing_steps(config):
     preprocessing_steps = ['QC']
@@ -286,6 +284,12 @@ if config.get("assembler", "megahit") == "megahit":
 
 
 else:
+
+
+    ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
+    if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
+        ASSEMBLY_FRACTIONS += ['me']
+
     assembly_params['spades'] = {'meta':'--meta','normal':'', 'rna':'--rna'}
 
     def spades_parameters(wc,input):
