@@ -304,9 +304,9 @@ else:
             else:
                 params['inputs']= " --pe1-1 {R1} --pe1-2 {R2} ".format(**reads)
 
-                if 'se' in MULTIFILE_FRACTIONS:
+                if 'se' in ASSEMBLY_FRACTIONS:
                     params['inputs']+= "-pe1-s {se} ".format(**reads)
-                if 'me' in MULTIFILE_FRACTIONS:
+                if 'me' in ASSEMBLY_FRACTIONS:
                     params['inputs']+= "-pe1-m {me} ".format(**reads)
 
             # Long reads:
