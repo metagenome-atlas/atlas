@@ -297,17 +297,26 @@ else:
 
             params={}
 
-            params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            reads = dict(zip(ASSEMBLY_FRACTIONS,input))
+
+            if not PAIRED_END:
+                params['inputs']= " -s {se} ".format(**reads)
+            else:
+                params['inputs']= " --pe1-1 {R1} --pe1-2 {R2} ".format(**reads)
+
+                if 'se' in MULTIFILE_FRACTIONS:
+                    params['inputs']+= "-pe1-s {se} ".format(**reads)
+                if 'me' in MULTIFILE_FRACTIONS:
+                    params['inputs']+= "-pe1-m {me} ".format(**reads)
+
             params['preset'] = assembly_params['spades'][config['spades_preset']]
             params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
             params['extra'] = config['spades_extra']
 
 
         else:
-
+            logger.info("restart spades from last checkpoint for sample {sample}".format(sample=wc.sample))
             params = {"inputs": "--restart-from last",
-                      "input_merged":"",
                       "preset":"",
                       "skip_error_correction":"",
                       "extra":""}
@@ -346,7 +355,7 @@ else:
             " -k {params.k}"
             " {params.p[preset]} "
             " {params.p[extra]} "
-            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[inputs]} "
             " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
 
