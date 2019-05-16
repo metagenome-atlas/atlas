@@ -367,6 +367,7 @@ else:
             " {params.p[preset]} "
             " {params.p[extra]} "
             " {params.p[inputs]} "
+            " {params.p[longreads]} "
             " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
 
