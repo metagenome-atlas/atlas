@@ -313,7 +313,7 @@ else:
 
             if config['longread_type'] is not None:
 
-                long_read_file = get_files_from_sampleTable(wc.sample,'longreads')
+                long_read_file = get_files_from_sampleTable(wc.sample,'longreads')[0]
                 params['longreads'] = " --{t} {f} ".format(t=config['longread_type'],f=long_read_file)
             else:
                 params['longreads'] = ""
