@@ -7,9 +7,7 @@ import warnings
 from copy import copy
 
 
-ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
-if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
-    ASSEMBLY_FRACTIONS += ['me']
+
 
 def get_preprocessing_steps(config):
     preprocessing_steps = ['QC']
@@ -248,7 +246,7 @@ if config.get("assembler", "megahit") == "megahit":
             inputs = lambda wc, input: megahit_input_parsing(input),
             preset = assembly_params['megahit'][config['megahit_preset']],
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "%s/assembly.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
@@ -286,6 +284,12 @@ if config.get("assembler", "megahit") == "megahit":
 
 
 else:
+
+
+    ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
+    if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
+        ASSEMBLY_FRACTIONS += ['me']
+
     assembly_params['spades'] = {'meta':'--meta','normal':'', 'rna':'--rna'}
 
     def spades_parameters(wc,input):
@@ -293,20 +297,40 @@ else:
 
             params={}
 
-            params['inputs'] = "--pe1-1 {0} --pe1-2 {1} --pe1-s {2}".format(*input) if PAIRED_END else "-s {0}".format(*input),
-            params['input_merged'] =  "--pe1-m {3}".format(*input) if len(input) == 4 else "",
+            reads = dict(zip(ASSEMBLY_FRACTIONS,input))
+
+            if not PAIRED_END:
+                params['inputs']= " -s {se} ".format(**reads)
+            else:
+                params['inputs']= " --pe1-1 {R1} --pe1-2 {R2} ".format(**reads)
+
+                if 'se' in ASSEMBLY_FRACTIONS:
+                    params['inputs']+= "-pe1-s {se} ".format(**reads)
+                if 'me' in ASSEMBLY_FRACTIONS:
+                    params['inputs']+= "--pe1-m {me} ".format(**reads)
+
+            # Long reads:
+
+            if config['longread_type'] is not None:
+
+                long_read_file = get_files_from_sampleTable(wc.sample,'longreads')[0]
+                params['longreads'] = " --{t} {f} ".format(t=config['longread_type'],f=long_read_file)
+            else:
+                params['longreads'] = ""
+
+
             params['preset'] = assembly_params['spades'][config['spades_preset']]
             params['skip_error_correction'] = "--only-assembler" if config['spades_skip_BayesHammer'] else ""
             params['extra'] = config['spades_extra']
 
 
         else:
-
+            
             params = {"inputs": "--restart-from last",
-                      "input_merged":"",
                       "preset":"",
                       "skip_error_correction":"",
-                      "extra":""}
+                      "extra":"",
+                      "longreads":""}
 
         params['outdir']= "{sample}/assembly".format(sample=wc.sample)
 
@@ -329,7 +353,7 @@ else:
         log:
             "{sample}/logs/assembly/spades.log"
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "%s/assembly.yaml" % CONDAENV
         threads:
             config.get("assembly_threads", ASSEMBLY_THREADS)
         resources:
@@ -342,7 +366,8 @@ else:
             " -k {params.k}"
             " {params.p[preset]} "
             " {params.p[extra]} "
-            " {params.p[inputs]} {params.p[input_merged]} "
+            " {params.p[inputs]} "
+            " {params.p[longreads]} "
             " {params.p[skip_error_correction]} "
             " > {log} 2>&1 "
 
