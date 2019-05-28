@@ -200,7 +200,7 @@ def validate_config(config, workflow):
 )
 @click.option(
     "--assembler",
-    default="megahit",
+    default="spades",
     type=click.Choice(["megahit", "spades"]),
     show_default=True,
     help="assembler",

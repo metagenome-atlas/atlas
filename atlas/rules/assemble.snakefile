@@ -305,7 +305,7 @@ else:
                 params['inputs']= " --pe1-1 {R1} --pe1-2 {R2} ".format(**reads)
 
                 if 'se' in ASSEMBLY_FRACTIONS:
-                    params['inputs']+= "-pe1-s {se} ".format(**reads)
+                    params['inputs']+= "--pe1-s {se} ".format(**reads)
                 if 'me' in ASSEMBLY_FRACTIONS:
                     params['inputs']+= "--pe1-m {me} ".format(**reads)
 
@@ -325,7 +325,7 @@ else:
 
 
         else:
-            logger.info("restart spades from last checkpoint for sample {sample}".format(sample=wc.sample))
+
             params = {"inputs": "--restart-from last",
                       "preset":"",
                       "skip_error_correction":"",
