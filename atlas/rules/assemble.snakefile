@@ -311,7 +311,7 @@ else:
 
             # Long reads:
 
-            if config['longread_type'] is not None:
+            if (config['longread_type'] is not None) & (str(config['longread_type']).lower()!='none'):
 
                 long_read_file = get_files_from_sampleTable(wc.sample,'longreads')[0]
                 params['longreads'] = " --{t} {f} ".format(t=config['longread_type'],f=long_read_file)
