@@ -78,10 +78,10 @@ rule initialize_qc:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        config.get("simplejob_threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
+        mem = config.get("simplejob_mem", JAVA_MEM),
+        java_mem = int(int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
 #    group:
 #        "qc"
     shell:
@@ -117,10 +117,10 @@ rule get_read_stats:
     # conda:
     #     "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        config.get("simplejob_threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["simplejob_mem"],
+        java_mem = int(config["simplejob_mem"] * JAVA_MEM_FRACTION)
     params:
         folder = lambda wc, output: os.path.splitext(output[0])[0],
         single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
@@ -431,10 +431,10 @@ if PAIRED_END:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         threads:
-            config.get("threads", 1)
+            config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config.get("simplejob_mem", JAVA_MEM),
+            java_mem = int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
@@ -470,10 +470,10 @@ else:
         params:
             kmer = config.get("merging_k", MERGING_K),
         threads:
-            config.get("threads", 1)
+            config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config.get("simplejob_mem", JAVA_MEM),
+            java_mem = int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:

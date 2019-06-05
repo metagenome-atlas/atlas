@@ -103,7 +103,7 @@ spades_use_scaffolds: false # use contigs
 spades_k: auto
 spades_preset: meta    # meta, ,normal, rna  single end libraries doesn't work for metaspades
 spades_extra: ""
-longread_type: "None" # ["None","pacbio", "nanopore", "sanger", "trusted-contigs", "untrusted-contigs"]
+longread_type: none # [none,"pacbio", "nanopore", "sanger", "trusted-contigs", "untrusted-contigs"]
 # Preprocessed long reads can be defined in the sample table with 'longreads' , for more info see the spades manual
 
 # Filtering
