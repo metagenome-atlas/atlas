@@ -632,9 +632,9 @@ rule bam_2_sam_contigs:
     output:
         temp("{sample}/sequence_alignment/{sample}.sam")
     threads:
-        config['threads']
+        config['simplejob_threads']
     resources:
-        mem = config["java_mem"],
+        mem = config["simplejob_mem"],
     shadow:
         "shallow"
     conda:
@@ -687,11 +687,11 @@ rule convert_sam_to_bam:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        config.get("simplejob_threads", 1)
     shadow:
         "shallow"
     resources:
-        mem = 2 * config.get("threads", 1)
+        mem = 2 * config.get("simplejob_threads", 1)
     shell:
         """samtools view \
                -m 1G \
@@ -714,6 +714,8 @@ rule create_bam_index:
         "%s/required_packages.yaml" % CONDAENV
     threads:
         1
+    resources:
+        mem = 2 * config.get("simplejob_threads", 1)
     shell:
         "samtools index {input}"
 
