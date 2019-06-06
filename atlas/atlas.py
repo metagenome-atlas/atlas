@@ -131,7 +131,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
-        "--printshellcmds --jobs {jobs} --rerun-incomplete "
+        "--jobs {jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {conda}  {conda_prefix} {dryrun} "
         " {target_rule} "
@@ -186,7 +186,7 @@ def run_download(db_dir,jobs, snakemake_args):
 
     cmd = (
         "snakemake --snakefile {snakefile} "
-        "--printshellcmds --jobs {jobs} --rerun-incomplete "
+        "--jobs {jobs} --rerun-incomplete "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"

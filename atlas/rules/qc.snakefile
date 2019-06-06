@@ -51,15 +51,13 @@ else:
         else:
             Raw_Headers= ['Reads_raw_se']
 
+        #get file
         if not (wildcards.sample in sampleTable.index):
             return expand("Impossible/file/{sample}_{fraction}.fastq.gz",sample=wildcards.sample,fraction=RAW_INPUT_FRACTIONS)
             logger.debug(f"Searched for qc reads for inexisitng sample. wildcards: {wildcards}")
         else:
-            try:
-                return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
-            except FileNotInSampleTableException:
-                raise Exception(f"Raw files are not in sampleTable. Are you trying to run QC on files that are already quality controlled?\nsample: {wildcards.sample}\nHeaders: {Raw_Headers}")
 
+            return get_files_from_sampleTable(wildcards.sample,Raw_Headers)
 
 
 
@@ -72,7 +70,7 @@ rule initialize_qc:
     priority: 80
     params:
         inputs = lambda wc, input: io_params_for_tadpole(input,'in'),
-        interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False )else "f",
+        interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False) else "f",
         outputs = lambda wc, output: io_params_for_tadpole(output,'out'),
         verifypaired = "t" if PAIRED_END else "f"
     log:
@@ -80,10 +78,10 @@ rule initialize_qc:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        config.get("simplejob_threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
+        mem = config.get("simplejob_mem", JAVA_MEM),
+        java_mem = int(int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
 #    group:
 #        "qc"
     shell:
@@ -119,10 +117,10 @@ rule get_read_stats:
     # conda:
     #     "%s/required_packages.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        config.get("simplejob_threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["simplejob_mem"],
+        java_mem = int(config["simplejob_mem"] * JAVA_MEM_FRACTION)
     params:
         folder = lambda wc, output: os.path.splitext(output[0])[0],
         single_end_file = "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
@@ -433,10 +431,10 @@ if PAIRED_END:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         threads:
-            config.get("threads", 1)
+            config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config.get("simplejob_mem", JAVA_MEM),
+            java_mem = int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
@@ -472,10 +470,10 @@ else:
         params:
             kmer = config.get("merging_k", MERGING_K),
         threads:
-            config.get("threads", 1)
+            config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config.get("simplejob_mem", JAVA_MEM),
+            java_mem = int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
