@@ -174,7 +174,7 @@ def get_quality_controlled_reads(wildcards):
         return get_files_from_sampleTable(wildcards.sample,QC_Headers)
     except FileNotInSampleTableException:
 
-        # return files as nabed by atlas pipeline
+        # return files as named by atlas pipeline
         return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
                         fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
 
