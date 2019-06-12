@@ -73,10 +73,7 @@ def input_paired_only(files):
     if not PAIRED_END:
         raise IOError("Ask for paired end samples if not paired end workflow")
 
-    if len(files)==1:
-        return files
-    else:
-        return files[:2]
+    return files[:min(len(files),2)]
 
 
 def input_params_for_bbwrap(input):
