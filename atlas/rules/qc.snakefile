@@ -426,7 +426,7 @@ if not SKIP_QC:
 if PAIRED_END:
     rule calculate_insert_size:
         input:
-            get_quality_controlled_reads
+            lambda wildcards: input_paired_only(get_quality_controlled_reads(wildcards))
         output:
             ihist = "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt",
             read_length= "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
@@ -443,13 +443,14 @@ if PAIRED_END:
             kmer = config.get("merging_k", MERGING_K),
             extend2 = config.get("merging_extend2", MERGING_EXTEND2),
             flags = 'loose ecct',
-            minprob = config.get("bbmerge_minprob", "0.8")
+            minprob = config.get("bbmerge_minprob", "0.8"),
+            inputs = lambda wc,input: io_params_for_tadpole(input)
     #    group:
     #        "qc"
         shell:
             """
             bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
-                in1={input[0]} in2={input[1]} \
+                {params.inputs} \
                 {params.flags} k={params.kmer} \
                 extend2={params.extend2} \
                 ihist={output.ihist} merge=f \
@@ -457,7 +458,7 @@ if PAIRED_END:
                 prealloc=t prefilter=t \
                 minprob={params.minprob} 2> >(tee {log})
 
-            readlength.sh in={input[0]} in2={input[1]} out={output.read_length} 2> >(tee {log})
+            readlength.sh {params.inputs} out={output.read_length} 2> >(tee {log})
             """
 
 
