@@ -29,7 +29,7 @@ def get_preprocessing_steps(config):
 assembly_preprocessing_steps = get_preprocessing_steps(config)
 
 
-if  SKIP_QC & len(MULTIFILE_FRACTIONS)<3:
+if  SKIP_QC & (len(MULTIFILE_FRACTIONS)<3):
     # I have problems with se reads
 
     rule init_pre_assembly_processing:
@@ -80,7 +80,7 @@ else:
             1
         run:
             #make symlink
-            assert len(input) == len(output)
+            assert len(input) == len(output), "Input and ouput files have not same number, can not create symlinks for all."
             for i in range(len(input)):
                 os.symlink(os.path.abspath(input[i]),output[i])
 #
