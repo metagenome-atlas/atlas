@@ -39,7 +39,7 @@ def io_params_for_tadpole(io,key='in'):
     possible for get_quality_controlled_reads.
 
     params:
-        io  input or otpoup element from snakemake
+        io  input or output element from snakemake
         key 'in' or 'out'
 
         if io contains attributes:
@@ -57,7 +57,7 @@ def io_params_for_tadpole(io,key='in'):
         flag= f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
     else:
         logger.critical(("File input/output expectation is one of: "
-                         "1 file = single-end, "
+                         "1 file = single-end/ interleaved paired-end "
                          "2 files = R1,R2, or"
                          "3 files = R1,R2,se"
                          "got: {n} files:\n{}").format('\n'.join(io),
@@ -65,11 +65,21 @@ def io_params_for_tadpole(io,key='in'):
         sys.exit(1)
     return flag
 
+def input_paired_only(files):
+    """
+        return only paired interleaved or not
+    """
+
+    if not PAIRED_END:
+        raise IOError("Ask for paired end samples if not paired end workflow")
+
+    return files[:min(len(files),2)]
+
+
 def input_params_for_bbwrap(input):
 
     if len(input)==3:
         return f"in1={input[0]},{input[2]} in2={input[1]},null"
-
     else:
         return io_params_for_tadpole(input)
 
