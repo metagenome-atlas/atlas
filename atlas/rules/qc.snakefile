@@ -433,8 +433,8 @@ if PAIRED_END:
         threads:
             config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("simplejob_mem", JAVA_MEM),
-            java_mem = int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config.get("java_mem", JAVA_MEM),
+            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
