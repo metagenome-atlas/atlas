@@ -155,7 +155,7 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-def get_genome_dir_():
+def get_genome_dir_(wildcards):
     if 'genome_dir' in config:
         genome_dir= config['genome_dir']
         assert os.path.exists(genome_dir)
@@ -164,9 +164,9 @@ def get_genome_dir_():
         genome_dir = checkpoints.rename_genomes.get().output.dir
     return genome_dir
 
-def get_genomes_():
+def get_genomes_(wildcards):
 
-    genomes= glob_wildcards(os.path.join(get_genome_dir_(), "{genome}.fasta")).genome
+    genomes= glob_wildcards(os.path.join(get_genome_dir_(wildcards), "{genome}.fasta")).genome
 
     if len(genomes)==0:
         logger.critical("No genomes found after dereplication. "
@@ -179,8 +179,8 @@ def get_genomes_():
 
 def get_genomes_fasta(wildcards):
 
-    path=  os.path.join(get_genome_dir_(), "{genome}.fasta")
-    genomes=expand(path, genome=get_genomes_())
+    path=  os.path.join(get_genome_dir_(wildcards), "{genome}.fasta")
+    genomes=expand(path, genome=get_genomes_(wildcards))
 
 
     return genomes
@@ -481,7 +481,7 @@ rule run_prokka_bins:
     conda:
         "%s/prokka.yaml" % CONDAENV
     threads:
-        config.get("threads", 1)
+        config.get("simplejob_threads", 1)
     shell:
         """prokka --outdir {params.outdir} \
                --force \
