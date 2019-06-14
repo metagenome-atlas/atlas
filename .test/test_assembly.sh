@@ -12,14 +12,13 @@ atlas --version
 samplenames="Mycoplasma Streptococcus"
 databaseDir=".test/databases"
 WD='.test/Test_assembly'
-reads_dir=".test/reads/stub"
+reads_dir="example_data/reads/stub"
 
 ressource_args=" --config simplejob_mem=4 java_mem=4 assembly_mem=4"
 
 
-# gen randomreads
-#very low number only for assembly
-#snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=500
+rm -r example_data
+git clone https://github.com/metagenome-atlas/example_data.git
 
 
 rm -f $WD/samples.tsv
