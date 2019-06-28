@@ -4,7 +4,7 @@ os.environ['QT_QPA_PLATFORM']='offscreen' # because we might not have a X server
 import ete3
 
 
-from . import parsers_checkm
+import parsers_checkm
 
 
 def load_tree(netwik_file):
@@ -38,7 +38,7 @@ def layout_black_circles(node):
 
 def render_tree(T,out):
     from ete3 import TreeStyle
-    
+
     ts = TreeStyle()
     ts.show_leaf_name= False
     ts.mode = "c"
