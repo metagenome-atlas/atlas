@@ -221,7 +221,7 @@ rule passtrough_se_merged:
 assembly_params={}
 if config.get("assembler", "megahit") == "megahit":
     assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
-
+    ASSEMBLY_FRACTIONS= MULTIFILE_FRACTIONS
     if PAIRED_END and config.get("merge_pairs_before_assembly", True):
 
         if 'se' in MULTIFILE_FRACTIONS:
