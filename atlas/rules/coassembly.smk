@@ -77,35 +77,35 @@ if config.get("assembler", "megahit") == "megahit":
               """
 
 
-rule coassembly:
-    input:
-        "co-assembly/co-assembly_contigs.fasta",
-        #expand("co-assembly/sequence_alignment/{sample}.bam"),
-        #"co-assembly/assembly/contig_stats/postfilter_coverage_stats.txt",
-        #"co-assembly/assembly/contig_stats/prefilter_contig_stats.txt",
-        "co-assembly/assembly/contig_stats/final_contig_stats.txt"
-    output:
-        touch("{sample}/finished_assembly")
+    rule coassembly:
+        input:
+            "co-assembly/co-assembly_contigs.fasta",
+            #expand("co-assembly/sequence_alignment/{sample}.bam"),
+            #"co-assembly/assembly/contig_stats/postfilter_coverage_stats.txt",
+            #"co-assembly/assembly/contig_stats/prefilter_contig_stats.txt",
+            "co-assembly/assembly/contig_stats/final_contig_stats.txt"
+        output:
+            touch("{sample}/finished_assembly")
 
 
-ruleorder: get_coassembly_metabat_depth_file > get_metabat_depth_file
-rule get_coassembly_metabat_depth_file:
-    input:
-        bam = lambda wc: expand("{sample}/sequence_alignment/{sample_reads}.bam",
-                     sample_reads = SAMPLES,
-                     sample='co-assembly')
-    output:
-        temp("co-assembly/binning/metabat/metabat_depth.txt")
-    log:
-        "co-assembly/binning/metabat/metabat.log"
-    conda:
-        "%s/metabat.yaml" % CONDAENV
-    threads:
-        config['threads']
-    resources:
-        mem = config["java_mem"]
-    shell:
-        """
-        jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
-            &> >(tee {log})
-        """
+    ruleorder: get_coassembly_metabat_depth_file > get_metabat_depth_file
+    rule get_coassembly_metabat_depth_file:
+        input:
+            bam = lambda wc: expand("{sample}/sequence_alignment/{sample_reads}.bam",
+                         sample_reads = SAMPLES,
+                         sample='co-assembly')
+        output:
+            temp("co-assembly/binning/metabat/metabat_depth.txt")
+        log:
+            "co-assembly/binning/metabat/metabat.log"
+        conda:
+            "%s/metabat.yaml" % CONDAENV
+        threads:
+            config['threads']
+        resources:
+            mem = config["java_mem"]
+        shell:
+            """
+            jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
+                &> >(tee {log})
+            """
