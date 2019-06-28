@@ -254,18 +254,6 @@ if config.get("assembler", "megahit") == "megahit":
                 out+= f"--read {input[2]}"
         return out
 
-    def megahit_input_parsing(input):
-        Nfiles=len(input)
-
-        if Nfiles==1:
-            out= f"--read {input[0]}"
-        else:
-            out= f"-1 {input[0]} -2 {input[1]} "
-
-            if Nfiles ==3:
-                out+= f"--read {input[2]}"
-        return out
-
     rule run_megahit:
         input:
             expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
