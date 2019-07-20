@@ -1,30 +1,58 @@
 
 
 
-if config.get("assembler", "megahit") == "megahit":
+if config.get("assembler", "megahit") == "coassembly":
+
+    assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
+    ASSEMBLY_FRACTIONS= MULTIFILE_FRACTIONS
+    if PAIRED_END and config.get("merge_pairs_before_assembly", True):
+
+        if 'se' in MULTIFILE_FRACTIONS:
+
+            localrules: merge_se_me_for_megahit
+            rule merge_se_me_for_megahit:
+                input:
+                    expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                    fraction=['se','me'], assembly_preprocessing_steps=assembly_preprocessing_steps)
+                output:
+                    temp(expand("{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                                fraction=['co'], assembly_preprocessing_steps=assembly_preprocessing_steps))
+                shell:
+                    "cat {input} > {output}"
+
+            ASSEMBLY_FRACTIONS = ['R1','R2','co']
+        else:
+            ASSEMBLY_FRACTIONS = ['R1','R2','me']
+
+
+
+
 
     def megahit_coassembly_input(wildcards):
         "returns a list of lists"
 
-        return [expand("{sample}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
-        fraction=fraction,
-        assembly_preprocessing_steps=assembly_preprocessing_steps,
-        sample=SAMPLES) for fraction in ASSEMBLY_FRACTIONS ]
+        return dict(zip(ASSEMBLY_FRACTIONS,
+                [expand("{sample}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                fraction=fraction,
+                assembly_preprocessing_steps=assembly_preprocessing_steps,
+                sample=SAMPLES) for fraction in ASSEMBLY_FRACTIONS ]
+                        ))
 
     def megahit_coassembly_input_parsing(input):
-        Nfiles=len(input)
 
-        if Nfiles==1:
-            out= f"--read {','.join(input[0])}"
-        else:
-            out= f"-1 {','.join(input[0])} -2 {','.join(input[1])} "
+        out=''
+        if hasattr(input,'se'):
+            out+= f" --read {','.join(input.se)} "
+        elif hasattr(input,'co'):
+            out+= f" --read {','.join(input.co)} "
+        elif hasattr(input,'me'):
+            out+= f" --read {','.join(input.me)} "
 
-            if Nfiles ==3:
-                out+= f"--read {','.join(input[2])}"
+        if hasattr(input,'R1'):
 
-        logger.info("megahit input:\n"+out)
+            out+= f" -1 {','.join(input.R1)} -2 {','.join(input.R2)} "
         return out
-    ruleorder: coassembly > run_megahit
+#    ruleorder: coassembly_megahit > run_megahit
     rule coassembly_megahit:
           input:
               unpack(megahit_coassembly_input)
@@ -48,6 +76,7 @@ if config.get("assembler", "megahit") == "megahit":
               outdir = lambda wc, output: os.path.dirname(output[0]),
               inputs = lambda wc, input: megahit_coassembly_input_parsing(input),
               preset = assembly_params['megahit'][config['megahit_preset']],
+              prefix = "co-assembly"
           conda:
               "%s/assembly.yaml" % CONDAENV
           threads:
@@ -56,7 +85,7 @@ if config.get("assembler", "megahit") == "megahit":
               mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
           shell:
               """
-                  rm -r {params.outdir} 2> {log}
+                  #rm -r {params.outdir} 2> {log}
 
                   megahit \
                   {params.inputs} \
@@ -66,16 +95,25 @@ if config.get("assembler", "megahit") == "megahit":
                   --k-max {params.k_max} \
                   --k-step {params.k_step} \
                   --out-dir {params.outdir} \
-                  --out-prefix {wildcards.sample}_prefilter \
+                  --out-prefix {params.prefix}_prefilter \
                   --min-contig-len {params.min_contig_len} \
                   --min-count {params.min_count} \
                   --merge-level {params.merge_level} \
                   --prune-level {params.prune_level} \
                   --low-local-ratio {params.low_local_ratio} \
                   --memory {resources.mem}000000000  \
+                  --continue \
                   {params.preset} >> {log} 2>&1
               """
 
+    localrules: rename_megahit_output
+    rule rename_megahit_output:
+        input:
+            "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"
+        output:
+            temp("{sample}/assembly/{sample}_raw_contigs.fasta")
+        shell:
+            "cp {input} {output}"
 
     rule coassembly:
         input:
@@ -85,7 +123,7 @@ if config.get("assembler", "megahit") == "megahit":
             #"co-assembly/assembly/contig_stats/prefilter_contig_stats.txt",
             "co-assembly/assembly/contig_stats/final_contig_stats.txt"
         output:
-            touch("{sample}/finished_assembly")
+            touch("co-assembly/finished_assembly")
 
 
     ruleorder: get_coassembly_metabat_depth_file > get_metabat_depth_file

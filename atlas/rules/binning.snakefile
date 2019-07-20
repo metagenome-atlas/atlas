@@ -157,7 +157,7 @@ rule get_metabat_depth_file:
 
 rule metabat:
     input:
-        depth_file = rules.get_metabat_depth_file.output,
+        depth_file = "{sample}/binning/metabat/metabat_depth.txt",
         contigs = BINNING_CONTIGS
     output:
         "{sample}/binning/metabat/cluster_attribution.tmp",

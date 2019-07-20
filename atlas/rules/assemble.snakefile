@@ -316,7 +316,7 @@ if config.get("assembler", "megahit") == "megahit":
             "cp {input} {output}"
 
 
-else:
+elif config['assembler']=='spades':
 
 
     ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
