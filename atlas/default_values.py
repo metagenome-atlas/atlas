@@ -230,6 +230,10 @@ def make_default_config():
     "megabin_penalty": 0.5
     }
 
+    conf["annotations"]= ["cat_taxonomy",
+                          "checkm_taxonomy",
+                          "ssu"]
+
 
     conf['genome_dereplication']=dict(
                             filter = dict(

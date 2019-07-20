@@ -179,6 +179,11 @@ genome_dereplication:
       N50: 0.5
       length: 0
 
+annotations:
+  - cat_taxonomy
+  - checkm_taxonomy
+  - ssu
+
 ########################
 # taxonomy
 #######################
