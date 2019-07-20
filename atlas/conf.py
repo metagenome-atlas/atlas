@@ -214,7 +214,7 @@ def validate_config(config, workflow):
 )
 @click.option(
     "--threads",
-    default=multiprocessing.cpu_count(),
+    default=8,
     type=int,
     help="number of threads to use per multi-threaded job",
 )
