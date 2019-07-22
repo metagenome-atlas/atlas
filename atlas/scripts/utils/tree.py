@@ -4,7 +4,7 @@ os.environ['QT_QPA_PLATFORM']='offscreen' # because we might not have a X server
 import ete3
 
 
-import parsers_checkm
+from . import parsers_checkm
 
 
 def load_tree(netwik_file):
