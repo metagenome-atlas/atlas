@@ -59,6 +59,14 @@ atlas run
 
 BSD-3.
 
+# Cite
+
+We have a BioRxiv preprint please cite:
+
+ATLAS: a Snakemake workflow for assembly, annotation, and genomic binning of metagenome sequence data
+Silas Kieser, Joseph Brown, Evgeny M Zdobnov, Mirko Trajkovski, Lee Ann McCue
+bioRxiv 737528; doi: https://doi.org/10.1101/737528
+
 # Disclaimer
 
 This material was prepared as an account of work sponsored by an agency of the
