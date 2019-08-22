@@ -14,7 +14,7 @@ import click
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
-ADDITIONAL_SAMPLEFILE_HEADERS=[]#,'Contigs']
+ADDITIONAL_SAMPLEFILE_HEADERS=['CoAssemblyGroup']#,'Contigs']
 
 def get_samples_from_fastq(path):
     """
