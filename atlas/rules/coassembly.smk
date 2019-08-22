@@ -140,7 +140,7 @@ if config.get("assembler", "megahit") == "coassembly":
             expand("{co_assembly}/finished_co-assembly",
                    co_assembly= CoAssemblyGroups
                    ),
-            expand("{co_assembly}/binning/{binner}/checkm/taxonomy.tsv,
+            expand("{co_assembly}/binning/{binner}/checkm/taxonomy.tsv",
                    binner='metabat', co_assembly =CoAssemblyGroups),
             expand("{co_assembly}/binning/{binner}/cluster_attribution.tsv",
                binner='metabat', co_assembly =CoAssemblyGroups)
