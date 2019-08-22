@@ -242,17 +242,6 @@ if config.get("assembler", "megahit") == "megahit":
             ASSEMBLY_FRACTIONS = ['R1','R2','me']
 
 
-    def megahit_input_parsing(input):
-        Nfiles=len(input)
-
-        if Nfiles==1:
-            out= f"--read {input[0]}"
-        else:
-            out= f"-1 {input[0]} -2 {input[1]} "
-
-            if Nfiles ==3:
-                out+= f"--read {input[2]}"
-        return out
 
     rule run_megahit:
         input:
