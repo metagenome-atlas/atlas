@@ -87,7 +87,7 @@ if config.get("assembler", "megahit") == "coassembly":
               inputs = lambda wc, input: megahit_coassembly_input_parsing(input),
               preset = assembly_params['megahit'][config['megahit_preset']],
               prefix = "{co_assembly}",
-              tempdir= "{co_assembly}/assembly/megahit/temp"
+              tempdir= "{co_assembly}/assembly/megahit"
           conda:
               "%s/assembly.yaml" % CONDAENV
           threads:
