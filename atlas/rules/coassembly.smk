@@ -3,6 +3,16 @@
 
 if config.get("assembler", "megahit") == "coassembly":
 
+    CoAssemblyGroups = sampleTable['CoAssemblyGroup']
+    if CoAssemblyGroups.isnull().all():
+        raise Exception("No Co Assembly Groups defined in the sample table. "
+               "Define groups for Co-assembly in the smple table under the header 'CoAssemblyGroups' ")
+    else:
+        CoAssemblyGroups= CoAssemblyGroups.dropna().unique()
+
+    if config['filter_contigs']:
+        raise NotImplementedError("When using assembler='coassembly' filter_contigs has to be False")
+
     assembly_params['megahit']={'default':'','meta-sensitive':'--presets meta-sensitive','meta-large':' --presets meta-large'}
     ASSEMBLY_FRACTIONS= MULTIFILE_FRACTIONS
     if PAIRED_END and config.get("merge_pairs_before_assembly", True):
@@ -35,7 +45,7 @@ if config.get("assembler", "megahit") == "coassembly":
                 [expand("{sample}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
                 fraction=fraction,
                 assembly_preprocessing_steps=assembly_preprocessing_steps,
-                sample=SAMPLES) for fraction in ASSEMBLY_FRACTIONS ]
+                sample=get_coassembly_samples(wildcards.co_assembly)) for fraction in ASSEMBLY_FRACTIONS ]
                         ))
 
     def megahit_coassembly_input_parsing(input):
@@ -57,13 +67,13 @@ if config.get("assembler", "megahit") == "coassembly":
           input:
               unpack(megahit_coassembly_input)
           output:
-              temp("co-assembly/assembly/megahit/co-assembly_prefilter.contigs.fa")
+              temp("{co_assembly}/assembly/megahit/{co_assembly}.contigs.fa")
           benchmark:
-              "logs/benchmarks/assembly/megahit/co-assembly.txt"
+              "logs/benchmarks/assembly/megahit/{co_assembly}.txt"
     #        shadow:
     #            "shallow" #needs to be shallow to find input files
           log:
-              "co-assembly/logs/assembly/megahit.log"
+              "{co_assembly}/logs/assembly/megahit.log"
           params:
               min_count = config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
               k_min = config.get("megahit_k_min", MEGAHIT_K_MIN),
@@ -76,7 +86,8 @@ if config.get("assembler", "megahit") == "coassembly":
               outdir = lambda wc, output: os.path.dirname(output[0]),
               inputs = lambda wc, input: megahit_coassembly_input_parsing(input),
               preset = assembly_params['megahit'][config['megahit_preset']],
-              prefix = "co-assembly"
+              prefix = "{co_assembly}",
+              tempdir= "{co_assembly}/assembly/megahit/temp"
           conda:
               "%s/assembly.yaml" % CONDAENV
           threads:
@@ -89,13 +100,13 @@ if config.get("assembler", "megahit") == "coassembly":
 
                   megahit \
                   {params.inputs} \
-                  --tmp-dir {TMPDIR} \
+                  --tmp-dir {params.tempdir} \
                   --num-cpu-threads {threads} \
                   --k-min {params.k_min} \
                   --k-max {params.k_max} \
                   --k-step {params.k_step} \
                   --out-dir {params.outdir} \
-                  --out-prefix {params.prefix}_prefilter \
+                  --out-prefix {params.prefix} \
                   --min-contig-len {params.min_contig_len} \
                   --min-count {params.min_count} \
                   --merge-level {params.merge_level} \
@@ -109,33 +120,41 @@ if config.get("assembler", "megahit") == "coassembly":
     localrules: rename_megahit_output
     rule rename_megahit_output:
         input:
-            "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"
+            "{sample}/assembly/megahit/{sample}.contigs.fa"
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta")
         shell:
             "cp {input} {output}"
 
+    rule finalize_coassembly:
+        input:
+            "{co_assembly}/{co_assembly}_contigs.fasta",
+            "{co_assembly}/assembly/contig_stats/final_contig_stats.txt"
+        output:
+            touch("{co_assembly}/finished_co-assembly")
+
+
+
     rule coassembly:
         input:
-            "co-assembly/co-assembly_contigs.fasta",
-            #expand("co-assembly/sequence_alignment/{sample}.bam"),
-            #"co-assembly/assembly/contig_stats/postfilter_coverage_stats.txt",
-            #"co-assembly/assembly/contig_stats/prefilter_contig_stats.txt",
-            "co-assembly/assembly/contig_stats/final_contig_stats.txt"
+            expand("{co_assembly}/finished_co-assembly",
+                   co_assembly= CoAssemblyGroups
+                   ),
+            expand("{co_assembly}/binning/{binner}/cluster_attribution.tsv",
+               binner='metabat', co_assembly =CoAssemblyGroups)
         output:
-            touch("co-assembly/finished_assembly")
-
+            touch("finished_co-assembly")
 
     ruleorder: get_coassembly_metabat_depth_file > get_metabat_depth_file
     rule get_coassembly_metabat_depth_file:
         input:
             bam = lambda wc: expand("{sample}/sequence_alignment/{sample_reads}.bam",
-                         sample_reads = SAMPLES,
-                         sample='co-assembly')
+                         sample_reads = get_coassembly_samples(wc.co_assembly),
+                         sample=wc.co_assembly)
         output:
-            temp("co-assembly/binning/metabat/metabat_depth.txt")
+            temp("{co_assembly}/binning/metabat/metabat_depth.txt")
         log:
-            "co-assembly/binning/metabat/metabat.log"
+            "{co_assembly}/binning/metabat/metabat.log"
         conda:
             "%s/metabat.yaml" % CONDAENV
         threads:

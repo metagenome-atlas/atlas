@@ -96,6 +96,9 @@ def get_alls_samples_of_group(wildcards):
 
     return list(sampleTable.loc[ sampleTable.BinGroup==group_of_sample].index)
 
+def get_coassembly_samples(co_assembly_group):
+    return list(sampleTable.loc[ sampleTable.CoAssemblyGroup==co_assembly_group].index)
+
 
 
 PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
