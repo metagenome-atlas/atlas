@@ -10,7 +10,7 @@ rule download_SRR_paired:
     threads:
         4
     conda:
-        "envs/download.yaml"
+        "%s/envs/sra.yaml" % CONDAENV
     shadow:
         "full"
     shell:
