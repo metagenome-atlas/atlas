@@ -1,0 +1,6 @@
+channels:
+- defaults
+- bioconda
+- conda-forge
+dependencies:
+- parallel-fastq-dump
