@@ -23,8 +23,8 @@ rule rename_SRR:
         "SRAreads/{SRR}_2.fastq.gz",
         'SRAreads/{SRR}_downloaded'
     output:
-        "SRAreads/{SRR}_R1.fastq.gz",
-        "SRAreads/{SRR}_R2.fastq.gz"
+        temp("SRAreads/{SRR}_R1.fastq.gz"),
+        temp("SRAreads/{SRR}_R2.fastq.gz")
     threads:
         1
     shell:
