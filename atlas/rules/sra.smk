@@ -9,6 +9,8 @@ rule download_SRR_paired:
         SRR="SRR[0-9]+"
     threads:
         4
+    resources:
+        time= lambda wildcards, attempt: attempt * 2000
     conda:
         "%s/sra.yaml" % CONDAENV
     shadow:
