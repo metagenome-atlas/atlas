@@ -25,7 +25,7 @@ rule get_all_bins:
 
 
 
-localrules: get_quality_for_dRep_from_checkm
+localrules: get_quality_for_dRep_from_checkm, merge_checkm
 rule get_quality_for_dRep_from_checkm:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
@@ -44,11 +44,11 @@ rule get_quality_for_dRep_from_checkm:
 
 rule merge_checkm:
     input:
-        completeness= expand("{sample}/binning/{binner}/bins/checkm/completeness.tsv",
+        completeness= expand("{sample}/binning/{binner}/checkm/completeness.tsv",
                sample= SAMPLES, binner= config['final_binner']),
-        taxonomy= expand("{sample}/binning/{binner}/bins/checkm/taxonomy.tsv",
+        taxonomy= expand("{sample}/binning/{binner}/checkm/taxonomy.tsv",
                sample= SAMPLES, binner= config['final_binner']),
-        markers= expand("{sample}/binning/{binner}/bins/checkm/storage/tree/concatenated.fasta",
+        markers= expand("{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
                sample= SAMPLES, binner= config['final_binner'])
 
     output:
