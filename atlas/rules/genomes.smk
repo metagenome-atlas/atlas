@@ -30,8 +30,7 @@ rule get_quality_for_dRep_from_checkm:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
     output:
-        temp("genomes/quality.csv"),
-        "genomes/clustering/Checkm_quality_allbins.tsv",
+        temp("genomes/quality.csv")
     run:
         import pandas as pd
 
@@ -41,7 +40,40 @@ rule get_quality_for_dRep_from_checkm:
         D.index.name="genome"
         D.columns= D.columns.str.lower()
         D.iloc[:,:3].to_csv(output[0])
-        D.to_csv(output[1],sep='\t')
+
+
+rule merge_checkm:
+    input:
+        completeness= expand("{sample}/binning/{binner}/bins/checkm/completeness.tsv",
+               sample= SAMPLES, binner= config['final_binner']),
+        taxonomy= expand("{sample}/binning/{binner}/bins/checkm/taxonomy.tsv",
+               sample= SAMPLES, binner= config['final_binner']),
+        markers= expand("{sample}/binning/{binner}/bins/checkm/storage/tree/concatenated.fasta",
+               sample= SAMPLES, binner= config['final_binner'])
+
+    output:
+        checkm="genomes/checkm/checkm_all_bins.tsv",
+        markers= "genomes/checkm/all_bins_markers.fasta"
+    run:
+
+        import pandas as pd
+        import shutil
+        D=[]
+
+        for i in range(len(SAMPLES)):
+            df= pd.read_csv(input.completeness[i],index_col=0,sep='\t')
+            df= df.join(pd.read_csv(input.taxonomy[i],index_col=0,sep='\t'))
+            D.append(df)
+
+        D= pd.concat(D,axis=0)
+        D.to_csv(output.checkm)
+
+        with open(output.marker,'wb') as fout:
+            for fasta in input.markers:
+                shutil.copyfileobj(open(fasta,'rb'),fout)
+
+
+
 
 
 rule first_dereplication:
