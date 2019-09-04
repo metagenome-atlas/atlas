@@ -53,7 +53,7 @@ rule merge_checkm:
 
     output:
         checkm="genomes/checkm/checkm_all_bins.tsv",
-        markers= "genomes/checkm/all_bins_markers.fasta"
+        markers= "genomes/checkm/markers_all_bins.fasta"
     run:
 
         import pandas as pd
@@ -66,9 +66,9 @@ rule merge_checkm:
             D.append(df)
 
         D= pd.concat(D,axis=0)
-        D.to_csv(output.checkm)
+        D.to_csv(output.checkm,sep='\t')
 
-        with open(output.marker,'wb') as fout:
+        with open(output.markers,'wb') as fout:
             for fasta in input.markers:
                 shutil.copyfileobj(open(fasta,'rb'),fout)
 
