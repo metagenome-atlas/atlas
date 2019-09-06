@@ -101,7 +101,7 @@ rule download_eggNOG_fastas:
         dl_filename = "OG_fasta.tar.gz"
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
 
-        shell(f"curl 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' -s > {dl_output}" )
+        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
         # validate the download
         if not FILES['OG_fasta'] == md5(dl_output):
             raise OSError(2, "Invalid checksum", dl_output)
@@ -116,7 +116,7 @@ rule download_eggNOG_files:
     run:
         dl_filename = wildcards.filename+'.gz'
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-        shell(f"curl 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' -s > {dl_output}" )
+        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
         # validate the download
         if not FILES[wildcards.filename] == md5(dl_output):
             raise OSError(2, "Invalid checksum", dl_output)
@@ -130,7 +130,7 @@ rule download_atlas_files:
     threads:
         1
     run:
-        shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
+        shell("wget -O {output} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{wildcards.filename}' ")
         if not FILES[wildcards.filename] == md5(output[0]):
             raise OSError(2, "Invalid checksum", output[0])
 
