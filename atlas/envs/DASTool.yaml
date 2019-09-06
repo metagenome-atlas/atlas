@@ -1,7 +1,6 @@
 channels:
     - conda-forge
     - bioconda
-    - r
     - ruby-lang
     - defaults
 dependencies:
