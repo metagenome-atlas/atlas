@@ -1,7 +1,6 @@
 channels:
-    - defaults
     - conda-forge
     - bioconda
-    - r
+    - defaults
 dependencies:
     - prokka=1.13

@@ -1,8 +1,8 @@
 name: canopy
 channels:
-- defaults
-- bioconda
 - conda-forge
+- bioconda
+- defaults
 dependencies:
 - mgs-canopy=1.0=1
 - boost=1.64.0=py36_4

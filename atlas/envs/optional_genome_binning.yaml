@@ -1,8 +1,7 @@
 channels:
-    - bioconda
     - conda-forge
+    - bioconda
     - defaults
-    - r
 dependencies:
     - python=2.7
     - checkm-genome=1.0.7

@@ -1,8 +1,7 @@
 channels:
-    - bioconda
-    - r
-    - ruby-lang
     - conda-forge
+    - bioconda
+    - ruby-lang
     - defaults
 dependencies:
     - python=3.6

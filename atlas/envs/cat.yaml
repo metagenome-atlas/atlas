@@ -1,6 +1,6 @@
 channels:
-- defaults
-- bioconda
 - conda-forge
+- bioconda
+- defaults
 dependencies:
 - cat=4.*

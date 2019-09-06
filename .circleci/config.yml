@@ -15,8 +15,8 @@ jobs:
     parallelism: 1
     steps:
       - checkout
-      - run: conda config --add channels conda-forge
       - run: conda config --add channels bioconda
+      - run: conda config --add channels conda-forge
       - run: conda config --set always_yes true
       - run: conda config --set quiet true
       - run: conda install python>=3.6 snakemake pandas bbmap=37.78 click ruamel.yaml biopython
