@@ -27,6 +27,16 @@ You can ask the maintainers to be added to the repository and work from a *branc
 Follow the [steps](https://github.com/metagenome-atlas/atlas#install-the-development-version-from-github) to set up the developpment version of atlas. This allows you to work with the code you have in the git repository. 
 
 ## Test the code
+### Locally
+Idelly you should have some test prpject on your local machine. 
+When you created a new rule and you want to test the output of this rule `my_target.tsv` you can do this by running: 
+
+``` atlas run None my_target.tsv ```
+
+
+
+
+### Continous integration
 When you make a pull request to the master branch. Each change in your code get's checked by continous integration (CI). The tests should make shure that your modification don't break any other use of atlas. However due to the requeirements needed during the execution of atlas, it is not possible to test all functionalities via CI. If you add functionalities to atlas, they should also be tested. Have a look at the scripts in `.test`.
 
 
