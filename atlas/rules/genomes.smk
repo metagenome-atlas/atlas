@@ -224,13 +224,12 @@ def get_genomes_fasta(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        genomes = get_genomes_fasta
+        dir = "genomes/genomes"
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta"
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0]),
-        input_dir = lambda wc, input: os.path.dirname(input.genomes[0])
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads:
@@ -244,7 +243,7 @@ rule run_all_checkm_lineage_wf:
             --quiet \
             --extension fasta \
             --threads {threads} \
-            {params.input_dir} \
+            {input.dir} \
             {params.output_dir}
         """
 
@@ -255,7 +254,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        get_genomes_fasta
+        "genomes/genomes"
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -268,7 +267,7 @@ rule build_db_genomes:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
         """
-        cat {input} > {output.fasta} 2> {log}
+        cat {input}/*.fasta > {output.fasta} 2> {log}
         bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
 
         """
@@ -452,7 +451,7 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        get_genomes_fasta
+        dir="genomes/genomes"
     output:
         directory("genomes/annotations/genes")
     conda:
