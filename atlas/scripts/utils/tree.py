@@ -2,9 +2,28 @@ import os
 os.environ['QT_QPA_PLATFORM']='offscreen' # because we might not have a X server
 
 import ete3
+import pandas as pd
+import warnings
 
+#from . import parsers_checkm
 
-from . import parsers_checkm
+def load_checkm_tax(checkm_taxonomy_file):
+
+    checkmTax= pd.read_table(checkm_taxonomy_file,index_col=0)
+
+    checkmTax = checkmTax['Taxonomy (contained)']
+
+    if checkmTax.isnull().any():
+        warnings.warn("Some samples have no taxonomy asigned based on checkm. Samples:\n"+ \
+                    ', '.join(checkmTax.index[checkmTax.isnull()])
+                    )
+        checkmTax= checkmTax.dropna().astype(str)
+
+    checkmTax= pd.DataFrame(list(  checkmTax.apply(lambda s: s.split(';'))),
+                       index=checkmTax.index)
+
+    checkmTax.columns=['kindom','phylum','class','order','family','genus','species']
+    return checkmTax
 
 
 def load_tree(netwik_file):
