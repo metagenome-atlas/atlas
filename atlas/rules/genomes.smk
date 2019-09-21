@@ -1,5 +1,5 @@
 if 'genome_dir' in config:
-    genome_dir= config.get('genome_dir']
+    genome_dir= config['genome_dir']
     assert os.path.exists(genome_dir)
 else:
     "genomes/genomes"
