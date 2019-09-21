@@ -266,6 +266,7 @@ rule binning:
         expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                binner=config['final_binner'], sample =SAMPLES),
         expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+        "genomes/checkm/checkm_all_bins.tsv",
         "finished_assembly"
     output:
         temp(touch("finished_binning"))
