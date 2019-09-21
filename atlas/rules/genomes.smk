@@ -2,7 +2,7 @@ if 'genome_dir' in config:
     genome_dir= config['genome_dir']
     assert os.path.exists(genome_dir)
 else:
-    "genomes/genomes"
+    genome_dir="genomes/genomes"
 
 
 ## dRep
