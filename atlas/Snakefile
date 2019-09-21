@@ -284,7 +284,7 @@ rule assembly_one_sample:
 
 rule assembly:
     input:
-        expand(rules.assembly_one_sample.output,sample=SAMPLES),
+        expand("{sample}/finished_assembly",sample=SAMPLES),
         "reports/assembly_report.html",
         "finished_QC"
     output:
