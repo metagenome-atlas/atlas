@@ -1,3 +1,9 @@
+if 'genome_dir' in config:
+    genome_dir= config.get('genome_dir']
+    assert os.path.exists(genome_dir)
+else:
+    "genomes/genomes"
+
 
 ## dRep
 localrules: get_all_bins
@@ -187,18 +193,14 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-def get_genome_dir_(wildcards):
-    if 'genome_dir' in config:
-        genome_dir= config['genome_dir']
-        assert os.path.exists(genome_dir)
 
-    else:
-        genome_dir = checkpoints.rename_genomes.get().output.dir
-    return genome_dir
 
 def get_genomes_(wildcards):
 
-    genomes= glob_wildcards(os.path.join(get_genome_dir_(wildcards), "{genome}.fasta")).genome
+    if genome_dir=='genomes/genomes':
+        checkpoints.rename_genomes.get() # test if checkpoint passed
+
+    genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes)==0:
         logger.critical("No genomes found after dereplication. "
@@ -214,7 +216,7 @@ def get_genomes_(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        dir = "genomes/genomes"
+        dir = genome_dir
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta"
@@ -244,7 +246,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        "genomes/genomes"
+        genome_dir
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
@@ -441,7 +443,7 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        dir="genomes/genomes"
+        dir=genome_dir
     output:
         directory("genomes/annotations/genes")
     conda:
@@ -516,7 +518,7 @@ rule run_prokka_bins:
 
 
 def genome_all_prokka_input(wildcards):
-    genome_dir = get_genome_dir_(wildcards)
+    genome_dir = genome_dir
     return expand("genomes/annotations/prokka/{genome}/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 
