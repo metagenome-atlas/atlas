@@ -185,8 +185,8 @@ def get_quality_controlled_reads(wildcards):
     except FileNotInSampleTableException:
 
         # return files as named by atlas pipeline
-        return list(expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
-                        fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample))
+        return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
+                        fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
 
 
 
