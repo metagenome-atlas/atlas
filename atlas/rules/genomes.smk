@@ -209,16 +209,6 @@ def get_genomes_(wildcards):
 
     return genomes
 
-def get_genomes_fasta(wildcards):
-
-    path=  os.path.join(get_genome_dir_(wildcards), "{genome}.fasta")
-    genomes=expand(path, genome=get_genomes_(wildcards))
-
-
-    return genomes
-
-
-
 
 
 rule run_all_checkm_lineage_wf:
