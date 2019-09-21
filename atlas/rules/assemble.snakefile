@@ -4,7 +4,7 @@ import sys
 from glob import glob
 from snakemake.utils import report
 import warnings
-from copy import copy
+from copy import deepcopy
 
 
 
@@ -320,7 +320,7 @@ if config.get("assembler", "megahit") == "megahit":
 else:
 
 
-    ASSEMBLY_FRACTIONS = copy(MULTIFILE_FRACTIONS)
+    ASSEMBLY_FRACTIONS = deepcopy(MULTIFILE_FRACTIONS)
     if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
         ASSEMBLY_FRACTIONS += ['me']
 
