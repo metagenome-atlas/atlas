@@ -256,7 +256,6 @@ rule genomes:
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
         *get_genome_annotations(),
-        "finished_binning"
 
     output:
         temp(touch("finished_genomes"))
