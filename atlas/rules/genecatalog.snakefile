@@ -63,9 +63,8 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         input:
             faa= "Genecatalog/all_genes/predicted_genes.faa"
         output:
-            db=temp(expand("Genecatalog/all_genes/predicted_genes.{dbext}",dbext=['db','db.dbtype',
-                                                                            'db.index', 'db.lookup', 'db_h', 'db_h.index'])),
-            clusterdb = temp(expand("Genecatalog/clustering/protein_clusters.{ext}",ext=['db','db.index'])),
+            db=temp(directory("Genecatalog/all_genes/predicted_genes")),
+            clusterdb = directory("Genecatalog/clustering/mmseqs"),
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
@@ -77,16 +76,17 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             clustermethod = 'linclust' if config['genecatalog']['clustermethod']=='linclust' else 'cluster',
             coverage=config['genecatalog']['coverage'], #0.8,
             minid=config['genecatalog']['minid'], # 0.00
-            extra=config['genecatalog']['extra']
+            extra=config['genecatalog']['extra'],
+            clusterdb= lambda wc, output: os.path.join(output.clusterdb,'clusterdb'),
+            inputdb=lambda wc, output: os.path.join(output.db,'inputdb')
         shell:
             """
-                mmseqs createdb {input.faa} {output.db[0]} > >(tee  {log})
-
-                mkdir -p {params.tmpdir}
+                mkdir -p {params.tmpdir} {output}
+                mmseqs createdb {input.faa} {params.db} > >(tee  {log})
 
                 mmseqs {params.clustermethod} -c {params.coverage} \
                 --min-seq-id {params.minid} {params.extra} \
-                --threads {threads} {output.db[0]} {output.clusterdb[0]} {params.tmpdir}  > >(tee -a  {log})
+                --threads {threads} {params.db} {params.clusterdb} {params.tmpdir}  > >(tee -a  {log})
 
                 rm -fr  {params.tmpdir} > >(tee -a  {log})
             """
@@ -106,12 +106,15 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             "logs/Genecatalog/clustering/get_rep_proteins.log"
         threads:
             config.get("threads", 1)
+        params:
+            clusterdb= lambda wc, input: os.path.join(input.clusterdb,'clusterdb'),
+            db=lambda wc, input: os.path.join(input.db,'inputdb')
         shell:
             """
-            mmseqs createtsv {input.db[0]} {input.db[0]} {input.clusterdb[0]} {output.cluster_attribution}  > >(tee   {log})
+            mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  > >(tee   {log})
 
-            mmseqs result2repseq {input.db[0]} {input.clusterdb[0]} {output.rep_seqs_db[0]}  > >(tee -a  {log})
-            mmseqs result2flat {input.db[0]} {input.db[0]} {output.rep_seqs_db[0]} {output.rep_seqs}  > >(tee -a  {log})
+            mmseqs result2repseq {params.db} {params.clusterdb} {output.rep_seqs_db[0]}  > >(tee -a  {log})
+            mmseqs result2flat {params.db} {params.db} {output.rep_seqs_db[0]} {output.rep_seqs}  > >(tee -a  {log})
 
             """
 
