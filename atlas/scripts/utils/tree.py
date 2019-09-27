@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
 
     T= load_tree(snakemake.input.tree)
-    phyla= parsers_checkm.load_checkm_tax(snakemake.input.taxonomy).phylum
+    phyla= load_checkm_tax(snakemake.input.taxonomy).phylum
 
     root_tree_by_phyla(T,phyla)
 
