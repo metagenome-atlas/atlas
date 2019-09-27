@@ -4,6 +4,7 @@
 
 import argparse
 import os
+from glob import glob
 from snakemake.shell import shell
 from snakemake.io import glob_wildcards
 
@@ -19,7 +20,9 @@ def predict_genes(genome,fasta,out_dir,log):
 
 
 
-def predict_genes_genomes(genomes_fastas,out_dir,log):
+def predict_genes_genomes(input_dir,out_dir,log):
+
+    genomes_fastas = glob(os.path.join(input_dir,"*.fasta")
 
     os.makedirs(out_dir,exist_ok=True)
 
@@ -33,7 +36,7 @@ if __name__ == "__main__":
     try:
 
         predict_genes_genomes(
-            snakemake.input,
+            snakemake.input.dir,
             snakemake.output[0],
             snakemake.log[0]
         )
