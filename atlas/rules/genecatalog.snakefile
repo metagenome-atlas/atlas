@@ -78,7 +78,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             minid=config['genecatalog']['minid'], # 0.00
             extra=config['genecatalog']['extra'],
             clusterdb= lambda wc, output: os.path.join(output.clusterdb,'clusterdb'),
-            inputdb=lambda wc, output: os.path.join(output.db,'inputdb')
+            db=lambda wc, output: os.path.join(output.db,'inputdb')
         shell:
             """
                 mkdir -p {params.tmpdir} {output}
