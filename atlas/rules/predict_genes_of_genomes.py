@@ -4,6 +4,7 @@
 
 import argparse
 import os
+import uuid
 import itertools
 from glob import glob
 from snakemake.shell import shell
@@ -25,20 +26,22 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
 
    os.makedirs(out_dir,exist_ok=True)
 
-   pool = Pool(threads)
+   temp_log_dir = os.path.join(os.path.dirname(log), "tmp_" + uuid.uuid4().hex)
+   os.makedirs(temp_log_dir, exist_ok=False)
 
    genome_names = []
    log_names = []
    for fasta in genomes_fastas:
        genome_name = os.path.splitext(os.path.split(fasta)[-1])[0]
        genome_names.append(genome_name)
-       log_names.append(log + '.tmp.' + genome_name)
+       log_names.append(os.path.join(temp_log_dir, genome_name + '.prodigal.tmp'))
 
+   pool = Pool(threads)
    pool.starmap(predict_genes, zip(genome_names,genomes_fastas,
                                    itertools.repeat(out_dir),log_names))
 
    shell("cat {log_names} > {log}".format(log_names=' '.join(log_names), log=log))
-   shell("rm {log_names}".format(log_names=' '.join(log_names)))
+   shell("rm -r {temp_log_dir}".format(temp_log_dir=temp_log_dir)))
 
 if __name__ == "__main__":
    try:
