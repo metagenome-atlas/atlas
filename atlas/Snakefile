@@ -10,13 +10,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)
 
 from utils import gen_names_for_range
 
-from default_values import *
-from conf import load_sample_table
 
-# get default values and update them with values specified in config file
-default_config = make_default_config()
-update_config(default_config, config)
-config = default_config
+from conf import load_sample_table
 sampleTable= load_sample_table()
 
 # minimum required snakemake version

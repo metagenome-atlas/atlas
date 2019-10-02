@@ -1,6 +1,10 @@
 import hashlib
 import os
-
+from default_values import *
+# get default values and update them with values specified in config file
+default_config = make_default_config()
+update_config(default_config, config)
+config = default_config
 
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "4.5.1"
