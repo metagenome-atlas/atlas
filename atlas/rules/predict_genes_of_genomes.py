@@ -17,9 +17,11 @@ def predict_genes(genome,fasta,out_dir,log):
    faa = "{}/{}.faa".format(out_dir,genome)
    gff = "{}/{}.gff".format(out_dir,genome)
 
+   shell('printf "{genome}:\n" > {log}'.format(genome=genome,log=log))
    shell("prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p meta -f gff 2>> {log} ".format(
        fasta=fasta, log=log,gff=gff,fna=fna,faa=faa)
          )
+   shell('printf "\n" >> {log}'.format(log=log))
 
 def predict_genes_genomes(input_dir,out_dir,log,threads):
    genomes_fastas = glob(os.path.join(input_dir,"*.fasta"))
@@ -41,7 +43,7 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
                                    itertools.repeat(out_dir),log_names))
 
    shell("cat {log_names} > {log}".format(log_names=' '.join(log_names), log=log))
-   shell("rm -r {temp_log_dir}".format(temp_log_dir=temp_log_dir)))
+   shell("rm -r {temp_log_dir}".format(temp_log_dir=temp_log_dir))
 
 if __name__ == "__main__":
    try:
