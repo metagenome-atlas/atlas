@@ -1,10 +1,6 @@
 import hashlib
 import os
-from default_values import *
-# get default values and update them with values specified in config file
-default_config = make_default_config()
-update_config(default_config, config)
-config = default_config
+
 
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "4.5.1"
@@ -176,9 +172,9 @@ rule download_cat_db:
     params:
         db_folder=CAT_DIR
     resources:
-        mem= config['large_mem']
+        mem= config.get('large_mem',250)
     threads:
-        config['large_threads']
+        config.get('large_threads',16)
     conda:
         "%s/cat.yaml" % CONDAENV
     shell:

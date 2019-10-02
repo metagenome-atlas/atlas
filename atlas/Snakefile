@@ -12,6 +12,11 @@ from utils import gen_names_for_range
 
 
 from conf import load_sample_table
+from default_values import *
+# get default values and update them with values specified in config file
+default_config = make_default_config()
+update_config(default_config, config)
+config = default_config
 sampleTable= load_sample_table()
 
 # minimum required snakemake version
