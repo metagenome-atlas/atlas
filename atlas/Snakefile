@@ -234,7 +234,10 @@ def get_genome_annotations():
 
     annotation_file_names={"cat_taxonomy":"genomes/taxonomy/taxonomy.tsv",
                "ssu":"genomes/SSU/ssu_summary.tsv",
-               "checkm_taxonomy":"genomes/checkm/taxonomy.tsv"}
+               "checkm_taxonomy":"genomes/checkm/taxonomy.tsv",
+               "checkm_tree": "genomes/tree/tree.nwk",
+               "gtdb_tree":"genomes/taxonomy/gtdbtk.unrooted.tree",
+               "gtdb_tk":"genomes/taxonomy/gtdbtk.bac120.summary.tsv"}
 
     annotations_requested= config['annotations']
 
@@ -251,7 +254,6 @@ def get_genome_annotations():
 rule genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes",
-        "genomes/tree/tree.nwk",
         "genomes/checkm/completeness.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",

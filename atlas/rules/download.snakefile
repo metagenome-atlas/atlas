@@ -26,7 +26,7 @@ CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
 EGGNOG_DIR = os.path.join(DBDIR,'EggNOG')
-
+GTDBTK_DATA_PATH=os.path.join(DBDIR,"GTDB-TK")
 CONDAENV = "../envs"
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
@@ -172,24 +172,26 @@ rule download_cat_db:
     params:
         db_folder=CAT_DIR
     resources:
-        mem= config.get('diamond_mem',100)
+        mem= config['large_mem']
     threads:
-        config.get('diamond_threads',10)
+        config['large_threads']
     conda:
         "%s/cat.yaml" % CONDAENV
     shell:
         " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
 
-# output:
-#         "{dir}/{date}.{extension}",
-#         extension=["nr.fastaid2LCAtaxid",
-#                    "nr.dmnd",
-#                    "nr.taxids_with_multiple_offspring",
-#                    ,"prot.accession2taxid.gz"]
-#         "names.dmp",
-#         "nodes.dmp"
-#         temp("{dir}/{date}.nr.gz")
 
+
+rule download_gtdb:
+    output:
+        touch(os.path.join(GTDBTK_DATA_PATH,'downloaded_success'))
+    conda:
+        "../envs/gtdbtk.yaml"
+    threads:
+        1
+    shell:
+        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
+        "download-db.sh ;"
 
 onsuccess:
     print("All databases have downloaded and validated successfully")
