@@ -3,7 +3,7 @@ import os
 
 
 ZENODO_ARCHIVE = "1134890"
-EGGNOG_VERSION = "5.0.0"
+EGGNOG_VERSION = "4.5.1"
 
 
 def md5(fname):
