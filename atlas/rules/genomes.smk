@@ -453,7 +453,7 @@ rule predict_genes_genomes:
     shadow:
         "shallow"
     threads:
-        1
+        config.get("threads", 1)
     script:
         "predict_genes_of_genomes.py"
 
