@@ -3,7 +3,7 @@
 # python 3.5 without f strings
 
 import argparse
-import os
+import os, shutil
 import uuid
 import itertools
 from glob import glob
