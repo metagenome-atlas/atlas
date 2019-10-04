@@ -22,7 +22,7 @@ def predict_genes(genome,fasta,out_dir,log):
 
 def predict_genes_genomes(input_dir,out_dir,log):
 
-    genomes_fastas = glob(os.path.join(input_dir,"*.fasta")
+    genomes_fastas = glob(os.path.join(input_dir,"*.fasta"))
 
     os.makedirs(out_dir,exist_ok=True)
 
