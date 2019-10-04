@@ -303,7 +303,8 @@ rule run_checkm_lineage_wf:
         touched_output = "logs/checkm_init.txt",
         bins = "{sample}/binning/{binner}/bins" # actualy path to fastas
     output:
-        "{sample}/binning/{binner}/checkm/completeness.tsv"
+        "{sample}/binning/{binner}/checkm/completeness.tsv",
+        "{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta"
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0])
     conda:
@@ -437,8 +438,8 @@ rule find_16S:
 
 rule get_all_16S:
     input:
-        summaries= expand(rules.find_16S.output.summary,sample=SAMPLES,binner=config['final_binner']),
-        fastas= expand(rules.find_16S.output.fasta,sample=SAMPLES,binner=config['final_binner'])
+        summaries= expand("{sample}/binning/{binner}/SSU/ssu_summary.tsv",sample=SAMPLES,binner=config['final_binner']),
+        fastas= expand("{sample}/binning/{binner}/SSU/ssu.fna",sample=SAMPLES,binner=config['final_binner'])
     output:
         fasta="genomes/SSU/ssu.fasta",
         summary ="genomes/SSU/ssu_summary.tsv"
@@ -534,7 +535,7 @@ if config['final_binner']=='DASTool':
     rule get_unknown_bins:
         input:
             score_files=expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
-            bin_dirs=expand(directory("{{sample}}/binning/{binner}/bins"), binner= config['binner']),
+            bin_dirs=expand("{{sample}}/binning/{binner}/bins", binner= config['binner']),
         output:
             dir= directory("{sample}/binning/Unknown/bins"),
             scores= "{sample}/binning/Unknown/scores.tsv"
@@ -565,8 +566,8 @@ if config['final_binner']=='DASTool':
     localrules: get_all_unknown_bins
     rule get_all_unknown_bins:
         input:
-            bins=expand(rules.get_unknown_bins.output.dir,sample=SAMPLES),
-            scores= expand(rules.get_unknown_bins.output.scores,sample=SAMPLES)
+            bins=expand("{{sample}}/binning/{binner}/bins",sample=SAMPLES,binner= config['binner']),
+            scores= expand("{sample}/binning/DASTool/{sample}_{binner}.eval",sample=SAMPLES,binner= config['binner'])
         output:
             dir=directory("genomes/all_unknown_bins"),
             scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
