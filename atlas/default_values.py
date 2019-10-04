@@ -86,7 +86,6 @@ MIN_BITSCORE = 0
 MIN_LENGTH = 20
 MAX_HITS = 100
 
-
 import multiprocessing
 import os
 import sys
@@ -255,6 +254,23 @@ def make_default_config():
 
     conf['cat_range']=5
     conf['cat_fraction']=0.3
+
+    conf['feature_counts'] = {
+        "min_overlap": 1,
+        "frac_overlap": 0,
+        "frac_overlap_feature": 0,
+        "non_overlap": 'no_limit',
+        "non_overlap_feature": 'no_limit',
+        "read_extension_5": 0,
+        "read_extension_3": 0,
+        "read_to_pos": 'NA',
+        "min_mapping_qual_score": 0,
+        "split_only": False,
+        "non_split_only": False,
+        "ignore_dup": False,
+        "need_both_paired_reads": False,
+        "max_m_cigar_operations": 10
+    }
 
     # conf["diamond_run_mode"] = "fast"
     # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS

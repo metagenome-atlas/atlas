@@ -179,10 +179,39 @@ genome_dereplication:
       N50: 0.5
       length: 0
 
+# If you want to see gene-specific counts (e.g, for RNA-seq data)
+feature_counts:
+  # Minimum overlap (bp) of a read on a feature for the read to be counted
+  min_overlap: 1
+  # Alternatively, a minimum fraction of read to overlap (0-1)
+  frac_overlap: 0
+  # Or a minimum fraction of the feature to overlap (0-1)
+  frac_overlap_feature: 0
+  # Permitted number of bases not overlapping in a read or feature
+  non_overlap: 'no_limit'
+  non_overlap_feature: 'no_limit'
+  # Extend reads by a certain number of bases on the 5' or 3' end
+  read_extension_5: 0
+  read_extension_3: 0
+  # Set as 5 or 3 to only consider reads based on a single based on their 5' or 3' ends, respectively
+  read_to_pos: 'NA'
+  # Minimum mapping quality score
+  min_mapping_qual_score: 0
+  # Only count alignments split in the middle (e.g., from introns) or non split
+  split_only: False
+  non_split_only: False
+  # Ignore exact duplicate reads from counts (ignore whole pair if >=1 is a duplicate or another read)
+  ignore_dup: False
+  # Only count the paired end reads if both align to the feature
+  need_both_paired_reads: False
+  # Max number of mismatches for a read
+  max_m_cigar_operations: 10
+
 annotations:
   - cat_taxonomy
   - checkm_taxonomy
   - ssu
+  - feature_counts
 
 ########################
 # taxonomy
@@ -195,7 +224,6 @@ diamond_threads: 12
 cat_range: 5
 # fraction of support needed for classification, <0.5 can give rise to duble classification.
 cat_fraction: 0.3
-
 
 ########################
 # Gene catalog
