@@ -98,7 +98,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             clusterdb = rules.cluster_genes.output.clusterdb,
         output:
             cluster_attribution = temp("Genecatalog/orf2gene_oldnames.tsv"),
-            rep_seqs_db = temp(expand("Genecatalog/protein_catalog.{exp}",exp=['db','db.index'])),
+            rep_seqs_db = temp(directory("Genecatalog/protein_catalog")),
             rep_seqs = temp("Genecatalog/representatives_of_clusters.fasta")
         conda:
             "%s/mmseqs.yaml" % CONDAENV
@@ -108,13 +108,15 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             config.get("threads", 1)
         params:
             clusterdb= lambda wc, input: os.path.join(input.clusterdb,'clusterdb'),
-            db=lambda wc, input: os.path.join(input.db,'inputdb')
+            db=lambda wc, input: os.path.join(input.db,'inputdb'),
+            rep_seqs_db=lambda wc, output: os.path.join(output.rep_seqs_db,'db')
         shell:
             """
             mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  > >(tee   {log})
 
             mmseqs result2repseq {params.db} {params.clusterdb} {output.rep_seqs_db[0]}  > >(tee -a  {log})
-            mmseqs result2flat {params.db} {params.db} {output.rep_seqs_db[0]} {output.rep_seqs}  > >(tee -a  {log})
+            mkdir {output.rep_seqs_db} 2> > >(tee -a  {log})
+            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  > >(tee -a  {log})
 
             """
 
