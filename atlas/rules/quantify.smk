@@ -1,10 +1,10 @@
 # Snakemake rules for quantifying mRNA transcript counts
 
-def get_feature_counts_tsv(wildcards):
-    path = os.path.join("genomes/expression/gene_counts", "{genome}.tsv")
-    feature_counts_tsv = expand(path, genome=get_genomes_(wildcards))
+def get_genome_gffs(wildcards):
+    path = os.path.join("genomes/annotations/genes", "{genome}.gff")
+    genome_gffs = expand(path, genome=get_genomes_(wildcards))
 
-    return(feature_counts_tsv)
+    return(genome_gffs)
 
 def feature_counts_parameters(wc,input):
     params={}
@@ -44,7 +44,7 @@ def feature_counts_parameters(wc,input):
 # Combine GFF files from prodigal to run featureCounts more quickly
 # Can omit the header info entirely for this temp file
 rule combine_gff_annotations:
-    """ EXAMPLE PRODIGAL GFF HEADER
+    """ EXAMPLE PRODIGAL GFF FILE
     ##gff-version  3
     # Sequence Data: seqnum=1;seqlen=496932;seqhdr="MAG1_1"
     # Model Data: version=Prodigal.v2.6.3;run_type=Metagenomic;model="17|Desulfotomaculum_acetoxidans_DSM_771|B|41.5|11|1";gc_cont=41.60;transl_table=11;uses_sd=1
@@ -52,22 +52,31 @@ rule combine_gff_annotations:
     MAG1_1	Prodigal_v2.6.3	CDS	979	2151	92.0	+	0	ID=1_2;partial=00;start_type=ATG;rbs_motif=GGA/GAG/AGG;rbs_spacer=5-10bp;gc_cont=0.497;conf=100.00;score=92.03;cscore=90.36;sscore=1.67;rscore=-1.02;uscore=-0.15;tscore=2.83;
     """
     input:
-        expand("genomes/annotations/genes/{genome}.gff", genome=get_genomes_(wildcards))
+        get_genome_gffs
     output:
         temp("genomes/expression/all_annotations.gff")
-    shell:
-        """
-            function cat_gff_files() {
-                output_file=$1
-                gff_files=(${@:2})
+    threads:
+        config['threads']
+    run:
+        import pandas as pd
+        import re
+        from multiprocessing.dummy import Pool
 
-                printf "" > ${output_file}
-                for gff_file in ${gff_files[@]}; do
-                    tail -n +4 {gff_file} >> ${output_file}
-                done
-            }
-            cat_gff_files {output} {input}
-        """
+        def add_MAG_to_ID(row_tuple):
+            table_row = row_tuple[1]
+            genome = str(table_row[0]).split(sep='_')[0]
+            table_row[8] = re.sub("^ID=", "ID={genome}_".format(genome=genome), table_row[8])
+            return(table_row)
+
+        p = Pool(threads)
+
+        combined_gff_table = pd.DataFrame()
+        for gff_filepath in input:
+            gff_table = pd.read_csv(gff_filepath, sep='\t', header=None, comment='#')
+            gff_table = pd.DataFrame(p.map(add_MAG_to_ID, gff_table.iterrows()))
+            combined_gff_table = combined_gff_table.append(gff_table)
+
+        pd.DataFrame.to_csv(combined_gff_table, output[0], sep = '\t', header = False, index = False)
 
 rule run_feature_counts:
     input:
@@ -76,13 +85,11 @@ rule run_feature_counts:
     output:
         counts = temp(expand("genomes/expression/gene_counts/all_gene_counts_raw.{ext}",
                               ext=['tsv','tsv.summary']))
-        # counts = temp(expand("genomes/expression/gene_counts/{{genome}}_raw.{ext}",
-        #                       ext=['tsv','tsv.summary']))
         # TODO: Consider saving some of the content of the summary file
     threads:
         config['threads']
     log:
-        "logs/genomes/feature_counts/{genome}.log"
+        "logs/genomes/feature_counts.log"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     shadow:
@@ -127,18 +134,18 @@ rule parse_feature_counts_output:
     input:
         "genomes/expression/gene_counts/all_gene_counts_raw.tsv"
     output:
-        temp("genomes/expression/gene_counts/all_gene_counts.tsv")
+        "genomes/expression/gene_counts/all_gene_counts.tsv"
     threads:
         config['threads']
     run:
         """ INPUT FORMAT
         # Program:featureCounts v1.6.4; Command:"featureCounts" "-a" "MAG1.gff" "-o" "test.mag1.tsv" "-t" "CDS" "-g" "ID" "../../alignments/Cfx_borealis.bam"
-        Geneid  Chr     Start   End     Strand  Length  genomes/alignments/sample_1.bam genomes/alignments/sample_2.bam
-        1_1     MAG1_1  142     894     +       753     277                             437
-        1_2     MAG1_1  979     2151    +       1173    488                             985
-        1_3     MAG1_1  2182    3450    +       1269    500                             236
-        1_4     MAG1_1  3492    4235    -       744     364                             2478
-        1_5     MAG1_1  4386    5066    -       681     336                             347
+        Geneid   Chr     Start   End     Strand  Length  genomes/alignments/sample_1.bam genomes/alignments/sample_2.bam
+        MAG1_1_1 MAG1_1  142     894     +       753     277                             437
+        MAG1_1_2 MAG1_1  979     2151    +       1173    488                             985
+        MAG1_1_3 MAG1_1  2182    3450    +       1269    500                             236
+        MAG1_1_4 MAG1_1  3492    4235    -       744     364                             2478
+        MAG1_1_5 MAG1_1  4386    5066    -       681     336                             347
         """
 
         """ DESIRED OUTPUT FORMAT
@@ -154,12 +161,11 @@ rule parse_feature_counts_output:
         import os
         from multiprocessing.dummy import Pool
 
-        def generate_MAG_and_ORF_ID(row_tuple):
+        def generate_MAG_ID(row_tuple):
             # Converts a row tuple from iterrows (of a featureCounts table) into a ORF ID (string)
             table_row = row_tuple[1]
             genome = str(table_row[1]).split(sep='_')[0]
-            ORF_ID = "{genome}_{contig_gene}".format(genome=genome,contig_gene=table_row[0])
-            return((genome,ORF_ID))
+            return(genome)
 
         feature_counts_table = pd.read_csv(input[0], sep='\t', header=1)
 
@@ -169,37 +175,38 @@ rule parse_feature_counts_output:
 
         # Combine the MAG/contig and gene IDs together in parallel
         p = Pool(threads)
-        MAG_and_ORF_IDs = p.map(generate_MAG_and_ORF_ID, feature_counts_table.iterrows())
-        MAG_and_ORF_IDs = pd.DataFrame(MAG_and_ORF_IDs, columns = ['MAG', 'ORF'])
+        MAG_IDs = p.map(generate_MAG_ID, feature_counts_table.iterrows())
 
-        feature_counts_table = pd.concat([MAG_and_ORF_IDs, feature_counts_table], axis=1)
+        feature_counts_table.insert(loc=0, column='MAG', value=MAG_IDs)
 
-        feature_counts_table.rename(columns = {'Length': 'length_bp'}, inplace = True)
-        feature_counts_table.drop(columns = ['Geneid', 'Chr', 'Start', 'End', 'Strand'], inplace = True)
+        feature_counts_table.rename(columns = {'Length': 'length_bp',
+                                               'Geneid': 'ORF'}, inplace = True)
+        feature_counts_table.drop(columns = ['Chr', 'Start', 'End', 'Strand'], inplace = True)
 
         pd.DataFrame.to_csv(feature_counts_table, output[0], sep = '\t', index = False)
 
 # Split into files by MAG ID and remove MAG column
-rule split_parsed_feature_counts_output:
+rule split_feature_counts_table:
     input:
         "genomes/expression/gene_counts/all_gene_counts.tsv"
     output:
-        get_feature_counts_tsv
+        directory("genomes/expression/gene_counts/by_MAG")
     run:
         import pandas as pd
         import os
 
-        feature_counts_table = pd.read_csv(input[0], sep='\t', header=1)
+        feature_counts_table = pd.read_csv(input[0], sep='\t', header=0)
 
+        os.makedirs(output[0], exist_ok=True)
         for genome in feature_counts_table['MAG'].unique():
-            feature_counts_subset = feature_counts_table[feature_counts_table['MAG'] == genome]
+            feature_counts_subset = feature_counts_table.loc[feature_counts_table['MAG'] == genome]
             feature_counts_subset.drop(columns = ['MAG'], inplace = True)
-            output_filepath = os.path.join(os.path.dirname(output[0]), "{genome}.tsv".format(genome=genome)
+            output_filepath = os.path.join(output[0], "{genome}.tsv".format(genome=genome))
             pd.DataFrame.to_csv(feature_counts_subset, output_filepath, sep = '\t', index = False)
 
 # TODO: this is a dummy summary file for now. Make a proper summary file with processed expression data
 rule summarize_gene_counts:
     input:
-        get_feature_counts_tsv
+        "genomes/expression/gene_counts/by_MAG"
     output:
         touch("genomes/expression/gene_counts.tsv")
