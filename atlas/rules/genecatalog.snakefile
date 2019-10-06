@@ -114,8 +114,10 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             """
             mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  > >(tee   {log})
 
-            mmseqs result2repseq {params.db} {params.clusterdb} {output.rep_seqs_db[0]}  > >(tee -a  {log})
-            mkdir {output.rep_seqs_db} 2> > >(tee -a  {log})
+            mkdir {output.rep_seqs_db} 2> >(tee -a  {log})
+
+            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  > >(tee -a  {log})
+
             mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  > >(tee -a  {log})
 
             """
