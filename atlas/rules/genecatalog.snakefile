@@ -64,7 +64,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             faa= "Genecatalog/all_genes/predicted_genes.faa"
         output:
             db=temp(directory("Genecatalog/all_genes/predicted_genes")),
-            clusterdb = directory("Genecatalog/clustering/mmseqs"),
+            clusterdb = temp(directory("Genecatalog/clustering/mmseqs"))
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
