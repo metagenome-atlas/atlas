@@ -44,7 +44,7 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
                                    itertools.repeat(out_dir),log_names))
 
     #cat in python
-    with open(log, 'wb') as f_out
+    with open(log, 'wb') as f_out:
         for logfile in log_names:
             with open(logfile,'rb') as f_in:
                 shutil.copyfileobj(f_in, f_out)
