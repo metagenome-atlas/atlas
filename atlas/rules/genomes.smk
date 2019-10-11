@@ -1,6 +1,6 @@
 if 'genome_dir' in config:
     genome_dir= config['genome_dir']
-    assert os.path.exists(genome_dir)
+    assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
 else:
     genome_dir="genomes/genomes"
 
