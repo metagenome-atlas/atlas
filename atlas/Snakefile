@@ -242,14 +242,13 @@ def get_genome_annotations():
 
     except Exception as e:
 
-        raise IOError("Error in annotations requested, check config file 'annotations' ") from e
+        raise IOError(f"Error in annotations requested, check config file 'annotations' \n got: {annotations_requested} ") from e
 
     return annotations_files
 
 
 rule genomes:
     input:
-        "genomes/Dereplication/dereplicated_genomes",
         "genomes/tree/tree.nwk",
         "genomes/checkm/completeness.tsv",
         "genomes/counts/median_coverage_genomes.tsv",

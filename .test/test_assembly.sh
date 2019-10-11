@@ -17,9 +17,6 @@ reads_dir="example_data/reads/stub"
 ressource_args=" --config simplejob_mem=4 java_mem=4 assembly_mem=4"
 
 
-rm -rf example_data
-git clone https://github.com/metagenome-atlas/example_data.git
-
 
 rm -f $WD/samples.tsv
 #
