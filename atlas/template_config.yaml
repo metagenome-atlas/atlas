@@ -151,11 +151,6 @@ metabat:
   sensitivity: sensitive
   min_contig_length: 1500 # metabat needs >1500
 
-concoct:
-  Nexpected_clusters: 200           # important parameter
-  read_length: 100                  # change this parameter !
-  Niterations: 500
-  min_contig_length: 1000
 
 maxbin:
   max_iteration: 50
