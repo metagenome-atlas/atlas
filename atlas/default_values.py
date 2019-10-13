@@ -208,7 +208,7 @@ def make_default_config():
     conf["perform_genome_binning"] = True
 
     conf["final_binner"] = "DASTool"
-    conf["binner"] = ['metabat','concoct','maxbin']
+    conf["binner"] = ['metabat','maxbin']
 
     conf["metabat"] = {"sensitivity":"sensitive",
                        "min_contig_length" : 1500}
