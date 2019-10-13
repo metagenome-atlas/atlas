@@ -10,9 +10,9 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)
 
 from utils import gen_names_for_range
 
-from default_values import *
-from conf import load_sample_table
 
+from conf import load_sample_table
+from default_values import *
 # get default values and update them with values specified in config file
 default_config = make_default_config()
 update_config(default_config, config)
@@ -201,6 +201,7 @@ include: "rules/binning.snakefile"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
+include: "rules/gtdbtk.smk"
 include: "rules/tree.smk"
 
 
@@ -233,7 +234,10 @@ def get_genome_annotations():
 
     annotation_file_names={"cat_taxonomy":"genomes/taxonomy/taxonomy.tsv",
                "ssu":"genomes/SSU/ssu_summary.tsv",
-               "checkm_taxonomy":"genomes/checkm/taxonomy.tsv"}
+               "checkm_taxonomy":"genomes/checkm/taxonomy.tsv",
+               "checkm_tree": "genomes/tree/tree.nwk",
+               "gtdb_tree":"genomes/taxonomy/gtdbtk.unrooted.tree",
+               "gtdb_taxonomy":"genomes/taxonomy/gtdbtk.bac120.summary.tsv"}
 
     annotations_requested= config['annotations']
 
@@ -250,7 +254,6 @@ def get_genome_annotations():
 rule genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes",
-        "genomes/tree/tree.nwk",
         "genomes/checkm/completeness.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
