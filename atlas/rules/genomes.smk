@@ -546,6 +546,6 @@ rule gene2genome:
 
         fasta_files= glob(input[0]+'/*.faa')
 
-        with open(out_table,'w') as outf :
+        with open(output[0],'w') as outf :
             for fasta in fasta_files:
                 header2origin(fasta,outf)
