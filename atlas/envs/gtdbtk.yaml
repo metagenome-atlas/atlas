@@ -2,5 +2,6 @@ channels:
 - conda-forge
 - bioconda
 - defaults
+- anaconda
 dependencies:
 - gtdbtk=0.3.*
