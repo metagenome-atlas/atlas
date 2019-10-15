@@ -410,7 +410,8 @@ rule refine_bins:
 rule find_16S:
     input:
         contigs=BINNING_CONTIGS,
-        bin_dir= "{sample}/binning/{binner}/bins"
+        bin_dir= "{sample}/binning/{binner}/bins",
+        touched_output = "logs/checkm_init.txt"
     output:
         summary="{sample}/binning/{binner}/SSU/ssu_summary.tsv",
         fasta="{sample}/binning/{binner}/SSU/ssu.fna",
