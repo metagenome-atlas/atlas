@@ -150,7 +150,7 @@ rule initialize_checkm:
     input:
         ancient(CHECKMFILES)
     output:
-        touched_output = "logs/checkm_init.txt"
+        touched_output = touch("logs/checkm_init.txt")
     params:
         database_dir = CHECKMDIR,
     conda:
