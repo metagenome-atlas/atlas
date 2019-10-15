@@ -4,4 +4,3 @@ channels:
   - defaults
 dependencies:
   - gtdbtk=0.3.*
-  - python=3.6
