@@ -153,18 +153,12 @@ rule initialize_checkm:
         touched_output = "logs/checkm_init.txt"
     params:
         database_dir = CHECKMDIR,
-        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/checkm.yaml" % CONDAENV
     log:
         "logs/initialize_checkm.log"
     shell:
-        """
-        python {params.script_dir}/rules/initialize_checkm.py \
-            {params.database_dir} \
-            {output.touched_output} \
-            {log}
-        """
+        "checkm data setRoot {params.database_dir} &> {log} "
 
 rule download_cat_db:
     output:
