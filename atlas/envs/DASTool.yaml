@@ -3,6 +3,5 @@ channels:
     - bioconda
     - ruby-lang
     - defaults
-    - anaconda
 dependencies:
     - das_tool=1.1.1
