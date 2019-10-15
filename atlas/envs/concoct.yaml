@@ -4,4 +4,6 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - concoct=1.1.*
+    - concoct=0.4.0=gsl1.16_0
+    - scikit-learn<=0.17.1
+    - numpy >=1.7.1
