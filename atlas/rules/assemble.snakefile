@@ -49,8 +49,8 @@ if  SKIP_QC & (len(MULTIFILE_FRACTIONS)<3):
         threads:
             config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("simplejob_mem", JAVA_MEM),
-            java_mem = int(int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
+            mem = config["simplejob_mem"],
+            java_mem = int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION))
         shell:
             """
             reformat.sh {params.inputs} \
