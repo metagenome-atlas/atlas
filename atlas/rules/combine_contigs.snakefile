@@ -52,7 +52,7 @@ rule combine_contigs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["mem"]
     params:
        input=lambda wc,input: ','.join(input),
        min_length=config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
@@ -108,7 +108,7 @@ rule combined_contigs_stats:
     threads:
         1
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["mem"]
     shell:
         "stats.sh in={input} format=3 -Xmx{resources.mem}G > {output}"
 
@@ -157,7 +157,7 @@ rule align_reads_to_combined_contigs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["mem"]
     shell:
         """    bbwrap.sh nodisk=t \
                ref={input.fasta} \
@@ -203,7 +203,7 @@ rule pileup_combined_contigs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["mem"]
     shell:
         """
             pileup.sh ref={input.fasta} in={input.sam} threads={threads} \
@@ -222,7 +222,7 @@ rule store_bam:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["mem"]
     shell:
         """
         reformat.sh in={input} out={output} -Xmx{resources.mem}G threads={threads}
@@ -319,7 +319,7 @@ if config.get("perform_genome_binning", True):
           threads:
               10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
           resources:
-              mem = config.get("java_mem", JAVA_MEM)
+              mem = config["mem"]
           shell:
               """
                   concoct -c {params.Nexpected_clusters}\

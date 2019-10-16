@@ -163,7 +163,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
         threads:
             config.get("threads", 1)
         resources:
-            mem= config.get("java_mem", JAVA_MEM)
+            mem= config["mem"]
         params:
             coverage=config['genecatalog']['coverage'],
             identity=config['genecatalog']['minid'],
@@ -325,8 +325,8 @@ rule align_reads_to_Genecatalog:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """
         bbwrap.sh nodisk=t \
@@ -366,8 +366,8 @@ rule pileup_Genecatalog:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """pileup.sh in={input.sam} \
                threads={threads} \
@@ -431,7 +431,7 @@ rule eggNOG_homology_search:
         data_dir = EGGNOG_DIR,
         prefix = "{folder}/{prefix}"
     resources:
-        mem = config.get("java_mem", JAVA_MEM)
+        mem = config["mem"]
     threads:
         config["threads"]
     conda:

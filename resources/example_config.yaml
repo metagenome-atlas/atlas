@@ -33,7 +33,7 @@ samples:
 tmpdir: /scratch
 # sets threads for all methods that are not single-threaded
 threads: 24
-java_mem: 16g
+mem: 16g
 # shell command prefix; useful for unconventional job queue situations
 # variables can be replaced from any top-level key in the configuration, e.g.
 # __threads__ is replaced with threads defined above

@@ -253,8 +253,8 @@ rule build_db_genomes:
     threads:
         config.get("threads", 6)
     resources:
-        mem = config["java_mem"],
-        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     log:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
@@ -295,8 +295,8 @@ rule align_reads_to_MAGs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """
             bbwrap.sh \
@@ -330,7 +330,7 @@ rule bam_2_sam_MAGs:
     threads:
         config['threads']
     resources:
-        mem = config["java_mem"],
+        mem = config["mem"],
     shadow:
         "shallow"
     conda:
@@ -358,8 +358,8 @@ rule pileup_MAGs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """pileup.sh in={input.sam} \
                threads={threads} \

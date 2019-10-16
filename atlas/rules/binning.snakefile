@@ -11,8 +11,8 @@ rule bam_2_sam_binning:
     threads:
         config['threads']
     resources:
-        mem = config["java_mem"],
-        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shadow:
         "shallow"
     conda:
@@ -40,8 +40,8 @@ rule pileup_for_binning:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """pileup.sh ref={input.fasta} in={input.sam} \
                threads={threads} \
@@ -106,7 +106,7 @@ rule run_concoct:
     threads:
         10 # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
     resources:
-        mem = config["java_mem"]
+        mem = config["mem"]
     shell:
         """
         concoct -c {params.Nexpected_clusters} \
@@ -147,7 +147,7 @@ rule get_metabat_depth_file:
     threads:
         config['threads']
     resources:
-        mem = config["java_mem"]
+        mem = config["mem"]
     shell:
         """
         jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
@@ -174,7 +174,7 @@ rule metabat:
     threads:
         config["threads"]
     resources:
-        mem = config["java_mem"]
+        mem = config["mem"]
     shell:
         """
         metabat2 -i {input.contigs} \

@@ -120,7 +120,7 @@ def make_default_config():
     conf["simplejob_mem"]=10
     conf["simplejob_threads"]=4
 
-    conf["java_mem"] = JAVA_MEM
+    conf["mem"] = JAVA_MEM
     conf["large_mem"] = 250
     conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K

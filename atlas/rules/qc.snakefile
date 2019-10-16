@@ -220,8 +220,8 @@ if not SKIP_QC:
             threads:
                 config.get("threads", 1)
             resources:
-                mem = config.get("java_mem", JAVA_MEM),
-                java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+                mem = config["mem"],
+                java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
         #    group:
         #        "qc"
             shell:
@@ -276,8 +276,8 @@ if not SKIP_QC:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config["mem"],
+            java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     #    group:
     #        "qc"
         shell:
@@ -317,8 +317,8 @@ if not SKIP_QC:
             threads:
                 config.get("threads", 1)
             resources:
-                mem = config.get("java_mem", JAVA_MEM),
-                java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+                mem = config["mem"],
+                java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
             log:
                 "logs/QC/build_decontamination_db.log"
             conda:
@@ -364,8 +364,8 @@ if not SKIP_QC:
             threads:
                 config.get("threads", 1)
             resources:
-                mem = config.get("java_mem", JAVA_MEM),
-                java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+                mem = config["mem"],
+                java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
         #    group:
         #        "qc"
             shell:
@@ -433,8 +433,8 @@ if PAIRED_END:
         threads:
             config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config["mem"],
+            java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
         conda:
             "%s/required_packages.yaml" % CONDAENV
         log:
