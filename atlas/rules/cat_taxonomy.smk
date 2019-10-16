@@ -36,7 +36,7 @@ rule cat_on_bin:
         r=config['cat_range'],
         f=config['cat_fraction']
     resources:
-        mem= config['java_mem']
+        mem= config['mem']
     threads:
         config['threads']
     conda:
