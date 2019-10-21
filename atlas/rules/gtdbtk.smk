@@ -73,17 +73,17 @@ rule classify:
         "--cpus {threads} &> {log[0]}"
 
 msa_paths={'checkm':"checkm/storage/tree/concatenated.fasta",
-           'gtdb.bac120': f"{gtdb_dir}/align/gtdbtk.bac120.user_msa.fasta",
-           'gtdb.ar122': f"{gtdb_dir}/align/gtdbtk.ar122.user_msa.fasta"
+           'gtdbtk.bac120': f"{gtdb_dir}/align/gtdbtk.bac120.user_msa.fasta",
+           'gtdbtk.ar122': f"{gtdb_dir}/align/gtdbtk.ar122.user_msa.fasta"
 }
 
 rule fasttree:
     input:
         lambda wildcards: f"genomes/{msa_paths[wildcards.msa]}"
     output:
-        "genomes/tree/{msa}.nwk"
+        temp("genomes/tree/{msa}.unrooted.nwk")
     log:
-        "logs/genomes/tree/{msa}.log"
+        "logs/genomes/tree/FastTree_{msa}.log"
     threads:
         max(config['threads'],3)
     conda:
@@ -93,19 +93,40 @@ rule fasttree:
         "FastTree -log {log} {input} > {output} "
 
 
-localrules: root_tree
-rule root_tree:
+localrules: root_checkm_tree,root_gtdb_tree
+rule root_checkm_tree:
     input:
-        tree="genomes/tree/{msa}.unrooted.nwk",
+        tree="genomes/tree/checkm.unrooted.nwk",
         taxonomy="genomes/checkm/taxonomy.tsv"
     output:
-        tree="genomes/tree/{msa}.nwk",
+        tree="genomes/tree/checkm.nwk",
     conda:
         "%s/tree.yaml" % CONDAENV
+    params:
+        taxonomy='checkm'
     threads:
         1
+    logs:
+        "logs/genomes/tree/root_tree_checkm.log"
     script:
-        "../scripts/utils/tree.py"
+        "../scripts/root_tree.py"
+
+rule root_gtdb_tree:
+    input:
+        tree="genomes/tree/gtdbtk.{domain}.unrooted.nwk",
+        taxonomy="genomes/taxonomy/gtdbtk/gtdbtk.{domain}.summary.tsv"
+    output:
+        tree="genomes/tree/gtdbtk.{domain}.nwk",
+    conda:
+        "%s/tree.yaml" % CONDAENV
+    params:
+        taxonomy='gtdb'
+    threads:
+        1
+    logs:
+        "logs/genomes/tree/root_tree_{domain}.log"
+    script:
+        "../scripts/root_tree.py"
 
 
 def all_gtdb_trees_input(wildcards):
@@ -113,7 +134,7 @@ def all_gtdb_trees_input(wildcards):
 
     domains = cards(f"{dir}/gtdbtk.{{domain}}.user_msa.fasta").domain
 
-    return expand("genomes/tree/gtdb.{domain}.nwk",domain=domains)
+    return expand("genomes/tree/gtdbtk.{domain}.nwk",domain=domains)
 
 
 rule all_gtdb_trees:
