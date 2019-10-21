@@ -1,22 +1,22 @@
 
 
-
+gtdb_dir="genomes/taxonomy/gtdb"
 
 rule identify:
     input:
         dir=genome_dir,
         flag= rules.download_gtdb.output
     output:
-        directory("genomes/taxonomy/identify")
+        directory(f"{gtdb_dir}/identify")
     threads:
         config['threads']
     conda:
         "../envs/gtdbtk.yaml"
     log:
-        "logs/taxonomy/gtdbtk_identify.txt",
-        "genomes/taxonomy/gtdbtk.log"
+        "logs/taxonomy/gtdbtk/identify.txt",
+        f"{gtdb_dir}/gtdbtk.log"
     params:
-        outdir= "genomes/taxonomy",
+        outdir= gtdb_dir,
         extension="fasta",
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
@@ -24,20 +24,20 @@ rule identify:
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
-rule align:
+checkpoint align:
     input:
-        "genomes/taxonomy/identify"
+        f"{gtdb_dir}/identify"
     output:
-        "genomes/taxonomy/gtdbtk.bac120.user_msa.fasta"
+        directory(f"{gtdb_dir}/align")
     threads:
         config['threads']
     conda:
         "../envs/gtdbtk.yaml"
     log:
-        "logs/taxonomy/gtdbtk_align.txt",
-        "genomes/taxonomy/gtdbtk.log"
+        "logs/taxonomy/gtdbtk/align.txt",
+        f"{gtdb_dir}/gtdbtk.log"
     params:
-        outdir= "genomes/taxonomy"
+        outdir= gtdb_dir
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "gtdbtk align --identify_dir {params.outdir} --out_dir {params.outdir} "
@@ -51,16 +51,16 @@ rule classify:
     output:
         "genomes/taxonomy/gtdbtk.bac120.summary.tsv",
     threads:
-        8 #pplacer needs much memory for not many threads
+        config['threads'] #pplacer needs much memory for not many threads
     resources:
         mem=config['large_mem']
     conda:
         "../envs/gtdbtk.yaml"
     log:
-        "logs/taxonomy/gtdbtk_classify.txt",
-        "genomes/taxonomy/gtdbtk.log"
+        "logs/taxonomy/gtdbtk/classify.txt",
+        f"{gtdb_dir}/gtdbtk.log"
     params:
-        outdir= "genomes/taxonomy",
+        outdir= gtdb_dir,
         extension="fasta",
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
@@ -72,18 +72,18 @@ rule classify:
 
 rule infer:
     input:
-        "genomes/taxonomy/gtdbtk.bac120.user_msa.fasta"
+        f"{gtdb_dir}/gtdbtk.bac120.user_msa.fasta"
     output:
-        "genomes/taxonomy/gtdbtk.unrooted.tree"
+        f"{gtdb_dir}/gtdbtk.unrooted.tree"
     threads:
         config['threads']
     conda:
         "../envs/gtdbtk.yaml"
     log:
-        "logs/taxonomy/gtdbtk_infer.txt",
-        "genomes/taxonomy/gtdbtk.log"
+        "logs/taxonomy/gtdbtk/infer.txt",
+        f"{gtdb_dir}/gtdbtk.log"
     params:
-        outdir="genomes/taxonomy"
+        outdir=gtdb_dir
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "gtdbtk infer --msa_file {input} --out_dir {params.outdir} "
