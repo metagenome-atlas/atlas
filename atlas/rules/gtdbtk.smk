@@ -103,7 +103,7 @@ rule root_tree:
         "%s/tree.yaml" % CONDAENV
     threads:
         1
-    logs:
+    log:
         "logs/genomes/tree/root_tree_{msa}.log"
     script:
         "../scripts/root_tree.py"

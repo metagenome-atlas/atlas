@@ -181,17 +181,9 @@ annotations:
   - gtdb_taxonomy
   - checkm_taxonomy
 #  - ssu
-#  - cat_taxonomy
 
-########################
-# taxonomy
-#######################
-# Diamond needs up to 100 GB of memory for building the taxonomy database
-# If you prefer you can dowload an existing CAT database, see docs.
-# number of top hits considered for taxonomic annotation
-cat_range: 5
-# fraction of support needed for classification, <0.5 can give rise to duble classification.
-cat_fraction: 0.3
+
+
 
 
 ########################
