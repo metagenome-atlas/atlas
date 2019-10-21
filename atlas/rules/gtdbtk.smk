@@ -2,6 +2,7 @@
 
 gtdb_dir="genomes/taxonomy/gtdb"
 
+
 rule identify:
     input:
         dir=genome_dir,
@@ -44,12 +45,14 @@ checkpoint align:
         "--cpus {threads} &> {log[0]}"
 
 
+
+
 rule classify:
     input:
         rules.align.output,
         genome_dir=genome_dir,
     output:
-        "genomes/taxonomy/gtdbtk.bac120.summary.tsv",
+        directory(f"{gtdb_dir}/classify"),
     threads:
         config['threads'] #pplacer needs much memory for not many threads
     resources:
@@ -69,22 +72,52 @@ rule classify:
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
+msa_paths={'checkm':"checkm/storage/tree/concatenated.fasta",
+           'gtdb.bac120': f"{gtdb_dir}/align/gtdbtk.bac120.user_msa.fasta",
+           'gtdb.ar122': f"{gtdb_dir}/align/gtdbtk.ar122.user_msa.fasta"
+}
 
-rule infer:
+rule fasttree:
     input:
-        f"{gtdb_dir}/gtdbtk.bac120.user_msa.fasta"
+        lambda wildcards: f"genomes/{msa_paths[wildcards.msa]}"
     output:
-        f"{gtdb_dir}/gtdbtk.unrooted.tree"
-    threads:
-        config['threads']
-    conda:
-        "../envs/gtdbtk.yaml"
+        "genomes/tree/{msa}.nwk"
     log:
-        "logs/taxonomy/gtdbtk/infer.txt",
-        f"{gtdb_dir}/gtdbtk.log"
-    params:
-        outdir=gtdb_dir
+        "logs/genomes/tree/{msa}.log"
+    threads:
+        max(config['threads'],3)
+    conda:
+        "%s/tree.yaml" % CONDAENV
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
-        "gtdbtk infer --msa_file {input} --out_dir {params.outdir} "
-        "--cpus {threads} &> {log[0]}"
+        "export OMP_NUM_THREADS={threads}; "
+        "FastTree -log {log} {input} > {output} "
+
+
+localrules: root_tree
+rule root_tree:
+    input:
+        tree="genomes/tree/{msa}.unrooted.nwk",
+        taxonomy="genomes/checkm/taxonomy.tsv"
+    output:
+        tree="genomes/tree/{msa}.nwk",
+    conda:
+        "%s/tree.yaml" % CONDAENV
+    threads:
+        1
+    script:
+        "../scripts/utils/tree.py"
+
+
+def all_gtdb_trees_input(wildcards):
+    dir= checkpoints.align.get().output[0]
+
+    domains = cards(f"{dir}/gtdbtk.{{domain}}.user_msa.fasta").domain
+
+    return expand("genomes/tree/gtdb.{domain}.nwk",domain=domains)
+
+
+rule all_gtdb_trees:
+    input:
+        all_gtdb_trees_input
+    output:
+        touch("genomes/tree/finished_gtdb_trees")
