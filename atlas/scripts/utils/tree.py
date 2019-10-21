@@ -26,7 +26,7 @@ def root_tree_by_phyla(T,phyla):
     furthest_phylum= Dist.mean().idxmax()
     outgroup=phylum_LCA[furthest_phylum]
 
-    if not outgroup== LCA:
+    if not outgroup== T:
         T.set_outgroup(outgroup)
 
 

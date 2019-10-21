@@ -93,38 +93,18 @@ rule fasttree:
         "FastTree -log {log} {input} > {output} "
 
 
-localrules: root_checkm_tree,root_gtdb_tree
-rule root_checkm_tree:
+localrules: root_tree
+rule root_tree:
     input:
-        tree="genomes/tree/checkm.unrooted.nwk",
-        taxonomy="genomes/checkm/taxonomy.tsv"
+        tree="genomes/tree/{msa}.unrooted.nwk",
     output:
-        tree="genomes/tree/checkm.nwk",
+        tree="genomes/tree/{msa}.nwk",
     conda:
         "%s/tree.yaml" % CONDAENV
-    params:
-        taxonomy='checkm'
     threads:
         1
     logs:
-        "logs/genomes/tree/root_tree_checkm.log"
-    script:
-        "../scripts/root_tree.py"
-
-rule root_gtdb_tree:
-    input:
-        tree="genomes/tree/gtdbtk.{domain}.unrooted.nwk",
-        taxonomy="genomes/taxonomy/gtdbtk/gtdbtk.{domain}.summary.tsv"
-    output:
-        tree="genomes/tree/gtdbtk.{domain}.nwk",
-    conda:
-        "%s/tree.yaml" % CONDAENV
-    params:
-        taxonomy='gtdb'
-    threads:
-        1
-    logs:
-        "logs/genomes/tree/root_tree_{domain}.log"
+        "logs/genomes/tree/root_tree_{msa}.log"
     script:
         "../scripts/root_tree.py"
 
