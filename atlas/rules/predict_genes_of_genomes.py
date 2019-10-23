@@ -9,7 +9,7 @@ import itertools
 from glob import glob
 from snakemake.shell import shell
 from snakemake.io import glob_wildcards
-from multiprocessing.dummy import Pool
+from multiprocessing import Pool
 
 
 def predict_genes(genome,fasta,out_dir,log):
