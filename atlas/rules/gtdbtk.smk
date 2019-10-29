@@ -112,7 +112,7 @@ rule root_tree:
 def all_gtdb_trees_input(wildcards):
     dir= checkpoints.align.get().output[0]
 
-    domains = cards(f"{dir}/gtdbtk.{{domain}}.user_msa.fasta").domain
+    domains = glob_wildcards(f"{dir}/gtdbtk.{{domain}}.user_msa.fasta").domain
 
     return expand("genomes/tree/gtdbtk.{domain}.nwk",domain=domains)
 
