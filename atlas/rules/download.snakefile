@@ -89,7 +89,7 @@ rule download:
         expand("{dir}/{filename}", dir=EGGNOG_DIR,
                filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
         CHECKMFILES,
-        touch(os.path.join(GTDBTK_DATA_PATH,'downloaded_success'))
+        os.path.join(GTDBTK_DATA_PATH,'downloaded_success')
 
 
 
