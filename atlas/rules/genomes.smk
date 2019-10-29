@@ -58,6 +58,7 @@ rule merge_checkm:
                sample= SAMPLES, binner= config['final_binner'])
     output:
         checkm="genomes/checkm/checkm_all_bins.tsv",
+        markers= "genomes/checkm/all_bins_markers.fasta"
     run:
 
         import pandas as pd
@@ -487,7 +488,7 @@ rule all_prodigal:
     input:
         genome_all_genes_input
     output:
-        touch("genomes/annotations/genes/predicted"
+        touch("genomes/annotations/genes/predicted")
 
 
 
