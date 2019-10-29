@@ -478,14 +478,14 @@ rule predict_genes_genomes:
             -a {output.faa} -p meta -f gff 2> >(tee {log})
         """
 
-def genome_all_genes_input(wildcards):
-    return expand("genomes/annotations/genes/{genome}.faa",
+def get_all_genes(wildcards,extension='.faa'):
+    return expand("genomes/annotations/genes/{genome}{extension}",
            genome=get_genomes_(wildcards))
 
 localrules: all_prodigal
 rule all_prodigal:
     input:
-        genome_all_genes_input
+        get_all_genes
     output:
         touch("genomes/annotations/genes/predicted")
 

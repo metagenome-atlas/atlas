@@ -21,13 +21,14 @@ else:
     localrules: concat_genes
     rule concat_genes:
         input:
-            "genomes/annotations/genes"
+            faa= lambda wc: get_all_genes(wc,".faa
+            fna= lambda wc: get_all_genes(wc,".fna")
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
         shell:
-            " cat {input}/*.faa >  {output.faa} ;"
-            " cat {input}/*.fna > {output.fna}"
+            " cat {input.faa} >  {output.faa} ;"
+            " cat {input.fna} > {output.fna}"
 
 
 localrules: filter_genes
