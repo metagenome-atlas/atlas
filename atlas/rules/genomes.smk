@@ -213,6 +213,7 @@ rule run_all_checkm_lineage_wf:
         dir = genome_dir
     output:
         "genomes/checkm/completeness.tsv",
+        "genomes/checkm/storage/tree/concatenated.fasta"
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0]),
     conda:

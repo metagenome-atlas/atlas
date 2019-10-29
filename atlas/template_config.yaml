@@ -180,7 +180,7 @@ annotations:
   - gtdb_tree
   - gtdb_taxonomy
   - checkm_taxonomy
-
+#  - checkm_tree
 
 
 

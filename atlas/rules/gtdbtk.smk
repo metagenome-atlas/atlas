@@ -72,7 +72,7 @@ rule classify:
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
-msa_paths={'checkm':"checkm/storage/tree/concatenated.fasta",
+msa_paths={'checkm':"genomes/checkm/storage/tree/concatenated.fasta",
            'gtdbtk.bac120': f"{gtdb_dir}/align/gtdbtk.bac120.user_msa.fasta",
            'gtdbtk.ar122': f"{gtdb_dir}/align/gtdbtk.ar122.user_msa.fasta"
 }
