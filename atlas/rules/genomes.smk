@@ -438,43 +438,56 @@ rule combine_bined_coverages_MAGs:
 
         Median_abund.to_csv(output.median_abund,sep='\t')
 
-rule predict_genes_genomes:
-    input:
-        dir=genome_dir
-    output:
-        directory("genomes/annotations/genes")
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    log:
-        "logs/genomes/prodigal.log"
-    shadow:
-        "shallow"
-    threads:
-        config.get("threads", 1)
-    script:
-        "predict_genes_of_genomes.py"
-
-
-
 # rule predict_genes_genomes:
 #     input:
-#         "genomes/genomes/{genome}.fasta"
+#         dir=genome_dir
 #     output:
-#         fna = "genomes/annotations/genes/{genome}.fna",
-#         faa = "genomes/annotations/genes/{genome}.faa",
-#         gff = "genomes/annotations/genes/{genome}.gff"
+#         directory("genomes/annotations/genes")
 #     conda:
 #         "%s/required_packages.yaml" % CONDAENV
 #     log:
-#         "logs/genomes/prodigal/{genome}.txt"
+#         "logs/genomes/prodigal.log"
+#     shadow:
+#         "shallow"
 #     threads:
-#         1
-#     shell:
-#         """
-#         prodigal -i {input} -o {output.gff} -d {output.fna} \
-#             -a {output.faa} -p meta -f gff 2> >(tee {log})
-#         """
+#         config.get("threads", 1)
+#     script:
+#         "predict_genes_of_genomes.py"
 
+
+
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        fna = "genomes/annotations/genes/{genome}.fna",
+        faa = "genomes/annotations/genes/{genome}.faa",
+        gff = "genomes/annotations/genes/{genome}.gff"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal/{genome}.txt"
+    threads:
+        1
+    resources:
+        mem= config['simplejob_mem']
+    shell:
+        """
+        prodigal -i {input} -o {output.gff} -d {output.fna} \
+            -a {output.faa} -p meta -f gff 2> >(tee {log})
+        """
+
+def genome_all_genes_input(wildcards):
+    genome_dir = genome_dir
+    return expand("genomes/annotations/genes/{genome}.faa",
+           genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
+
+localrules: all_prodigal
+rule all_prodigal:
+    input:
+        genome_all_genes_input
+    output:
+        touch("genomes/annotations/genes/predicted"
 
 
 

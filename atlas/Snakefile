@@ -243,7 +243,7 @@ def get_genome_annotations():
     annotations_requested= config['annotations']
 
     try:
-        annotations_files=["genomes/annotations/genes"]+[annotation_file_names[an] for an in annotations_requested]
+        annotations_files=["genomes/annotations/genes/predicted"]+[annotation_file_names[an] for an in annotations_requested]
 
     except Exception as e:
 
