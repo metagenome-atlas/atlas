@@ -3,7 +3,7 @@ import os
 
 
 if config['genecatalog']['source']=='contigs':
-
+#TODO: cat with python
     localrules: concat_genes
     rule concat_genes:
         input:
