@@ -113,7 +113,7 @@ atlas run
 
 ::
 
-  Usage: atlas run [OPTIONS] [[qc|assembly|genomes|genecatalog|None|all]]
+  Usage: atlas run [OPTIONS] [[qc|assembly|binning|genomes|genecatalog|None|all]]
                    [SNAKEMAKE_ARGS]...
 
     Runs the ATLAS pipline
