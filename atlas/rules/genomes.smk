@@ -54,7 +54,8 @@ rule merge_checkm:
                sample= SAMPLES, binner= config['final_binner']),
         taxonomy= expand("{sample}/binning/{binner}/checkm/taxonomy.tsv",
                sample= SAMPLES, binner= config['final_binner']),
-
+        markers= expand("{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
+               sample= SAMPLES, binner= config['final_binner'])
     output:
         checkm="genomes/checkm/checkm_all_bins.tsv",
     run:
@@ -71,7 +72,9 @@ rule merge_checkm:
         D= pd.concat(D,axis=0)
         D.to_csv(output.checkm,sep='\t')
 
-
+        with open(output.marker,'wb') as fout:
+            for fasta in input.markers:
+                shutil.copyfileobj(open(fasta,'rb'),fout)
 
 
 
