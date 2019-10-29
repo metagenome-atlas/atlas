@@ -36,11 +36,11 @@ Atlas is still under active development; therefore, you may want to install the 
 
 Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```
-conda create -n atlas -c conda-forge -c bioconda python=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython 
+conda create -n atlasenv -c conda-forge -c bioconda python=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
 ```
 Load the environment:
 ```
-source activate atlas
+source activate atlasenv
 ```
 copy code from GitHub and install:
 ```

@@ -1,7 +1,7 @@
 Install
 ========
 
-1a. Create conda environment
+A. Create conda environment
 ----------------------------
 
 You need to install anaconda or miniconda.
@@ -15,13 +15,13 @@ Then install metagenome-atlas::
     conda install -y -c bioconda -c conda-forge metagenome-atlas
 
 
-1b. Install the development version from GitHub
+B. Install the development version from GitHub
 -----------------------------------------------
 Atlas is still under active development, therefore you may want to install the up to date atlas from GitHub.
 
 Create an conda environment with all primary dependencies. All further dependencies are installed on the fly::
 
-  conda create -n atlasenv -c bioconda -c conda-forge python>=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
+  conda create -n atlas -c conda-forge -c bioconda python=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
 
 Load the environment::
 
@@ -41,14 +41,14 @@ Now you should be able to run atlas::
 
 
 
-2. Download all databases first
--------------------------------
-
-May be you want to make sure that all databases are downloaded correctly. Simply run::
-
-    atlas download --db-dir path/to/databases
-
-To reassure you, most of the databases are md5 checked. The downloads use approximately 30 GB of disk space.
+.. 2. Download all databases first
+.. -------------------------------
+..
+.. May be you want to make sure that all databases are downloaded correctly. Simply run::
+..
+..     atlas download --db-dir path/to/databases
+..
+.. To reassure you, most of the databases are md5 checked. The downloads use approximately 30 GB of disk space.
 
 .. 3. Test installation
 .. --------------------
@@ -79,7 +79,7 @@ atlas init
                                       [default: /Users/silas/Documents/Debug_atlas
                                       /databases]
       -w, --working-dir PATH          location to run atlas
-      --assembler [megahit|spades]    assembler  [default: megahit]
+      --assembler [megahit|spades]    assembler  [default: spades]
       --data-type [metagenome|metatranscriptome]
                                       sample data type  [default: metagenome]
       --threads INTEGER               number of threads to use per multi-threaded
