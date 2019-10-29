@@ -21,7 +21,7 @@ else:
     localrules: concat_genes
     rule concat_genes:
         input:
-            faa= lambda wc: get_all_genes(wc,".faa),
+            faa= lambda wc: get_all_genes(wc,".faa"),
             fna= lambda wc: get_all_genes(wc,".fna")
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
