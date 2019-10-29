@@ -479,9 +479,8 @@ rule predict_genes_genomes:
         """
 
 def genome_all_genes_input(wildcards):
-    genome_dir = genome_dir
     return expand("genomes/annotations/genes/{genome}.faa",
-           genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
+           genome=get_genomes_(wildcards))
 
 localrules: all_prodigal
 rule all_prodigal:
