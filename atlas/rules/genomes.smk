@@ -480,7 +480,7 @@ rule predict_genes_genomes:
 
 def get_all_genes(wildcards,extension='.faa'):
     return expand("genomes/annotations/genes/{genome}{extension}",
-           genome=get_genomes_(wildcards))
+           genome=get_genomes_(wildcards),extension=extension)
 
 localrules: all_prodigal
 rule all_prodigal:
