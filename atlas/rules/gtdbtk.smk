@@ -97,6 +97,8 @@ localrules: root_tree
 rule root_tree:
     input:
         tree="genomes/tree/{msa}.unrooted.nwk",
+    wildcard_constraints:
+        msa=f"({'|'.join(msa_paths.keys())})"
     output:
         tree="genomes/tree/{msa}.nwk",
     conda:
