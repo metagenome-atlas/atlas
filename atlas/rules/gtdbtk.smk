@@ -79,7 +79,7 @@ msa_paths={'checkm':"genomes/checkm/storage/tree/concatenated.fasta",
 
 rule fasttree:
     input:
-        lambda wildcards: f"genomes/{msa_paths[wildcards.msa]}"
+        lambda wildcards: msa_paths[wildcards.msa]
     output:
         temp("genomes/tree/{msa}.unrooted.nwk")
     log:
