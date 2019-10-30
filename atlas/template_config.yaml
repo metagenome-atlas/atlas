@@ -9,7 +9,7 @@
 ####                                                           ####
 ###################################################################
 #  For more details about the config values see:
-#  https://metagenome-atlas.readthedocs.io
+#  https://metagenome-atlas.rtfd.io
 ###################################################################
 
 ########################
@@ -19,7 +19,7 @@
 threads: 32
 # Memory for most jobs especially from BBtools, which are memory demanding
 mem: 32
-# Memory and threads for jobs needing high amount of memory. e.g CAT taxonomy GTDB-tk
+# Memory and threads for jobs needing high amount of memory. e.g GTDB-tk
 large_mem: 250
 large_threads: 16
 # can be a subset of threads or altered if rule run_spades or run_megahit are being defined differently in your cluster configuration
@@ -179,19 +179,11 @@ genome_dereplication:
 annotations:
   - gtdb_tree
   - gtdb_taxonomy
-  - checkm_taxonomy
-#  - ssu
-#  - cat_taxonomy
+#  - checkm_taxonomy
+#  - checkm_tree
 
-########################
-# taxonomy
-#######################
-# Diamond needs up to 100 GB of memory for building the taxonomy database
-# If you prefer you can dowload an existing CAT database, see docs.
-# number of top hits considered for taxonomic annotation
-cat_range: 5
-# fraction of support needed for classification, <0.5 can give rise to duble classification.
-cat_fraction: 0.3
+
+
 
 
 ########################

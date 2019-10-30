@@ -304,6 +304,7 @@ rule run_checkm_lineage_wf:
         bins = "{sample}/binning/{binner}/bins" # actualy path to fastas
     output:
         "{sample}/binning/{binner}/checkm/completeness.tsv",
+        "{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta"
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0])
     conda:

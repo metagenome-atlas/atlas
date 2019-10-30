@@ -54,9 +54,11 @@ rule merge_checkm:
                sample= SAMPLES, binner= config['final_binner']),
         taxonomy= expand("{sample}/binning/{binner}/checkm/taxonomy.tsv",
                sample= SAMPLES, binner= config['final_binner']),
-
+        markers= expand("{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
+               sample= SAMPLES, binner= config['final_binner'])
     output:
         checkm="genomes/checkm/checkm_all_bins.tsv",
+        markers= "genomes/checkm/all_bins_markers.fasta"
     run:
 
         import pandas as pd
@@ -71,7 +73,9 @@ rule merge_checkm:
         D= pd.concat(D,axis=0)
         D.to_csv(output.checkm,sep='\t')
 
-
+        with open(output.markers,'wb') as fout:
+            for fasta in input.markers:
+                shutil.copyfileobj(open(fasta,'rb'),fout)
 
 
 
@@ -213,6 +217,7 @@ rule run_all_checkm_lineage_wf:
         dir = genome_dir
     output:
         "genomes/checkm/completeness.tsv",
+        "genomes/checkm/storage/tree/concatenated.fasta"
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0]),
     conda:
@@ -434,43 +439,55 @@ rule combine_bined_coverages_MAGs:
 
         Median_abund.to_csv(output.median_abund,sep='\t')
 
-rule predict_genes_genomes:
-    input:
-        dir=genome_dir
-    output:
-        directory("genomes/annotations/genes")
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    log:
-        "logs/genomes/prodigal.log"
-    shadow:
-        "shallow"
-    threads:
-        config.get("threads", 1)
-    script:
-        "predict_genes_of_genomes.py"
-
-
-
 # rule predict_genes_genomes:
 #     input:
-#         "genomes/genomes/{genome}.fasta"
+#         dir=genome_dir
 #     output:
-#         fna = "genomes/annotations/genes/{genome}.fna",
-#         faa = "genomes/annotations/genes/{genome}.faa",
-#         gff = "genomes/annotations/genes/{genome}.gff"
+#         directory("genomes/annotations/genes")
 #     conda:
 #         "%s/required_packages.yaml" % CONDAENV
 #     log:
-#         "logs/genomes/prodigal/{genome}.txt"
+#         "logs/genomes/prodigal.log"
+#     shadow:
+#         "shallow"
 #     threads:
-#         1
-#     shell:
-#         """
-#         prodigal -i {input} -o {output.gff} -d {output.fna} \
-#             -a {output.faa} -p meta -f gff 2> >(tee {log})
-#         """
+#         config.get("threads", 1)
+#     script:
+#         "predict_genes_of_genomes.py"
 
+
+
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        fna = "genomes/annotations/genes/{genome}.fna",
+        faa = "genomes/annotations/genes/{genome}.faa",
+        gff = "genomes/annotations/genes/{genome}.gff"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal/{genome}.txt"
+    threads:
+        1
+    resources:
+        mem= config['simplejob_mem']
+    shell:
+        """
+        prodigal -i {input} -o {output.gff} -d {output.fna} \
+            -a {output.faa} -p meta -f gff 2> >(tee {log})
+        """
+
+def get_all_genes(wildcards,extension='.faa'):
+    return expand("genomes/annotations/genes/{genome}{extension}",
+           genome=get_genomes_(wildcards),extension=extension)
+
+localrules: all_prodigal
+rule all_prodigal:
+    input:
+        get_all_genes
+    output:
+        touch("genomes/annotations/genes/predicted")
 
 
 

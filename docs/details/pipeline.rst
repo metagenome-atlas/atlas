@@ -52,27 +52,23 @@ Besides the `reports/assembly_report.html`_ this rule outputs the following file
 
   - ``{sample}/{sample}_contigs.fasta``
   - ``{sample}/sequence_alignment/{sample}.bam``
-  - ``{sample}/assembly/contig_stats/postfilter_coverage_stats.txt``
-  - ``{sample}/assembly/contig_stats/prefilter_contig_stats.txt``
   - ``{sample}/assembly/contig_stats/final_contig_stats.txt``
 
 
 .. _reports/assembly_report.html: ../_static/assembly_report.html
 
 
-Genomes
----------------
-::
-
-  atlas run genomes
-  #or
-  atlas run all
 
 
 
 
 Binning
-```````
+---------------
+::
+
+  atlas run binning
+  #or
+  atlas run all
 
 When you use different binners (e.g. metabat, maxbin) and a binner-reconciliator (e.g. DAS Tool),
 then Atlas will produce for each binner and sample:
@@ -83,29 +79,52 @@ which shows the attribution of contigs to bins. For the final_binner it produces
 
   - ``reports/bin_report_{binner}.html``
 
-See an `example <../_static/bin_report.html>`_
+See an `example <../_static/bin_report.html>`_ as a summary of the quality of all bins.
 
 
-As a summary of the quality of all bins. These bins are then De-replicated using DeRep.
+Genomes
+---------------
+::
+
+    atlas run genomes
+    #or
+    atlas run all
+
+As the binning can predict several times the same genome it is recommended to de-replicate these genomes.
+For now we use DeRep to filter and de-replicate the genomes.
 The Metagenome assembled genomes are then renamed, but we keep mapping files.
 
-  - ``genomes/Dereplication``
-  - ``genomes/clustering/contig2genome.tsv``
-  - ``genomes/clustering/allbins2genome.tsv``
+      - ``genomes/Dereplication``
+      - ``genomes/clustering/contig2genome.tsv``
+      - ``genomes/clustering/allbins2genome.tsv``
 
+The fasta sequence of the dereplicated and renamed genomes can be found in ``genomes/genomes``
+and their quality estimation are in ``genomes/checkm/completeness.tsv``.
+The quantification of the genomes can be found in:
 
-
-The main output files
-``````````````````````
-
-  - ``genomes/genomes``
-  - ``genomes/annotations/genes``
-  - ``genomes/checkm/completeness.tsv``
-  - ``genomes/taxonomy/taxonomy_names.tsv``
   - ``genomes/counts/median_coverage_genomes.tsv``
   - ``genomes/counts/raw_counts_genomes.tsv``
 
+See in `Atlas example <https://github.com/metagenome-atlas/Atlas_example>`_ how to analyze these abundances.
 
+The predicted genes and translated protein sequences are in ``genomes/annotations/genes``.
+
+Taxonomic adnnotation
+`````````````````````
+::
+
+  annotations:
+    - gtdb_tree
+    - gtdb_taxonomy
+    - checkm_tree
+    - checkm_taxonomy
+
+Different annotations can be turned on and off in the config file under the heading ``annotations``:
+A taxonomy for the dereplicated genomes is proposed GTDB.
+The results can be found in ``genomes/taxonomy``.
+The genomes are placed in a phylogenetic tree separately for bacteria and archaea (if there are any) using the GTDB markers.
+In addition a tree for bacteria and archaea can be generated based on the checkm markers.
+All trees are properly rooted using the midpoint. The files can be found in ``genomes/tree``
 
 
 Gene Catalog
@@ -117,7 +136,7 @@ Gene Catalog
   # or
   atlas run genecatalog
 
-The gene catalog takes all genes predicted from the genomes and clusters them
+The gene catalog takes either genes predicted from the genomes or all genes predicted on the contigs and clusters them
 according to the configuration.
 This rule produces the following output file for the whole dataset.
 
