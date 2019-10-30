@@ -73,7 +73,7 @@ rule merge_checkm:
         D= pd.concat(D,axis=0)
         D.to_csv(output.checkm,sep='\t')
 
-        with open(output.marker,'wb') as fout:
+        with open(output.markers,'wb') as fout:
             for fasta in input.markers:
                 shutil.copyfileobj(open(fasta,'rb'),fout)
 
