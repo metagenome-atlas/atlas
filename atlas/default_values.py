@@ -259,7 +259,7 @@ def make_default_config():
     conf["runtime"]={
                     "default":10,
                     "assembly":100,
-                    "large":100,
+                    "long":100,
                     "simple_job":0.5
                     }
 

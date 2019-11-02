@@ -311,6 +311,8 @@ rule run_checkm_lineage_wf:
         "%s/checkm.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        time=config["runtime"]["long"]
     shell:
         """
         rm -r {params.output_dir}

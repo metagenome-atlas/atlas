@@ -30,8 +30,8 @@ assembly_memory: 250
 #For cluster execution
 runtime: #in h
     default: 10
-    assembly: 100
-    large: 100
+    assembly: 100 
+    long: 100
 
 
 

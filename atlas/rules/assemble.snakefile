@@ -285,7 +285,7 @@ if config.get("assembler", "megahit") == "megahit":
             config["assembly_threads"]
         resources:
             mem = config["assembly_memory"],
-            time= config["assembly_time"]
+            time= config["runtime"]["assembly"]
         shell:
             """
                 rm -r {params.outdir} 2> {log}
@@ -393,7 +393,7 @@ else:
             config["assembly_threads"]
         resources:
             mem = config["assembly_memory"],
-            time= config["assembly_time"]
+            time= config["runtime"]["assembly"]
         shell:
             "spades.py "
             " --threads {threads} "
