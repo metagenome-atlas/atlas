@@ -4,12 +4,14 @@ import os
 import sys
 import tempfile
 from ruamel.yaml import YAML
+import snakemake import utils
 from snakemake.io import load_configfile
-import logging
 import pandas as pd
 import numpy as np
 from collections import defaultdict
 import click
+from .default_values import make_default_config
+
 # default globals
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
@@ -176,6 +178,26 @@ def validate_config(config, workflow):
     conf = load_configfile(config)
 #    validate_sample_defs(conf, workflow)
     # could later add more validation steps
+
+
+def update_config(config,configfile):
+    """
+    Populates config file with default config values.
+    And made changes if necessary.
+
+    """
+
+    # in old version java_mem was used, new is mem
+    if ('java_mem' in config) and (not ('mem' in config)):
+        config['mem']=config['java_mem']
+
+
+    # get default values and update them with values specified in config file
+    default_config = make_default_config()
+    utils.update_config(default_config, config)
+    config = default_config
+
+    return config
 
 
 
