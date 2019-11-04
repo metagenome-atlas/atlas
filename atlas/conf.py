@@ -181,7 +181,7 @@ def validate_config(config, workflow):
     # could later add more validation steps
 
 
-def update_config(config,configfile):
+def update_config(config):
     """
     Populates config file with default config values.
     And made changes if necessary.
@@ -196,9 +196,8 @@ def update_config(config,configfile):
     # get default values and update them with values specified in config file
     default_config = make_default_config()
     utils.update_config(default_config, config)
-    config = default_config
 
-    return config
+    return default_config
 
 
 
