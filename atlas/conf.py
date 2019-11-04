@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 import click
+sys.path.append(os.path.dirname(__file__))
 from default_values import make_default_config
 
 # default globals
