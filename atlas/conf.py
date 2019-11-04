@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 from ruamel.yaml import YAML
-import snakemake import utils
+from snakemake import utils
 from snakemake.io import load_configfile
 import pandas as pd
 import numpy as np
