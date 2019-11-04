@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 import click
-from .default_values import make_default_config
+from default_values import make_default_config
 
 # default globals
 ADAPTERS = "adapters.fa"
