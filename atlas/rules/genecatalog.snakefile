@@ -138,7 +138,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             protein_clusters_old_names= gene2proteins[0].unique()
 
             map_names = dict(zip(protein_clusters_old_names,
-                                 gen_names_for_range(len(protein_clusters_old_names),'Gene')))
+                                 utils.gen_names_for_range(len(protein_clusters_old_names),'Gene')))
 
             gene2proteins['Gene'] = gene2proteins[0].map(map_names)
             gene2proteins.index.name='ORF'
@@ -261,7 +261,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
             gene_clusters_old_names= orf2gene['Gene'].unique()
 
             map_names = dict(zip(gene_clusters_old_names,
-                                 gen_names_for_range(len(gene_clusters_old_names),'Gene')))
+                                 utils.gen_names_for_range(len(gene_clusters_old_names),'Gene')))
 
             orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
             orf2gene.to_csv(output.orf2gene,sep='\t',header=True)

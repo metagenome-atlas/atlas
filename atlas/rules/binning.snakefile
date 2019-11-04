@@ -251,7 +251,7 @@ rule get_unique_cluster_attribution:
             old_cluster_ids.remove(0)
 
         map_cluster_ids = dict(zip(old_cluster_ids,
-                                   gen_names_for_range(
+                                   utils.gen_names_for_range(
                                        len(old_cluster_ids),
                                         prefix="{sample}_{binner}_".format(**wildcards)
                                          )
@@ -311,6 +311,8 @@ rule run_checkm_lineage_wf:
         "%s/checkm.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        time=config["runtime"]["long"]
     shell:
         """
         rm -r {params.output_dir}

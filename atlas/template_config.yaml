@@ -26,6 +26,15 @@ large_threads: 16
 assembly_threads: 8
 # in GB
 assembly_memory: 250
+
+#For cluster execution
+runtime: #in h
+    default: 10
+    assembly: 100 
+    long: 100
+
+
+
 # Local directory for temp files, useful for cluster execution without shared file system
 tmpdir: /tmp
 # directory where databases are downloaded with 'atlas download'
