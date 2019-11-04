@@ -4,12 +4,14 @@ import sys
 import tempfile
 import pandas as pd
 import numpy as np
+
 from snakemake.utils import logger, min_version
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
 import utils
 
-config= utils.update_config(config)
+from conf import update_config
+config= update_config(config)
 from default_values import * # LOAD HARDCODED values and EGGNOG_HEADER
 from conf import load_sample_table
 sampleTable= load_sample_table()
@@ -326,7 +328,7 @@ for r in workflow.rules:
     if not "mem" in r.resources:
         r.resources["mem"]=config["mem"]
     if not "time" in r.resources:
-        if r.resources["mem"]==config["simple_job"]:
+        if r.resources["mem"]==config["simplejob_mem"]:
             r.resources["time"]=config["runtime"]["simple_job"]
         else:
             r.resources["time"]=config["runtime"]["default"]
