@@ -256,6 +256,13 @@ def make_default_config():
     conf['cat_range']=5
     conf['cat_fraction']=0.3
 
+    conf["runtime"]={
+                    "default":10,
+                    "assembly":100,
+                    "long":100,
+                    "simple_job":0.5
+                    }
+
     # conf["diamond_run_mode"] = "fast"
     # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
     # conf["diamond_e_value"] = DIAMOND_E_VALUE

@@ -282,9 +282,10 @@ if config.get("assembler", "megahit") == "megahit":
         conda:
             "%s/assembly.yaml" % CONDAENV
         threads:
-            config.get("assembly_threads", ASSEMBLY_THREADS)
+            config["assembly_threads"]
         resources:
-            mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
+            mem = config["assembly_memory"],
+            time= config["runtime"]["assembly"]
         shell:
             """
                 rm -r {params.outdir} 2> {log}
@@ -389,9 +390,10 @@ else:
         conda:
             "%s/assembly.yaml" % CONDAENV
         threads:
-            config.get("assembly_threads", ASSEMBLY_THREADS)
+            config["assembly_threads"]
         resources:
-            mem = config.get("assembly_memory", ASSEMBLY_MEMORY) #in GB
+            mem = config["assembly_memory"],
+            time= config["runtime"]["assembly"]
         shell:
             "spades.py "
             " --threads {threads} "

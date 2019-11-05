@@ -4,21 +4,16 @@ import sys
 import tempfile
 import pandas as pd
 import numpy as np
-from snakemake.utils import logger, min_version, update_config
+
+from snakemake.utils import logger, min_version
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
+import utils
 
-from utils import gen_names_for_range
-# in old version java_mem was used, new is mem
-if ('java_mem' in config) and (not ('mem' in config)):
-    config['mem']=config['java_mem']
-
+from conf import update_config
+config= update_config(config)
+from default_values import * # LOAD HARDCODED values and EGGNOG_HEADER
 from conf import load_sample_table
-from default_values import *
-# get default values and update them with values specified in config file
-default_config = make_default_config()
-update_config(default_config, config)
-config = default_config
 sampleTable= load_sample_table()
 
 # minimum required snakemake version
@@ -327,7 +322,16 @@ onerror:
 
 
 
+### pepulate resources for rules that don't have
 
+for r in workflow.rules:
+    if not "mem" in r.resources:
+        r.resources["mem"]=config["mem"]
+    if not "time" in r.resources:
+        if r.resources["mem"]==config["simplejob_mem"]:
+            r.resources["time"]=config["runtime"]["simple_job"]
+        else:
+            r.resources["time"]=config["runtime"]["default"]
 
 
 #
