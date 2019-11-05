@@ -8,7 +8,7 @@ Cluster execution
 We recommend you to execute Atlas on a cluster system. Thank to the underlying, Snakemake system, can be executed on virtually all cluster and cloud systems. Instead of funning all steps of the atlas pipeline in one cluster job atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
 
 
-If you have a common cluster system (Slurm, LSF, toque ...) we have an easy set up (see below). Otherwise, if you have an other cluster system, fill in an GitHub issue (feature request) so we can help you bringing the magic of atlas to your cluster system.
+If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have an other cluster system, fill in an GitHub issue (feature request) so we can help you bringing the magic of atlas to your cluster system.
 For more information about cluster- and cloud submission, have a look at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executable.html>`_.
 
 Set up of cluster execution
