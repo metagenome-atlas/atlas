@@ -14,7 +14,7 @@ databaseDir=".test/databases"
 WD='.test/Test_assembly'
 reads_dir="example_data/reads/stub"
 
-ressource_args=" --config simplejob_mem=4 java_mem=4 assembly_mem=4"
+ressource_args=" --config simplejob_mem=4 mem=4 assembly_mem=4"
 
 
 rm -rf example_data

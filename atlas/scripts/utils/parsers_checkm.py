@@ -1,7 +1,6 @@
-
 import pandas as pd
-import os
-import warnings
+
+
 
 def read_checkm_output(taxonomy_table, completness_table):
 
@@ -23,22 +22,3 @@ def read_checkm_output(taxonomy_table, completness_table):
     ]
     df = pd.concat([c_df, t_df], axis=1)
     return df
-
-
-def load_checkm_tax(checkm_taxonomy_file):
-
-    checkmTax= pd.read_table(checkm_taxonomy_file,index_col=0)
-
-    checkmTax = checkmTax['Taxonomy (contained)']
-
-    if checkmTax.isnull().any():
-        warnings.warn("Some samples have no taxonomy asigned based on checkm. Samples:\n"+ \
-                    ', '.join(checkmTax.index[checkmTax.isnull()])
-                    )
-        checkmTax= checkmTax.dropna().astype(str)
-
-    checkmTax= pd.DataFrame(list(  checkmTax.apply(lambda s: s.split(';'))),
-                       index=checkmTax.index)
-
-    checkmTax.columns=['kindom','phylum','class','order','family','genus','species']
-    return checkmTax

@@ -49,8 +49,8 @@ if  SKIP_QC & (len(MULTIFILE_FRACTIONS)<3):
         threads:
             config.get("simplejob_threads", 1)
         resources:
-            mem = config.get("simplejob_mem", JAVA_MEM),
-            java_mem = int(int(config.get("simplejob_mem", JAVA_MEM) * JAVA_MEM_FRACTION))
+            mem = config["simplejob_mem"],
+            java_mem = int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION))
         shell:
             """
             reformat.sh {params.inputs} \
@@ -111,8 +111,8 @@ else:
 #     threads:
 #         config.get("threads", 1)
 #     resources:
-#         mem = config.get("java_mem", JAVA_MEM),
-#         java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+#         mem = config["mem"],
+#         java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
 #     shell:
 #         """
 #         if [ {params.input_single} != "null" ];
@@ -156,8 +156,8 @@ rule error_correction:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     params:
         inputs = lambda wc, input : io_params_for_tadpole(input),
         outputs = lambda wc, output: io_params_for_tadpole(output,key='out')
@@ -185,8 +185,8 @@ rule merge_pairs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     conda:
         "%s/required_packages.yaml" % CONDAENV
     log:
@@ -488,8 +488,8 @@ if config['filter_contigs']:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config["mem"],
+            java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
         shell:
             """
                 bbwrap.sh nodisk=t \
@@ -531,8 +531,8 @@ if config['filter_contigs']:
         threads:
             config.get("threads", 1)
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config["mem"],
+            java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
         shell:
             """
             pileup.sh ref={input.fasta} in={input.sam} \
@@ -564,8 +564,8 @@ if config['filter_contigs']:
         threads:
             1
         resources:
-            mem = config.get("java_mem", JAVA_MEM),
-            java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+            mem = config["mem"],
+            java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
         shell:
             """filterbycoverage.sh in={input.fasta} \
                    cov={input.covstats} \
@@ -633,8 +633,8 @@ rule align_reads_to_final_contigs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """
         bbwrap.sh nodisk=t \
@@ -699,8 +699,8 @@ rule pileup:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """pileup.sh ref={input.fasta} in={input.sam} \
                threads={threads} \

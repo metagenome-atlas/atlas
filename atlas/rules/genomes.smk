@@ -56,10 +56,9 @@ rule merge_checkm:
                sample= SAMPLES, binner= config['final_binner']),
         markers= expand("{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
                sample= SAMPLES, binner= config['final_binner'])
-
     output:
         checkm="genomes/checkm/checkm_all_bins.tsv",
-        markers= "genomes/checkm/markers_all_bins.fasta"
+        markers= "genomes/checkm/all_bins_markers.fasta"
     run:
 
         import pandas as pd
@@ -77,7 +76,6 @@ rule merge_checkm:
         with open(output.markers,'wb') as fout:
             for fasta in input.markers:
                 shutil.copyfileobj(open(fasta,'rb'),fout)
-
 
 
 
@@ -253,8 +251,8 @@ rule build_db_genomes:
     threads:
         config.get("threads", 6)
     resources:
-        mem = config["java_mem"],
-        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     log:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
@@ -295,8 +293,8 @@ rule align_reads_to_MAGs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """
             bbwrap.sh \
@@ -330,7 +328,7 @@ rule bam_2_sam_MAGs:
     threads:
         config['threads']
     resources:
-        mem = config["java_mem"],
+        mem = config["mem"],
     shadow:
         "shallow"
     conda:
@@ -358,8 +356,8 @@ rule pileup_MAGs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """pileup.sh in={input.sam} \
                threads={threads} \
@@ -441,43 +439,55 @@ rule combine_bined_coverages_MAGs:
 
         Median_abund.to_csv(output.median_abund,sep='\t')
 
-rule predict_genes_genomes:
-    input:
-        dir=genome_dir
-    output:
-        directory("genomes/annotations/genes")
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    log:
-        "logs/genomes/prodigal.log"
-    shadow:
-        "shallow"
-    threads:
-        config.get("threads", 1)
-    script:
-        "predict_genes_of_genomes.py"
-
-
-
 # rule predict_genes_genomes:
 #     input:
-#         "genomes/genomes/{genome}.fasta"
+#         dir=genome_dir
 #     output:
-#         fna = "genomes/annotations/genes/{genome}.fna",
-#         faa = "genomes/annotations/genes/{genome}.faa",
-#         gff = "genomes/annotations/genes/{genome}.gff"
+#         directory("genomes/annotations/genes")
 #     conda:
 #         "%s/required_packages.yaml" % CONDAENV
 #     log:
-#         "logs/genomes/prodigal/{genome}.txt"
+#         "logs/genomes/prodigal.log"
+#     shadow:
+#         "shallow"
 #     threads:
-#         1
-#     shell:
-#         """
-#         prodigal -i {input} -o {output.gff} -d {output.fna} \
-#             -a {output.faa} -p meta -f gff 2> >(tee {log})
-#         """
+#         config.get("threads", 1)
+#     script:
+#         "predict_genes_of_genomes.py"
 
+
+
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        fna = "genomes/annotations/genes/{genome}.fna",
+        faa = "genomes/annotations/genes/{genome}.faa",
+        gff = "genomes/annotations/genes/{genome}.gff"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal/{genome}.txt"
+    threads:
+        1
+    resources:
+        mem= config['simplejob_mem']
+    shell:
+        """
+        prodigal -i {input} -o {output.gff} -d {output.fna} \
+            -a {output.faa} -p meta -f gff 2> >(tee {log})
+        """
+
+def get_all_genes(wildcards,extension='.faa'):
+    return expand("genomes/annotations/genes/{genome}{extension}",
+           genome=get_genomes_(wildcards),extension=extension)
+
+localrules: all_prodigal
+rule all_prodigal:
+    input:
+        get_all_genes
+    output:
+        touch("genomes/annotations/genes/predicted")
 
 
 

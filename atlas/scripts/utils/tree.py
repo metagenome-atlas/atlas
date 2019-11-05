@@ -5,47 +5,30 @@ import ete3
 import pandas as pd
 import warnings
 
-#from . import parsers_checkm
-def load_checkm_tax(checkm_taxonomy_file):
-
-    checkmTax= pd.read_table(checkm_taxonomy_file,index_col=0)
-
-    checkmTax = checkmTax['Taxonomy (contained)']
-
-    if checkmTax.isnull().any():
-        warnings.warn("Some samples have no taxonomy asigned based on checkm. Samples:\n"+ \
-                    ', '.join(checkmTax.index[checkmTax.isnull()])
-                    )
-        checkmTax= checkmTax.dropna().astype(str)
-
-    checkmTax= pd.DataFrame(list(  checkmTax.apply(lambda s: s.split(';'))),
-                       index=checkmTax.index)
-
-    checkmTax.columns=['kindom','phylum','class','order','family','genus','species']
-    return checkmTax
-
 
 def load_tree(netwik_file):
     return ete3.Tree(netwik_file,quoted_node_names=True,format=1)
 
 def root_tree_by_phyla(T,phyla):
-    """ Root the tree next to the least frequent phyla if possible
+    """ Root the tree next to the phylum that is as far apart as possible from the other phyla
 
     """
+    phylum_LCA={}
 
+    for p in phyla.unique():
+        phylum_LCA[p]=T.get_common_ancestor(*tuple(phyla.index[phyla==p].values))
 
-    Freq_pyla= phyla.value_counts()
+    Dist= pd.DataFrame()
+    for p1,lca1 in phylum_LCA.items():
+        for p2,lca2 in phylum_LCA.items():
+            Dist.loc[p1,p2]=T.get_distance(lca1,lca2)
 
-    for p in reversed(Freq_pyla.index):
-        LCA = T.get_common_ancestor(*tuple(phyla.index[phyla==p].values))
+    furthest_phylum= Dist.mean().idxmax()
+    outgroup=phylum_LCA[furthest_phylum]
 
-        if not T== LCA:
-            T.set_outgroup(LCA)
-            print(f"set {p} as outgroup for Tree rooting")
-            break
+    if not outgroup== T:
+        T.set_outgroup(outgroup)
 
-
-    T.unroot()
 
 def layout_black_circles(node):
     # If node is a leaf
@@ -64,14 +47,3 @@ def render_tree(T,out):
     ts.show_scale=False
 
     T.render(out,tree_style=ts,layout=layout_black_circles)
-
-
-if __name__ == "__main__":
-
-
-    T= load_tree(snakemake.input.tree)
-    phyla= load_checkm_tax(snakemake.input.taxonomy).phylum
-
-    root_tree_by_phyla(T,phyla)
-
-    T.write(outfile=snakemake.output.tree)

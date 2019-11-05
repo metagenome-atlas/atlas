@@ -1,6 +1,6 @@
 
 # global defaults
-JAVA_MEM = 32
+MEM = 80
 JAVA_MEM_FRACTION = 0.85
 PREALLOCATE_RAM = "t"
 PREPROCESS_ADAPTER_MIN_K = 8
@@ -120,7 +120,7 @@ def make_default_config():
     conf["simplejob_mem"]=10
     conf["simplejob_threads"]=4
 
-    conf["java_mem"] = JAVA_MEM
+    conf["mem"] = MEM
     conf["large_mem"] = 250
     conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K

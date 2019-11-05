@@ -9,7 +9,9 @@ from snakemake.utils import logger, min_version, update_config
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
 
 from utils import gen_names_for_range
-
+# in old version java_mem was used, new is mem
+if ('java_mem' in config) and (not ('mem' in config)):
+    config['mem']=config['java_mem']
 
 from conf import load_sample_table
 from default_values import *
@@ -202,7 +204,6 @@ include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
 include: "rules/cat_taxonomy.smk"
 include: "rules/gtdbtk.smk"
-include: "rules/tree.smk"
 
 
 
@@ -235,14 +236,14 @@ def get_genome_annotations():
     annotation_file_names={"cat_taxonomy":"genomes/taxonomy/taxonomy.tsv",
                "ssu":"genomes/SSU/ssu_summary.tsv",
                "checkm_taxonomy":"genomes/checkm/taxonomy.tsv",
-               "checkm_tree": "genomes/tree/tree.nwk",
-               "gtdb_tree":"genomes/taxonomy/gtdbtk.unrooted.tree",
-               "gtdb_taxonomy":"genomes/taxonomy/gtdbtk.bac120.summary.tsv"}
+               "checkm_tree": "genomes/tree/checkm.nwk",
+               "gtdb_tree":"genomes/tree/finished_gtdb_trees",
+               "gtdb_taxonomy":"genomes/taxonomy/gtdb/classify"}
 
     annotations_requested= config['annotations']
 
     try:
-        annotations_files=["genomes/annotations/genes"]+[annotation_file_names[an] for an in annotations_requested]
+        annotations_files=["genomes/annotations/genes/predicted"]+[annotation_file_names[an] for an in annotations_requested]
 
     except Exception as e:
 
