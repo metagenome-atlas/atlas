@@ -66,32 +66,32 @@ atlas init
 
 ::
 
-    Usage: atlas init [OPTIONS] PATH_TO_FASTQ
+  Usage: atlas init [OPTIONS] PATH_TO_FASTQ
 
-      Write the file CONFIG and complete the sample names and paths for all
-      FASTQ files in PATH.
+    Write the file CONFIG and complete the sample names and paths for all
+    FASTQ files in PATH.
 
-      PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
-      the file name with the file name minus extension as the sample ID.
+    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+    the file name with the file name minus extension as the sample ID.
 
-    Options:
-      -d, --db-dir PATH               location to store databases (need ~50GB)
-                                      [default: /Users/silas/Documents/Debug_atlas
-                                      /databases]
-      -w, --working-dir PATH          location to run atlas
-      --assembler [megahit|spades]    assembler  [default: spades]
-      --data-type [metagenome|metatranscriptome]
-                                      sample data type  [default: metagenome]
-      --threads INTEGER               number of threads to use per multi-threaded
-                                      job
-      -h, --help                      Show this message and exit.
+  Options:
+    -d, --db-dir PATH               location to store databases (need ~50GB)
+                                    [default: /Users/silas/Documents/GitHub/Snak
+                                    emakeProfiles/test/databases]
+    -w, --working-dir PATH          location to run atlas
+    --assembler [megahit|spades]    assembler  [default: spades]
+    --data-type [metagenome|metatranscriptome]
+                                    sample data type  [default: metagenome]
+    --threads INTEGER               number of threads to use per multi-threaded
+                                    job
+    --skip-qc                       Skip QC, if reads are already pre-processed
+    -h, --help                      Show this message and exit.
 
 
 This command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
 
 Have a look at them with a normal text editor and check if the samples names are inferred correctly.
 Samples should be alphanumeric names and cam be dash delimited. Underscores should be fine too.
-
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 
@@ -100,11 +100,15 @@ The ``BinGroup`` parameter is used during the genomic binning.
 In short: all samples in which you expect the same strain to
 be found should belong to the same group,
 e.g. all metagenome samples from mice in the same cage.
+If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
+
 
 You should also check the ``config.yaml`` file, especially:
 
-- You may want to change the resources configuration, depending on the :ref:`system <execution_system>` you run atlas on.
+
 - You may want to add ad :ref:`host genomes <contaminants>` to be removed.
+- You may want to change the resources configuration, depending on the system you run atlas on.
+
 
 Details about the parameters can be found in the section :ref:`Configuration`
 
@@ -113,7 +117,8 @@ atlas run
 
 ::
 
-  Usage: atlas run [OPTIONS] [[qc|assembly|binning|genomes|genecatalog|None|all]]
+  Usage: atlas run [OPTIONS]
+                   [[qc|assembly|binning|genomes|genecatalog|None|all]]
                    [SNAKEMAKE_ARGS]...
 
     Runs the ATLAS pipline
@@ -142,4 +147,23 @@ atlas run
 
 Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for other handy snakemake arguments.
 
-If you want to run atlas on a cluster system you want to read the section :ref:`execution_system`_.
+We recommend to use atlas on a :ref:`cluster`_ system, which can be set up in a view more commands.
+
+
+Test atlas
+==========
+
+If you want to test atlas on a small example data here is a two sample, three genome minimal metagenome dataset,
+to test atlas. Even when atlas will run faster on the test data,
+it will anyway download all the databases and requirements, for the a complete run,
+which can take a certain amount of time and especially disk space (>100Gb).
+
+The database dir of the test run should be the same as for the later atlas executions.
+
+The example data can be downloaded as following::
+
+  git clone https://github.com/metagenome-atlas/example_data.git
+
+  atlas init --db-dir databases --working-dir testrun example_data/reads/test
+
+  atlas run --working-dir testrun
