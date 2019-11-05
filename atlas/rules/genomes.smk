@@ -536,16 +536,19 @@ rule all_prokka:
 
 rule gene2genome:
     input:
-        genome_dir
+        "genomes/annotations/genes"
     output:
-        "genomes/annotations/gene2genome.tsv"
+        "genomes/annotations/orf2genome.tsv"
     threads:
-        1
+        8
     run:
         from utils.fasta import header2origin
+        from multiprocessing.dummy import Pool
+        import itertools
 
         fasta_files= glob(input[0]+'/*.faa')
 
+        pool = Pool(threads)
+
         with open(output[0],'w') as outf :
-            for fasta in fasta_files:
-                header2origin(fasta,outf)
+            pool.starmap(header2origin, zip(fasta_files,itertools.repeat(outf)))
