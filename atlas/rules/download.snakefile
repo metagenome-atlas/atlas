@@ -77,7 +77,11 @@ CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
         "%s/distributions/cd_dist.txt" % CHECKMDIR
         ]
 
-
+def get_eggnog_db_file():
+    return ancient(expand("{path}/{files}",
+                  path=EGGNOG_DIR,
+                  files=["eggnog.db","eggnog_proteins.dmnd"]
+                  ))
 
 localrules: download,download_eggNOG_files,download_atlas_files,unpack_checkm_data
 ruleorder: download_eggNOG_fastas > download_eggNOG_files > download_atlas_files
@@ -86,8 +90,7 @@ rule download:
     input:
         expand("{dir}/{filename}", dir=DBDIR,
                filename=["adapters.fa","phiX174_virus.fa"]),
-        expand("{dir}/{filename}", dir=EGGNOG_DIR,
-               filename=["eggnog.db","eggnog_proteins.dmnd"]),
+        get_eggnog_db_file(),
         CHECKMFILES,
         os.path.join(GTDBTK_DATA_PATH,'downloaded_success')
 

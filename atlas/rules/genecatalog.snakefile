@@ -415,11 +415,7 @@ rule combine_gene_coverages:
 # output with wildcards "{folder}/{prefix}.emapper.tsv"
 
 
-def get_eggnog_db_file():
-    return ancient(expand("{path}/{files}",
-                  path=EGGNOG_DIR,
-                  files=["OG_fasta","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
-                  ))
+
 
 # TODO: make benchmark
 rule eggNOG_homology_search:
