@@ -225,7 +225,8 @@ rule run_all_checkm_lineage_wf:
     threads:
         config.get("threads", 1)
     resources:
-         time=config["runtime"]["long"]
+        time=config["runtime"]["long"],
+        mem=config["large_mem"]
     shell:
         """
         rm -r {params.output_dir}
