@@ -3,7 +3,7 @@ import os
 
 
 ZENODO_ARCHIVE = "1134890"
-EGGNOG_VERSION = "4.5.1"
+EGGNOG_VERSION = "5"
 
 
 def md5(fname):
@@ -25,7 +25,7 @@ CHECKMDIR = os.path.join(DBDIR, "checkm")
 CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
-EGGNOG_DIR = os.path.join(DBDIR,'EggNOG')
+EGGNOG_DIR = os.path.join(DBDIR,'EggNOGV2')
 GTDBTK_DATA_PATH=os.path.join(DBDIR,"GTDB-TK")
 CONDAENV = "../envs"
 
@@ -79,7 +79,7 @@ CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
 
 
 
-localrules: download, download_eggNOG_fastas,download_eggNOG_files,download_atlas_files,unpack_checkm_data
+localrules: download,download_eggNOG_files,download_atlas_files,unpack_checkm_data
 ruleorder: download_eggNOG_fastas > download_eggNOG_files > download_atlas_files
 
 rule download:
@@ -87,43 +87,31 @@ rule download:
         expand("{dir}/{filename}", dir=DBDIR,
                filename=["adapters.fa","phiX174_virus.fa"]),
         expand("{dir}/{filename}", dir=EGGNOG_DIR,
-               filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
+               filename=["eggnog.db","eggnog_proteins.dmnd"]),
         CHECKMFILES,
         os.path.join(GTDBTK_DATA_PATH,'downloaded_success')
 
 
 
-
-rule download_eggNOG_fastas:
-    output:
-        directory(f"{EGGNOG_DIR}/OG_fasta"),
-    run:
-        dl_filename = "OG_fasta.tar.gz"
-        dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-
-        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
-        # validate the download
-        if not FILES['OG_fasta'] == md5(dl_output):
-            raise OSError(2, "Invalid checksum", dl_output)
-        # handle extraction/decompression
-        shell("tar -zxf %s --directory {EGGNOG_DIR}" % dl_output)
-
 rule download_eggNOG_files:
     output:
-        f"{EGGNOG_DIR}/{{filename}}",
+        f"{EGGNOG_DIR}/eggnog.db",
+        f"{EGGNOG_DIR}/eggnog_proteins.dmnd"
     threads:
         1
-    shell:
-        "download_eggnog_data.py -y --data_dir {}  "
     run:
-        dl_filename = wildcards.filename+'.gz'
-        dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
+        shell(f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} " )
         # validate the download
-        if not FILES[wildcards.filename] == md5(dl_output):
-            raise OSError(2, "Invalid checksum", dl_output)
-        # handle extraction/decompression
-        shell("gunzip %s" % dl_output)
+        for file in input:
+            if not FILES[os.path.basename(file)] == md5(file):
+                raise OSError(2, "Invalid checksum", file)
+        # check if old eggNOG dir exists
+        old_eggnogdir=EGGNOG_DIR.replace('V2','')
+        if os.path.exists(old_eggnogdir):
+            logger.info("The eggnog database form the olf v1 was found on your system."
+                        f"You can savely remove this folder {old_eggnogdir}")
+
+
 
 
 rule download_atlas_files:
