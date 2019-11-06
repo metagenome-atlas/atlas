@@ -21,9 +21,9 @@ else:
     localrules: concat_genes
     rule concat_genes:
         input:
+            "genomes/annotations/gene2genome.tsv",
             faa= lambda wc: get_all_genes(wc,".faa"),
-            fna= lambda wc: get_all_genes(wc,".fna"),
-            "genomes/annotations/gene2genome.tsv"
+            fna= lambda wc: get_all_genes(wc,".fna")
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
@@ -429,8 +429,6 @@ rule eggNOG_homology_search:
         mem = config["mem"]
     threads:
         config["threads"]
-    benchmark:
-        lambda wc: f"logs/benchmarks/eggNOG/{wc.folder.replace('/','_')}/{wc.prefix}.txt
     conda:
         "%s/eggNOG.yaml" % CONDAENV
     log:

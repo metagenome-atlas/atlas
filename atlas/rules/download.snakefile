@@ -82,7 +82,7 @@ def get_eggnog_db_file():
                   ))
 
 localrules: download,download_eggNOG_files,download_atlas_files,unpack_checkm_data
-ruleorder: download_eggNOG_fastas > download_eggNOG_files > download_atlas_files
+ruleorder: download_eggNOG_files > download_atlas_files
 
 rule download:
     input:
