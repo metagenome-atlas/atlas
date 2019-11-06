@@ -6,9 +6,9 @@ channels:
 dependencies:
   - python=3.6
   - snakemake
-- pandas
-- bbmap=37.78
-- click=7
-- ruamel.yaml
-- biopython
-- cookiecutter
+  - pandas
+  - bbmap=37.78
+  - click=7
+  - ruamel.yaml
+  - biopython
+  - cookiecutter
