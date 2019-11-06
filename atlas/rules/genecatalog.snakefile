@@ -415,9 +415,6 @@ rule combine_gene_coverages:
 # output with wildcards "{folder}/{prefix}.emapper.tsv"
 
 
-
-
-# TODO: make benchmark
 rule eggNOG_homology_search:
     input:
         eggnog_db_files=get_eggnog_db_file(),
@@ -431,6 +428,8 @@ rule eggNOG_homology_search:
         mem = config["mem"]
     threads:
         config["threads"]
+    benchmark:
+        lambda wc: f"logs/benchmarks/eggNOG/{wc.folder.replace('/','_')}/{wc.prefix}.txt
     conda:
         "%s/eggNOG.yaml" % CONDAENV
     log:
@@ -466,24 +465,6 @@ rule eggNOG_annotation:
         emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
-
-
-# rule add_eggNOG_header:
-#     input:
-#         "{folder}/{prefix}.emapper.annotations"
-#     output:
-#         "{folder}/{prefix}.emapper.tsv"
-#     run:
-#         import pandas as pd#
-
-#            where do you take the Headers
-
-#         D = pd.read_csv(input[0], header=None,sep='\t')
-#         D.columns = EGGNOG_HEADERS
-#         D.to_csv(output[0],sep="\t",index=False)
-
-
-
 
 
 #
