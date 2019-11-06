@@ -544,3 +544,20 @@ rule all_prokka:
         out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
+
+
+rule gene2genome:
+    input:
+        genome_dir
+    output:
+        "genomes/annotations/gene2genome.tsv"
+    threads:
+        1
+    run:
+        from utils.fasta import header2origin
+
+        fasta_files= glob(input[0]+'/*.faa')
+
+        with open(output[0],'w') as outf :
+            for fasta in fasta_files:
+                header2origin(fasta,outf)
