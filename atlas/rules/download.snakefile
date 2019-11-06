@@ -113,6 +113,8 @@ rule download_eggNOG_files:
         f"{EGGNOG_DIR}/{{filename}}",
     threads:
         1
+    shell:
+        "download_eggnog_data.py -y --data_dir {}  "
     run:
         dl_filename = wildcards.filename+'.gz'
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
