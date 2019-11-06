@@ -36,10 +36,8 @@ FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
          "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
          "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
          "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
-         "OG_fasta": "8fc6ce2e055d1735dec654af98a641a4",
-         "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
-         "eggnog_proteins.dmnd": "5efb0eb18ed4575a20d25773092b83b9",
-         "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
+         "eggnog.db": "7923d3bb7eca8e0e8f122be4b5ca6997",
+         "eggnog_proteins.dmnd": "64fefa838833a6f3e220a06fb9d403cd",
          CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
 
