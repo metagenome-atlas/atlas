@@ -22,7 +22,8 @@ else:
     rule concat_genes:
         input:
             faa= lambda wc: get_all_genes(wc,".faa"),
-            fna= lambda wc: get_all_genes(wc,".fna")
+            fna= lambda wc: get_all_genes(wc,".fna"),
+            "genomes/annotations/gene2genome.tsv"
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
