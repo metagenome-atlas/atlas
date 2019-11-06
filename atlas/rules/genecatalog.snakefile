@@ -467,20 +467,6 @@ rule eggNOG_annotation:
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
 
-EGGNOG_HEADERS= [
-"query_name",
-"seed_eggNOG_ortholog",
-"seed_ortholog_evalue",
-"seed_ortholog_score",
-"predicted_gene_name",
-"GO_terms",
-"KEGG_KO",
-"BiGG_Reactions",
-"Annotation_tax_scope",
-"Matching_OGs",
-"best_OG|evalue|score",
-"categories",
-"eggNOG_HMM_model_annotation"]
 
 # rule add_eggNOG_header:
 #     input:

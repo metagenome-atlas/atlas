@@ -93,20 +93,29 @@ import sys
 import tempfile
 
 EGGNOG_HEADER = [
-    "query_name",
-    "seed_eggNOG_ortholog",
-    "seed_ortholog_evalue",
-    "seed_ortholog_score",
-    "predicted_gene_name",
+    "Query_name",
+    "Seed_eggNOG_ortholog",
+    "Seed_ortholog_evalue",
+    "Seed_ortholog_score",
+    "Predicted_taxonomic_group",
+    "Protein_name",
     "GO_terms",
-    "KEGG_KO",
-    "BiGG_Reactions",
-    "Annotation_tax_scope",
-    "Matching_OGs",
-    "best_OG|evalue|score",
-    "categories",
-    "eggNOG_HMM_model_annotation",
-]
+    "EC",
+    "KO",
+    "KEGG_Pathway",
+    "KEGG_Module",
+    "KEGG_Reaction",
+    "KEGG_rclass",
+    "BRITE",
+    "KEGG_TC",
+    "CAZy",
+    "BiGG Reaction"
+    "tax_scope"
+    "EggNog",
+    "depricated_bestOG",
+    "FunctionalCategory"
+    "Description"
+                ]
 
 def make_default_config():
     """ generates a dict with all the default values, if they exist
