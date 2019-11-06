@@ -147,7 +147,7 @@ atlas run
 
 Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for other handy snakemake arguments.
 
-We recommend to use atlas on a :ref:`cluster`_ system, which can be set up in a view more commands.
+We recommend to use atlas on a :ref:`cluster` system, which can be set up in a view more commands.
 
 
 Test atlas
