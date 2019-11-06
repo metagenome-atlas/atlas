@@ -121,7 +121,7 @@ def make_default_config():
     conf["simplejob_threads"]=4
 
     conf["mem"] = MEM
-    conf["large_mem"] = 250
+    conf["large_mem"] = 100
     conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
@@ -257,9 +257,9 @@ def make_default_config():
     conf['cat_fraction']=0.3
 
     conf["runtime"]={
-                    "default":10,
-                    "assembly":100,
-                    "long":100,
+                    "default":5,
+                    "assembly":24,
+                    "long":12,
                     "simple_job":0.5
                     }
 
