@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import sys
 import tempfile
-from ruamel.yaml import YAML
 from snakemake import utils
 from snakemake.io import load_configfile
 import pandas as pd
@@ -134,6 +133,7 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
         data_type (str): this is either metagenome or metatranscriptome
     """
 
+    from ruamel.yaml import YAML #used for yaml reading with comments
 
     yaml = YAML()
     yaml.version = (1, 1)
