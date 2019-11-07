@@ -3,7 +3,7 @@ import multiprocessing
 import os
 import sys
 import tempfile
-from ruamel.yaml import YAML
+from ruamel_yaml import YAML
 from snakemake import utils
 from snakemake.io import load_configfile
 import pandas as pd
