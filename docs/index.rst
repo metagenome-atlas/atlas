@@ -55,7 +55,8 @@ Documentation
     :caption: Setup
 
     usage/getting_started
-    usage/threads
+    usage/cluster
+    usage/test
 
 .. toctree::
     :maxdepth: 2
