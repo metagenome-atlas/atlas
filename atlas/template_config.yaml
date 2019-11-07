@@ -19,9 +19,9 @@
 threads: 8
 mem: 60
 
-# threads and memory for jobs needing high amount of memory. e.g GTDB-tk or assembly
+# threads and memory for jobs needing high amount of memory. e.g GTDB-tk,checkm or assembly
 large_mem: 100
-large_threads: 16
+large_threads: 8
 assembly_threads: 8
 assembly_memory: 250
 
