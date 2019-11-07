@@ -41,7 +41,7 @@ cd atlas
 ```
 Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```
-conda create --file atlasenv.yml
+conda env create -f atlasenv.yml
 source activate atlasenv
 ```
 Install atlas:
