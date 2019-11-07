@@ -21,7 +21,7 @@ else:
     localrules: concat_genes
     rule concat_genes:
         input:
-            "genomes/annotations/gene2genome.tsv",
+            "genomes/annotations/orf2genome.tsv",
             faa= lambda wc: get_all_genes(wc,".faa"),
             fna= lambda wc: get_all_genes(wc,".fna")
         output:

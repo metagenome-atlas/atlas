@@ -549,17 +549,19 @@ rule all_prokka:
 
 rule gene2genome:
     input:
-        "genomes/annotations/genes"
+        get_all_genes
     output:
         "genomes/annotations/orf2genome.tsv"
     threads:
-        8
+        config['simplejob_threads']
+    resources:
+        mem=config['simplejob_mem']
     run:
         from utils.fasta import header2origin
         from multiprocessing.dummy import Pool
         import itertools
 
-        fasta_files= glob(input[0]+'/*.faa')
+        fasta_files= input
 
         pool = Pool(threads)
 
