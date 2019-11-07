@@ -553,7 +553,7 @@ rule gene2genome:
     output:
         "genomes/annotations/orf2genome.tsv"
     threads:
-        config['threads']
+        config['simplejob_threads']
     resources:
         mem=config['simplejob_mem']
     run:
