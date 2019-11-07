@@ -21,6 +21,7 @@ else:
     localrules: concat_genes
     rule concat_genes:
         input:
+            "genomes/annotations/gene2genome.tsv",
             faa= lambda wc: get_all_genes(wc,".faa"),
             fna= lambda wc: get_all_genes(wc,".fna")
         output:
@@ -415,13 +416,6 @@ rule combine_gene_coverages:
 # output with wildcards "{folder}/{prefix}.emapper.tsv"
 
 
-def get_eggnog_db_file():
-    return ancient(expand("{path}/{files}",
-                  path=EGGNOG_DIR,
-                  files=["OG_fasta","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
-                  ))
-
-# TODO: make benchmark
 rule eggNOG_homology_search:
     input:
         eggnog_db_files=get_eggnog_db_file(),
@@ -470,38 +464,6 @@ rule eggNOG_annotation:
         emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
             --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
         """
-
-EGGNOG_HEADERS= [
-"query_name",
-"seed_eggNOG_ortholog",
-"seed_ortholog_evalue",
-"seed_ortholog_score",
-"predicted_gene_name",
-"GO_terms",
-"KEGG_KO",
-"BiGG_Reactions",
-"Annotation_tax_scope",
-"Matching_OGs",
-"best_OG|evalue|score",
-"categories",
-"eggNOG_HMM_model_annotation"]
-
-# rule add_eggNOG_header:
-#     input:
-#         "{folder}/{prefix}.emapper.annotations"
-#     output:
-#         "{folder}/{prefix}.emapper.tsv"
-#     run:
-#         import pandas as pd#
-
-#            where do you take the Headers
-
-#         D = pd.read_csv(input[0], header=None,sep='\t')
-#         D.columns = EGGNOG_HEADERS
-#         D.to_csv(output[0],sep="\t",index=False)
-
-
-
 
 
 #
