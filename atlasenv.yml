@@ -9,6 +9,6 @@ dependencies:
   - pandas
   - bbmap=37.78
   - click=7
-  - ruamel.yaml
+  - ruamel.yaml=0.14
   - biopython
   - cookiecutter
