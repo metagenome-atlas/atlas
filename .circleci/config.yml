@@ -20,7 +20,7 @@ jobs:
       - run: conda config --set always_yes true
       - run: conda config --set quiet true
       - run: conda env create --file atlasenv.yml
-      - run: conda activate atlasenv
+      - run: source activate atlasenv
       - run: python setup.py install
       - run: atlas --help
       - run: atlas --version
