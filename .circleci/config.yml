@@ -19,6 +19,7 @@ jobs:
       - run: conda config --add channels conda-forge
       - run: conda config --set always_yes true
       - run: conda config --set quiet true
+      - run: conda env create --file atlasenv.yml
       - run: source activate atlasenv
       - run: python setup.py install
       - run: atlas --help
@@ -27,7 +28,7 @@ jobs:
       - run: .test/dryrun.sh
       - run: atlas run all -w $WORKING_DIR --create-envs-only
       - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
-      #- run: .test/test_assembly.sh
+      - run: .test/test_assembly.sh
 
 
 
