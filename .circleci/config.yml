@@ -20,7 +20,6 @@ jobs:
       - run: conda config --set always_yes true
       - run: conda env update --file atlasenv.yml
       - run: python setup.py install
-      - run: conda list
       - run: atlas --help
       - run: atlas --version
       # make config
