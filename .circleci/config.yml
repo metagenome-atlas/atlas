@@ -18,7 +18,8 @@ jobs:
       - run: conda config --add channels bioconda
       - run: conda config --add channels conda-forge
       - run: conda config --set always_yes true
-      - run: conda install --file atlasenv.yml
+      - run: conda env create -n atlasenv --file atlasenv.yml
+      - run: source activate atlasenv
       - run: python setup.py install
       - run: atlas --help
       - run: atlas --version
