@@ -41,7 +41,7 @@ setup(
             "snakemake",
             "pandas",
             "click",
-            "ruamel.yaml",
+            "ruamel.yaml==0.15.99",
             "biopython"
     ],
     # install via conda: click, pandas, pyyaml, snakemake
