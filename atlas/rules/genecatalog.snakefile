@@ -573,7 +573,7 @@ rule add_eggNOG_header:
     run:
         import pandas as pd
 
-        D = pd.read_table(input[0], header=None)
+        D = pd.read_csv(input[0], header=None,sep='\t')
         D.columns = EGGNOG_HEADER
         D.to_csv(output[0],sep="\t",index=False)
 

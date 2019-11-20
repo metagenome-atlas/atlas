@@ -93,11 +93,11 @@ import sys
 import tempfile
 
 EGGNOG_HEADER = [
-    "Query_name",
-    "Seed_eggNOG_ortholog",
-    "Seed_ortholog_evalue",
-    "Seed_ortholog_score",
-    "Predicted_taxonomic_group",
+    "Query",
+    "Target",
+    "evalue",
+    "score",
+    "Taxonomy",
     "Protein_name",
     "GO_terms",
     "EC",
@@ -109,11 +109,11 @@ EGGNOG_HEADER = [
     "BRITE",
     "KEGG_TC",
     "CAZy",
-    "BiGG Reaction"
-    "tax_scope"
+    "BiGG_Reaction",
+    "tax_scope",
     "EggNog",
     "depricated_bestOG",
-    "FunctionalCategory"
+    "FunctionalCategory",
     "Description"
                 ]
 
