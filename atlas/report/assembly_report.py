@@ -80,8 +80,8 @@ def main(samples, contig_stats, gene_tables, mapping_logs, report_out, combined_
             ),
             **PLOTLY_PARAMS,
         )
-    div["N50"] = offline.plot(
-        df[["N50", "N90"]].iplot(
+    div["L50"] = offline.plot(
+        df[["L50", "L90"]].iplot(
             asFigure=True,
             kind="bar",
             xTitle="Samples",
@@ -109,12 +109,16 @@ ATLAS_ - Assembly Summary
 Summary
 -------
 
-N50
-***
+Fragmentation
+*************
+
+L50/L90 is a measure of how fractionated assemblies are:
+50%/ 90% of the assembly is made up of contigs of Length L50/L90 or longer. Sometimes refered to as N50/N90.
+
 
 .. raw:: html
 
-    {div[N50]}
+    {div[L50]}
 
 
 Assembly Length

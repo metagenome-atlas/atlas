@@ -4,19 +4,16 @@ import sys
 import tempfile
 import pandas as pd
 import numpy as np
-from snakemake.utils import logger, min_version, update_config
+
+from snakemake.utils import logger, min_version
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
+import utils
 
-from utils import gen_names_for_range
-
-from default_values import *
+from conf import update_config
+config= update_config(config)
+from default_values import * # LOAD HARDCODED values and EGGNOG_HEADER
 from conf import load_sample_table
-
-# get default values and update them with values specified in config file
-default_config = make_default_config()
-update_config(default_config, config)
-config = default_config
 sampleTable= load_sample_table()
 
 # minimum required snakemake version
@@ -200,9 +197,8 @@ include: "rules/assemble.snakefile"
 include: "rules/binning.snakefile"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.snakefile"
-include: "rules/cat_taxonomy.smk"
-include: "rules/tree.smk"
 include: "rules/sra.smk"
+include: "rules/gtdbtk.smk"
 
 
 
@@ -229,18 +225,38 @@ rule genecatalog:
     output:
         temp(touch("finished_genecatalog"))
 
+
+def get_genome_annotations():
+
+    annotation_file_names={"cat_taxonomy":"genomes/taxonomy/taxonomy.tsv",
+               "ssu":"genomes/SSU/ssu_summary.tsv",
+               "checkm_taxonomy":"genomes/checkm/taxonomy.tsv",
+               "checkm_tree": "genomes/tree/checkm.nwk",
+               "gtdb_tree":"genomes/tree/finished_gtdb_trees",
+               "gtdb_taxonomy":"genomes/taxonomy/gtdb/classify"}
+
+    annotations_requested= config['annotations']
+
+    try:
+        annotations_files=["genomes/annotations/genes/predicted"]+[annotation_file_names[an] for an in annotations_requested]
+
+    except Exception as e:
+
+        raise IOError("Error in annotations requested, check config file 'annotations' ") from e
+
+    return annotations_files
+
+
 rule genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes",
-        "genomes/checkm/taxonomy.tsv",
-        "genomes/tree/tree.nwk",
+        "genomes/checkm/completeness.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
-        "genomes/SSU/ssu_summary.tsv",
-        "genomes/taxonomy/taxonomy.tsv",
-        "genomes/annotations/genes",
+        *get_genome_annotations(),
         "finished_binning"
+
     output:
         temp(touch("finished_genomes"))
 
@@ -249,6 +265,7 @@ rule binning:
         expand("{sample}/binning/{binner}/cluster_attribution.tsv",
                binner=config['final_binner'], sample =SAMPLES),
         expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+        "genomes/checkm/checkm_all_bins.tsv",
         "finished_assembly"
     output:
         temp(touch("finished_binning"))
@@ -267,7 +284,7 @@ rule assembly_one_sample:
 
 rule assembly:
     input:
-        expand(rules.assembly_one_sample.output,sample=SAMPLES),
+        expand("{sample}/finished_assembly",sample=SAMPLES),
         "reports/assembly_report.html",
         "finished_QC"
     output:
@@ -305,7 +322,16 @@ onerror:
 
 
 
+### pepulate resources for rules that don't have
 
+for r in workflow.rules:
+    if not "mem" in r.resources:
+        r.resources["mem"]=config["mem"]
+    if not "time" in r.resources:
+        if r.resources["mem"]==config["simplejob_mem"]:
+            r.resources["time"]=config["runtime"]["simple_job"]
+        else:
+            r.resources["time"]=config["runtime"]["default"]
 
 
 #

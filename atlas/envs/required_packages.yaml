@@ -1,8 +1,7 @@
 channels:
-    - bioconda
     - conda-forge
+    - bioconda
     - defaults
-    - r
 dependencies:
     - python=3.5
     - bbmap=37.78

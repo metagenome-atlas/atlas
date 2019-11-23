@@ -1,8 +1,8 @@
 Install
 ========
 
-1a. Create conda environment
-----------------------------
+A. Use conda
+-------------
 
 You need to install anaconda or miniconda.
 We recommend you to create a conda environment::
@@ -12,26 +12,27 @@ We recommend you to create a conda environment::
 
 Then install metagenome-atlas::
 
-    conda install -y -c bioconda -c conda-forge metagenome-atlas
+    conda install metagenome-atlas
 
 
-1b. Install the development version from GitHub
+B. Install the development version from GitHub
 -----------------------------------------------
 Atlas is still under active development, therefore you may want to install the up to date atlas from GitHub.
 
-Create an conda environment with all primary dependencies. All further dependencies are installed on the fly::
-
-  conda create -n atlasenv -c bioconda -c conda-forge python>=3.6 snakemake pandas bbmap=37.78 click=7 ruamel.yaml biopython
-
-Load the environment::
-
-  source activate atlasenv
-
-copy code from GitHub and install::
+get code from GitHub::
 
   git clone https://github.com/metagenome-atlas/atlas.git
   cd atlas
+
+Create a conda environment with all primary dependencies. All further dependencies are installed on the fly::
+
+  conda env create -f atlasenv.yml
+  source activate atlasenv
+
+Install atlas::
+
   pip install --editable .
+
 
 Now you should be able to run atlas::
 
@@ -41,14 +42,14 @@ Now you should be able to run atlas::
 
 
 
-2. Download all databases first
--------------------------------
-
-May be you want to make sure that all databases are downloaded correctly. Simply run::
-
-    atlas download --db-dir path/to/databases
-
-To reassure you, most of the databases are md5 checked. The downloads use approximately 30 GB of disk space.
+.. 2. Download all databases first
+.. -------------------------------
+..
+.. May be you want to make sure that all databases are downloaded correctly. Simply run::
+..
+..     atlas download --db-dir path/to/databases
+..
+.. To reassure you, most of the databases are md5 checked. The downloads use approximately 30 GB of disk space.
 
 .. 3. Test installation
 .. --------------------
@@ -66,32 +67,32 @@ atlas init
 
 ::
 
-    Usage: atlas init [OPTIONS] PATH_TO_FASTQ
+  Usage: atlas init [OPTIONS] PATH_TO_FASTQ
 
-      Write the file CONFIG and complete the sample names and paths for all
-      FASTQ files in PATH.
+    Write the file CONFIG and complete the sample names and paths for all
+    FASTQ files in PATH.
 
-      PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
-      the file name with the file name minus extension as the sample ID.
+    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+    the file name with the file name minus extension as the sample ID.
 
-    Options:
-      -d, --db-dir PATH               location to store databases (need ~50GB)
-                                      [default: /Users/silas/Documents/Debug_atlas
-                                      /databases]
-      -w, --working-dir PATH          location to run atlas
-      --assembler [megahit|spades]    assembler  [default: megahit]
-      --data-type [metagenome|metatranscriptome]
-                                      sample data type  [default: metagenome]
-      --threads INTEGER               number of threads to use per multi-threaded
-                                      job
-      -h, --help                      Show this message and exit.
+  Options:
+    -d, --db-dir PATH               location to store databases (need ~50GB)
+                                    [default: /Users/silas/Documents/GitHub/Snak
+                                    emakeProfiles/test/databases]
+    -w, --working-dir PATH          location to run atlas
+    --assembler [megahit|spades]    assembler  [default: spades]
+    --data-type [metagenome|metatranscriptome]
+                                    sample data type  [default: metagenome]
+    --threads INTEGER               number of threads to use per multi-threaded
+                                    job
+    --skip-qc                       Skip QC, if reads are already pre-processed
+    -h, --help                      Show this message and exit.
 
 
 This command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
 
 Have a look at them with a normal text editor and check if the samples names are inferred correctly.
 Samples should be alphanumeric names and cam be dash delimited. Underscores should be fine too.
-
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 
@@ -100,11 +101,15 @@ The ``BinGroup`` parameter is used during the genomic binning.
 In short: all samples in which you expect the same strain to
 be found should belong to the same group,
 e.g. all metagenome samples from mice in the same cage.
+If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
+
 
 You should also check the ``config.yaml`` file, especially:
 
-- You may want to change the resources configuration, depending on the :ref:`system <execution_system>` you run atlas on.
+
 - You may want to add ad :ref:`host genomes <contaminants>` to be removed.
+- You may want to change the resources configuration, depending on the system you run atlas on.
+
 
 Details about the parameters can be found in the section :ref:`Configuration`
 
@@ -113,7 +118,8 @@ atlas run
 
 ::
 
-  Usage: atlas run [OPTIONS] [[qc|assembly|genomes|genecatalog|None|all]]
+  Usage: atlas run [OPTIONS]
+                   [[qc|assembly|binning|genomes|genecatalog|None|all]]
                    [SNAKEMAKE_ARGS]...
 
     Runs the ATLAS pipline
@@ -142,4 +148,4 @@ atlas run
 
 Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for other handy snakemake arguments.
 
-If you want to run atlas on a cluster system you want to read the section :ref:`execution_system`_.
+We recommend to use atlas on a :ref:`cluster` system, which can be set up in a view more commands.

@@ -93,3 +93,4 @@ ENV/
 
 # on mac
 .DS_Store
+example_data

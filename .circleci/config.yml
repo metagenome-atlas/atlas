@@ -15,19 +15,19 @@ jobs:
     parallelism: 1
     steps:
       - checkout
-      - run: conda config --add channels conda-forge
       - run: conda config --add channels bioconda
+      - run: conda config --add channels conda-forge
       - run: conda config --set always_yes true
-      - run: conda config --set quiet true
-      - run: conda install python>=3.6 snakemake pandas bbmap=37.78 click ruamel.yaml biopython
+      - run: conda env update -n base --file atlasenv.yml
       - run: python setup.py install
+      - run: conda list
       - run: atlas --help
       - run: atlas --version
       # make config
       - run: .test/dryrun.sh
       - run: atlas run all -w $WORKING_DIR --create-envs-only
       - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
-      #- run: .test/test_assembly.sh
+      - run: .test/test_assembly.sh
 
 
 

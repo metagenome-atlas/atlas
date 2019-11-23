@@ -1,8 +1,8 @@
 name: cd-hit
 channels:
-- defaults
-- bioconda
 - conda-forge
+- bioconda
+- defaults
 dependencies:
 - cd-hit=4.6.8
 # - libgcc=7.2.0=h69d50b8_2

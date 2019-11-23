@@ -3,13 +3,15 @@ import multiprocessing
 import os
 import sys
 import tempfile
-from ruamel.yaml import YAML
+from snakemake import utils
 from snakemake.io import load_configfile
-import logging
 import pandas as pd
 import numpy as np
 from collections import defaultdict
 import click
+sys.path.append(os.path.dirname(__file__))
+from default_values import make_default_config
+
 # default globals
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
@@ -131,6 +133,7 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
         data_type (str): this is either metagenome or metatranscriptome
     """
 
+    from ruamel.yaml import YAML #used for yaml reading with comments
 
     yaml = YAML()
     yaml.version = (1, 1)
@@ -176,6 +179,25 @@ def validate_config(config, workflow):
     conf = load_configfile(config)
 #    validate_sample_defs(conf, workflow)
     # could later add more validation steps
+
+
+def update_config(config):
+    """
+    Populates config file with default config values.
+    And made changes if necessary.
+
+    """
+
+    # in old version java_mem was used, new is mem
+    if ('java_mem' in config) and (not ('mem' in config)):
+        config['mem']=config['java_mem']
+
+
+    # get default values and update them with values specified in config file
+    default_config = make_default_config()
+    utils.update_config(default_config, config)
+
+    return default_config
 
 
 

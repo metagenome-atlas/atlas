@@ -26,7 +26,7 @@ CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
 EGGNOG_DIR = os.path.join(DBDIR,'EggNOG')
-
+GTDBTK_DATA_PATH=os.path.join(DBDIR,"GTDB-TK")
 CONDAENV = "../envs"
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
@@ -89,7 +89,7 @@ rule download:
         expand("{dir}/{filename}", dir=EGGNOG_DIR,
                filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
         CHECKMFILES,
-        CAT_flag_downloaded,
+        os.path.join(GTDBTK_DATA_PATH,'downloaded_success')
 
 
 
@@ -101,7 +101,7 @@ rule download_eggNOG_fastas:
         dl_filename = "OG_fasta.tar.gz"
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
 
-        shell(f"curl 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' -s > {dl_output}" )
+        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
         # validate the download
         if not FILES['OG_fasta'] == md5(dl_output):
             raise OSError(2, "Invalid checksum", dl_output)
@@ -116,7 +116,7 @@ rule download_eggNOG_files:
     run:
         dl_filename = wildcards.filename+'.gz'
         dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-        shell(f"curl 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' -s > {dl_output}" )
+        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
         # validate the download
         if not FILES[wildcards.filename] == md5(dl_output):
             raise OSError(2, "Invalid checksum", dl_output)
@@ -130,7 +130,7 @@ rule download_atlas_files:
     threads:
         1
     run:
-        shell("curl 'https://zenodo.org/record/%s/files/{wildcards.filename}' -s > {output}" % ZENODO_ARCHIVE)
+        shell("wget -O {output} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{wildcards.filename}' ")
         if not FILES[wildcards.filename] == md5(output[0]):
             raise OSError(2, "Invalid checksum", output[0])
 
@@ -150,21 +150,15 @@ rule initialize_checkm:
     input:
         ancient(CHECKMFILES)
     output:
-        touched_output = "logs/checkm_init.txt"
+        touched_output = touch("logs/checkm_init.txt")
     params:
         database_dir = CHECKMDIR,
-        script_dir = os.path.dirname(os.path.abspath(workflow.snakefile))
     conda:
         "%s/checkm.yaml" % CONDAENV
     log:
         "logs/initialize_checkm.log"
     shell:
-        """
-        python {params.script_dir}/rules/initialize_checkm.py \
-            {params.database_dir} \
-            {output.touched_output} \
-            {log}
-        """
+        "checkm data setRoot {params.database_dir} &> {log} "
 
 rule download_cat_db:
     output:
@@ -172,24 +166,26 @@ rule download_cat_db:
     params:
         db_folder=CAT_DIR
     resources:
-        mem= config.get('diamond_mem',100)
+        mem= config.get('large_mem',250)
     threads:
-        config.get('diamond_threads',10)
+        config.get('large_threads',16)
     conda:
         "%s/cat.yaml" % CONDAENV
     shell:
         " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
 
-# output:
-#         "{dir}/{date}.{extension}",
-#         extension=["nr.fastaid2LCAtaxid",
-#                    "nr.dmnd",
-#                    "nr.taxids_with_multiple_offspring",
-#                    ,"prot.accession2taxid.gz"]
-#         "names.dmp",
-#         "nodes.dmp"
-#         temp("{dir}/{date}.nr.gz")
 
+
+rule download_gtdb:
+    output:
+        touch(os.path.join(GTDBTK_DATA_PATH,'downloaded_success'))
+    conda:
+        "../envs/gtdbtk.yaml"
+    threads:
+        1
+    shell:
+        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
+        "download-db.sh ;"
 
 onsuccess:
     print("All databases have downloaded and validated successfully")

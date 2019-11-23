@@ -1,3 +1,9 @@
+if 'genome_dir' in config:
+    genome_dir= config['genome_dir']
+    assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
+else:
+    genome_dir="genomes/genomes"
+
 
 ## dRep
 localrules: get_all_bins
@@ -25,13 +31,12 @@ rule get_all_bins:
 
 
 
-localrules: get_quality_for_dRep_from_checkm
+localrules: get_quality_for_dRep_from_checkm, merge_checkm
 rule get_quality_for_dRep_from_checkm:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config['final_binner'])
     output:
-        temp("genomes/quality.csv"),
-        "genomes/clustering/Checkm_quality_allbins.tsv",
+        temp("genomes/quality.csv")
     run:
         import pandas as pd
 
@@ -41,7 +46,38 @@ rule get_quality_for_dRep_from_checkm:
         D.index.name="genome"
         D.columns= D.columns.str.lower()
         D.iloc[:,:3].to_csv(output[0])
-        D.to_csv(output[1],sep='\t')
+
+
+rule merge_checkm:
+    input:
+        completeness= expand("{sample}/binning/{binner}/checkm/completeness.tsv",
+               sample= SAMPLES, binner= config['final_binner']),
+        taxonomy= expand("{sample}/binning/{binner}/checkm/taxonomy.tsv",
+               sample= SAMPLES, binner= config['final_binner']),
+        markers= expand("{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
+               sample= SAMPLES, binner= config['final_binner'])
+    output:
+        checkm="genomes/checkm/checkm_all_bins.tsv",
+        markers= "genomes/checkm/all_bins_markers.fasta"
+    run:
+
+        import pandas as pd
+        import shutil
+        D=[]
+
+        for i in range(len(SAMPLES)):
+            df= pd.read_csv(input.completeness[i],index_col=0,sep='\t')
+            df= df.join(pd.read_csv(input.taxonomy[i],index_col=0,sep='\t'))
+            D.append(df)
+
+        D= pd.concat(D,axis=0)
+        D.to_csv(output.checkm,sep='\t')
+
+        with open(output.markers,'wb') as fout:
+            for fasta in input.markers:
+                shutil.copyfileobj(open(fasta,'rb'),fout)
+
+
 
 
 rule first_dereplication:
@@ -155,18 +191,14 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-def get_genome_dir_(wildcards):
-    if 'genome_dir' in config:
-        genome_dir= config['genome_dir']
-        assert os.path.exists(genome_dir)
 
-    else:
-        genome_dir = checkpoints.rename_genomes.get().output.dir
-    return genome_dir
 
 def get_genomes_(wildcards):
 
-    genomes= glob_wildcards(os.path.join(get_genome_dir_(wildcards), "{genome}.fasta")).genome
+    if genome_dir=='genomes/genomes':
+        checkpoints.rename_genomes.get() # test if checkpoint passed
+
+    genomes= glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes)==0:
         logger.critical("No genomes found after dereplication. "
@@ -177,32 +209,24 @@ def get_genomes_(wildcards):
 
     return genomes
 
-def get_genomes_fasta(wildcards):
-
-    path=  os.path.join(get_genome_dir_(wildcards), "{genome}.fasta")
-    genomes=expand(path, genome=get_genomes_(wildcards))
-
-
-    return genomes
-
-
-
 
 
 rule run_all_checkm_lineage_wf:
     input:
         touched_output = "logs/checkm_init.txt",
-        genomes = get_genomes_fasta
+        dir = genome_dir
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta"
     params:
         output_dir = lambda wc, output: os.path.dirname(output[0]),
-        input_dir = lambda wc, input: os.path.dirname(input.genomes[0])
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    resources:
+        time=config["runtime"]["long"],
+        mem=config["large_mem"]
     shell:
         """
         rm -r {params.output_dir}
@@ -212,7 +236,7 @@ rule run_all_checkm_lineage_wf:
             --quiet \
             --extension fasta \
             --threads {threads} \
-            {params.input_dir} \
+            {input.dir} \
             {params.output_dir}
         """
 
@@ -223,20 +247,20 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        get_genomes_fasta
+        genome_dir
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta")
     threads:
         config.get("threads", 6)
     resources:
-        mem = config["java_mem"],
-        java_mem = int(config["java_mem"] * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     log:
         "logs/genomes/mapping/build_bbmap_index.log"
     shell:
         """
-        cat {input} > {output.fasta} 2> {log}
+        cat {input}/*.fasta > {output.fasta} 2> {log}
         bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
 
         """
@@ -272,8 +296,8 @@ rule align_reads_to_MAGs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """
             bbwrap.sh \
@@ -307,7 +331,7 @@ rule bam_2_sam_MAGs:
     threads:
         config['threads']
     resources:
-        mem = config["java_mem"],
+        mem = config["mem"],
     shadow:
         "shallow"
     conda:
@@ -335,8 +359,8 @@ rule pileup_MAGs:
     threads:
         config.get("threads", 1)
     resources:
-        mem = config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION)
+        mem = config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
     shell:
         """pileup.sh in={input.sam} \
                threads={threads} \
@@ -418,43 +442,55 @@ rule combine_bined_coverages_MAGs:
 
         Median_abund.to_csv(output.median_abund,sep='\t')
 
-rule predict_genes_genomes:
-    input:
-        get_genomes_fasta
-    output:
-        directory("genomes/annotations/genes")
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    log:
-        "logs/genomes/prodigal.log"
-    shadow:
-        "shallow"
-    threads:
-        1
-    script:
-        "predict_genes_of_genomes.py"
-
-
-
 # rule predict_genes_genomes:
 #     input:
-#         "genomes/genomes/{genome}.fasta"
+#         dir=genome_dir
 #     output:
-#         fna = "genomes/annotations/genes/{genome}.fna",
-#         faa = "genomes/annotations/genes/{genome}.faa",
-#         gff = "genomes/annotations/genes/{genome}.gff"
+#         directory("genomes/annotations/genes")
 #     conda:
 #         "%s/required_packages.yaml" % CONDAENV
 #     log:
-#         "logs/genomes/prodigal/{genome}.txt"
+#         "logs/genomes/prodigal.log"
+#     shadow:
+#         "shallow"
 #     threads:
-#         1
-#     shell:
-#         """
-#         prodigal -i {input} -o {output.gff} -d {output.fna} \
-#             -a {output.faa} -p meta -f gff 2> >(tee {log})
-#         """
+#         config.get("threads", 1)
+#     script:
+#         "predict_genes_of_genomes.py"
 
+
+
+rule predict_genes_genomes:
+    input:
+        "genomes/genomes/{genome}.fasta"
+    output:
+        fna = "genomes/annotations/genes/{genome}.fna",
+        faa = "genomes/annotations/genes/{genome}.faa",
+        gff = "genomes/annotations/genes/{genome}.gff"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    log:
+        "logs/genomes/prodigal/{genome}.txt"
+    threads:
+        1
+    resources:
+        mem= config['simplejob_mem']
+    shell:
+        """
+        prodigal -i {input} -o {output.gff} -d {output.fna} \
+            -a {output.faa} -p meta -f gff 2> >(tee {log})
+        """
+
+def get_all_genes(wildcards,extension='.faa'):
+    return expand("genomes/annotations/genes/{genome}{extension}",
+           genome=get_genomes_(wildcards),extension=extension)
+
+localrules: all_prodigal
+rule all_prodigal:
+    input:
+        get_all_genes
+    output:
+        touch("genomes/annotations/genes/predicted")
 
 
 
@@ -495,7 +531,7 @@ rule run_prokka_bins:
 
 
 def genome_all_prokka_input(wildcards):
-    genome_dir = get_genome_dir_(wildcards)
+    genome_dir = genome_dir
     return expand("genomes/annotations/prokka/{genome}/{genome}.tsv",
            genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome)
 

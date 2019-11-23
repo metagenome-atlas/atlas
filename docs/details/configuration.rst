@@ -34,3 +34,4 @@ Detailed configuration
 
     ../advanced/qc
     ../advanced/assembly
+    longreads

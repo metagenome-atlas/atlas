@@ -1,6 +1,6 @@
 
 # global defaults
-JAVA_MEM = 32
+MEM = 80
 JAVA_MEM_FRACTION = 0.85
 PREALLOCATE_RAM = "t"
 PREPROCESS_ADAPTER_MIN_K = 8
@@ -120,9 +120,9 @@ def make_default_config():
     conf["simplejob_mem"]=10
     conf["simplejob_threads"]=4
 
-    conf["java_mem"] = JAVA_MEM
-    conf["diamond_mem"] = 100
-    conf["diamond_threads"] = 12
+    conf["mem"] = MEM
+    conf["large_mem"] = 100
+    conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
     conf["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
@@ -208,7 +208,7 @@ def make_default_config():
     conf["perform_genome_binning"] = True
 
     conf["final_binner"] = "DASTool"
-    conf["binner"] = ['metabat','concoct','maxbin']
+    conf["binner"] = ['metabat','maxbin']
 
     conf["metabat"] = {"sensitivity":"sensitive",
                        "min_contig_length" : 1500}
@@ -229,6 +229,10 @@ def make_default_config():
     "duplicate_penalty" :0.6,
     "megabin_penalty": 0.5
     }
+
+    conf["annotations"]= ["gtdb_taxonomy",
+                          "checkm_taxonomy",
+                          "gtdb_tree"]
 
 
     conf['genome_dereplication']=dict(
@@ -251,6 +255,13 @@ def make_default_config():
 
     conf['cat_range']=5
     conf['cat_fraction']=0.3
+
+    conf["runtime"]={
+                    "default":5,
+                    "assembly":24,
+                    "long":12,
+                    "simple_job":0.5
+                    }
 
     # conf["diamond_run_mode"] = "fast"
     # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS

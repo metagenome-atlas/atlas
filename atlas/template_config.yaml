@@ -1,5 +1,4 @@
 ###################################################################
-###################################################################
 ####                 _______   _                    _____      ####
 ####         /\     |__   __| | |          /\      / ____|     ####
 ####        /  \       | |    | |         /  \    | (___       ####
@@ -8,38 +7,46 @@
 ####     /_/    \_\    |_|    |______| /_/    \_\ |_____/      ####
 ####                                                           ####
 ###################################################################
+
 #  For more details about the config values see:
-#  https://metagenome-atlas.readthedocs.io
-###################################################################
+#  https://metagenome-atlas.rtfd.io
+
 
 ########################
 # Execution parameters
 ########################
-# max cores per process
-threads: 32
-# Memory for most jobs especially from BBtools, which are memory demanding
-java_mem: 32
-# can be a subset of threads or altered if rule run_spades or run_megahit are being defined differently in your cluster configuration
+# threads and memory (GB) for most jobs especially from BBtools, which are memory demanding
+threads: 8
+mem: 60
+
+# threads and memory for jobs needing high amount of memory. e.g GTDB-tk,checkm or assembly
+large_mem: 100
+large_threads: 8
 assembly_threads: 8
-# in GB
 assembly_memory: 250
+
+#Runtime only for cluster execution
+runtime: #in h
+    default: 5
+    assembly: 48
+    long: 24
+
 # Local directory for temp files, useful for cluster execution without shared file system
 tmpdir: /tmp
 # directory where databases are downloaded with 'atlas download'
 database_dir: databases
-
-
-
 
 ########################
 # Quality control
 ########################
 data_type: metagenome # metagenome or metatranscriptome
 interleaved_fastqs: false
+
 # remove (PCR)-duplicated reads using clumpify
 deduplicate: true
 duplicates_only_optical: false
 duplicates_allow_substitutions: 2
+
 # used to trim adapters from reads and read ends
 preprocess_adapters: /path/to/databases/adapters.fa
 preprocess_minimum_base_quality: 10
@@ -54,6 +61,8 @@ error_correction_overlapping_pairs: true
 #contamination references can be added such that -- key: /path/to/fasta
 contaminant_references:
   PhiX: /path/to/databases/phiX174_virus.fa
+#  host:/path/to/host_genome.fasta
+
 # We won't allow large indels
 contaminant_max_indel: 20
 contaminant_min_ratio: 0.65
@@ -108,10 +117,10 @@ longread_type: none # [none,"pacbio", "nanopore", "sanger", "trusted-contigs", "
 
 # Filtering
 #------------
-prefilter_minimum_contig_length: 200
 # filter out assembled noise
 # this is more important for assemblys from megahit
 filter_contigs: true
+prefilter_minimum_contig_length: 200
 # trim contig tips
 contig_trim_bp: 0
 # require contigs to have read support
@@ -141,19 +150,12 @@ final_binner: DASTool             # [DASTool or one of the binner, e.g. maxbin]
 
 binner:                           # If DASTool is used as final_binner, use predictions of this binners
   - metabat
-  - concoct
   - maxbin
 
 
 metabat:
   sensitivity: sensitive
   min_contig_length: 1500 # metabat needs >1500
-
-concoct:
-  Nexpected_clusters: 200           # important parameter
-  read_length: 100                  # change this parameter !
-  Niterations: 500
-  min_contig_length: 1000
 
 maxbin:
   max_iteration: 50
@@ -180,17 +182,14 @@ genome_dereplication:
       length: 0
 
 ########################
-# taxonomy
+# Annotations
 #######################
-# Diamond needs up to 100 GB of memory for building the taxonomy database
-# If you prefer you can dowload an existing CAT database, see docs.
-diamond_mem: 100
-diamond_threads: 12
-# number of top hits considered for taxonomic annotation
-cat_range: 5
-# fraction of support needed for classification, <0.5 can give rise to duble classification.
-cat_fraction: 0.3
 
+annotations:
+  - gtdb_tree
+  - gtdb_taxonomy
+#  - checkm_taxonomy
+#  - checkm_tree
 
 ########################
 # Gene catalog
