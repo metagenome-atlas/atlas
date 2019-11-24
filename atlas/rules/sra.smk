@@ -6,7 +6,7 @@ rule download_SRR_paired:
     params:
         outdir='SRAreads'
     wildcard_constraints:
-        SRR="SRR[0-9]+"
+        SRR="?RR[0-9]+"
     threads:
         4
     resources:
