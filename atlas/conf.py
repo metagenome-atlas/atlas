@@ -70,8 +70,11 @@ def validate_sample_table(sampleTable):
     Expected_Headers =['BinGroup'] + ADDITIONAL_SAMPLEFILE_HEADERS
     for h in Expected_Headers:
         if not (h in sampleTable.columns):
-         logging.error(f"expect '{h}' to be found in samples.tsv")
-         exit(1)
+            logging.error(f"expect '{h}' to be found in samples.tsv")
+            exit(1)
+        elif sampleTable[h].isnull().any():
+            logging.error(f"Found empty values in the sample table column '{h}'")
+            exit(1)
 
     if not sampleTable.index.is_unique:
         duplicated_samples=', '.join(D.index.duplicated())
