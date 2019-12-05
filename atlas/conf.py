@@ -57,6 +57,11 @@ def get_samples_from_fastq(path):
         logging.error(f"Missing files:\n\n {samples}")
         exit(1)
 
+    if samples.shape[0]==0:
+        logging.error(f"No files found in {path}\n"
+                       "I'm looking for files with .fq or .fastq extension. ")
+        exit(1)
+
     return samples
 
 def validate_sample_table(sampleTable):
