@@ -10,7 +10,7 @@ import pandas as pd
 
 
 
-def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir):
+def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir,rename_contigs=True):
 
     file_name = f"{input_folder}/{{binid}}.fasta"
     bin_ids, = glob_wildcards(file_name)
@@ -30,17 +30,22 @@ def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir):
 
             fasta_out = os.path.join(output_dir,f"{new_name}.fasta")
 
+
             # write names of contigs in mapping file
             with open(fasta_in) as ffi, open(fasta_out,'w') as ffo :
                 Nseq=0
                 for line in ffi:
                     if line[0]==">":
                         Nseq+=1
-                        new_header=f'{new_name}_{Nseq}'
+                        if rename_contigs:
+                            new_header=f'{new_name}_{Nseq}'
+                        else:
+                            new_header= line[1:].strip().split()[0]
                         out_contigs.write(f"{new_header}\t{new_name}\n")
                         ffo.write(f">{new_header}\n")
                     else:
                         ffo.write(line)
+
 
 
 def genome2cluster(Drep_folder):
@@ -82,7 +87,8 @@ if __name__ == "__main__":
             input_folder=snakemake.input.genomes,
             output_dir=snakemake.output.dir,
             mapfile_genomes=snakemake.output.mapfile_genomes,
-            mapfile_contigs=snakemake.output.mapfile_contigs
+            mapfile_contigs=snakemake.output.mapfile_contigs,
+            rename_contigs=snakemake.params.rename_contigs
         )
 
         get_mapfile_bins(mapfile_bins=snakemake.output.mapfile_bins,

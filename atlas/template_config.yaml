@@ -181,6 +181,8 @@ genome_dereplication:
       N50: 0.5
       length: 0
 
+rename_mags_contigs: false        #Rename contigs of representative MAGs
+
 ########################
 # Annotations
 #######################
@@ -195,7 +197,7 @@ annotations:
 # Gene catalog
 #######################
 genecatalog:
-  source: genomes  # which predicted proteins should be used for the gene catalog
+  source: contigs  # which predicted proteins should be used for the gene catalog
   clustermethod: linclust # cd-hit-est or cluster or linclust see mmseqs for more details
   minlength_nt: 100
   minid: 0.9

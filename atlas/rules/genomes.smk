@@ -185,6 +185,8 @@ checkpoint rename_genomes:
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes = "genomes/clustering/old2newID.tsv",
         mapfile_bins= "genomes/clustering/allbins2genome.tsv"
+    params:
+        rename_contigs=config['rename_mags_contigs']
     shadow:
         "shallow"
     script:
