@@ -260,7 +260,6 @@ def make_default_config():
                             sketch_size=5000,
                             opt_parameters=""
                                 )
-    conf['rename_mags_contigs']= True
 
     conf['cat_range']=5
     conf['cat_fraction']=0.3
