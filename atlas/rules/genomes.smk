@@ -444,55 +444,6 @@ rule combine_bined_coverages_MAGs:
 
         Median_abund.to_csv(output.median_abund,sep='\t')
 
-# rule predict_genes_genomes:
-#     input:
-#         dir=genome_dir
-#     output:
-#         directory("genomes/annotations/genes")
-#     conda:
-#         "%s/required_packages.yaml" % CONDAENV
-#     log:
-#         "logs/genomes/prodigal.log"
-#     shadow:
-#         "shallow"
-#     threads:
-#         config.get("threads", 1)
-#     script:
-#         "predict_genes_of_genomes.py"
-
-
-
-rule predict_genes_genomes:
-    input:
-        "genomes/genomes/{genome}.fasta"
-    output:
-        fna = "genomes/annotations/genes/{genome}.fna",
-        faa = "genomes/annotations/genes/{genome}.faa",
-        gff = "genomes/annotations/genes/{genome}.gff"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    log:
-        "logs/genomes/prodigal/{genome}.txt"
-    threads:
-        1
-    resources:
-        mem= config['simplejob_mem']
-    shell:
-        """
-        prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
-        """
-
-def get_all_genes(wildcards,extension='.faa'):
-    return expand("genomes/annotations/genes/{genome}{extension}",
-           genome=get_genomes_(wildcards),extension=extension)
-
-localrules: all_prodigal
-rule all_prodigal:
-    input:
-        get_all_genes
-    output:
-        touch("genomes/annotations/genes/predicted")
 
 
 
@@ -547,25 +498,3 @@ rule all_prokka:
         out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
-
-
-rule gene2genome:
-    input:
-        get_all_genes
-    output:
-        "genomes/annotations/orf2genome.tsv"
-    threads:
-        config['simplejob_threads']
-    resources:
-        mem=config['simplejob_mem']
-    run:
-        from utils.fasta import header2origin
-        from multiprocessing.dummy import Pool
-        import itertools
-
-        fasta_files= input
-
-        pool = Pool(threads)
-
-        with open(output[0],'w') as outf :
-            pool.starmap(header2origin, zip(fasta_files,itertools.repeat(outf)))

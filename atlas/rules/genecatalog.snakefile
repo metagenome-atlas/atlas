@@ -2,38 +2,20 @@ import os
 
 
 
-if config['genecatalog']['source']=='contigs':
-
-    localrules: concat_genes
-    rule concat_genes:
-        input:
-            faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
-            fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
-        output:
-            faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
-            fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-        run:
-            from utils.io import cat_files
-            cat_files(input.faa,output.faa)
-            cat_files(input.fna,output.fna)
 
 
-else:
-
-    localrules: concat_genes
-    rule concat_genes:
-        input:
-            "genomes/annotations/orf2genome.tsv",
-            faa= lambda wc: get_all_genes(wc,".faa"),
-            fna= lambda wc: get_all_genes(wc,".fna")
-        output:
-            faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
-            fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-        run:
-            from utils.io import cat_files
-            cat_files(input.faa,output.faa)
-            cat_files(input.fna,output.fna)
-
+localrules: concat_genes
+rule concat_genes:
+    input:
+        faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
+        fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
+    output:
+        faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
+        fna = temp("Genecatalog/all_genes_unfiltered.fna"),
+    run:
+        from utils.io import cat_files
+        cat_files(input.faa,output.faa)
+        cat_files(input.fna,output.fna)
 
 localrules: filter_genes
 rule filter_genes:
@@ -60,6 +42,17 @@ rule filter_genes:
                 if len(gene) >= params.min_length:
                     SeqIO.write(gene,out_fna,'fasta')
                     SeqIO.write(protein,out_faa,'fasta')
+
+rule distribute_genes2_genomes:
+    input:
+        fna= "Genecatalog/all_genes/predicted_genes.fna",
+        faa= "Genecatalog/all_genes/predicted_genes.faa",
+        contig2genome="genomes/clustering/contig2genome.tsv"
+    output:
+        directory("genomes/annotations/genes/predicted")
+    run:
+
+
 
 
 if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog']['clustermethod']=='mmseqs'):
