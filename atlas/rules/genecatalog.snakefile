@@ -3,7 +3,7 @@ import os
 
 
 if config['genecatalog']['source']=='contigs':
-#TODO: cat with python
+
     localrules: concat_genes
     rule concat_genes:
         input:
@@ -12,9 +12,11 @@ if config['genecatalog']['source']=='contigs':
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-        shell:
-            " cat {input.faa} >  {output.faa} ;"
-            " cat {input.fna} > {output.fna}"
+        run:
+            from utils.io import cat_files
+            cat_files(input.faa,output.faa)
+            cat_files(input.fna,output.fna)
+
 
 else:
 
@@ -26,9 +28,10 @@ else:
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-        shell:
-            " cat {input.faa} >  {output.faa} ;"
-            " cat {input.fna} > {output.fna}"
+        run:
+            from utils.io import cat_files
+            cat_files(input.faa,output.faa)
+            cat_files(input.fna,output.fna)
 
 
 localrules: filter_genes
