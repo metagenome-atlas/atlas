@@ -241,7 +241,7 @@ def make_default_config():
     conf["annotations"]= ["gtdb_taxonomy",
                           "checkm_taxonomy",
                           "gtdb_tree"]
-
+    conf['rename_mags_contigs']= True
 
     conf['genome_dereplication']=dict(
                             filter = dict(
