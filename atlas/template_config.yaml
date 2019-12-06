@@ -181,8 +181,6 @@ genome_dereplication:
       N50: 0.5
       length: 0
 
-rename_mags_contigs: false        #Rename contigs of representative MAGs
-
 ########################
 # Annotations
 #######################
