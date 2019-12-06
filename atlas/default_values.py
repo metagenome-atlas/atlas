@@ -205,8 +205,7 @@ def make_default_config():
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     # gene cluster
-    conf['genecatalog']={'source':'genomes',
-                        'clustermethod':'linclust',
+    conf['genecatalog']={'clustermethod':'linclust',
                          'minlength':100,
                            'minid':0.9,
                            'coverage':0.9,
@@ -261,7 +260,6 @@ def make_default_config():
                             sketch_size=5000,
                             opt_parameters=""
                                 )
-    conf['rename_mags_contigs']= True
 
     conf['cat_range']=5
     conf['cat_fraction']=0.3
