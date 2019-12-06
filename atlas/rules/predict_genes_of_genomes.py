@@ -19,7 +19,7 @@ def predict_genes(genome,fasta,out_dir,log):
     gff = "{}/{}.gff".format(out_dir,genome)
 
     shell('printf "{genome}:\n" > {log}'.format(genome=genome,log=log))
-    shell("prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p meta -f gff 2>> {log} ".format(
+    shell("prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p sinlge -c -m -f gff 2>> {log} ".format(
          fasta=fasta, log=log,gff=gff,fna=fna,faa=faa)
          )
     shell('printf "\n" >> {log}'.format(log=log))
