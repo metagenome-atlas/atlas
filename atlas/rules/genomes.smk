@@ -24,6 +24,15 @@ rule get_all_bins:
             fasta_files = [f for in os.listdir(bin_folder) if f.endswith('.fasta') ]
             symlink_relative(fasta_files,bin_folder,output[0])
 
+rule all_contigs2bins:
+        input:
+            expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+                   sample= SAMPLES, binner= config['final_binner'])
+        output:
+            temp("genomes/clustering/all_contigs2bins.tsv.gz")
+        shell:
+            "cat {input} | gzip > {output}"
+
 
 localrules: get_quality_for_dRep_from_checkm, merge_checkm
 rule get_quality_for_dRep_from_checkm:
@@ -541,25 +550,3 @@ rule all_prokka:
         out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
-
-
-rule gene2genome:
-    input:
-        get_all_genes
-    output:
-        "genomes/annotations/orf2genome.tsv"
-    threads:
-        config['simplejob_threads']
-    resources:
-        mem=config['simplejob_mem']
-    run:
-        from utils.fasta import header2origin
-        from multiprocessing.dummy import Pool
-        import itertools
-
-        fasta_files= input
-
-        pool = Pool(threads)
-
-        with open(output[0],'w') as outf :
-            pool.starmap(header2origin, zip(fasta_files,itertools.repeat(outf)))

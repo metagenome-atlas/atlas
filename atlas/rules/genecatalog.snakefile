@@ -18,6 +18,7 @@ if config['genecatalog']['source']=='contigs':
             cat_files(input.fna,output.fna)
 
 
+
 else:
 
     localrules: concat_genes
@@ -33,6 +34,7 @@ else:
             from utils.io import cat_files
             cat_files(input.faa,output.faa)
             cat_files(input.fna,output.fna)
+
 
 
 localrules: filter_genes
@@ -575,7 +577,7 @@ rule add_eggNOG_header:
     input:
         "Genecatalog/annotations/eggNog.emapper.annotations"
     output:
-        "Genecatalog/annotations/eggNog.tsv"
+        "Genecatalog/annotations/eggNog.tsv.gz"
     run:
         import pandas as pd
 
@@ -584,6 +586,43 @@ rule add_eggNOG_header:
         D.to_csv(output[0],sep="\t",index=False)
 
 
+
+rule gene2genome:
+    input:
+        contigs2bins= "genomes/clustering/all_contigs2bins.tsv.gz",
+        contigs2mags= "genomes/clustering/contig2genome.tsv",
+        old2newID= "genomes/clustering/old2newID.tsv",
+        orf2gene= "Genecatalog/clustering/orf2gene.tsv.gz"
+    params:
+        remaned_contigs= config['rename_mags_contigs'] & (config['genecatalog']['source']=='contigs')
+    output:
+        "genomes/annotations/gene2genome.tsv.gz"
+    run:
+        import pandas as pd
+
+        if params.remaned_contigs:
+
+            contigs2bins= pd.read_csv(input.contigs2bins,
+                                       index_col=0,squeeze=False,sep='\t',header=None)
+
+            contigs2bins.columns=['Bin']
+            old2newID = pd.read_csv(input.old2newID,
+                                       index_col=0,squeeze=True,sep='\t')
+
+            contigs2genome=contigs2bins.join(old2newID,on='Bin').dropna().drop('Bin',axis=1)
+        else:
+            contigs2genome= pd.read_csv(input.contigs2mags,
+                                       index_col=0,squeeze=False,sep='\t',header=0)
+
+        orf2gene = pd.read_csv(input.orf2gene,
+                                   index_col=0,squeeze=False,sep='\t',header=0)
+
+        orf2gene=orf2gene.join(contigs2genome).dropna()
+
+        gene2genome= orf2gene.groupby(['Gene','MAG']).size()
+        gene2genome.columns=['Ncopies']
+
+        gene2genome.to_csv(output[0],sep='\t')
 
 
 

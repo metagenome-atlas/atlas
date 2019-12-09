@@ -211,7 +211,8 @@ rule all:
         "finished_assembly",
         "finished_binning",
         "finished_genomes",
-        "finished_genecatalog"
+        "finished_genecatalog",
+        "genomes/annotations/gene2genome.tsv.gz"
 
 
 rule genecatalog:
@@ -221,7 +222,7 @@ rule genecatalog:
         "Genecatalog/clustering/orf2gene.tsv.gz",
         #"Genecatalog/counts/median_coverage.tsv.gz",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        "Genecatalog/annotations/eggNog.tsv"
+        "Genecatalog/annotations/eggNog.tsv.gz"
     output:
         temp(touch("finished_genecatalog"))
 
@@ -233,12 +234,13 @@ def get_genome_annotations():
                "checkm_taxonomy":"genomes/checkm/taxonomy.tsv",
                "checkm_tree": "genomes/tree/checkm.nwk",
                "gtdb_tree":"genomes/tree/finished_gtdb_trees",
-               "gtdb_taxonomy":"genomes/taxonomy/gtdb/classify"}
+               "gtdb_taxonomy":"genomes/taxonomy/gtdb/classify",
+               "genes":"genomes/annotations/genes/predicted"}
 
     annotations_requested= config['annotations']
 
     try:
-        annotations_files=["genomes/annotations/genes/predicted"]+[annotation_file_names[an] for an in annotations_requested]
+        annotations_files=["genomes/checkm/completeness.tsv"]+[annotation_file_names[an] for an in annotations_requested]
 
     except Exception as e:
 
@@ -250,7 +252,6 @@ def get_genome_annotations():
 rule genomes:
     input:
         "genomes/Dereplication/dereplicated_genomes",
-        "genomes/checkm/completeness.tsv",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
