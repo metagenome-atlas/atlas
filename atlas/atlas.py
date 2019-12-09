@@ -83,7 +83,6 @@ def get_snakefile(file="Snakefile"):
 )
 @click.option(
     "--profile",
-    is_flag=True,
     default=None,
     help="snakemake profile e.g. for cluster execution.",
 )
