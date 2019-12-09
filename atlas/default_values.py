@@ -205,7 +205,8 @@ def make_default_config():
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     # gene cluster
-    conf['genecatalog']={'clustermethod':'linclust',
+    conf['genecatalog']={'source':'genomes',
+                        'clustermethod':'linclust',
                          'minlength':100,
                            'minid':0.9,
                            'coverage':0.9,

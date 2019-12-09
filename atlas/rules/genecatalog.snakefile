@@ -2,20 +2,38 @@ import os
 
 
 
+if config['genecatalog']['source']=='contigs':
+
+    localrules: concat_genes
+    rule concat_genes:
+        input:
+            faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
+            fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
+        output:
+            faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
+            fna = temp("Genecatalog/all_genes_unfiltered.fna"),
+        run:
+            from utils.io import cat_files
+            cat_files(input.faa,output.faa)
+            cat_files(input.fna,output.fna)
 
 
-localrules: concat_genes
-rule concat_genes:
-    input:
-        faa= expand("{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES),
-        fna= expand("{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES)
-    output:
-        faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
-        fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-    run:
-        from utils.io import cat_files
-        cat_files(input.faa,output.faa)
-        cat_files(input.fna,output.fna)
+else:
+
+    localrules: concat_genes
+    rule concat_genes:
+        input:
+            "genomes/annotations/orf2genome.tsv",
+            faa= lambda wc: get_all_genes(wc,".faa"),
+            fna= lambda wc: get_all_genes(wc,".fna")
+        output:
+            faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
+            fna = temp("Genecatalog/all_genes_unfiltered.fna"),
+        run:
+            from utils.io import cat_files
+            cat_files(input.faa,output.faa)
+            cat_files(input.fna,output.fna)
+
 
 localrules: filter_genes
 rule filter_genes:
@@ -42,38 +60,6 @@ rule filter_genes:
                 if len(gene) >= params.min_length:
                     SeqIO.write(gene,out_fna,'fasta')
                     SeqIO.write(protein,out_faa,'fasta')
-
-rule genes2genomes:
-    input:
-        fna= "Genecatalog/all_genes/predicted_genes.fna",
-        faa= "Genecatalog/all_genes/predicted_genes.faa",
-        cluster_attributions= expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-                       sample= SAMPLES, binner= config['final_binner']),
-        rename = "genomes/clustering/old2newID.tsv"
-    output:
-
-    run:
-
-        contig2bin=pd.Series()
-        for cluster_attribution in input.cluster_attributions:
-            contig2bin=contig2bin.append(pd.read_csv(cluster_attribution,index_col=0, squeeze=True, header=None,sep='\t'))
-
-        old2newID = pd.read_csv(input.rename,index_col=0, squeeze=True,sep='\t')
-
-        with open(input.faa) as f:
-            for line in f:
-                if line[0]=='>':
-                    header=line[1:].strip().split()[0]
-
-                    sample,contignr,_ = header.split('_')
-
-
-
-
-
-
-
-
 
 
 if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog']['clustermethod']=='mmseqs'):
