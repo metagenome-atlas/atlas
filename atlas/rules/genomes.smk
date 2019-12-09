@@ -21,7 +21,7 @@ rule get_all_bins:
 
         for bin_folder in input.bins:
 
-            fasta_files = [f for in os.listdir(bin_folder) if f.endswith('.fasta') ]
+            fasta_files = [f for f in os.listdir(bin_folder) if f.endswith('.fasta') ]
             symlink_relative(fasta_files,bin_folder,output[0])
 
 rule all_contigs2bins:
