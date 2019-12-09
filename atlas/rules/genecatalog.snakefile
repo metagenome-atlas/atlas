@@ -43,14 +43,35 @@ rule filter_genes:
                     SeqIO.write(gene,out_fna,'fasta')
                     SeqIO.write(protein,out_faa,'fasta')
 
-rule distribute_genes2_genomes:
+rule genes2genomes:
     input:
         fna= "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
-        contig2genome="genomes/clustering/contig2genome.tsv"
+        cluster_attributions= expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+                       sample= SAMPLES, binner= config['final_binner']),
+        rename = "genomes/clustering/old2newID.tsv"
     output:
-        directory("genomes/annotations/genes/predicted")
+
     run:
+
+        contig2bin=pd.Series()
+        for cluster_attribution in input.cluster_attributions:
+            contig2bin=contig2bin.append(pd.read_csv(cluster_attribution,index_col=0, squeeze=True, header=None,sep='\t'))
+
+        old2newID = pd.read_csv(input.rename,index_col=0, squeeze=True,sep='\t')
+
+        with open(input.faa) as f:
+            for line in f:
+                if line[0]=='>':
+                    header=line[1:].strip().split()[0]
+
+                    sample,contignr,_ = header.split('_')
+
+
+
+
+
+
 
 
 
