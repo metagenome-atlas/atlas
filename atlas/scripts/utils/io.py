@@ -1,5 +1,5 @@
 import os
-import pandas as pd
+
 
 
 
@@ -51,3 +51,27 @@ def symlink_relative(files,input_dir,output_dir):
     for f in files:
         os.symlink(os.path.join(input_dir_rel,f),
                    os.path.join(output_dir,f))
+
+def pandas_concat(input_tables,output_table,sep='\t',index_col=0,axis=0,
+                  read_arguments=None,save_arguments=None,concat_arguments=None):
+    """
+        Uses pandas to read,concatenate and save tables using pandas.concat
+    """
+
+    import pandas as pd
+
+    if read_arguments is None:
+        read_arguments={}
+    if save_arguments is None:
+        save_arguments={}
+    if concat_arguments is None:
+        concat_arguments={}
+
+    if type(input_tables) == str:
+        input_tables= [input_tables]
+
+    Tables= [pd.read_csv(file,index_col=index_col,sep=sep,**read_arguments) for file in input_tables]
+
+    out= pd.concat(Tables,axis=axis,**concat_arguments).sort_index()
+
+    out.to_csv(output_table,sep=sep,**save_arguments)

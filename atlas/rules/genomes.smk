@@ -17,18 +17,12 @@ rule get_all_bins:
         temp(directory("genomes/all_bins"))
     run:
         os.mkdir(output[0])
-        from glob import glob
-        import shutil
+        from utils.io import symlink_relative
+
         for bin_folder in input.bins:
-            for fasta_file in glob(os.path.join(bin_folder,'*.fasta')):
 
-                #fasta_file_name = os.path.split(fasta_file)[-1]
-                #in_path = os.path.dirname(fasta_file)
-                #out_path= os.path.join(output[0],fasta_file_name)
-                #os.symlink(os.path.relpath(fasta_file,output[0]),out_path)
-
-                shutil.copy(fasta_file,output[0])
-
+            fasta_files = [f for in os.listdir(bin_folder) if f.endswith('.fasta') ]
+            symlink_relative(fasta_files,bin_folder,output[0])
 
 
 localrules: get_quality_for_dRep_from_checkm, merge_checkm
