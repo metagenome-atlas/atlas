@@ -181,7 +181,7 @@ genome_dereplication:
       N50: 0.5
       length: 0
 
-rename_mags_contigs: false        #Rename contigs of representative MAGs
+rename_mags_contigs: true        #Rename contigs of representative MAGs
 
 ########################
 # Annotations
@@ -197,7 +197,7 @@ annotations:
 # Gene catalog
 #######################
 genecatalog:
-    clustermethod: linclust       # [cd-hit-est or cluster or linclust] see mmseqs for more details
+    clustermethod: linclust       # [cd-hit-est or mmseqs or linclust] see mmseqs for more details
     minlength_nt: 100
     minid: 0.95                   # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
