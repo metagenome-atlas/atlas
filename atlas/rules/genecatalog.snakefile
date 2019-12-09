@@ -126,20 +126,23 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         input:
             cluster_attribution = "Genecatalog/orf2gene_oldnames.tsv",
         output:
-            cluster_attribution = "Genecatalog/clustering/orf2gene.tsv",
+            cluster_attribution = "Genecatalog/clustering/orf2gene.tsv.gz",
         run:
             import pandas as pd
             # CLuterID    GeneID    empty third column
-            gene2proteins= pd.read_csv(input.cluster_attribution,index_col=1, header=None,sep='\t')
+            orf2gene= pd.read_csv(input.cluster_attribution,index_col=1, header=None,sep='\t')
 
-            protein_clusters_old_names= gene2proteins[0].unique()
+            protein_clusters_old_names= orf2gene[0].unique()
 
             map_names = dict(zip(protein_clusters_old_names,
                                  utils.gen_names_for_range(len(protein_clusters_old_names),'Gene')))
 
-            gene2proteins['Gene'] = gene2proteins[0].map(map_names)
-            gene2proteins.index.name='ORF'
-            gene2proteins['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+            orf2gene['Gene'] = orf2gene[0].map(map_names)
+            orf2gene.index.name='ORF'
+            orf2gene['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+
+
+
 
 
 
@@ -246,7 +249,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
         input:
             orf2gene = "Genecatalog/clustering/orf2gene_oldnames.tsv",
         output:
-            orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+            orf2gene = "Genecatalog/clustering/orf2gene.tsv.gz",
         run:
             import pandas as pd
             from Bio import SeqIO
@@ -271,7 +274,7 @@ rule rename_gene_catalog:
     input:
         fna = "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
-        orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+        orf2gene = "Genecatalog/clustering/orf2gene.tsv.gz",
         representatives= "Genecatalog/representatives_of_clusters.fasta"
     output:
         fna= "Genecatalog/gene_catalog.fna",

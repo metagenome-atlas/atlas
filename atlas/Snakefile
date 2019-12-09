@@ -218,7 +218,7 @@ rule genecatalog:
     input:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
-        "Genecatalog/clustering/orf2gene.tsv",
+        "Genecatalog/clustering/orf2gene.tsv.gz",
         #"Genecatalog/counts/median_coverage.tsv.gz",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
         "Genecatalog/annotations/eggNog.tsv"

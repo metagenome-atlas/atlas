@@ -6,7 +6,7 @@ else:
 
 
 ## dRep
-localrules: get_all_bins
+localrules: get_all_bins, all_contigs2bins
 rule get_all_bins:
     input:
         bins=expand("{sample}/binning/{binner}/bins",
