@@ -1,4 +1,3 @@
-import argparse
 import os,sys
 import numpy as np
 import pandas as pd
@@ -8,6 +7,10 @@ import zipfile
 from plotly import offline, tools
 from cufflinks import iplot
 from snakemake.utils import report
+
+log=open(snakemake.log[0],"w")
+sys.stderr= log
+sys.stdout= log
 
 
 sys.stdout= open(snakemake.log[0],"w")
@@ -306,6 +309,7 @@ if __name__ == "__main__":
             min_quality=snakemake.params.min_quality,
         )
     except NameError:
+        import argparse
         p = argparse.ArgumentParser()
         p.add_argument("--report_out")
         p.add_argument("--read_counts")

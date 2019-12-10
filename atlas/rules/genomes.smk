@@ -192,6 +192,8 @@ checkpoint rename_genomes:
         rename_contigs=config['rename_mags_contigs']
     shadow:
         "shallow"
+    log:
+        "logs/genomes/rename_genomes.log"
     script:
         "rename_genomes.py"
 

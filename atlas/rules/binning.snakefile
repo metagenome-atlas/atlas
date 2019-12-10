@@ -290,6 +290,8 @@ rule get_bins:
         directory("{sample}/binning/{binner}/bins")
     conda:
         "%s/sequence_utils.yaml" % CONDAENV
+    log:
+        "{sample}/logs/binning/get_bins_{binner}.log"
     script:
         "get_fasta_of_bins.py"
 

@@ -9,7 +9,6 @@ import pandas as pd
 
 
 
-
 def rename_genomes(input_folder,mapfile_genomes,mapfile_contigs,output_dir,rename_contigs=True):
 
     file_name = f"{input_folder}/{{binid}}.fasta"
@@ -83,6 +82,10 @@ if __name__ == "__main__":
 
 
     try:
+        log=open(snakemake.log[0],"w")
+        sys.stderr= log
+        sys.stdout= log
+
         rename_genomes(
             input_folder=snakemake.input.genomes,
             output_dir=snakemake.output.dir,
