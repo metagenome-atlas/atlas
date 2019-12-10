@@ -3,16 +3,17 @@ defaults: &defaults
     - image: continuumio/miniconda3
   environment:
     DATABASE_DIR: /databases
-    WORKING_DIR: .test/Dryrun
-    N_THREADS: 4
-    MEM: 4
 
 version: 2
 
 jobs:
   build:
     <<: *defaults
-    parallelism: 1
+    resource_class: small
+    environment:
+      N_THREADS: 1
+      MEM: 2
+      WORKING_DIR: .test/Dryrun
     steps:
       - checkout
       - run: pwd
@@ -57,18 +58,22 @@ jobs:
           command: |
               source activate /atlasenv
               .test/dryrun.sh
+      - store_artifacts:
+          path: .test/Dryrun/.snakemake/log
+          destination: dryrun
+      - store_test_results:
+          path: .test/Dryrun/.snakemake/log
 
       - persist_to_workspace:
           root: /
           paths:
             - atlasenv
-            - databases
             - root/project
 
 
   getenvs:
     <<: *defaults
-    parallelism: 1
+    resource_class: small
     steps:
       - attach_workspace:
           at: /
@@ -94,16 +99,18 @@ jobs:
       - persist_to_workspace:
           root: /
           paths:
-            - atlasenv
             - databases
-            - root/project
+
 
 # download checkm data
 #              atlas run None -w .test/Getenvs logs/checkm_init.txt
 
   assembly:
     <<: *defaults
-    parallelism: 4
+    environment:
+      N_THREADS: 4
+      MEM: 8
+    resource_class: large
     steps:
       - attach_workspace:
           at: /
@@ -112,7 +119,7 @@ jobs:
           name: test assembly
           command: |
               source activate /atlasenv
-              .test/test_assembly.sh
+              .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2
 
 
 
