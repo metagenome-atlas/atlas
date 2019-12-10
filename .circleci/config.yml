@@ -108,9 +108,9 @@ jobs:
   assembly:
     <<: *defaults
     environment:
-      N_THREADS: 4
-      MEM: 8
-    resource_class: large
+      N_THREADS: 2
+      MEM: 4
+    resource_class: medium
     steps:
       - attach_workspace:
           at: /
@@ -120,8 +120,6 @@ jobs:
           command: |
               source activate /atlasenv
               .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2
-
-
 
 
 workflows:
