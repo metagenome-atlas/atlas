@@ -118,6 +118,8 @@ jobs:
             - atlasenv
             - databases
             - root/project
+
+# download checkm data
 #              atlas run None -w .test/Getenvs logs/checkm_init.txt
 
   assembly:
@@ -127,6 +129,7 @@ jobs:
       - attach_workspace:
           at: /
       - run: git clone https://github.com/metagenome-atlas/example_data.git
+      - run:
           name: test assembly
           command: |
               source activate /atlasenv
