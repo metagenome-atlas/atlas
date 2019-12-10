@@ -22,12 +22,18 @@ jobs:
            conda config --add channels bioconda
            conda config --add channels conda-forge
            conda config --set always_yes true
-           conda create -p /atlasenv
       - restore_cache:
           key: atlasenv-dependencies-{{ checksum "atlasenv.yml" }}
       - run:
           name: install dependencies
-          command:  conda env update -p /atlasenv --file atlasenv.yml
+          command:  |
+              if [ -d "/atlasenv" ]; then
+                echo "atlasenv exist already";
+                source activate /atlasenv
+                conda list
+              else
+                conda create -p /atlasenv --file atlasenv.yml
+              fi
       - save_cache:
           key: atlasenv-dependencies-{{ checksum "atlasenv.yml" }}
           paths:
