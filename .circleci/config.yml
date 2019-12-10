@@ -25,7 +25,7 @@ jobs:
            conda config --set always_yes true
       - run:
           name: install dependencies
-          command:  conda create -p path_atlasenv --file atlasenv.yml
+          command:  conda env create -p path_atlasenv --file atlasenv.yml
       - save_cache:
           key: atlasenv-{{ checksum "atlasenv.yml" }}
           paths:
