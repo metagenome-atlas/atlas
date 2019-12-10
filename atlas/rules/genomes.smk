@@ -234,6 +234,8 @@ rule run_all_checkm_lineage_wf:
     resources:
         time=config["runtime"]["long"],
         mem=config["large_mem"]
+    log:
+        "logs/genomes/checkm.log"
     shell:
         """
         rm -r {params.output_dir}
@@ -244,7 +246,7 @@ rule run_all_checkm_lineage_wf:
             --extension fasta \
             --threads {threads} \
             {input.dir} \
-            {params.output_dir}
+            {params.output_dir} &> {log}
         """
 
 ### Quantification

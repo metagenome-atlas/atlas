@@ -313,6 +313,8 @@ rule run_checkm_lineage_wf:
         "%s/checkm.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    log:
+        "{sample}/logs/binning/{binner}/checkm.log"
     resources:
         time=config["runtime"]["long"],
         mem=config["large_mem"]
@@ -326,7 +328,7 @@ rule run_checkm_lineage_wf:
             --extension fasta \
             --threads {threads} \
             {input.bins} \
-            {params.output_dir}
+            {params.output_dir} &> {log}
         """
 
 
@@ -335,7 +337,6 @@ rule run_checkm_tree_qa:
     input:
         tree="{checkmfolder}/completeness.tsv"
     output:
-        netwick="{checkmfolder}/tree.nwk",
         summary="{checkmfolder}/taxonomy.tsv",
     params:
         tree_dir = lambda wc, input: os.path.dirname(input.tree),
@@ -345,11 +346,6 @@ rule run_checkm_tree_qa:
         1
     shell:
         """
-            checkm tree_qa \
-               {params.tree_dir} \
-               --out_format 4 \
-               --file {output.netwick}
-
                checkm tree_qa \
                   {params.tree_dir} \
                   --out_format 2 \
