@@ -139,7 +139,7 @@ rule get_read_stats:
             subfolder = os.path.join(params.folder, fraction)
             tmp_file=os.path.join(subfolder,"read_stats.tmp")
             shell("""
-                    mkdir -p {subfolder}
+                    mkdir -p {subfolder} 2> {log}
 
                     reformat.sh {params_in} \
                     bhist={subfolder}/base_hist.txt \
@@ -151,7 +151,7 @@ rule get_read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2> >(tee -a {log} {tmp_file} )
+                    2>> {log} 
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
                             threads=threads, mem=resources.java_mem,tmp_file=tmp_file))
             content = open(tmp_file).read()
@@ -456,9 +456,9 @@ if PAIRED_END:
                 ihist={output.ihist} merge=f \
                 mininsert0=35 minoverlap0=8 \
                 prealloc=t prefilter=t \
-                minprob={params.minprob} 2> >(tee {log})
+                minprob={params.minprob} 2> {log}
 
-            readlength.sh {params.inputs} out={output.read_length} 2> >(tee {log})
+            readlength.sh {params.inputs} out={output.read_length} 2> {log}
             """
 
 
@@ -483,7 +483,7 @@ else:
     #        "qc"
         shell:
             """
-            readlength.sh in={input[0]} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input[0]} out={output.read_length} 2> {log}
             """
 
 

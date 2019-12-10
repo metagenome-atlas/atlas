@@ -483,7 +483,7 @@ rule predict_genes_genomes:
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
+            -a {output.faa} -p meta -f gff 2> {log}
         """
 
 def get_all_genes(wildcards,extension='.faa'):

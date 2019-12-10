@@ -76,7 +76,7 @@ rule combine_contigs:
             maxspanningtree={params.remove_cycles} \
             exact={params.dont_allow_N}\
             fixcanoncontradictions={params.trim_contradictions}\
-            -Xmx{resources.mem}G 2> >(tee {log})
+            -Xmx{resources.mem}G 2> {log}
         """
 
 # vizualize dot, takes enormous times
@@ -129,7 +129,7 @@ rule call_genes:
         1
     shell:
         """
-            prodigal -i {input} -o {output.gff} -d {output.fna} -a {output.faa} -p meta -f gff 2> >(tee {log})
+            prodigal -i {input} -o {output.gff} -d {output.fna} -a {output.faa} -p meta -f gff 2> {log}
         """
 
 

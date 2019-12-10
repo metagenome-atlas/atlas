@@ -51,7 +51,7 @@ rule cat_on_bin:
         " -f {params.f} -r {params.r} "
         " -d {params.db_folder} -t {params.db_folder} --nproc {threads} "
         " --bin_suffix {params.extension} "
-        " --out_prefix {params.out_prefix} &> >(tee {log})"
+        " --out_prefix {params.out_prefix} &> {log}"
 
 def merge_taxonomy_input(wildcards):
     genomes= get_genomes_(wildcards)
