@@ -32,7 +32,7 @@ jobs:
             - "path_atlasenv"
       - run: python setup.py install
       - run:
-          name: test if exists:
+          name: test if exists
           command: |
               conda activate -p path_atlasenv
               conda list
