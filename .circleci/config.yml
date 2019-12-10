@@ -55,7 +55,7 @@ jobs:
       - save_cache:
           key: conda-envs-{{ tar -c atlas/envs | checksum  }}
           paths:
-            - DATABASE_DIR
+            - $DATABASE_DIR
 
 #      - run: .test/test_assembly.sh
 
