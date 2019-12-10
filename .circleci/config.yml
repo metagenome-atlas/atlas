@@ -15,6 +15,7 @@ jobs:
     parallelism: 1
     steps:
       - checkout
+      - run: pwd
       - run:
           name: Setup conda
           command: |
