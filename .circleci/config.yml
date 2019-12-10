@@ -152,4 +152,3 @@ workflows:
       - assembly:
           requires:
             - dryrun
-            - getenvs
