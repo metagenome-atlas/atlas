@@ -151,7 +151,7 @@ rule get_read_stats:
                     threads={threads} \
                     overwrite=true \
                     -Xmx{mem}G \
-                    2>> {log} 
+                    2> >(tee -a {log} {tmp_file} )
                  """.format(subfolder=subfolder, params_in=params_in, log=log,
                             threads=threads, mem=resources.java_mem,tmp_file=tmp_file))
             content = open(tmp_file).read()
