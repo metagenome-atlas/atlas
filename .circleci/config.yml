@@ -113,11 +113,25 @@ jobs:
           key: conda-envs-{{ checksum "conda_envs.tar"  }}
           paths:
             - $DATABASE_DIR
+      - persist_to_workspace:
+          root: /
+          paths:
+            - atlasenv
+            - databases
+            - root/project
 
 
-
-
-#      - run: .test/test_assembly.sh
+  assembly:
+    <<: *defaults
+    parallelism: 4
+    steps:
+      - attach_workspace:
+          at: /
+      - run: git clone https://github.com/metagenome-atlas/example_data.git
+          name: test assembly
+          command: |
+              source activate /atlasenv
+              .test/test_assembly.sh
 
 
 
@@ -133,3 +147,7 @@ workflows:
       - getenvs:
           requires:
             - build
+      - assembly:
+          requires:
+            - dryrun
+            - getenvs

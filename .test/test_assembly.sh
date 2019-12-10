@@ -17,10 +17,6 @@ reads_dir="example_data/reads/stub"
 ressource_args=" --resources mem=5 --jobs=4 --restart-times=2"
 
 
-rm -rf example_data
-git clone https://github.com/metagenome-atlas/example_data.git
-
-
 rm -f $WD/samples.tsv
 #
 atlas init --db-dir $databaseDir  -w $WD $reads_dir
