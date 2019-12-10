@@ -15,19 +15,48 @@ jobs:
     parallelism: 1
     steps:
       - checkout
-      - run: conda config --add channels bioconda
-      - run: conda config --add channels conda-forge
-      - run: conda config --set always_yes true
-      - run: conda env update -n base --file atlasenv.yml
+      - restore_cache:
+          key: atlasenv-{{ checksum "atlasenv.yml" }}
+      - run:
+          name: Setup conda
+          command: |
+           conda config --add channels bioconda
+           conda config --add channels conda-forge
+           conda config --set always_yes true
+      - run:
+          name: install dependencies
+          command:  conda create -p path_atlasenv --file atlasenv.yml
+      - save_cache:
+          key: atlasenv-{{ checksum "atlasenv.yml" }}
+          paths:
+            - "path_atlasenv"
       - run: python setup.py install
-      - run: conda list
-      - run: atlas --help
-      - run: atlas --version
-      # make config
-      - run: .test/dryrun.sh
-      - run: atlas run all -w $WORKING_DIR --create-envs-only
-      - run: atlas run None -w $WORKING_DIR logs/checkm_init.txt
-      - run: .test/test_assembly.sh
+      - run:
+          name: test if exists:
+          command: |
+              conda activate -p path_atlasenv
+              conda list
+              atlas --help
+              atlas --version
+      - run:
+          name: Dryrun
+          command: |
+              conda activate -p path_atlasenv
+              .test/dryrun.sh
+      - restore_cache:
+          key: conda-envs-{{ tar -c atlas/envs | checksum  }}
+      - run:
+          name: install environements
+          command: |
+              atlas run all -w $WORKING_DIR --create-envs-only
+              atlas run None -w $WORKING_DIR logs/checkm_init.txt
+      - save_cache:
+          key: conda-envs-{{ tar -c atlas/envs | checksum  }}
+          paths:
+            - DATABASE_DIR
+
+#      - run: .test/test_assembly.sh
+
 
 
 
