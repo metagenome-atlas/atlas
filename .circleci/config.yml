@@ -119,7 +119,7 @@ jobs:
           name: test assembly
           command: |
               source activate /atlasenv
-              .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2
+              .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
 
 
 workflows:
