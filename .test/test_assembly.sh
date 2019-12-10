@@ -14,7 +14,7 @@ databaseDir=".test/databases"
 WD='.test/Test_assembly'
 reads_dir="example_data/reads/stub"
 
-ressource_args=" --resources mem=5 --threads=4 --restart-times=2"
+ressource_args=" --resources mem=5 --jobs=4 --restart-times=2"
 
 
 rm -rf example_data
