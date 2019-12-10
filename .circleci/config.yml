@@ -82,22 +82,11 @@ jobs:
       - run: |
           ls
           pwd
-          cd /root/project/
-      - run: pwd
-
-      - run: |
-            source activate /atlasenv
-            atlas download --db-dir $DATABASE_DIR -n
-      - run:
-          name: Init
-          command: |
-              source activate /atlasenv
-              atlas init --db-dir $DATABASE_DIR --threads 3 -w  $WORKING_DIR .test/reads/empty
       - run:
           name: Dryrun
           command: |
               source activate /atlasenv
-              atlas run -w $WORKING_DIR --dryrun $@
+              .test/dryrun.sh
   getenvs:
     <<: *defaults
     parallelism: 1
@@ -109,11 +98,17 @@ jobs:
       - restore_cache:
           key: conda-envs-{{ checksum "conda_envs.tar"  }}
       - run:
+          name: Init
+          command: |
+              source activate /atlasenv
+              atlas init --db-dir $DATABASE_DIR --threads 1 -w .test/Getenvs .test/reads/empty
+
+      - run:
           name: install environements
           command: |
               source activate /atlasenv
-              atlas run all -w $WORKING_DIR --create-envs-only
-              atlas run None -w $WORKING_DIR logs/checkm_init.txt
+              atlas run all -w .test/Getenvs --create-envs-only
+              atlas run None -w .test/Getenvs logs/checkm_init.txt
       - save_cache:
           key: conda-envs-{{ checksum "conda_envs.tar"  }}
           paths:
