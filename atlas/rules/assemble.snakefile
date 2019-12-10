@@ -773,7 +773,7 @@ rule predict_genes:
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
+            -a {output.faa} -p meta -f gff 2> {log}
         """
 
 

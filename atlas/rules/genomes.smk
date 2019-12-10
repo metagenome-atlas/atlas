@@ -193,6 +193,8 @@ checkpoint rename_genomes:
         rename_contigs=config['rename_mags_contigs']
     shadow:
         "shallow"
+    log:
+        "logs/genomes/rename_genomes.log"
     script:
         "rename_genomes.py"
 
@@ -484,7 +486,7 @@ rule predict_genes_genomes:
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
+            -a {output.faa} -p meta -f gff 2> {log}
         """
 
 def get_all_genes(wildcards,extension='.faa'):

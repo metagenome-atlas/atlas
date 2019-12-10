@@ -88,14 +88,14 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             db=lambda wc, output: os.path.join(output.db,'inputdb')
         shell:
             """
-                mkdir -p {params.tmpdir} {output}
-                mmseqs createdb {input.faa} {params.db} > >(tee  {log})
+                mkdir -p {params.tmpdir} {output} 2>> {log}
+                mmseqs createdb {input.faa} {params.db} &> {log}
 
                 mmseqs {params.clustermethod} -c {params.coverage} \
                 --min-seq-id {params.minid} {params.extra} \
-                --threads {threads} {params.db} {params.clusterdb} {params.tmpdir}  > >(tee -a  {log})
+                --threads {threads} {params.db} {params.clusterdb} {params.tmpdir}  &>>  {log}
 
-                rm -fr  {params.tmpdir} > >(tee -a  {log})
+                rm -fr  {params.tmpdir} 2>> {log}
             """
 
 
@@ -119,13 +119,13 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             rep_seqs_db=lambda wc, output: os.path.join(output.rep_seqs_db,'db')
         shell:
             """
-            mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  > >(tee   {log})
+            mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  &> {log}
 
-            mkdir {output.rep_seqs_db} 2> >(tee -a  {log})
+            mkdir {output.rep_seqs_db} 2>> {log}
 
-            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  > >(tee -a  {log})
+            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  &>> {log}
 
-            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  > >(tee -a  {log})
+            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  &>> {log}
 
             """
 
@@ -184,7 +184,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
                 cd-hit-est -i {input} -T {threads} \
                 -M {resources.mem}000 -o {params.prefix} \
                 -c {params.identity} -n 9  -d 0 {params.extra} \
-                -aS {params.coverage} -aL {params.coverage} > >(tee {log})
+                -aS {params.coverage} -aL {params.coverage} &> {log}
 
                 mv {params.prefix} {output[0]} 2>> {log}
             """
@@ -445,7 +445,7 @@ rule eggNOG_homology_search:
         """
         emapper.py -m diamond --no_annot --no_file_comments \
             --data_dir {params.data_dir} --cpu {threads} -i {input.faa} \
-            -o {params.prefix} --override 2> >(tee {log})
+            -o {params.prefix} --override 2> {log}
         """
 
 
@@ -470,7 +470,7 @@ rule eggNOG_annotation:
     shell:
         """
         emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
-            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
+            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> {log}
         """
 
 
@@ -538,7 +538,7 @@ rule predict_single_copy_genes:
         " $DIR\/db/{params.key}.scg.faa "
         " $DIR\/db/{params.key}.scg.lookup "
         " {threads} "
-        " 2> >(tee {log}) "
+        " 2> {log} "
         " ; "
         " mv {input[0]}.scg {output}"
 
@@ -668,6 +668,6 @@ rule gene2genome:
 #         mem= 220
 #     shell:
 #         """
-#         canopy -i {input} -o {output.cluster} -c {output.profile} -n {threads} --canopy_size_stats_file {log} {params.canopy_params} 2> >(tee {log})
+#         canopy -i {input} -o {output.cluster} -c {output.profile} -n {threads} --canopy_size_stats_file {log} {params.canopy_params} 2> {log}
 #
 #         """

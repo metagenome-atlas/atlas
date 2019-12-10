@@ -151,7 +151,7 @@ rule get_metabat_depth_file:
     shell:
         """
         jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
-            &> >(tee {log})
+            &> {log}
         """
 
 
@@ -184,7 +184,7 @@ rule metabat:
             --maxEdges {params.sensitivity} \
             --saveCls --noBinOut \
             -o {output} \
-            &> >(tee {log})
+            &> {log}
         """
 
 
@@ -290,6 +290,8 @@ rule get_bins:
         directory("{sample}/binning/{binner}/bins")
     conda:
         "%s/sequence_utils.yaml" % CONDAENV
+    log:
+        "{sample}/logs/binning/get_bins_{binner}.log"
     script:
         "get_fasta_of_bins.py"
 
@@ -528,8 +530,8 @@ rule run_das_tool:
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "
         " --debug "
-        " --score_threshold {params.score_threshold} &> >(tee {log}) "
-        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
+        " --score_threshold {params.score_threshold} &> {log} "
+        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
 
 
 # # unknown bins and contigs

@@ -3,7 +3,7 @@
 # python 3.5 without f strings
 
 import argparse
-import os, shutil
+import os, shutil, sys
 import uuid
 import itertools
 from glob import glob
@@ -44,7 +44,7 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
                                    itertools.repeat(out_dir),log_names))
 
     #cat in python
-    with open(log, 'wb') as f_out:
+    with open(log, 'ab') as f_out:
         for logfile in log_names:
             with open(logfile,'rb') as f_in:
                 shutil.copyfileobj(f_in, f_out)
@@ -53,6 +53,9 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
 
 if __name__ == "__main__":
     try:
+        log=open(snakemake.log[0],"w")
+        sys.stderr= log
+        sys.stdout= log
 
         predict_genes_genomes(
             snakemake.input.dir,
