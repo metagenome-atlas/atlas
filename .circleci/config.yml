@@ -22,7 +22,7 @@ jobs:
            conda config --add channels bioconda
            conda config --add channels conda-forge
            conda config --set always_yes true
-           conda env create -p /atlasenv
+           conda create -p /atlasenv
       - restore_cache:
           key: atlasenv-{{ checksum "atlasenv.yml" }}
       - run:
