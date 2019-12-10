@@ -2,7 +2,7 @@ defaults: &defaults
   docker:
     - image: continuumio/miniconda3
   environment:
-    DATABASE_DIR: .test/databases
+    DATABASE_DIR: /databases
     WORKING_DIR: .test/Dryrun
     N_THREADS: 4
     MEM: 4
@@ -24,12 +24,12 @@ jobs:
            conda config --set always_yes true
            conda create -p /atlasenv
       - restore_cache:
-          key: atlasenv-{{ checksum "atlasenv.yml" }}
+          key: atlasenv-dependencies-{{ checksum "atlasenv.yml" }}
       - run:
           name: install dependencies
           command:  conda env update -p /atlasenv --file atlasenv.yml
       - save_cache:
-          key: atlasenv-{{ checksum "atlasenv.yml" }}
+          key: atlasenv-dependencies-{{ checksum "atlasenv.yml" }}
           paths:
             - "/atlasenv"
       - run:
@@ -41,9 +41,17 @@ jobs:
               atlas --help
               atlas --version
       - run:
+          name: short test
+          command: |
+              source activate /atlasenv
+              atlas --help
+              atlas --version
+      - run:
           name: Dryrun
           command: |
               source activate /atlasenv
+              ls
+              pwd
               .test/dryrun.sh
       - restore_cache:
           key: conda-envs-{{ tar -c atlas/envs | checksum  }}
@@ -57,6 +65,13 @@ jobs:
           key: conda-envs-{{ tar -c atlas/envs | checksum  }}
           paths:
             - $DATABASE_DIR
+      - persist_to_workspace:
+          root: /root/project
+          paths:
+            - /atlasenv
+            - $DATABASE_DIR
+
+
 
 #      - run: .test/test_assembly.sh
 
