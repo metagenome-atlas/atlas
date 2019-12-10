@@ -23,6 +23,7 @@ jobs:
            conda config --add channels bioconda
            conda config --add channels conda-forge
            conda config --set always_yes true
+           conda init bash
       - run:
           name: install dependencies
           command:  conda env create -p path_atlasenv --file atlasenv.yml
@@ -34,20 +35,21 @@ jobs:
       - run:
           name: test if exists
           command: |
-              conda activate -p path_atlasenv
+              source activate -p path_atlasenv
               conda list
               atlas --help
               atlas --version
       - run:
           name: Dryrun
           command: |
-              conda activate -p path_atlasenv
+              source activate -p path_atlasenv
               .test/dryrun.sh
       - restore_cache:
           key: conda-envs-{{ tar -c atlas/envs | checksum  }}
       - run:
           name: install environements
           command: |
+              source activate -p path_atlasenv
               atlas run all -w $WORKING_DIR --create-envs-only
               atlas run None -w $WORKING_DIR logs/checkm_init.txt
       - save_cache:
