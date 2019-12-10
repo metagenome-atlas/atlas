@@ -88,14 +88,14 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             db=lambda wc, output: os.path.join(output.db,'inputdb')
         shell:
             """
-                mkdir -p {params.tmpdir} {output} 2>> {log)
+                mkdir -p {params.tmpdir} {output} 2>> {log}
                 mmseqs createdb {input.faa} {params.db} &> {log}
 
                 mmseqs {params.clustermethod} -c {params.coverage} \
                 --min-seq-id {params.minid} {params.extra} \
                 --threads {threads} {params.db} {params.clusterdb} {params.tmpdir}  &>>  {log}
 
-                rm -fr  {params.tmpdir} 2>> {log)
+                rm -fr  {params.tmpdir} 2>> {log}
             """
 
 
