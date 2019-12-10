@@ -190,6 +190,7 @@ rename_mags_contigs: true        #Rename contigs of representative MAGs
 annotations:
   - gtdb_tree
   - gtdb_taxonomy
+  - genes
 #  - checkm_taxonomy
 #  - checkm_tree
 

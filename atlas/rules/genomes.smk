@@ -30,8 +30,9 @@ rule all_contigs2bins:
                    sample= SAMPLES, binner= config['final_binner'])
         output:
             temp("genomes/clustering/all_contigs2bins.tsv.gz")
-        shell:
-            "cat {input} | gzip > {output}"
+        run:
+            from utils.io import cat_files
+            cat_files(input,output[0],gzip=True)
 
 
 localrules: get_quality_for_dRep_from_checkm, merge_checkm
