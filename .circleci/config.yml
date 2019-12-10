@@ -108,7 +108,6 @@ jobs:
           command: |
               source activate /atlasenv
               atlas run all -w .test/Getenvs --create-envs-only
-              atlas run None -w .test/Getenvs logs/checkm_init.txt
       - save_cache:
           key: conda-envs-{{ checksum "conda_envs.tar"  }}
           paths:
@@ -119,7 +118,7 @@ jobs:
             - atlasenv
             - databases
             - root/project
-
+#              atlas run None -w .test/Getenvs logs/checkm_init.txt
 
   assembly:
     <<: *defaults
