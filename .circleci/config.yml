@@ -66,10 +66,11 @@ jobs:
           paths:
             - $DATABASE_DIR
       - persist_to_workspace:
-          root: /root/project
+          root: /
           paths:
-            - /atlasenv
-            - $DATABASE_DIR
+            - atlasenv
+            - databases
+            - root/project
 
 
 
