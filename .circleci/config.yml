@@ -23,14 +23,21 @@ jobs:
            conda config --add channels conda-forge
            conda config --set always_yes true
            conda init bash
+           conda env create -p /atlasenv
+      - restore_cache:
+          key: atlasenv-{{ checksum "atlasenv.yml" }}
       - run:
           name: install dependencies
-          command:  conda env create -p /atlasenv --file atlasenv.yml
-      - run: python setup.py install
+          command:  conda env update -p /atlasenv --file atlasenv.yml
+      - save_cache:
+          key: atlasenv-{{ checksum "atlasenv.yml" }}
+          paths:
+            - "/atlasenv"
       - run:
-          name: test if exists
+          name: Install atlas
           command: |
               source activate /atlasenv
+              python setup.py install
               conda list
               atlas --help
               atlas --version
