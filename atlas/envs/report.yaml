@@ -9,7 +9,7 @@ dependencies:
     - plotly=2.2.2
     - ipython=6.2.1
     - seaborn=0.8
-    - snakemake
+    - snakemake=5.7.4
     - docutils
     - pip
     - pip:

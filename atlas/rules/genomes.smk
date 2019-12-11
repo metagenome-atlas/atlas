@@ -6,7 +6,7 @@ else:
 
 
 ## dRep
-localrules: get_all_bins
+localrules: get_all_bins, all_contigs2bins
 rule get_all_bins:
     input:
         bins=expand("{sample}/binning/{binner}/bins",
@@ -17,18 +17,22 @@ rule get_all_bins:
         temp(directory("genomes/all_bins"))
     run:
         os.mkdir(output[0])
-        from glob import glob
-        import shutil
+        from utils.io import symlink_relative
+
         for bin_folder in input.bins:
-            for fasta_file in glob(os.path.join(bin_folder,'*.fasta')):
 
-                #fasta_file_name = os.path.split(fasta_file)[-1]
-                #in_path = os.path.dirname(fasta_file)
-                #out_path= os.path.join(output[0],fasta_file_name)
-                #os.symlink(os.path.relpath(fasta_file,output[0]),out_path)
+            fasta_files = [f for f in os.listdir(bin_folder) if f.endswith('.fasta') ]
+            symlink_relative(fasta_files,bin_folder,output[0])
 
-                shutil.copy(fasta_file,output[0])
-
+rule all_contigs2bins:
+        input:
+            expand("{sample}/binning/{binner}/cluster_attribution.tsv",
+                   sample= SAMPLES, binner= config['final_binner'])
+        output:
+            temp("genomes/clustering/all_contigs2bins.tsv.gz")
+        run:
+            from utils.io import cat_files
+            cat_files(input,output[0],gzip=True)
 
 
 localrules: get_quality_for_dRep_from_checkm, merge_checkm
@@ -185,8 +189,12 @@ checkpoint rename_genomes:
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes = "genomes/clustering/old2newID.tsv",
         mapfile_bins= "genomes/clustering/allbins2genome.tsv"
+    params:
+        rename_contigs=config['rename_mags_contigs']
     shadow:
         "shallow"
+    log:
+        "logs/genomes/rename_genomes.log"
     script:
         "rename_genomes.py"
 
@@ -227,6 +235,8 @@ rule run_all_checkm_lineage_wf:
     resources:
         time=config["runtime"]["long"],
         mem=config["large_mem"]
+    log:
+        "logs/genomes/checkm.log"
     shell:
         """
         rm -r {params.output_dir}
@@ -237,7 +247,7 @@ rule run_all_checkm_lineage_wf:
             --extension fasta \
             --threads {threads} \
             {input.dir} \
-            {params.output_dir}
+            {params.output_dir} &> {log}
         """
 
 ### Quantification
@@ -478,7 +488,7 @@ rule predict_genes_genomes:
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
+            -a {output.faa} -p meta -f gff 2> {log}
         """
 
 def get_all_genes(wildcards,extension='.faa'):
@@ -545,25 +555,3 @@ rule all_prokka:
         out= pd.concat([pd.read_csv(file,index_col=0,sep='\t') for file in input],axis=0).sort_index()
 
         out.to_csv(output[0],sep='\t')
-
-
-rule gene2genome:
-    input:
-        get_all_genes
-    output:
-        "genomes/annotations/orf2genome.tsv"
-    threads:
-        config['simplejob_threads']
-    resources:
-        mem=config['simplejob_mem']
-    run:
-        from utils.fasta import header2origin
-        from multiprocessing.dummy import Pool
-        import itertools
-
-        fasta_files= input
-
-        pool = Pool(threads)
-
-        with open(output[0],'w') as outf :
-            pool.starmap(header2origin, zip(fasta_files,itertools.repeat(outf)))

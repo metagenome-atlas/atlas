@@ -82,11 +82,9 @@ def get_snakefile(file="Snakefile"):
     help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(
-    "--no-conda",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="do not use conda environments. good luck!",
+    "--profile",
+    default=None,
+    help="snakemake profile e.g. for cluster execution.",
 )
 @click.option(
     "-n",
@@ -97,7 +95,7 @@ def get_snakefile(file="Snakefile"):
     help="Test execution.",
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snakemake_args):
+def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snakemake_args):
     """Runs the ATLAS pipline
 
     By default all steps are executed but a sub-workflow can be specified.
@@ -133,7 +131,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
         "snakemake --snakefile {snakefile} --directory {working_dir} "
         "--jobs {jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
-        " {conda}  {conda_prefix} {dryrun} "
+        " {profile} --use-conda {conda_prefix} {dryrun} "
         " {target_rule} "
         " {args} "
     ).format(
@@ -141,11 +139,11 @@ def run_workflow(workflow, working_dir,config_file, jobs, no_conda, dryrun, snak
         working_dir=working_dir,
         jobs=jobs,
         config_file=config_file,
-        conda="" if no_conda else "--use-conda",
+        profile="" if (profile is None) else "--profile {}".format(profile),
         dryrun="--dryrun" if dryrun else "",
         args=" ".join(snakemake_args),
         target_rule=workflow if workflow!="None" else "",
-        conda_prefix="" if no_conda else "--conda-prefix "+os.path.join(db_dir,'conda_envs')
+        conda_prefix= "--conda-prefix "+os.path.join(db_dir,'conda_envs')
     )
     logging.info("Executing: %s" % cmd)
     try:

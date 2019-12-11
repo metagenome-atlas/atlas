@@ -10,25 +10,21 @@ atlas --version
 
 
 samplenames="Mycoplasma Streptococcus"
-databaseDir=".test/databases"
+databaseDir="databases"
 WD='.test/Test_assembly'
 reads_dir="example_data/reads/stub"
 
-ressource_args=" --config simplejob_mem=4 mem=4 assembly_mem=4"
 
-
-rm -rf example_data
-git clone https://github.com/metagenome-atlas/example_data.git
 
 
 rm -f $WD/samples.tsv
 #
-atlas init --db-dir $databaseDir --threads 4  -w $WD $reads_dir
+atlas init --db-dir $databaseDir  -w $WD $reads_dir
 
 
-atlas run -w $WD qc $ressource_args $@
+atlas run -w $WD qc  $@
 
-atlas run assembly -w $WD $ressource_args $@
+atlas run assembly -w $WD  $@
 
 atlas run assembly -w $WD $@
 
@@ -43,9 +39,9 @@ rm -f $WD2/samples.tsv
 mkdir -p $reads_dir
 cp $WD/*/sequence_quality_control/*_QC_R?.fastq.gz $reads_dir
 
-atlas init --db-dir $databaseDir --threads 4 --assembler megahit --skip-qc -w $WD2 $reads_dir
+atlas init --db-dir $databaseDir --assembler megahit --skip-qc -w $WD2 $reads_dir
 
-atlas run -w $WD2 assembly $ressource_args $@
+atlas run -w $WD2 assembly  $@
 
 
 echo "start from interleaved QC reads"
@@ -62,6 +58,6 @@ reformat.sh in=$WD/$sample/sequence_quality_control/${sample}_QC_R1.fastq.gz \
   in2=$WD/$sample/sequence_quality_control/${sample}_QC_R2.fastq.gz out=$reads_dir/${sample}.fastq.gz overwrite=true
 done
 
-atlas init --db-dir $databaseDir --threads 4 --skip-qc -w $WD3 $reads_dir
+atlas init --db-dir $databaseDir --skip-qc -w $WD3 $reads_dir
 
-atlas run -w $WD3 assembly $ressource_args interleaved_fastqs=True $@
+atlas run  assembly --config interleaved_fastqs=True -w $WD3 $@

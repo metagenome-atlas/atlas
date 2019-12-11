@@ -33,6 +33,7 @@ wheels/
 .test/*
 !.test/dryrun.sh
 !.test/test_assembly.sh
+!.test/test_binning.sh
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

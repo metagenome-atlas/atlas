@@ -142,4 +142,4 @@ This rule produces the following output file for the whole dataset.
 
   - ``Genecatalog/gene_catalog.fna``
   - ``Genecatalog/gene_catalog.faa``
-  - ``Genecatalog/annotations/eggNog.tsv``
+  - ``Genecatalog/annotations/eggNog.tsv.gz``

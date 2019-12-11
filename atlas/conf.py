@@ -57,6 +57,11 @@ def get_samples_from_fastq(path):
         logging.error(f"Missing files:\n\n {samples}")
         exit(1)
 
+    if samples.shape[0]==0:
+        logging.error(f"No files found in {path}\n"
+                       "I'm looking for files with .fq or .fastq extension. ")
+        exit(1)
+
     return samples
 
 def validate_sample_table(sampleTable):
@@ -65,8 +70,11 @@ def validate_sample_table(sampleTable):
     Expected_Headers =['BinGroup'] + ADDITIONAL_SAMPLEFILE_HEADERS
     for h in Expected_Headers:
         if not (h in sampleTable.columns):
-         logging.error(f"expect '{h}' to be found in samples.tsv")
-         exit(1)
+            logging.error(f"expect '{h}' to be found in samples.tsv")
+            exit(1)
+        elif sampleTable[h].isnull().any():
+            logging.error(f"Found empty values in the sample table column '{h}'")
+            exit(1)
 
     if not sampleTable.index.is_unique:
         duplicated_samples=', '.join(D.index.duplicated())
