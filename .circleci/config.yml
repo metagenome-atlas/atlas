@@ -71,13 +71,12 @@ jobs:
     resource_class: small
     steps:
       - attach_workspace:
-          at: /
-      - run: cd /root/project/
+          at: /root/project/
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-envs-{{ checksum "conda_envs.tar"  }}
-            - conda-envs-
+            - conda-environements-{{ checksum "conda_envs.tar"  }}
+            - conda-environements-
       - run:
           name: Init
           command: |
@@ -89,17 +88,30 @@ jobs:
               source activate ./atlasenv
               atlas run all -w .test/Getenvs --create-envs-only
       - save_cache:
-          key: conda-envs-{{ checksum "conda_envs.tar"  }}
+          key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
             - $DATABASE_DIR
       - persist_to_workspace:
           root: /root/project
           paths:
-            - databases
+            - $DATABASE_DIR
 
 
 # download checkm data
 #              atlas run None -w .test/Getenvs logs/checkm_init.txt
+
+  get_example_data:
+    <<: *defaults
+    environment:
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run: git clone https://github.com/metagenome-atlas/example_data.git
+      - persist_to_workspace:
+          root: /root/project
+          paths:
+            - example_data
 
   assembly_and_genecatalog:
     <<: *defaults
@@ -108,9 +120,6 @@ jobs:
       MEM: 4
     resource_class: medium
     steps:
-      - attach_workspace:
-          at: /
-      - run: git clone https://github.com/metagenome-atlas/example_data.git
       - run:
           name: test assembly
           command: |
@@ -133,6 +142,7 @@ workflows:
   build_and_test:
     jobs:
       - build
+      - get_example_data
       - getenvs:
           requires:
             - build
@@ -140,3 +150,4 @@ workflows:
           requires:
             - build
             - getenvs
+            - get_example_data
