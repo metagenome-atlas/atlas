@@ -99,7 +99,7 @@ jobs:
 # download checkm data
 #              atlas run None -w .test/Getenvs logs/checkm_init.txt
 
-  assembly:
+  assembly_and_genecatalog:
     <<: *defaults
     environment:
       N_THREADS: 2
@@ -134,7 +134,7 @@ workflows:
       - getenvs:
           requires:
             - build
-      - assembly:
+      - assembly_and_genecatalog:
           requires:
             - build
             - getenvs
