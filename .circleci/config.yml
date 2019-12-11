@@ -110,6 +110,7 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+
       - run: git clone https://github.com/metagenome-atlas/example_data.git
       - persist_to_workspace:
           root: /root/project
@@ -123,6 +124,8 @@ jobs:
       MEM: 4
     resource_class: medium
     steps:
+      - attach_workspace:
+          at: /root/project/
       - run:
           name: test assembly
           command: |
@@ -146,6 +149,8 @@ jobs:
       MEM: 4
     resource_class: medium
     steps:
+      - attach_workspace:
+          at: /root/project/
       - run:
           name: test binning
           command: |
