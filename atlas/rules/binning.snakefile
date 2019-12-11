@@ -260,10 +260,11 @@ rule get_unique_cluster_attribution:
         new_d= d.map(map_cluster_ids)
         new_d.dropna(inplace=True)
         if new_d.shape[0]==0:
-            raise Exception("No bins detected with binner {binner} in sample {sample}.\n".format(**wildcards)
+            raise Exception(f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
                             "This will break the continuationof the pipeline. "
                             "Check what happened. Maybe the the assembly is too small. "
-                            "You can either remove the binner (for all samples) from the config.yaml file or the sample from the sample.tsv")
+                            "You can either remove the binner (for all samples) from the config.yaml file or the sample from the sample.tsv"
+                            )
         new_d.to_csv(output[0],sep='\t')
 #
 
