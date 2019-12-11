@@ -1,19 +1,16 @@
 import os,sys
-import numpy as np
-import pandas as pd
 f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
-import plotly.graph_objs as go
-import zipfile
-from plotly import offline, tools
 from cufflinks import iplot
-from snakemake.utils import report
-
 log=open(snakemake.log[0],"w")
 sys.stderr= log
 sys.stdout= log
 
-
-sys.stdout= open(snakemake.log[0],"w")
+import numpy as np
+import pandas as pd
+import plotly.graph_objs as go
+import zipfile
+from plotly import offline, tools
+from snakemake.utils import report
 
 
 PLOTLY_PARAMS = dict(
