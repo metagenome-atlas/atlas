@@ -58,11 +58,6 @@ jobs:
           command: |
               source activate /atlasenv
               .test/dryrun.sh
-      - store_artifacts:
-          path: .test/Dryrun/.snakemake/log
-          destination: dryrun
-      - store_test_results:
-          path: .test/Dryrun/.snakemake/log
 
       - persist_to_workspace:
           root: /
@@ -86,7 +81,6 @@ jobs:
           command: |
               source activate /atlasenv
               atlas init --db-dir $DATABASE_DIR --threads 1 -w .test/Getenvs .test/reads/empty
-
       - run:
           name: install environements
           command: |
@@ -120,7 +114,17 @@ jobs:
           command: |
               source activate /atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
-
+      - store_artifacts:
+          path: .test/Test_assembly/reports
+          destination: assembly_results
+      - store_test_results:
+          path: .test/Test_assembly/reports
+      - run:
+          name: run genecatalog
+          command: |
+              source activate /atlasenv
+              WD='.test/Test_assembly'
+              atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
 
 workflows:
   version: 2
@@ -133,3 +137,4 @@ workflows:
       - assembly:
           requires:
             - build
+            - getenvs
