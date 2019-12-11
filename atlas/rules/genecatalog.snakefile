@@ -626,7 +626,7 @@ rule gene2genome:
         gene2genome= orf2gene.groupby(['Gene','MAG']).size()
         gene2genome.name='Ncopies'
 
-        gene2genome.to_csv(output[0],sep='\t')
+        gene2genome.to_csv(output[0],sep='\t',header=True)
 
 
 
