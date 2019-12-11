@@ -1,11 +1,16 @@
-import argparse
 import os,sys
 f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
+from cufflinks import iplot
+log=open(snakemake.log[0],"w")
+sys.stderr= log
+sys.stdout= log
+
 import pandas as pd
 import plotly.graph_objs as go
 from plotly import offline
-from cufflinks import iplot
 from snakemake.utils import report
+
+
 
 PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
@@ -168,6 +173,7 @@ Downloads
 if __name__ == "__main__":
 
     try:
+
         main(
             samples=snakemake.params.samples,
             contig_stats=snakemake.input.contig_stats,
@@ -178,6 +184,7 @@ if __name__ == "__main__":
         )
 
     except NameError:
+        import argparse
 
         p = argparse.ArgumentParser()
         p.add_argument("--samples", nargs="+")

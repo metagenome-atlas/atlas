@@ -1,16 +1,16 @@
-import argparse
 import os,sys
+f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
+from cufflinks import iplot
+log=open(snakemake.log[0],"w")
+sys.stderr= log
+sys.stdout= log
+
 import numpy as np
 import pandas as pd
-f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
 import plotly.graph_objs as go
 import zipfile
 from plotly import offline, tools
-from cufflinks import iplot
 from snakemake.utils import report
-
-
-sys.stdout= open(snakemake.log[0],"w")
 
 
 PLOTLY_PARAMS = dict(
@@ -306,6 +306,7 @@ if __name__ == "__main__":
             min_quality=snakemake.params.min_quality,
         )
     except NameError:
+        import argparse
         p = argparse.ArgumentParser()
         p.add_argument("--report_out")
         p.add_argument("--read_counts")

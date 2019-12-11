@@ -2,10 +2,6 @@
 set -euo pipefail
 
 
-rm -rf WD
-
-
-
 atlas --version
 atlas run --help
 
@@ -20,7 +16,7 @@ rm -fr $WD
 atlas download --db-dir $databaseDir -n
 
 
-atlas init --db-dir $databaseDir --threads 3 -w $WD --assembler spades $reads_dir
+atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
 
 
 # for w in qc assembly genomes genecatalog ; do

@@ -139,7 +139,7 @@ rule get_read_stats:
             subfolder = os.path.join(params.folder, fraction)
             tmp_file=os.path.join(subfolder,"read_stats.tmp")
             shell("""
-                    mkdir -p {subfolder}
+                    mkdir -p {subfolder} 2> {log}
 
                     reformat.sh {params_in} \
                     bhist={subfolder}/base_hist.txt \
@@ -456,9 +456,9 @@ if PAIRED_END:
                 ihist={output.ihist} merge=f \
                 mininsert0=35 minoverlap0=8 \
                 prealloc=t prefilter=t \
-                minprob={params.minprob} 2> >(tee {log})
+                minprob={params.minprob} 2> {log}
 
-            readlength.sh {params.inputs} out={output.read_length} 2> >(tee {log})
+            readlength.sh {params.inputs} out={output.read_length} 2> {log}
             """
 
 
@@ -483,7 +483,7 @@ else:
     #        "qc"
         shell:
             """
-            readlength.sh in={input[0]} out={output.read_length} 2> >(tee {log})
+            readlength.sh in={input[0]} out={output.read_length} 2> {log}
             """
 
 
@@ -615,7 +615,7 @@ rule build_qc_report:
     output:
         report = "reports/QC_report.html"
     log:
-        "logs/reports/QC_report.log"
+        "logs/QC/report.log"
     params:
         min_quality = config["preprocess_minimum_base_quality"],
     conda:

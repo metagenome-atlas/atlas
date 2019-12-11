@@ -1,33 +1,21 @@
 #! /bin/bash
 set -euo pipefail
 
-
-
-
-
 atlas --version
 
-
-
-
 databaseDir=".test/databases"
-WD='.test/Test_binning'
-reads_dir=".test/reads/binning"
+WD='example_data/binning'
+reads_dir="example_data/reads/test"
+config="--config interleaved_fastqs=True final_binner=maxbin"
 
-ressource_args=" --config java_mem=10 assembly_mem=10"
+rm -f $WD/samples.tsv $WD/finished_assembly
+touch $WD/finished_assembly
 
-
-# gen randomreads
-snakemake -s atlas/rules/testing.smk -d $reads_dir --config reads=50000
-
-
-rm -f $WD/samples.tsv
 #
-atlas init --db-dir $databaseDir --threads 3  -w $WD $reads_dir
+atlas init --db-dir $databaseDir --threads 4  -w $WD --skip-qc $reads_dir
 
-atlas run binning -w $WD $ressource_args assembler=spades final_binner=metabat $@
+atlas run None "reports/bin_report_metabat.html" $config -w $WD $@
 
 # genomes need databases
-atlas run genomes -w $WD $ressource_args assembler=spades final_binner=metabat --omit-from get_genome_for_cat $@
-
-#atlas run all -w $WD $ressource_args assembler=spades final_binner=metabat $@
+genome_files="genomes/clustering/allbins2genome.tsv genomes/counts/raw_counts_genomes.tsv genomes/tree/checkm.nwk"
+atlas run None $genome_files $config -w $WD $@

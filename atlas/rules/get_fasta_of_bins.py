@@ -1,5 +1,5 @@
 import argparse
-import os
+import os, sys
 import shutil
 import warnings
 
@@ -43,6 +43,10 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
 
 if __name__ == "__main__":
     try:
+        log=open(snakemake.log[0],"w")
+        sys.stderr= log
+        sys.stdout= log
+        
         get_fasta_of_bins(
             snakemake.input.cluster_attribution,
             snakemake.input.contigs,

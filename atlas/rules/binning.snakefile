@@ -151,7 +151,7 @@ rule get_metabat_depth_file:
     shell:
         """
         jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
-            &> >(tee {log})
+            &> {log}
         """
 
 
@@ -184,7 +184,7 @@ rule metabat:
             --maxEdges {params.sensitivity} \
             --saveCls --noBinOut \
             -o {output} \
-            &> >(tee {log})
+            &> {log}
         """
 
 
@@ -259,6 +259,13 @@ rule get_unique_cluster_attribution:
 
         new_d= d.map(map_cluster_ids)
         new_d.dropna(inplace=True)
+        if new_d.shape[0]==0:
+            logger.error(f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
+                          "This will break the continuationof the pipeline. "
+                          "Check what happened. Maybe the the assembly is too small. "
+                          "You can either remove the binner (for all samples) from the config.yaml file or the sample from the sample.tsv"
+                            )
+            raise Exception("No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.")
         new_d.to_csv(output[0],sep='\t')
 #
 
@@ -290,6 +297,8 @@ rule get_bins:
         directory("{sample}/binning/{binner}/bins")
     conda:
         "%s/sequence_utils.yaml" % CONDAENV
+    log:
+        "{sample}/logs/binning/get_bins_{binner}.log"
     script:
         "get_fasta_of_bins.py"
 
@@ -311,6 +320,8 @@ rule run_checkm_lineage_wf:
         "%s/checkm.yaml" % CONDAENV
     threads:
         config.get("threads", 1)
+    log:
+        "{sample}/logs/binning/{binner}/checkm.log"
     resources:
         time=config["runtime"]["long"],
         mem=config["large_mem"]
@@ -324,7 +335,7 @@ rule run_checkm_lineage_wf:
             --extension fasta \
             --threads {threads} \
             {input.bins} \
-            {params.output_dir}
+            {params.output_dir} &> {log}
         """
 
 
@@ -333,7 +344,6 @@ rule run_checkm_tree_qa:
     input:
         tree="{checkmfolder}/completeness.tsv"
     output:
-        netwick="{checkmfolder}/tree.nwk",
         summary="{checkmfolder}/taxonomy.tsv",
     params:
         tree_dir = lambda wc, input: os.path.dirname(input.tree),
@@ -343,11 +353,6 @@ rule run_checkm_tree_qa:
         1
     shell:
         """
-            checkm tree_qa \
-               {params.tree_dir} \
-               --out_format 4 \
-               --file {output.netwick}
-
                checkm tree_qa \
                   {params.tree_dir} \
                   --out_format 2 \
@@ -477,6 +482,8 @@ rule build_bin_report:
         samples = SAMPLES,
     conda:
         "%s/report.yaml" % CONDAENV
+    log:
+        "logs/binning/report_{binner}.log"
     script:
         "../report/bin_report.py"
 
@@ -528,8 +535,8 @@ rule run_das_tool:
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "
         " --debug "
-        " --score_threshold {params.score_threshold} &> >(tee {log}) "
-        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &> >(tee -a {log})"
+        " --score_threshold {params.score_threshold} &> {log} "
+        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
 
 
 # # unknown bins and contigs
