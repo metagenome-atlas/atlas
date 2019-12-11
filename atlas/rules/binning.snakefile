@@ -475,6 +475,8 @@ rule build_bin_report:
         samples = SAMPLES,
     conda:
         "%s/report.yaml" % CONDAENV
+    log:
+        "logs/binning/report.log"
     script:
         "../report/bin_report.py"
 

@@ -826,5 +826,7 @@ rule build_assembly_report:
         samples = SAMPLES
     conda:
         "%s/report.yaml" % CONDAENV
+    log:
+        "logs/assembly/report.log"
     script:
         "../report/assembly_report.py"

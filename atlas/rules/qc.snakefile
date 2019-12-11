@@ -615,7 +615,7 @@ rule build_qc_report:
     output:
         report = "reports/QC_report.html"
     log:
-        "logs/reports/QC_report.log"
+        "logs/QC/report.log"
     params:
         min_quality = config["preprocess_minimum_base_quality"],
     conda:
