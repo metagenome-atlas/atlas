@@ -476,7 +476,7 @@ rule build_bin_report:
     conda:
         "%s/report.yaml" % CONDAENV
     log:
-        "logs/binning/report.log"
+        "logs/binning/report_{binner}.log"
     script:
         "../report/bin_report.py"
 
