@@ -75,8 +75,8 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements-{{ checksum "conda_envs.tar"  }}
-            - conda-environements-
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: Init
           command: |
@@ -88,9 +88,9 @@ jobs:
               source activate ./atlasenv
               atlas run all -w .test/Getenvs --create-envs-only
       - save_cache:
-          key: conda-environements-{{ checksum "conda_envs.tar"  }}
+          key: conda-environements2-{{ checksum "conda_envs.tar"  }}
           paths:
-            - $DATABASE_DIR
+            - databases
       - run:
           name: download checkm data
           command: |
