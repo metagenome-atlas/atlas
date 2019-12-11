@@ -139,6 +139,23 @@ jobs:
               source activate ./atlasenv
               WD='.test/Test_assembly'
               atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+  binning:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 4
+    resource_class: medium
+    steps:
+      - run:
+          name: test binning
+          command: |
+              source activate ./atlasenv
+              .test/binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_artifacts:
+          path: example_data/binning/reports
+          destination: binning_results
+      - store_test_results:
+          path: example_data/binning/reports
 
 workflows:
   version: 2
@@ -150,6 +167,11 @@ workflows:
           requires:
             - build
       - assembly_and_genecatalog:
+          requires:
+            - build
+            - getenvs
+            - get_example_data
+      - binning:
           requires:
             - build
             - getenvs
