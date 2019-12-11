@@ -75,7 +75,9 @@ jobs:
       - run: cd /root/project/
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
-          key: conda-envs-{{ checksum "conda_envs.tar"  }}
+          keys:
+            - conda-envs-{{ checksum "conda_envs.tar"  }}
+            - conda-envs-
       - run:
           name: Init
           command: |
