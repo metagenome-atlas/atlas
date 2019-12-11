@@ -60,4 +60,4 @@ done
 
 atlas init --db-dir $databaseDir --skip-qc -w $WD3 $reads_dir
 
-atlas run -w $WD3 assembly interleaved_fastqs=True $@
+atlas run  assembly --config interleaved_fastqs=True -w $WD3 $@
