@@ -10,7 +10,7 @@ atlas --version
 
 
 samplenames="Mycoplasma Streptococcus"
-databaseDir=".test/databases"
+databaseDir="databases"
 WD='.test/Test_assembly'
 reads_dir="example_data/reads/stub"
 
