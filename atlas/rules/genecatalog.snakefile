@@ -612,15 +612,19 @@ rule gene2genome:
             contigs2genome=contigs2bins.join(old2newID,on='Bin').dropna().drop('Bin',axis=1)
         else:
             contigs2genome= pd.read_csv(input.contigs2mags,
-                                       index_col=0,squeeze=False,sep='\t',header=0)
+                                       index_col=0,squeeze=False,sep='\t',header=None)
+            contigs2genome.columns=['MAG']
+
 
         orf2gene = pd.read_csv(input.orf2gene,
                                    index_col=0,squeeze=False,sep='\t',header=0)
-
-        orf2gene=orf2gene.join(contigs2genome).dropna()
+        import pdb; pdb.set_trace()
+        orf2gene['Contig']= orf2gene.index.map(lambda s: '_'.join(s.split('_')[:-1]))
+        orf2gene=orf2gene.join(contigs2genome,on='Contig')
+        orf2gene= orf2gene.dropna(axis=0)
 
         gene2genome= orf2gene.groupby(['Gene','MAG']).size()
-        gene2genome.columns=['Ncopies']
+        gene2genome.name='Ncopies'
 
         gene2genome.to_csv(output[0],sep='\t')
 
