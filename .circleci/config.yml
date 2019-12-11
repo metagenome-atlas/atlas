@@ -60,9 +60,9 @@ jobs:
               .test/dryrun.sh
 
       - persist_to_workspace:
-          root: /root/project
+          root: /root/project/
           paths:
-            - atlasenv
+            - ./atlasenv
             - .
 
 
@@ -98,7 +98,7 @@ jobs:
               atlas run None -w .test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
-          root: /root/project
+          root: /root/project/
           paths:
             - databases
 
