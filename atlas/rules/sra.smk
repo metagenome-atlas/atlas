@@ -6,11 +6,12 @@ rule download_SRR_paired:
     params:
         outdir='SRAreads'
     wildcard_constraints:
-        SRR="?RR[0-9]+"
+        SRR="[S,E]RR[0-9]+"
     threads:
-        4
+        config['simplejob_threads']
     resources:
-        time= lambda wildcards, attempt: attempt * 2000
+        time= lambda wildcards, attempt: attempt * 30,
+        mem=config['simplejob_mem']
     conda:
         "%s/sra.yaml" % CONDAENV
     shadow:
@@ -21,9 +22,7 @@ rule download_SRR_paired:
 localrules: rename_SRR
 rule rename_SRR:
     input:
-        "SRAreads/{SRR}_1.fastq.gz",
-        "SRAreads/{SRR}_2.fastq.gz",
-        'SRAreads/{SRR}_downloaded'
+        rules.download_SRR_paired.output
     output:
         temp("SRAreads/{SRR}_R1.fastq.gz"),
         temp("SRAreads/{SRR}_R2.fastq.gz")
