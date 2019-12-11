@@ -100,7 +100,7 @@ jobs:
       - persist_to_workspace:
           root: /root/project
           paths:
-            - $DATABASE_DIR
+            - databases
 
 
   get_example_data:
