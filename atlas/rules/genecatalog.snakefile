@@ -3,7 +3,7 @@ import os
 
 
 if config['genecatalog']['source']=='contigs':
-#TODO: cat with python
+
     localrules: concat_genes
     rule concat_genes:
         input:
@@ -12,23 +12,29 @@ if config['genecatalog']['source']=='contigs':
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-        shell:
-            " cat {input.faa} >  {output.faa} ;"
-            " cat {input.fna} > {output.fna}"
+        run:
+            from utils.io import cat_files
+            cat_files(input.faa,output.faa)
+            cat_files(input.fna,output.fna)
+
+
 
 else:
 
     localrules: concat_genes
     rule concat_genes:
         input:
+            "genomes/annotations/orf2genome.tsv",
             faa= lambda wc: get_all_genes(wc,".faa"),
             fna= lambda wc: get_all_genes(wc,".fna")
         output:
             faa=  temp("Genecatalog/all_genes_unfiltered.faa"),
             fna = temp("Genecatalog/all_genes_unfiltered.fna"),
-        shell:
-            " cat {input.faa} >  {output.faa} ;"
-            " cat {input.fna} > {output.fna}"
+        run:
+            from utils.io import cat_files
+            cat_files(input.faa,output.faa)
+            cat_files(input.fna,output.fna)
+
 
 
 localrules: filter_genes
@@ -82,14 +88,14 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             db=lambda wc, output: os.path.join(output.db,'inputdb')
         shell:
             """
-                mkdir -p {params.tmpdir} {output}
-                mmseqs createdb {input.faa} {params.db} > >(tee  {log})
+                mkdir -p {params.tmpdir} {output} 2>> {log}
+                mmseqs createdb {input.faa} {params.db} &> {log}
 
                 mmseqs {params.clustermethod} -c {params.coverage} \
                 --min-seq-id {params.minid} {params.extra} \
-                --threads {threads} {params.db} {params.clusterdb} {params.tmpdir}  > >(tee -a  {log})
+                --threads {threads} {params.db} {params.clusterdb} {params.tmpdir}  &>>  {log}
 
-                rm -fr  {params.tmpdir} > >(tee -a  {log})
+                rm -fr  {params.tmpdir} 2>> {log}
             """
 
 
@@ -113,13 +119,13 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
             rep_seqs_db=lambda wc, output: os.path.join(output.rep_seqs_db,'db')
         shell:
             """
-            mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  > >(tee   {log})
+            mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  &> {log}
 
-            mkdir {output.rep_seqs_db} 2> >(tee -a  {log})
+            mkdir {output.rep_seqs_db} 2>> {log}
 
-            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  > >(tee -a  {log})
+            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  &>> {log}
 
-            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  > >(tee -a  {log})
+            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  &>> {log}
 
             """
 
@@ -129,20 +135,23 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
         input:
             cluster_attribution = "Genecatalog/orf2gene_oldnames.tsv",
         output:
-            cluster_attribution = "Genecatalog/clustering/orf2gene.tsv",
+            cluster_attribution = "Genecatalog/clustering/orf2gene.tsv.gz",
         run:
             import pandas as pd
             # CLuterID    GeneID    empty third column
-            gene2proteins= pd.read_csv(input.cluster_attribution,index_col=1, header=None,sep='\t')
+            orf2gene= pd.read_csv(input.cluster_attribution,index_col=1, header=None,sep='\t')
 
-            protein_clusters_old_names= gene2proteins[0].unique()
+            protein_clusters_old_names= orf2gene[0].unique()
 
             map_names = dict(zip(protein_clusters_old_names,
                                  utils.gen_names_for_range(len(protein_clusters_old_names),'Gene')))
 
-            gene2proteins['Gene'] = gene2proteins[0].map(map_names)
-            gene2proteins.index.name='ORF'
-            gene2proteins['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+            orf2gene['Gene'] = orf2gene[0].map(map_names)
+            orf2gene.index.name='ORF'
+            orf2gene['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+
+
+
 
 
 
@@ -175,7 +184,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
                 cd-hit-est -i {input} -T {threads} \
                 -M {resources.mem}000 -o {params.prefix} \
                 -c {params.identity} -n 9  -d 0 {params.extra} \
-                -aS {params.coverage} -aL {params.coverage} > >(tee {log})
+                -aS {params.coverage} -aL {params.coverage} &> {log}
 
                 mv {params.prefix} {output[0]} 2>> {log}
             """
@@ -249,7 +258,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
         input:
             orf2gene = "Genecatalog/clustering/orf2gene_oldnames.tsv",
         output:
-            orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+            orf2gene = "Genecatalog/clustering/orf2gene.tsv.gz",
         run:
             import pandas as pd
             from Bio import SeqIO
@@ -274,7 +283,7 @@ rule rename_gene_catalog:
     input:
         fna = "Genecatalog/all_genes/predicted_genes.fna",
         faa= "Genecatalog/all_genes/predicted_genes.faa",
-        orf2gene = "Genecatalog/clustering/orf2gene.tsv",
+        orf2gene = "Genecatalog/clustering/orf2gene.tsv.gz",
         representatives= "Genecatalog/representatives_of_clusters.fasta"
     output:
         fna= "Genecatalog/gene_catalog.fna",
@@ -415,13 +424,6 @@ rule combine_gene_coverages:
 # output with wildcards "{folder}/{prefix}.emapper.tsv"
 
 
-def get_eggnog_db_file():
-    return ancient(expand("{path}/{files}",
-                  path=EGGNOG_DIR,
-                  files=["OG_fasta","eggnog.db","og2level.tsv","eggnog_proteins.dmnd"]
-                  ))
-
-# TODO: make benchmark
 rule eggNOG_homology_search:
     input:
         eggnog_db_files=get_eggnog_db_file(),
@@ -443,7 +445,7 @@ rule eggNOG_homology_search:
         """
         emapper.py -m diamond --no_annot --no_file_comments \
             --data_dir {params.data_dir} --cpu {threads} -i {input.faa} \
-            -o {params.prefix} --override 2> >(tee {log})
+            -o {params.prefix} --override 2> {log}
         """
 
 
@@ -468,40 +470,8 @@ rule eggNOG_annotation:
     shell:
         """
         emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
-            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> >(tee {log})
+            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> {log}
         """
-
-EGGNOG_HEADERS= [
-"query_name",
-"seed_eggNOG_ortholog",
-"seed_ortholog_evalue",
-"seed_ortholog_score",
-"predicted_gene_name",
-"GO_terms",
-"KEGG_KO",
-"BiGG_Reactions",
-"Annotation_tax_scope",
-"Matching_OGs",
-"best_OG|evalue|score",
-"categories",
-"eggNOG_HMM_model_annotation"]
-
-# rule add_eggNOG_header:
-#     input:
-#         "{folder}/{prefix}.emapper.annotations"
-#     output:
-#         "{folder}/{prefix}.emapper.tsv"
-#     run:
-#         import pandas as pd#
-
-#            where do you take the Headers
-
-#         D = pd.read_csv(input[0], header=None,sep='\t')
-#         D.columns = EGGNOG_HEADERS
-#         D.to_csv(output[0],sep="\t",index=False)
-
-
-
 
 
 #
@@ -568,7 +538,7 @@ rule predict_single_copy_genes:
         " $DIR\/db/{params.key}.scg.faa "
         " $DIR\/db/{params.key}.scg.lookup "
         " {threads} "
-        " 2> >(tee {log}) "
+        " 2> {log} "
         " ; "
         " mv {input[0]}.scg {output}"
 
@@ -607,15 +577,56 @@ rule add_eggNOG_header:
     input:
         "Genecatalog/annotations/eggNog.emapper.annotations"
     output:
-        "Genecatalog/annotations/eggNog.tsv"
+        "Genecatalog/annotations/eggNog.tsv.gz"
     run:
         import pandas as pd
 
-        D = pd.read_table(input[0], header=None)
-        D.columns = EGGNOG_HEADERS
+        D = pd.read_csv(input[0], header=None,sep='\t')
+        D.columns = EGGNOG_HEADER
         D.to_csv(output[0],sep="\t",index=False)
 
 
+
+rule gene2genome:
+    input:
+        contigs2bins= "genomes/clustering/all_contigs2bins.tsv.gz",
+        contigs2mags= "genomes/clustering/contig2genome.tsv",
+        old2newID= "genomes/clustering/old2newID.tsv",
+        orf2gene= "Genecatalog/clustering/orf2gene.tsv.gz"
+    params:
+        remaned_contigs= config['rename_mags_contigs'] & (config['genecatalog']['source']=='contigs')
+    output:
+        "genomes/annotations/gene2genome.tsv.gz"
+    run:
+        import pandas as pd
+
+        if params.remaned_contigs:
+
+            contigs2bins= pd.read_csv(input.contigs2bins,
+                                       index_col=0,squeeze=False,sep='\t',header=None)
+
+            contigs2bins.columns=['Bin']
+            old2newID = pd.read_csv(input.old2newID,
+                                       index_col=0,squeeze=True,sep='\t')
+
+            contigs2genome=contigs2bins.join(old2newID,on='Bin').dropna().drop('Bin',axis=1)
+        else:
+            contigs2genome= pd.read_csv(input.contigs2mags,
+                                       index_col=0,squeeze=False,sep='\t',header=None)
+            contigs2genome.columns=['MAG']
+
+
+        orf2gene = pd.read_csv(input.orf2gene,
+                                   index_col=0,squeeze=False,sep='\t',header=0)
+        import pdb; pdb.set_trace()
+        orf2gene['Contig']= orf2gene.index.map(lambda s: '_'.join(s.split('_')[:-1]))
+        orf2gene=orf2gene.join(contigs2genome,on='Contig')
+        orf2gene= orf2gene.dropna(axis=0)
+
+        gene2genome= orf2gene.groupby(['Gene','MAG']).size()
+        gene2genome.name='Ncopies'
+
+        gene2genome.to_csv(output[0],sep='\t',header=True)
 
 
 
@@ -661,6 +672,6 @@ rule add_eggNOG_header:
 #         mem= 220
 #     shell:
 #         """
-#         canopy -i {input} -o {output.cluster} -c {output.profile} -n {threads} --canopy_size_stats_file {log} {params.canopy_params} 2> >(tee {log})
+#         canopy -i {input} -o {output.cluster} -c {output.profile} -n {threads} --canopy_size_stats_file {log} {params.canopy_params} 2> {log}
 #
 #         """

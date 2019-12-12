@@ -6,11 +6,9 @@ dependencies:
     - numpy=1.13.1
     - python=3.6
     - pandas=0.20.3
-    - plotly=2.2.2
+    - plotly
     - ipython=6.2.1
     - seaborn=0.8
-    - snakemake
+    - snakemake =5.7.4 #or5.8.2 sheetname error
     - docutils
-    - pip
-    - pip:
-      - cufflinks==0.12.1
+    - python-cufflinks

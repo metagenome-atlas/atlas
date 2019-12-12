@@ -1,0 +1,38 @@
+
+language: python
+cache:
+    directories:
+     - $HOME/miniconda
+python:
+  # We don't actually use the Travis Python, but this keeps it organized.
+  - "3.6"
+before_install:
+  - |
+    if [ -d "$HOME/miniconda" ]; then
+      echo "conda exist already";
+      source activate atlasenv
+      conda list
+    else:
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      bash miniconda.sh -b -p $HOME/miniconda
+      export PATH="$HOME/miniconda/bin:$PATH"
+      hash -r
+      conda config --set always_yes yes --set changeps1 no
+      conda update -q conda
+  # Useful for debugging any issues with conda
+      conda info -a
+      conda config --add channels defaults
+      conda config --add channels bioconda
+      conda config --add channels conda-forge
+      conda env create -n atlasenv --file atlasenv.yml
+    fi
+
+install:
+  - source activate atlasenv
+  - python setup.py install
+  - atlas --help
+  - atlas --version
+script:
+  - N_THREADS=2 ; MEM=7
+  - .test/dryrun.sh
+  - .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2

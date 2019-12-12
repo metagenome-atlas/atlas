@@ -3,7 +3,7 @@
 # python 3.5 without f strings
 
 import argparse
-import os, shutil
+import os, shutil, sys
 import uuid
 import itertools
 from glob import glob
@@ -19,7 +19,7 @@ def predict_genes(genome,fasta,out_dir,log):
     gff = "{}/{}.gff".format(out_dir,genome)
 
     shell('printf "{genome}:\n" > {log}'.format(genome=genome,log=log))
-    shell("prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p meta -f gff 2>> {log} ".format(
+    shell("prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p sinlge -c -m -f gff 2>> {log} ".format(
          fasta=fasta, log=log,gff=gff,fna=fna,faa=faa)
          )
     shell('printf "\n" >> {log}'.format(log=log))
@@ -44,7 +44,7 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
                                    itertools.repeat(out_dir),log_names))
 
     #cat in python
-    with open(log, 'wb') as f_out:
+    with open(log, 'ab') as f_out:
         for logfile in log_names:
             with open(logfile,'rb') as f_in:
                 shutil.copyfileobj(f_in, f_out)
@@ -53,6 +53,9 @@ def predict_genes_genomes(input_dir,out_dir,log,threads):
 
 if __name__ == "__main__":
     try:
+        log=open(snakemake.log[0],"w")
+        sys.stderr= log
+        sys.stdout= log
 
         predict_genes_genomes(
             snakemake.input.dir,

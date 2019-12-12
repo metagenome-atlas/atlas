@@ -773,7 +773,7 @@ rule predict_genes:
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> >(tee {log})
+            -a {output.faa} -p meta -f gff 2> {log}
         """
 
 
@@ -826,5 +826,7 @@ rule build_assembly_report:
         samples = SAMPLES
     conda:
         "%s/report.yaml" % CONDAENV
+    log:
+        "logs/assembly/report.log"
     script:
         "../report/assembly_report.py"

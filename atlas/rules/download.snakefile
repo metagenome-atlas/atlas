@@ -3,7 +3,7 @@ import os
 
 
 ZENODO_ARCHIVE = "1134890"
-EGGNOG_VERSION = "4.5.1"
+EGGNOG_VERSION = "5"
 
 
 def md5(fname):
@@ -25,7 +25,7 @@ CHECKMDIR = os.path.join(DBDIR, "checkm")
 CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
-EGGNOG_DIR = os.path.join(DBDIR,'EggNOG')
+EGGNOG_DIR = os.path.join(DBDIR,'EggNOGV2')
 GTDBTK_DATA_PATH=os.path.join(DBDIR,"GTDB-TK")
 CONDAENV = "../envs"
 
@@ -36,10 +36,8 @@ FILES = {"adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
          "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
          "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
          "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
-         "OG_fasta": "8fc6ce2e055d1735dec654af98a641a4",
-         "eggnog.db": "e743ba1dbc3ddc238fdcc8028968aacb",
-         "eggnog_proteins.dmnd": "5efb0eb18ed4575a20d25773092b83b9",
-         "og2level.tsv": "d35ffcc533c6e12be5ee8e5fd7503b84",
+         "eggnog.db": "7923d3bb7eca8e0e8f122be4b5ca6997",
+         "eggnog_proteins.dmnd": "64fefa838833a6f3e220a06fb9d403cd",
          CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d"}
 
 
@@ -77,51 +75,53 @@ CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
         "%s/distributions/cd_dist.txt" % CHECKMDIR
         ]
 
+def get_eggnog_db_file():
+    return ancient(expand("{path}/{files}",
+                  path=EGGNOG_DIR,
+                  files=["eggnog.db","eggnog_proteins.dmnd","checksum_checked"]
+                  ))
 
-
-localrules: download, download_eggNOG_fastas,download_eggNOG_files,download_atlas_files,unpack_checkm_data
-ruleorder: download_eggNOG_fastas > download_eggNOG_files > download_atlas_files
+localrules: download,download_eggNOG_files,verify_eggNOG_files,download_atlas_files,unpack_checkm_data
+ruleorder: download_eggNOG_files > download_atlas_files
 
 rule download:
     input:
         expand("{dir}/{filename}", dir=DBDIR,
                filename=["adapters.fa","phiX174_virus.fa"]),
-        expand("{dir}/{filename}", dir=EGGNOG_DIR,
-               filename=["OG_fasta","eggnog.db","eggnog_proteins.dmnd","og2level.tsv"]),
+        get_eggnog_db_file(),
         CHECKMFILES,
         os.path.join(GTDBTK_DATA_PATH,'downloaded_success')
 
 
 
-
-rule download_eggNOG_fastas:
-    output:
-        directory(f"{EGGNOG_DIR}/OG_fasta"),
-    run:
-        dl_filename = "OG_fasta.tar.gz"
-        dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-
-        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
-        # validate the download
-        if not FILES['OG_fasta'] == md5(dl_output):
-            raise OSError(2, "Invalid checksum", dl_output)
-        # handle extraction/decompression
-        shell("tar -zxf %s --directory {EGGNOG_DIR}" % dl_output)
-
 rule download_eggNOG_files:
     output:
-        f"{EGGNOG_DIR}/{{filename}}",
+        f"{EGGNOG_DIR}/eggnog.db",
+        f"{EGGNOG_DIR}/eggnog_proteins.dmnd"
     threads:
         1
+    conda:
+        "../envs/eggNOG.yaml"
+    shell:
+        f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} "
+
+rule verify_eggNOG_files:
+    input:
+        rules.download_eggNOG_files.output
+    output:
+        touch(f"{EGGNOG_DIR}/checksum_checked")
     run:
-        dl_filename = wildcards.filename+'.gz'
-        dl_output = os.path.join(os.path.dirname(output[0]), dl_filename)
-        shell(f"wget -O {dl_output} 'http://eggnogdb.embl.de/download/emapperdb-{EGGNOG_VERSION}/{dl_filename}' " )
         # validate the download
-        if not FILES[wildcards.filename] == md5(dl_output):
-            raise OSError(2, "Invalid checksum", dl_output)
-        # handle extraction/decompression
-        shell("gunzip %s" % dl_output)
+        for file in input:
+            if not FILES[os.path.basename(file)] == md5(file):
+                raise OSError(2, "Invalid checksum", file)
+        # check if old eggNOG dir exists
+        old_eggnogdir=EGGNOG_DIR.replace('V2','')
+        if os.path.exists(old_eggnogdir):
+            logger.info("The eggnog database form the olf v1 was found on your system."
+                        f"You can savely remove this folder {old_eggnogdir}")
+
+
 
 
 rule download_atlas_files:

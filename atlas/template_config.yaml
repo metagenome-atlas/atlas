@@ -181,6 +181,8 @@ genome_dereplication:
       N50: 0.5
       length: 0
 
+rename_mags_contigs: true        #Rename contigs of representative MAGs
+
 ########################
 # Annotations
 #######################
@@ -188,6 +190,7 @@ genome_dereplication:
 annotations:
   - gtdb_tree
   - gtdb_taxonomy
+  - genes
 #  - checkm_taxonomy
 #  - checkm_tree
 
@@ -195,10 +198,10 @@ annotations:
 # Gene catalog
 #######################
 genecatalog:
-  source: genomes  # which predicted proteins should be used for the gene catalog
-  clustermethod: linclust # cd-hit-est or cluster or linclust see mmseqs for more details
+  source: contigs               # [contigs, genomes] Predict genes from all contigs or only from the representative genomes
+  clustermethod: linclust       # [cd-hit-est or mmseqs or linclust] see mmseqs for more details
   minlength_nt: 100
-  minid: 0.9
+  minid: 0.95                   # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
   extra: ""
   SubsetSize: 500000
