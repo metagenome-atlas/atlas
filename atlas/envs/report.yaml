@@ -10,4 +10,4 @@ dependencies:
     - seaborn
     - snakemake=5.7.4 #or5.8.2 sheetname error
     - docutils
-    - python-cufflinks
+    - cufflinks-py
