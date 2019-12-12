@@ -209,9 +209,11 @@ workflows:
             - build
             - getenvs
             - get_example_data
-  build-master:
-    jobs:
       - build-docker:
+          requires:
+            - build
+            - getenvs
+            - assembly_and_genecatalog
           filters:
             branches:
               only: master
