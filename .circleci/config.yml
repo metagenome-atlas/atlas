@@ -126,6 +126,11 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: test assembly
           command: |
@@ -152,6 +157,11 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: test binning
           command: |
@@ -202,12 +212,10 @@ workflows:
       - assembly_and_genecatalog:
           requires:
             - build
-            - getenvs
             - get_example_data
       - binning:
           requires:
             - build
-            - getenvs
             - get_example_data
       - build-docker:
           requires:
