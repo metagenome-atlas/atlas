@@ -67,8 +67,8 @@ jobs:
 
 
   build_on_osx:
-    macos:
-      xcode: "10.0.0"
+    docker:
+      - image: "hephaex/osx"
     environment:
       N_THREADS: 1
       MEM: 2
