@@ -75,13 +75,6 @@ jobs:
       WORKING_DIR: .test/Dryrun
     steps:
       - checkout
-      - run: pwd
-      - run:
-          name: Setup conda
-          command: |
-           conda config --add channels bioconda
-           conda config --add channels conda-forge
-           conda config --set always_yes true
       - restore_cache:
           key: atlasenv-mac-{{ checksum "atlasenv.yml" }}
       - run:
