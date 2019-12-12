@@ -100,6 +100,8 @@ rule download_eggNOG_files:
         f"{EGGNOG_DIR}/eggnog_proteins.dmnd"
     threads:
         1
+    conda:
+        "../envs/eggNOG.yaml"
     run:
         shell(f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} " )
         # validate the download
