@@ -3,7 +3,7 @@ set -euo pipefail
 
 atlas --version
 
-databaseDir=".test/databases"
+databaseDir="databases"
 WD='example_data/binning'
 reads_dir="example_data/reads/test"
 config="--config interleaved_fastqs=True final_binner=maxbin"
