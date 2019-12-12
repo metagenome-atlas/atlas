@@ -78,10 +78,10 @@ CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
 def get_eggnog_db_file():
     return ancient(expand("{path}/{files}",
                   path=EGGNOG_DIR,
-                  files=["eggnog.db","eggnog_proteins.dmnd"]
+                  files=["eggnog.db","eggnog_proteins.dmnd","checksum_checked"]
                   ))
 
-localrules: download,download_eggNOG_files,download_atlas_files,unpack_checkm_data
+localrules: download,download_eggNOG_files,verify_eggNOG_files,download_atlas_files,unpack_checkm_data
 ruleorder: download_eggNOG_files > download_atlas_files
 
 rule download:
@@ -102,8 +102,15 @@ rule download_eggNOG_files:
         1
     conda:
         "../envs/eggNOG.yaml"
+    shell:
+        f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} "
+
+rule verify_eggNOG_files:
+    input:
+        rules.download_eggNOG_files.output
+    output:
+        touch(f"{EGGNOG_DIR}/checksum_checked")
     run:
-        shell(f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} " )
         # validate the download
         for file in input:
             if not FILES[os.path.basename(file)] == md5(file):
