@@ -3,12 +3,11 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - numpy=1.13.1
     - python=3.6
-    - pandas=0.20.3
+    - pandas=0.*
     - plotly
-    - ipython=6.2.1
-    - seaborn=0.8
-    - snakemake =5.7.4 #or5.8.2 sheetname error
+    - ipython
+    - seaborn
+    - snakemake=5.7.4 #or5.8.2 sheetname error
     - docutils
     - python-cufflinks
