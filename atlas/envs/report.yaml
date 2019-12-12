@@ -11,6 +11,4 @@ dependencies:
     - seaborn=0.8
     - snakemake=5.7.4
     - docutils
-    - pip
-    - pip:
-      - cufflinks==0.12.1
+    - python-cufflinks
