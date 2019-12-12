@@ -66,6 +66,73 @@ jobs:
             - .
 
 
+  build_on_osx:
+    docker:
+      - image: "hephaex/osx"
+    environment:
+      N_THREADS: 1
+      MEM: 2
+      WORKING_DIR: .test/Dryrun
+    steps:
+      - checkout
+      - run: pwd
+      - run:
+          name: Setup conda
+          command: |
+           conda config --add channels bioconda
+           conda config --add channels conda-forge
+           conda config --set always_yes true
+      - restore_cache:
+          key: atlasenv-mac-{{ checksum "atlasenv.yml" }}
+      - run:
+          name: install dependencies
+          command:  |
+              if [ -d "./atlasenv" ]; then
+                echo "atlasenv exist already";
+                source activate ./atlasenv
+                conda list
+              else
+                wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+                bash miniconda.sh -b -p miniconda
+                export PATH="miniconda/bin:$PATH"
+                hash -r
+                conda config --set always_yes yes --set changeps1 no
+                conda update -q conda
+                # Useful for debugging any issues with conda
+                conda info -a
+                conda config --add channels defaults
+                conda config --add channels bioconda
+                conda config --add channels conda-forge
+
+                conda env create -p ./atlasenv --file atlasenv.yml
+              fi
+      - save_cache:
+          key: atlasenv-mac-{{ checksum "atlasenv.yml" }}
+          paths:
+            - "./atlasenv"
+            - miniconda
+      - run:
+          name: Install atlas
+          command: |
+              source activate ./atlasenv
+              python setup.py install
+              conda list
+              atlas --help
+              atlas --version
+      - run:
+          name: short test
+          command: |
+              source activate ./atlasenv
+              atlas --help
+              atlas --version
+      - run:
+          name: Dryrun
+          command: |
+              source activate ./atlasenv
+              .test/dryrun.sh
+
+
+
   getenvs:
     <<: *defaults
     resource_class: small
@@ -156,7 +223,7 @@ jobs:
           name: test binning
           command: |
               source activate ./atlasenv
-              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
       - store_test_results:
           path: example_data/binning/reports
       - store_artifacts:
@@ -169,6 +236,7 @@ workflows:
   build_and_test:
     jobs:
       - build
+      - build_on_osx
       - get_example_data
       - getenvs:
           requires:
