@@ -91,11 +91,11 @@ jobs:
           key: conda-environements2-{{ checksum "conda_envs.tar"  }}
           paths:
             - databases
-      - run:
-          name: download checkm data
-          command: |
-              source activate ./atlasenv
-              atlas run None -w .test/Getenvs logs/checkm_init.txt
+      # - run:
+      #     name: download checkm data
+      #     command: |
+      #         source activate ./atlasenv
+      #         atlas run None -w .test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/

@@ -6,7 +6,7 @@ atlas --version
 databaseDir="databases"
 WD='example_data/binning'
 reads_dir="example_data/reads/test"
-config="--config interleaved_fastqs=True final_binner=maxbin"
+config="--config interleaved_fastqs=True final_binner=maxbin threads=2 mem=4 java_mem=4"
 
 rm -f $WD/samples.tsv $WD/finished_assembly
 touch $WD/finished_assembly
