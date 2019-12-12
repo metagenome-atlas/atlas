@@ -1,10 +1,10 @@
 from continuumio/miniconda3
 
-version="2.3.0"
+ENV version="2.3.0"
 
 ################## METADATA ######################
 LABEL base.image="continuumio/miniconda3"
-LABEL version=$version
+LABEL version="$version"
 LABEL software="metagenome-atlas"
 LABEL software.version="2"
 LABEL about.summary="Three commands to start analysing your metagenome data"
@@ -60,4 +60,4 @@ RUN atlas run all -w $WORKING_DIR --create-envs-only
 WORKDIR /
 USER atlas
 
-CMD "atlas --help"
+CMD atlas --help
