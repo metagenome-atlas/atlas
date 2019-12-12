@@ -29,7 +29,7 @@ RUN conda config --set always_yes true
 
 # download atlas
 RUN wget https://github.com/metagenome-atlas/atlas/archive/${version}.tar.gz
-RUN tar -xzf v${version}.tar.gz && mv v${version} atlas
+RUN tar -xzf ${version}.tar.gz && mv atlas-${version} atlas
 WORKDIR /atlas
 
 
