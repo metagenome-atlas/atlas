@@ -237,6 +237,8 @@ rule run_all_checkm_lineage_wf:
         mem=config["large_mem"]
     log:
         "logs/genomes/checkm.log"
+    benchmark:
+        "logs/benchmarks/checkm_lineage_wf/all_genomes.tsv"
     shell:
         """
         rm -r {params.output_dir}
