@@ -28,8 +28,7 @@ RUN conda config --add channels conda-forge
 RUN conda config --set always_yes true
 
 # download atlas
-
-RUN wget https://github.com/metagenome-atlas/atlas/archive/v${version}.tar.gz
+RUN wget https://github.com/metagenome-atlas/atlas/archive/${version}.tar.gz
 RUN tar -xzf v${version}.tar.gz && mv v${version} atlas
 WORKDIR /atlas
 
