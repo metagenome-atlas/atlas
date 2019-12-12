@@ -11,13 +11,13 @@
 
 Three commands to start analysing your metagenome data:
 ```
-    conda create -n atlasenv -y -c bioconda -c conda-forge metagenome-atlas
-    source activate atlasenv
+    conda install -y -c bioconda -c conda-forge metagenome-atlas
     atlas init --db-dir databases path/to/fastq/files
     atlas run all
 ```
-All databases and dependencies are installed on the fly in the directory `db-dir`.
-You want to run these three commands on the example_data on the GitHub repo.
+All databases and dependencies are installed on the fly in the directory `databases`.
+
+You want to run these three commands on the [example data](https://github.com/metagenome-atlas/atlas/exmple_data).
 If you have more time, then we recommend you configure atlas according to your needs.
   - check the `samples.tsv`
   - edit the `config.yaml`
@@ -30,9 +30,21 @@ Atlas is a easy to use metagenomic pipeline
 
 ![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
+# Setup
+Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
+The only dependency is the _conda_ package manager, which can easy be installed from [here](http://anaconda.org/).
+We recommend you to create a conda environment for atlas to avoid any conflicts of versions.
+
+```
+    conda create -y -n atlasenv
+    source activate atlasenv
+    conda install -y -c bioconda -c conda-forge metagenome-atlas
+```
+
+And you can run atlas. As said above all other dependencies are installed in specific environments during the run of the pipeline.
 
 ## Install the development version from GitHub
-Atlas is still under active development; therefore, you may want to install the up to date atlas from GitHub. Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
+If you want to install the latest version from GitHub you can use the folowing commands.
 [![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.5-brightgreen.svg)](https://snakemake.bitbucket.io)
 
 get code from GitHub:
