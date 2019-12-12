@@ -1,6 +1,6 @@
 from continuumio/miniconda3
 
-version="2.2.0"
+version="2.3.0"
 
 ################## METADATA ######################
 LABEL base.image="continuumio/miniconda3"
@@ -39,7 +39,6 @@ RUN conda env update -n base --file atlasenv.yml
 RUN python setup.py install
 
 # short test
-RUN conda list
 RUN atlas --help
 RUN atlas --version
 
@@ -57,9 +56,7 @@ RUN atlas run all -w $WORKING_DIR --create-envs-only
 
 
 
-
-
-# Go back to the biodocker user
+# Go back to the user
 WORKDIR /
 USER atlas
 
