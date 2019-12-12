@@ -4,6 +4,7 @@ defaults: &defaults
   environment:
     DATABASE_DIR: databases
 
+
 version: 2
 
 jobs:
@@ -163,6 +164,32 @@ jobs:
           destination: binning_results
 
 
+
+  build-docker:
+    environment:
+      IMAGE_NAME: metagenome-atlas/atlas
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker image
+          command: docker build -t $IMAGE_NAME:latest .
+  publish-latest:
+    environment:
+      IMAGE_NAME: metagenome-atlas/atlas
+    docker:
+      - image: circleci/buildpack-deps:stretch
+    steps:
+      - setup_remote_docker
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker push $IMAGE_NAME:latest
+
+
 workflows:
   version: 2
   build_and_test:
@@ -182,3 +209,15 @@ workflows:
             - build
             - getenvs
             - get_example_data
+  build-master:
+    jobs:
+      - build-docker:
+          filters:
+            branches:
+              only: master
+      - publish-latest:
+          requires:
+            - build-docker
+          filters:
+            branches:
+              only: master
