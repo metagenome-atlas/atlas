@@ -11,7 +11,8 @@
 
 Three commands to start analysing your metagenome data:
 ```
-    conda create -n atlasenv -y -c bioconda -c conda-forge metagenome-atlas ;source activate atlasenv
+    conda create -n atlasenv -y -c bioconda -c conda-forge metagenome-atlas
+    source activate atlasenv
     atlas init --db-dir databases path/to/fastq/files
     atlas run all
 ```
