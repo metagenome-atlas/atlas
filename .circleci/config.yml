@@ -131,11 +131,12 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_test_results:
+          path: .test/Test_assembly/reports
       - store_artifacts:
           path: .test/Test_assembly/reports
           destination: assembly_results
-      - store_test_results:
-          path: .test/Test_assembly/reports
+
       - run:
           name: run genecatalog
           command: |
@@ -155,12 +156,13 @@ jobs:
           name: test binning
           command: |
               source activate ./atlasenv
-              .test/binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_test_results:
+          path: example_data/binning/reports
       - store_artifacts:
           path: example_data/binning/reports
           destination: binning_results
-      - store_test_results:
-          path: example_data/binning/reports
+
 
 workflows:
   version: 2

@@ -11,9 +11,9 @@
 
 Three commands to start analysing your metagenome data:
 ```
-    conda install -c bioconda -c conda-forge metagenome-atlas
+    conda create -n atlasenv -y -c bioconda -c conda-forge metagenome-atlas ;source activate atlasenv
     atlas init --db-dir databases path/to/fastq/files
-    atlas run
+    atlas run all
 ```
 All databases and dependencies are installed on the fly in the directory `db-dir`.
 You want to run these three commands on the example_data on the GitHub repo.
@@ -41,7 +41,7 @@ cd atlas
 ```
 Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
 ```
-conda env create -f atlasenv.yml
+conda env create -f atlasenv.yml -n atlasenv
 source activate atlasenv
 ```
 Install atlas:
