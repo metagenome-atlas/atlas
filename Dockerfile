@@ -49,10 +49,12 @@ ENV WORKING_DIR='/.test/Dryrun'
 RUN atlas init --db-dir $databaseDir --threads 3 -w $WORKING_DIR .test/reads/empty
 RUN atlas run all -w $WORKING_DIR --dryrun
 
-# Download databases
-RUN atlas download --db-dir $databaseDir
 # download conda packages
 RUN atlas run all -w $WORKING_DIR --create-envs-only
+
+# Download databases
+# RUN atlas download --db-dir $databaseDir
+
 
 
 
