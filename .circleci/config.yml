@@ -91,11 +91,11 @@ jobs:
           key: conda-environements2-{{ checksum "conda_envs.tar"  }}
           paths:
             - databases
-      - run:
-          name: download checkm data
-          command: |
-              source activate ./atlasenv
-              atlas run None -w .test/Getenvs logs/checkm_init.txt
+      # - run:
+      #     name: download checkm data
+      #     command: |
+      #         source activate ./atlasenv
+      #         atlas run None -w .test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/
@@ -126,6 +126,11 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: test assembly
           command: |
@@ -152,6 +157,11 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: test binning
           command: |
@@ -163,31 +173,31 @@ jobs:
           path: example_data/binning/reports
           destination: binning_results
 
-
-
-  build-docker:
-    environment:
-      IMAGE_NAME: metagenome-atlas/atlas
-    docker:
-      - image: circleci/buildpack-deps:stretch
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Build Docker image
-          command: docker build -t $IMAGE_NAME:latest .
-  publish-latest:
-    environment:
-      IMAGE_NAME: metagenome-atlas/atlas
-    docker:
-      - image: circleci/buildpack-deps:stretch
-    steps:
-      - setup_remote_docker
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push $IMAGE_NAME:latest
+  #
+  #
+  # build-docker:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - checkout
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Build Docker image
+  #         command: docker build -t $IMAGE_NAME:latest .
+  # publish-latest:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: |
+  #           echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+  #           docker push $IMAGE_NAME:latest
 
 
 workflows:
@@ -202,24 +212,22 @@ workflows:
       - assembly_and_genecatalog:
           requires:
             - build
-            - getenvs
             - get_example_data
       - binning:
           requires:
             - build
-            - getenvs
             - get_example_data
-      - build-docker:
-          requires:
-            - build
-            - getenvs
-            - assembly_and_genecatalog
-          filters:
-            branches:
-              only: master
-      - publish-latest:
-          requires:
-            - build-docker
-          filters:
-            branches:
-              only: master
+      # - build-docker:
+      #     requires:
+      #       - build
+      #       - getenvs
+      #       - assembly_and_genecatalog
+      #     filters:
+      #       branches:
+      #         only: master
+      # - publish-latest:
+      #     requires:
+      #       - build-docker
+      #     filters:
+      #       branches:
+      #         only: master
