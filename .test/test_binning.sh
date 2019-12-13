@@ -11,11 +11,12 @@ config="--config threads=2 mem=4 java_mem=4"
 
 rm -f $WD/samples.tsv $WD/finished_assembly
 touch -m $WD/finished_assembly
+touch -m $WD/sample*/*/*.bam # update timestamp of sam files
 
 #
 atlas init --db-dir $databaseDir --threads 4  -w $WD --skip-qc --interleaved-fastq $reads_dir
 
-atlas run None binning $config -w $WD $@ --omit-from get_bins
+atlas run None binning $config -w $WD $@ --omit-from run_checkm_lineage_wf
 
 echo "Copy checkm files
 
