@@ -146,7 +146,7 @@ rule download_checkm_data:
         if not FILES[CHECKM_ARCHIVE] == md5(output.tar):
             raise OSError(2, "Invalid checksum", CHECKM_ARCHIVE)
 
-        shell("tar -zxf {output.tar}} --directory {params.path}")
+        shell("tar -zxf {output.tar} --directory {params.path}")
 
 localrules: initialize_checkm
 rule initialize_checkm:
