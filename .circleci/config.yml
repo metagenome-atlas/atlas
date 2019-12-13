@@ -166,7 +166,7 @@ jobs:
           name: test binning
           command: |
               source activate ./atlasenv
-              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 
       - store_test_results:
           path: example_data/binning/reports
       - store_artifacts:
