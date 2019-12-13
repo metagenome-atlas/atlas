@@ -142,8 +142,8 @@ rule download_checkm_data:
         path = CHECKMDIR
     run:
         shell("wget -O {output} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{CHECKM_ARCHIVE}' ")
-        if not FILES[CHECKM_ARCHIVE] == md5(output[0]):
-            raise OSError(2, "Invalid checksum", output[0])
+        if not FILES[CHECKM_ARCHIVE] == md5(CHECKMDIR):
+            raise OSError(2, "Invalid checksum", CHECKMDIR)
 
         shell("tar -zxf {CHECKM_ARCHIVE} --directory {params.path}")
         shell("rm {CHECKM_ARCHIVE}")
