@@ -123,6 +123,7 @@ def make_default_config():
 
     conf = {}
     conf['data_type']='metagenome'
+    conf["interleaved_fastqs"]=False
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = 6
 
