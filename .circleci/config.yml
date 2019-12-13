@@ -218,6 +218,16 @@ jobs:
           key: binning-{{ .Branch }}-binreport
           paths:
             - example_data/binning
+      - run:
+          name: test genecatalog
+          command: |
+            source activate ./atlasenv
+            atlas None "Genecatalog/clustering/orf2gene.tsv.gz" $config -w $WD
+
+      - save_cache:
+          key: binning-{{ .Branch }}-Genecatalog
+          paths:
+            - example_data/binning
 
       - run:
           name: test genomes
@@ -226,9 +236,9 @@ jobs:
             atlas run None genomes/clustering/allbins2genome.tsv $config -w $WD
 
       - store_test_results:
-          path: example_data/binning/genomes/clustering/
+          path: example_data/binning
       - store_artifacts:
-          path: example_data/binning/genomes/clustering/
+          path: example_data/binning
           destination: binning_results
 
   #
