@@ -177,7 +177,7 @@ jobs:
 
   build-docker:
     environment:
-      IMAGE_NAME: metagenome-atlas/atlas
+      IMAGE_NAME: metagenomeatlas/atlas
     docker:
       - image: circleci/buildpack-deps:stretch
     steps:
@@ -188,7 +188,7 @@ jobs:
           command: docker build -t $IMAGE_NAME:latest .
   publish-latest:
     environment:
-      IMAGE_NAME: metagenome-atlas/atlas
+      IMAGE_NAME: metagenomeatlas/atlas
     docker:
       - image: circleci/buildpack-deps:stretch
     steps:
