@@ -202,7 +202,7 @@ jobs:
               dest_dir=$WD/$s/binning/DASTool/checkm/
               rm -rf dest_dir
               mkdir -p $dest_dir
-              cp $WD/checkm_results/$s/* $dest_dir
+              cp -r $WD/checkm_results/$s/* $dest_dir
             done
       - save_cache:
           key: binning-{{ .Branch }}-binning
