@@ -176,26 +176,37 @@ jobs:
 
             touch -m $WD/finished_assembly
             touch -m $WD/sample*/*/*.bam # update timestamp of sam files
-
+      - restore_cache:
+          keys:
+            - binning-{{ .Branch }}
+            - binning-
       - run:
           name: assembly
           command: |
             source activate ./atlasenv
             atlas run assembly $config -w $WD
+      - save_cache::
+          key: binning-{{ .Branch }}-assembly
+          path:
+            - example_data/binning
       - run:
           name: until checkm
           command: |
             source activate ./atlasenv
             atlas run binning --omit-from run_checkm_lineage_wf $config -w $WD
       - run:
-        name: Copy chekcm files
+        name: Copy checkm files
         command: |
-          for s in sample1 sample2 ;
-          do
+            for s in sample1 sample2 ;
+            do
             dest_dir=$WD/$s/binning/DASTool/checkm/
             mkdir -p $dest_dir
             mv $WD/checkm_results/$s/* $dest_dir
-          done
+            done
+      - save_cache::
+          key: binning-{{ .Branch }}-binning
+          path:
+            - example_data/binning
       - run:
           name: test genomes
           command: |
