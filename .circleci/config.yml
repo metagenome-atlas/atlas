@@ -173,31 +173,31 @@ jobs:
           path: example_data/binning/reports
           destination: binning_results
 
-
-
-  build-docker:
-    environment:
-      IMAGE_NAME: metagenomeatlas/atlas
-    docker:
-      - image: circleci/buildpack-deps:stretch
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Build Docker image
-          command: docker build -t $IMAGE_NAME:latest .
-  publish-latest:
-    environment:
-      IMAGE_NAME: metagenomeatlas/atlas
-    docker:
-      - image: circleci/buildpack-deps:stretch
-    steps:
-      - setup_remote_docker
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
-            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-            docker push $IMAGE_NAME:latest
+  #
+  #
+  # build-docker:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - checkout
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Build Docker image
+  #         command: docker build -t $IMAGE_NAME:latest .
+  # publish-latest:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: |
+  #           echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+  #           docker push $IMAGE_NAME:latest
 
 
 workflows:
@@ -217,17 +217,17 @@ workflows:
           requires:
             - build
             - get_example_data
-      - build-docker:
-          requires:
-            - build
-            - getenvs
-            - assembly_and_genecatalog
-          filters:
-            branches:
-              only: master
-      - publish-latest:
-          requires:
-            - build-docker
-          filters:
-            branches:
-              only: master
+      # - build-docker:
+      #     requires:
+      #       - build
+      #       - getenvs
+      #       - assembly_and_genecatalog
+      #     filters:
+      #       branches:
+      #         only: master
+      # - publish-latest:
+      #     requires:
+      #       - build-docker
+      #     filters:
+      #       branches:
+      #         only: master
