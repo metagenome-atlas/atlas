@@ -135,15 +135,18 @@ rule download_atlas_files:
             raise OSError(2, "Invalid checksum", output[0])
 
 
-rule unpack_checkm_data:
-    input:
-        os.path.join(DBDIR, CHECKM_ARCHIVE)
+rule download_checkm_data:
     output:
         CHECKMFILES
     params:
         path = CHECKMDIR
-    shell:
-        "tar -zxf {input} --directory {params.path}"
+    run:
+        shell("wget -O {output} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{CHECKM_ARCHIVE}' ")
+        if not FILES[CHECKM_ARCHIVE] == md5(output[0]):
+            raise OSError(2, "Invalid checksum", output[0])
+
+        shell("tar -zxf {CHECKM_ARCHIVE} --directory {params.path}")
+        shell("rm {CHECKM_ARCHIVE}")
 
 localrules: initialize_checkm
 rule initialize_checkm:
