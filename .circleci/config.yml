@@ -203,7 +203,7 @@ jobs:
             mkdir -p $dest_dir
             mv $WD/checkm_results/$s/* $dest_dir
             done
-      - save_cache::
+      - save_cache:
           key: binning-{{ .Branch }}-binning
           path:
             - example_data/binning
