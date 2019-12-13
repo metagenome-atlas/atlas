@@ -135,11 +135,6 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
-      - store_test_results:
-          path: .test/Test_assembly/reports
-      - store_artifacts:
-          path: .test/Test_assembly/reports
-          destination: assembly_results
 
       - run:
           name: run genecatalog
@@ -147,6 +142,12 @@ jobs:
               source activate ./atlasenv
               WD='.test/Test_assembly'
               atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_test_results:
+          path: .test/Test_assembly
+      - store_artifacts:
+          path: .test/Test_assembly
+          destination: assembly_results
+
   binning:
     <<: *defaults
     environment:
@@ -219,6 +220,15 @@ jobs:
           paths:
             - example_data/binning
       - run:
+          name: test genomes
+          command: |
+            source activate ./atlasenv
+            atlas run None genomes/clustering/allbins2genome.tsv $config -w $WD
+      - save_cache:
+          key: binning-{{ .Branch }}-genomes
+          paths:
+            - example_data/binning
+      - run:
           name: test genecatalog
           command: |
             source activate ./atlasenv
@@ -228,12 +238,11 @@ jobs:
           key: binning-{{ .Branch }}-Genecatalog
           paths:
             - example_data/binning
-
       - run:
-          name: test genomes
+          name: test all
           command: |
             source activate ./atlasenv
-            atlas run None genomes/clustering/allbins2genome.tsv $config -w $WD
+            atlas run None gene2genome $config -w $WD
 
       - store_test_results:
           path: example_data/binning
