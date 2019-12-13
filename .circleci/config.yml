@@ -222,7 +222,7 @@ jobs:
           name: test genecatalog
           command: |
             source activate ./atlasenv
-            atlas None "Genecatalog/clustering/orf2gene.tsv.gz" $config -w $WD
+            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" $config -w $WD
 
       - save_cache:
           key: binning-{{ .Branch }}-Genecatalog
