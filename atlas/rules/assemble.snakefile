@@ -763,11 +763,11 @@ rule predict_genes:
         faa = "{sample}/annotation/predicted_genes/{sample}.faa",
         gff = "{sample}/annotation/predicted_genes/{sample}.gff"
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "%s/prodigal.yaml" % CONDAENV
     log:
         "{sample}/logs/gene_annotation/prodigal.txt"
     benchmark:
-        "logs/benchmarks/prokka/{sample}.txt"
+        "logs/benchmarks/prodigal/{sample}.txt"
     threads:
         1
     shell:
