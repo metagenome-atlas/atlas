@@ -10,7 +10,7 @@ config="--config threads=2 mem=4 java_mem=4"
 
 
 rm -f $WD/samples.tsv $WD/finished_assembly
-touch $WD/finished_assembly
+touch -m $WD/finished_assembly
 
 #
 atlas init --db-dir $databaseDir --threads 4  -w $WD --skip-qc --interleaved-fastq $reads_dir
@@ -21,7 +21,7 @@ echo "Copy checkm files
 
 
 "
-pwd
+
 for s in sample1 sample2 ;
 do
   dest_dir=$WD/$s/binning/DASTool/checkm/
