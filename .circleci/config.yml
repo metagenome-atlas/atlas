@@ -75,7 +75,8 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - requirements-{{ checksum "conda_envs.tar"  }}
+            - requirements-
             - conda-environements2-
       - run:
           name: Init
@@ -87,15 +88,15 @@ jobs:
           command: |
               source activate ./atlasenv
               atlas run all -w .test/Getenvs --create-envs-only
+      - run:
+          name: download checkm data
+          command: |
+              source activate ./atlasenv
+              atlas run None -w .test/Getenvs logs/checkm_init.txt
       - save_cache:
-          key: conda-environements2-{{ checksum "conda_envs.tar"  }}
+          key: requirements-{{ checksum "conda_envs.tar"  }}
           paths:
             - databases
-      # - run:
-      #     name: download checkm data
-      #     command: |
-      #         source activate ./atlasenv
-      #         atlas run None -w .test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/
@@ -108,9 +109,6 @@ jobs:
     environment:
     resource_class: small
     steps:
-      - attach_workspace:
-          at: /root/project/
-
       - run: git clone https://github.com/metagenome-atlas/example_data.git
       - persist_to_workspace:
           root: /root/project
@@ -129,7 +127,8 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - requirements-{{ checksum "conda_envs.tar"  }}
+            - requirements-
             - conda-environements2-
       - run:
           name: test assembly
@@ -165,7 +164,8 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - requirements-{{ checksum "conda_envs.tar"  }}
+            - requirements-
             - conda-environements2-
 
       - run:
@@ -195,13 +195,13 @@ jobs:
             source activate ./atlasenv
             atlas run binning --omit-from run_checkm_lineage_wf $config -w $WD
       - run:
-        name: Copy checkm files
-        command: |
+          name: Copy checkm files
+          command: |
             for s in sample1 sample2 ;
             do
-            dest_dir=$WD/$s/binning/DASTool/checkm/
-            mkdir -p $dest_dir
-            mv $WD/checkm_results/$s/* $dest_dir
+              dest_dir=$WD/$s/binning/DASTool/checkm/
+              mkdir -p $dest_dir
+              mv $WD/checkm_results/$s/* $dest_dir
             done
       - save_cache:
           key: binning-{{ .Branch }}-binning
