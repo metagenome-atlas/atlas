@@ -9,7 +9,7 @@ dependencies:
     - plotly=2.2.2
     - ipython=6.2.1
     - seaborn=0.8
-    - snakemake=5.7.4#or5.8.2 sheetname error
+    - snakemake=5.7.4 #or 5.8.2 sheetname error
     - docutils
     - pip
     - pip:
