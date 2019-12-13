@@ -23,7 +23,7 @@ for s in "sample1 sample2" ;
 do
   dest_dir=$WD/$s/binning/DASTool/checkm/
   mkdir -p $dest_dir
-  tree $WD/checkm_results/
+  ls $WD/checkm_results/
   mv $WD/checkm_results/$s/* $dest_dir
 done
 
