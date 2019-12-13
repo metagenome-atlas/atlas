@@ -14,18 +14,13 @@ For more information about cluster- and cloud submission, have a look at the `sn
 Set up of cluster execution
 ---------------------------
 
-1. You need cookiecutter to be installed ::
-
-    conda install cookiecutter
+1. You need cookiecutter to be installed, which comes with atlas
 
 2. You should know what the default queue/partition you are using.
 
 To deploy this profile::
 
-    mkdir -p ~/.config/snakemake
-    cd ~/.config/snakemake
-    cookiecutter https://github.com/metagenome-atlas/clusterprofile.git
-
+    cookiecutter --output-dir ~/.config/snakemake https://github.com/metagenome-atlas/clusterprofile.git
 
 Now, you can run atlas on a cluster with::
 
