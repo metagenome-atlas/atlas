@@ -6,7 +6,7 @@ atlas --version
 databaseDir="databases"
 WD='example_data/binning'
 reads_dir="example_data/reads/test"
-config="--config interleaved_fastqs=True final_binner=maxbin threads=2 mem=4 java_mem=4 "
+config="--config interleaved_fastqs=True threads=2 mem=4 java_mem=4 "
 
 rm -f $WD/samples.tsv $WD/finished_assembly
 touch $WD/finished_assembly
@@ -21,7 +21,7 @@ echo "Copy checkm files"
 for s in "sample1 sample2" ;
 do
   mkdir -p $WD/$s/binning/DASTool/checkm
-  mv example_data/binning/checkm_results/$s/* $WD/$s/binning/DASTool/checkm
+  mv $WD/checkm_results/$s/* $WD/$s/binning/DASTool/checkm/
 done
 
 atlas run None binning $config -w $WD $@
