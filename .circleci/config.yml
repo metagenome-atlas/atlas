@@ -153,6 +153,11 @@ jobs:
     environment:
       N_THREADS: 2
       MEM: 4
+      databaseDir: "databases"
+      WD: 'example_data/binning'
+      reads_dir: "example_data/reads/test"
+      config: "--config mem=4 java_mem=4 --resources mem=4 java_mem=4 --jobs=2"
+
     resource_class: medium
     steps:
       - attach_workspace:
@@ -162,11 +167,41 @@ jobs:
           keys:
             - conda-environements2-{{ checksum "conda_envs.tar"  }}
             - conda-environements2-
+
       - run:
-          name: test binning
+          name: init
           command: |
-              source activate ./atlasenv
-              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 
+            source activate ./atlasenv
+            atlas init --db-dir $databaseDir --threads $N_THREADS  -w $WD --skip-qc --interleaved-fastq $reads_dir
+
+            touch -m $WD/finished_assembly
+            touch -m $WD/sample*/*/*.bam # update timestamp of sam files
+
+      - run:
+          name: assembly
+          command: |
+            source activate ./atlasenv
+            atlas run assembly $config -w $WD
+      - run:
+          name: until checkm
+          command: |
+            source activate ./atlasenv
+            atlas run binning --omit-from run_checkm_lineage_wf $config -w $WD
+      - run:
+        name: Copy chekcm files
+        command: |
+          for s in sample1 sample2 ;
+          do
+            dest_dir=$WD/$s/binning/DASTool/checkm/
+            mkdir -p $dest_dir
+            mv $WD/checkm_results/$s/* $dest_dir
+          done
+      - run:
+          name: test genomes
+          command: |
+            source activate ./atlasenv
+            atlas run None genomes/clustering/allbins2genome.tsv $config -w $WD
+
       - store_test_results:
           path: example_data/binning/reports
       - store_artifacts:

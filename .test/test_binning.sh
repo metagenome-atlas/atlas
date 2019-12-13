@@ -16,7 +16,7 @@ touch -m $WD/sample*/*/*.bam # update timestamp of sam files
 #
 atlas init --db-dir $databaseDir --threads 4  -w $WD --skip-qc --interleaved-fastq $reads_dir
 
-atlas run None binning $config -w $WD $@ --omit-from run_checkm_lineage_wf
+atlas run binning $config -w $WD $@ --omit-from run_checkm_lineage_wf
 
 echo "Copy checkm files
 
@@ -30,7 +30,7 @@ do
   mv $WD/checkm_results/$s/* $dest_dir
 done
 
-atlas run None binning $config -w $WD $@
+atlas run binning $config -w $WD $@
 
 # genomes need databases
 atlas run None genomes/clustering/allbins2genome.tsv  $config -w $WD $@
