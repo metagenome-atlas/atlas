@@ -49,15 +49,34 @@ ENV WORKING_DIR='/.test/Dryrun'
 RUN atlas init --db-dir $databaseDir --threads 3 -w $WORKING_DIR .test/reads/empty
 RUN atlas run all -w $WORKING_DIR --dryrun
 
-# Download databases
-RUN atlas download --db-dir $databaseDir
 # download conda packages
 RUN atlas run all -w $WORKING_DIR --create-envs-only
+RUN atlas run None "logs/checkm_init.txt" -w $WORKING_DIR
+
+# Download databases
+# RUN atlas download --db-dir $databaseDir
+
+RUN chmod a+w $databaseDir
+
+# update atlas
+RUN rm -rf atlas
+RUN pip uninstall -y metagenome-atlas
+RUN git clone https://github.com/metagenome-atlas/atlas.git
+RUN cd atlas ; pip install .
+
+# short test
+RUN atlas --help
+RUN atlas --version
+ENV WORKING_DIR='.test/Dryrun'
+# Dryrun
+RUN atlas init --db-dir $databaseDir --threads 3 -w $WORKING_DIR .test/reads/empty
+RUN atlas run all -w $WORKING_DIR --dryrun
 
 
 
+RUN chmod --recursive a+w $databaseDir
 # Go back to the user
-WORKDIR /
-USER atlas
+RUN mkdir /WD
+WORKDIR /WD
 
-CMD atlas --help
+CMD atlas
