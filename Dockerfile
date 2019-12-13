@@ -41,16 +41,16 @@ RUN python setup.py install
 RUN atlas --help
 RUN atlas --version
 
-RUN databaseDir="/databases"
-RUN WD='/.test/Dryrun'
-RUN reads_dir='.test/reads/empty'
+ENV databaseDir="/databases"
+ENV WORKING_DIR='/.test/Dryrun'
+
+# Dryrun
+RUN atlas init --db-dir $databaseDir --threads 3 -w $WORKING_DIR .test/reads/empty
+RUN atlas run all -w $WORKING_DIR --dryrun
 
 # Download databases
 RUN atlas download --db-dir $databaseDir
 # download conda packages
-RUN atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
-# small test
-RUN atlas run -w $WD --dryrun
 RUN atlas run all -w $WORKING_DIR --create-envs-only
 
 
