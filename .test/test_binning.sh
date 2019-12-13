@@ -16,12 +16,14 @@ atlas init --db-dir $databaseDir --threads 4  -w $WD --skip-qc $reads_dir
 
 atlas run None binning $config -w $WD $@ --omit-from get_bins
 
-echo "Copy checkm files"
-
+echo "Copy checkm files\n\n\n"
+pwd
 for s in "sample1 sample2" ;
 do
-  mkdir -p $WD/$s/binning/DASTool/checkm
-  mv $WD/checkm_results/$s/* $WD/$s/binning/DASTool/checkm/
+  dest_dir=$WD/$s/binning/DASTool/checkm/
+  mkdir -p $dest_dir
+  tree $WD/checkm_results/
+  mv $WD/checkm_results/$s/* $dest_dir
 done
 
 atlas run None binning $config -w $WD $@
