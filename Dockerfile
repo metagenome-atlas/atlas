@@ -51,7 +51,7 @@ RUN atlas run all -w $WORKING_DIR --dryrun
 
 # download conda packages
 RUN atlas run all -w $WORKING_DIR --create-envs-only
-RUN atlas run None "logs/checkm_init.txt" -w $WORKING_DIR 
+RUN atlas run None "logs/checkm_init.txt" -w $WORKING_DIR
 
 # Download databases
 # RUN atlas download --db-dir $databaseDir
@@ -60,7 +60,7 @@ RUN atlas run None "logs/checkm_init.txt" -w $WORKING_DIR
 
 
 # Go back to the user
-WORKDIR /
-USER atlas
+RUN mkdir /WD
+WORKDIR /WD
 
-CMD atlas --help
+CMD atlas
