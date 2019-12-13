@@ -32,7 +32,7 @@ Atlas is a easy to use metagenomic pipeline
 
 # Setup
 Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
-The only dependency is the _conda_ package manager, which can easy be installed from [here](http://anaconda.org/).
+The only dependency is the _conda package manager_, which can easy be installed with [anaconda](http://anaconda.org/).
 We recommend you to create a conda environment for atlas to avoid any conflicts of versions.
 
 ```
@@ -41,33 +41,9 @@ We recommend you to create a conda environment for atlas to avoid any conflicts 
     conda install -y -c bioconda -c conda-forge metagenome-atlas
 ```
 
-And you can run atlas. As said above all other dependencies are installed in specific environments during the run of the pipeline.
+And you can run atlas. All other dependencies are installed in specific environments during the run of the pipeline.
 
-## Install the development version from GitHub
-If you want to install the latest version from GitHub you can use the folowing commands.
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.5-brightgreen.svg)](https://snakemake.bitbucket.io)
-
-get code from GitHub:
-```
-git clone https://github.com/metagenome-atlas/atlas.git
-cd atlas
-```
-Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
-```
-conda env create -f atlasenv.yml -n atlasenv
-source activate atlasenv
-```
-Install atlas:
-```
-pip install --editable .
-```
-
-Now you should be able to run atlas:
-```
-atlas init --db-dir databases path/to/fastq/files
-atlas run
-```
-
+For local execution we have also a [docker container](https://hub.docker.com/repository/docker/metagenomeatlas/atlas)
 
 # License
 
