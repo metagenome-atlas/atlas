@@ -200,8 +200,9 @@ jobs:
             for s in sample1 sample2 ;
             do
               dest_dir=$WD/$s/binning/DASTool/checkm/
+              rm -rf dest_dir
               mkdir -p $dest_dir
-              mv $WD/checkm_results/$s/* $dest_dir
+              cp $WD/checkm_results/$s/* $dest_dir
             done
       - save_cache:
           key: binning-{{ .Branch }}-binning
@@ -225,9 +226,9 @@ jobs:
             atlas run None genomes/clustering/allbins2genome.tsv $config -w $WD
 
       - store_test_results:
-          path: example_data/binning/reports
+          path: example_data/binning/genomes/clustering/
       - store_artifacts:
-          path: example_data/binning/reports
+          path: example_data/binning/genomes/clustering/
           destination: binning_results
 
   #
