@@ -81,7 +81,7 @@ def get_eggnog_db_file():
                   files=["eggnog.db","eggnog_proteins.dmnd","checksum_checked"]
                   ))
 
-localrules: download,download_eggNOG_files,verify_eggNOG_files,download_atlas_files,unpack_checkm_data
+localrules: download,download_eggNOG_files,verify_eggNOG_files,download_atlas_files,download_checkm_data
 ruleorder: download_eggNOG_files > download_atlas_files
 
 rule download:
