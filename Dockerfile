@@ -1,10 +1,10 @@
 from continuumio/miniconda3
 
-version="2.3.0"
+
 
 ################## METADATA ######################
 LABEL base.image="continuumio/miniconda3"
-LABEL version=$version
+LABEL version="$version"
 LABEL software="metagenome-atlas"
 LABEL software.version="2"
 LABEL about.summary="Three commands to start analysing your metagenome data"
@@ -28,9 +28,9 @@ RUN conda config --add channels conda-forge
 RUN conda config --set always_yes true
 
 # download atlas
-
-RUN wget clone https://github.com/metagenome-atlas/atlas/archive/v${version}.tar.gz
-tar -xzf v${version}.tar.gz && mv v${version} atlas
+ENV version="2.3.beta1"
+RUN wget https://github.com/metagenome-atlas/atlas/archive/${version}.tar.gz
+RUN tar -xzf ${version}.tar.gz && mv atlas-${version} atlas
 WORKDIR /atlas
 
 
@@ -42,16 +42,16 @@ RUN python setup.py install
 RUN atlas --help
 RUN atlas --version
 
-RUN databaseDir="/databases"
-RUN WD='/.test/Dryrun'
-RUN reads_dir='.test/reads/empty'
+ENV databaseDir="/databases"
+ENV WORKING_DIR='/.test/Dryrun'
+
+# Dryrun
+RUN atlas init --db-dir $databaseDir --threads 3 -w $WORKING_DIR .test/reads/empty
+RUN atlas run all -w $WORKING_DIR --dryrun
 
 # Download databases
 RUN atlas download --db-dir $databaseDir
 # download conda packages
-RUN atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
-# small test
-RUN atlas run -w $WD --dryrun
 RUN atlas run all -w $WORKING_DIR --create-envs-only
 
 
@@ -60,4 +60,4 @@ RUN atlas run all -w $WORKING_DIR --create-envs-only
 WORKDIR /
 USER atlas
 
-CMD "atlas --help"
+CMD atlas --help
