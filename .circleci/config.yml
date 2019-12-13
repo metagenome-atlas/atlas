@@ -185,7 +185,7 @@ jobs:
           command: |
             source activate ./atlasenv
             atlas run assembly $config -w $WD
-      - save_cache::
+      - save_cache:
           key: binning-{{ .Branch }}-assembly
           path:
             - example_data/binning
