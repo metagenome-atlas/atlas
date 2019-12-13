@@ -207,6 +207,17 @@ jobs:
           key: binning-{{ .Branch }}-binning
           paths:
             - example_data/binning
+
+      - run:
+          name: finish binning
+          command: |
+            source activate ./atlasenv
+            atlas run binning $config -w $WD $@
+      - save_cache:
+          key: binning-{{ .Branch }}-binreport
+          paths:
+            - example_data/binning
+
       - run:
           name: test genomes
           command: |
