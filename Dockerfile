@@ -1,6 +1,6 @@
 from continuumio/miniconda3
 
-ENV version="2.3.0"
+
 
 ################## METADATA ######################
 LABEL base.image="continuumio/miniconda3"
@@ -28,6 +28,7 @@ RUN conda config --add channels conda-forge
 RUN conda config --set always_yes true
 
 # download atlas
+ENV version="2.3.beta1"
 RUN wget https://github.com/metagenome-atlas/atlas/archive/${version}.tar.gz
 RUN tar -xzf ${version}.tar.gz && mv atlas-${version} atlas
 WORKDIR /atlas
