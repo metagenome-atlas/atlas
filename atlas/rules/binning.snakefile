@@ -325,6 +325,8 @@ rule run_checkm_lineage_wf:
     resources:
         time=config["runtime"]["long"],
         mem=config["large_mem"]
+    benchmark:
+        "logs/benchmarks/checkm_lineage_wf/{sample}_{binner}.tsv"
     shell:
         """
         rm -r {params.output_dir}

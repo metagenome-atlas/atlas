@@ -78,10 +78,10 @@ CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
 def get_eggnog_db_file():
     return ancient(expand("{path}/{files}",
                   path=EGGNOG_DIR,
-                  files=["eggnog.db","eggnog_proteins.dmnd"]
+                  files=["eggnog.db","eggnog_proteins.dmnd","checksum_checked"]
                   ))
 
-localrules: download,download_eggNOG_files,download_atlas_files,unpack_checkm_data
+localrules: download,download_eggNOG_files,verify_eggNOG_files,download_atlas_files,download_checkm_data
 ruleorder: download_eggNOG_files > download_atlas_files
 
 rule download:
@@ -100,8 +100,17 @@ rule download_eggNOG_files:
         f"{EGGNOG_DIR}/eggnog_proteins.dmnd"
     threads:
         1
+    conda:
+        "../envs/eggNOG.yaml"
+    shell:
+        f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} "
+
+rule verify_eggNOG_files:
+    input:
+        rules.download_eggNOG_files.output
+    output:
+        touch(f"{EGGNOG_DIR}/checksum_checked")
     run:
-        shell(f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} " )
         # validate the download
         for file in input:
             if not FILES[os.path.basename(file)] == md5(file):
@@ -126,15 +135,18 @@ rule download_atlas_files:
             raise OSError(2, "Invalid checksum", output[0])
 
 
-rule unpack_checkm_data:
-    input:
-        os.path.join(DBDIR, CHECKM_ARCHIVE)
+rule download_checkm_data:
     output:
-        CHECKMFILES
+        tar=temp(CHECKM_ARCHIVE),
+        files=CHECKMFILES
     params:
         path = CHECKMDIR
-    shell:
-        "tar -zxf {input} --directory {params.path}"
+    run:
+        shell("wget -O {output.tar} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{CHECKM_ARCHIVE}' ")
+        if not FILES[CHECKM_ARCHIVE] == md5(output.tar):
+            raise OSError(2, "Invalid checksum", CHECKM_ARCHIVE)
+
+        shell("tar -zxf {output.tar} --directory {params.path}")
 
 localrules: initialize_checkm
 rule initialize_checkm:

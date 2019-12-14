@@ -122,7 +122,7 @@ rule call_genes:
         gff="combined/annotation/prodigal/predicted_genes.gff"
 
     conda:
-        "%s/gene_catalog.yaml" % CONDAENV
+        "%s/prodigal.yaml" % CONDAENV
     log:
         "logs/predict_genes.log"
     threads:

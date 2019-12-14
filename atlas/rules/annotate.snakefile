@@ -65,7 +65,7 @@ rule run_prokka_annotation:
         tsv = "{sample}/prokka/{sample}.tsv",
         txt = "{sample}/prokka/{sample}.txt"
     benchmark:
-        "benchmarks/annotate/prokka/{sample}.txt"
+        "logs/benchmarks/annotate/prokka/{sample}.txt"
     params:
         outdir = "{sample}/prokka",
         kingdom = config.get("prokka_kingdom", "Bacteria"),
@@ -106,7 +106,7 @@ rule run_diamond_blastp:
     output:
         "{sample}/refseq/{sample}_hits.tsv"
     benchmark:
-        "benchmarks/annotate/diamond_alignments/{sample}.txt"
+        "logs/benchmarks/annotate/diamond_alignments/{sample}.txt"
     params:
         tmpdir = "--tmpdir %s" % TMPDIR if TMPDIR else "",
         top_seqs = config.get("diamond_top_seqs", 2),
@@ -205,7 +205,7 @@ rule align_reads_to_renamed_contigs:
         statsfile = "{sample}/contig_stats/mapping_stats.txt",
         covstats = "{sample}/contig_stats/coverage_stats.txt"
     benchmark:
-        "benchmarks/annotate/bbmap_alignment/{sample}.txt"
+        "logs/benchmarks/annotate/bbmap_alignment/{sample}.txt"
     params:
         interleaved = lambda wc: "t" if config["samples"][wc.sample].get("paired", True) and len(config["samples"][wc.sample]["fastq"]) == 1 else "f",
         inputs = lambda wc: "in=%s" % config["samples"][wc.sample]["fastq"][0] if len(config["samples"][wc.sample]["fastq"]) == 1 else "in=%s in2=%s" % (config["samples"][wc.sample]["fastq"][0], config["samples"][wc.sample]["fastq"][1]),
@@ -270,7 +270,7 @@ rule remove_pcr_duplicates:
         bam = "{sample}/sequence_alignment/{sample}_markdup.bam",
         txt = "{sample}/sequence_alignment/{sample}_markdup_metrics.txt"
     benchmark:
-        "benchmarks/annotate/picard_mark_duplicates/{sample}.txt"
+        "logs/benchmarks/annotate/picard_mark_duplicates/{sample}.txt"
     resources:
         mem = int(config.get("java_mem", "32"))
     log:

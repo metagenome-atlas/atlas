@@ -4,6 +4,7 @@ defaults: &defaults
   environment:
     DATABASE_DIR: databases
 
+
 version: 2
 
 jobs:
@@ -65,7 +66,6 @@ jobs:
             - ./atlasenv
             - .
 
-
   getenvs:
     <<: *defaults
     resource_class: small
@@ -91,11 +91,11 @@ jobs:
           key: conda-environements2-{{ checksum "conda_envs.tar"  }}
           paths:
             - databases
-      - run:
-          name: download checkm data
-          command: |
-              source activate ./atlasenv
-              atlas run None -w .test/Getenvs logs/checkm_init.txt
+      # - run:
+      #     name: download checkm data
+      #     command: |
+      #         source activate ./atlasenv
+      #         atlas run None -w .test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/
@@ -126,16 +126,22 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: test assembly
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_test_results:
+          path: .test/Test_assembly/reports
       - store_artifacts:
           path: .test/Test_assembly/reports
           destination: assembly_results
-      - store_test_results:
-          path: .test/Test_assembly/reports
+
       - run:
           name: run genecatalog
           command: |
@@ -151,16 +157,48 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements2-{{ checksum "conda_envs.tar"  }}
+            - conda-environements2-
       - run:
           name: test binning
           command: |
               source activate ./atlasenv
-              .test/binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+      - store_test_results:
+          path: example_data/binning/reports
       - store_artifacts:
           path: example_data/binning/reports
           destination: binning_results
-      - store_test_results:
-          path: example_data/binning/reports
+
+  #
+  #
+  # build-docker:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - checkout
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Build Docker image
+  #         command: docker build -t $IMAGE_NAME:latest .
+  # publish-latest:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: |
+  #           echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+  #           docker push $IMAGE_NAME:latest
+
 
 workflows:
   version: 2
@@ -174,10 +212,22 @@ workflows:
       - assembly_and_genecatalog:
           requires:
             - build
-            - getenvs
             - get_example_data
       - binning:
           requires:
             - build
-            - getenvs
             - get_example_data
+      # - build-docker:
+      #     requires:
+      #       - build
+      #       - getenvs
+      #       - assembly_and_genecatalog
+      #     filters:
+      #       branches:
+      #         only: master
+      # - publish-latest:
+      #     requires:
+      #       - build-docker
+      #     filters:
+      #       branches:
+      #         only: master

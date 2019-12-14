@@ -128,7 +128,7 @@ def load_sample_table(sample_table='samples.tsv'):
     validate_sample_table(sampleTable)
     return sampleTable
 
-def make_config(database_dir, threads, assembler, data_type='metagenome',config='config.yaml'):
+def make_config(database_dir, threads, assembler, data_type='metagenome',interleaved_fastq=False,config='config.yaml'):
     """
     Reads template config file with comments from ./template_config.yaml
     updates it by the parameters provided.
@@ -163,7 +163,7 @@ def make_config(database_dir, threads, assembler, data_type='metagenome',config=
         conf["contaminant_references"]["rRNA"]= os.path.join(database_dir, "silva_rfam_all_rRNAs.fa"),
 
     conf["data_type"]= data_type
-
+    conf["interleaved_fastqs"]=interleaved_fastq
 
     conf["assembler"] = assembler
     conf["database_dir"] = database_dir
@@ -243,6 +243,12 @@ def update_config(config):
     help="sample data type",
 )
 @click.option(
+    "--interleaved-fastq",
+    is_flag=True,
+    default=False,
+    help="fastq files are paired-end in one files (interleaved)",
+)
+@click.option(
     "--threads",
     default=8,
     type=int,
@@ -253,7 +259,7 @@ def update_config(config):
     is_flag=True,
     help="Skip QC, if reads are already pre-processed",
 )
-def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, threads,skip_qc=False):
+def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleaved_fastq,threads,skip_qc=False):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.
 
@@ -266,5 +272,5 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, threads,s
     if not os.path.exists(db_dir): os.makedirs(db_dir)
     sample_file= os.path.join(working_dir,'samples.tsv')
 
-    make_config(db_dir, threads, assembler,data_type,config)
+    make_config(db_dir, threads, assembler,data_type,interleaved_fastq,config)
     prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)

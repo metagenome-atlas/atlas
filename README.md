@@ -11,16 +11,17 @@
 
 Three commands to start analysing your metagenome data:
 ```
-    conda install -c bioconda -c conda-forge metagenome-atlas
+    conda install -y -c bioconda -c conda-forge metagenome-atlas
     atlas init --db-dir databases path/to/fastq/files
-    atlas run
+    atlas run all
 ```
-All databases and dependencies are installed on the fly in the directory `db-dir`.
-You want to run these three commands on the example_data on the GitHub repo.
+All databases and dependencies are installed on the fly in the directory `databases`.
+
+You want to run these three commands on the [example data](https://github.com/metagenome-atlas/atlas/exmple_data).
 If you have more time, then we recommend you configure atlas according to your needs.
   - check the `samples.tsv`
   - edit the `config.yaml`
-  - run atlas on any cluster system
+  - run atlas on any [cluster system](https://metagenome-atlas.readthedocs.io/en/latest/usage/cluster.html)
 For more details see [documentation](https://metagenome-atlas.rtfd.io/).
 
 # Assembly based metagenomics
@@ -29,32 +30,20 @@ Atlas is a easy to use metagenomic pipeline
 
 ![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
+# Setup
+Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
+The only dependency is the _conda package manager_, which can easy be installed with [anaconda](http://anaconda.org/).
+We recommend you to create a conda environment for atlas to avoid any conflicts of versions.
 
-## Install the development version from GitHub
-Atlas is still under active development; therefore, you may want to install the up to date atlas from GitHub. Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.5-brightgreen.svg)](https://snakemake.bitbucket.io)
-
-get code from GitHub:
 ```
-git clone https://github.com/metagenome-atlas/atlas.git
-cd atlas
-```
-Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
-```
-conda env create -f atlasenv.yml
-source activate atlasenv
-```
-Install atlas:
-```
-pip install --editable .
+    conda create -y -n atlasenv
+    source activate atlasenv
+    conda install -y -c bioconda -c conda-forge metagenome-atlas
 ```
 
-Now you should be able to run atlas:
-```
-atlas init --db-dir databases path/to/fastq/files
-atlas run
-```
+And you can run atlas. All other dependencies are installed in specific environments during the run of the pipeline.
 
+For local execution we have also a [docker container](https://metagenome-atlas.readthedocs.io/en/latest/usage/getting_started.html#c-use-docker-container)
 
 # License
 

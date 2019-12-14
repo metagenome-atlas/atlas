@@ -3,4 +3,4 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - metabat2 =2.14.*
+    - prodigal =2.6.*

@@ -237,6 +237,8 @@ rule run_all_checkm_lineage_wf:
         mem=config["large_mem"]
     log:
         "logs/genomes/checkm.log"
+    benchmark:
+        "logs/benchmarks/checkm_lineage_wf/all_genomes.tsv"
     shell:
         """
         rm -r {params.output_dir}
@@ -458,7 +460,7 @@ rule combine_bined_coverages_MAGs:
 #     output:
 #         directory("genomes/annotations/genes")
 #     conda:
-#         "%s/required_packages.yaml" % CONDAENV
+#         "%s/prodigal.yaml" % CONDAENV
 #     log:
 #         "logs/genomes/prodigal.log"
 #     shadow:
@@ -478,7 +480,7 @@ rule predict_genes_genomes:
         faa = "genomes/annotations/genes/{genome}.faa",
         gff = "genomes/annotations/genes/{genome}.gff"
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "%s/prodigal.yaml" % CONDAENV
     log:
         "logs/genomes/prodigal/{genome}.txt"
     threads:

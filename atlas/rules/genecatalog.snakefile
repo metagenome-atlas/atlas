@@ -618,7 +618,7 @@ rule gene2genome:
 
         orf2gene = pd.read_csv(input.orf2gene,
                                    index_col=0,squeeze=False,sep='\t',header=0)
-        import pdb; pdb.set_trace()
+
         orf2gene['Contig']= orf2gene.index.map(lambda s: '_'.join(s.split('_')[:-1]))
         orf2gene=orf2gene.join(contigs2genome,on='Contig')
         orf2gene= orf2gene.dropna(axis=0)
