@@ -223,6 +223,7 @@ jobs:
           name: test genomes
           command: |
             source activate ./atlasenv
+            rm -r $WD/genomes #start fresh as bin names are not teterministic
             atlas run None genomes/clustering/allbins2genome.tsv $config -w $WD
       - save_cache:
           key: binning-{{ .Branch }}-genomes
