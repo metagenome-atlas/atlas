@@ -17,7 +17,8 @@ after that run:
 
 "
 
-docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD  -t metagenomeatlas/atlas:latest /bin/bash
+mkdir -p AtlasDB/GTDB-TK AtlasDB/EggNOGV2
+docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v AtlasDB/EggNOGV2:/databases/EggNOGV2 -v AtlasDB/GTDB-TK:/databases/GTDB-TK  -t metagenomeatlas/atlas:latest /bin/bash
 
 
 # https://github.com/metagenome-atlas/example_data

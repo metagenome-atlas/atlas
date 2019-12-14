@@ -21,7 +21,7 @@ You want to run these three commands on the [example data](https://github.com/me
 If you have more time, then we recommend you configure atlas according to your needs.
   - check the `samples.tsv`
   - edit the `config.yaml`
-  - run atlas on any cluster system
+  - run atlas on any [cluster system](https://metagenome-atlas.readthedocs.io/en/latest/usage/cluster.html)
 For more details see [documentation](https://metagenome-atlas.rtfd.io/).
 
 # Assembly based metagenomics
@@ -43,7 +43,7 @@ We recommend you to create a conda environment for atlas to avoid any conflicts 
 
 And you can run atlas. All other dependencies are installed in specific environments during the run of the pipeline.
 
-For local execution we have also a [docker container](https://hub.docker.com/repository/docker/metagenomeatlas/atlas)
+For local execution we have also a [docker container](https://metagenome-atlas.readthedocs.io/en/latest/usage/getting_started.html#c-use-docker-container)
 
 # License
 

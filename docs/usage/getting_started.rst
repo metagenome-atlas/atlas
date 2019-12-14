@@ -43,17 +43,28 @@ We recommend to use the conda package as it allows deployment on clusters.
 However, if you want to directly start using atlas on a small metagenome you can use the docker container::
 
   docker pull metagenomeatlas/atlas
-  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v $(pwd/databases):/databases  -t metagenomeatlas/atlas:latest /bin/bash
+
+Go to a directory on your filesystem where you have the fastq files in a subfolder, e.g. in ``reads``
+Your present working directory will be mounted on ``/WD`` in the docker container.
 
 The docker container contains all the dependencies and some of the databases in ``/databases`` .
-The databases for functional and taxonomic annotation are downloaded while running
-Your present working directory is mounted on /WD in the docker container.
+The databases for functional and taxonomic annotation are downloaded while running.
+To not loose the databases after exiting the docker we recommend to mount them also on your disk.
+
+Create::
+
+  mkdir -p AtlasDB/GTDB-TK AtlasDB/EggNOGV2
+
+Then run the docker::
+
+  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v AtlasDB/EggNOGV2:/databases/EggNOGV2 -v AtlasDB/GTDB-TK:/databases/GTDB-TK  -t metagenomeatlas/atlas:latest /bin/bash
+
 
 Inside the docker you can run atlas as folows::
 
-  atlas init -db-dir /databases path/to/fastq/inside/your/workindirectory
+  atlas init -db-dir /databases /WD/reads
 
-This should create a sample.tsv and a config.yaml.
+This should create a sample.tsv and a config.yaml, whcih you can edit on your system.
 
 after that run::
 
