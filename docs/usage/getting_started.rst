@@ -57,7 +57,7 @@ Create::
 
 Then run the docker::
 
-  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v AtlasDB/EggNOGV2:/databases/EggNOGV2 -v AtlasDB/GTDB-TK:/databases/GTDB-TK  -t metagenomeatlas/atlas:latest /bin/bash
+  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v $(pwd)/AtlasDB/EggNOGV2/:/databases/EggNOGV2 -v $(pwd)/AtlasDB/GTDB-TK/:/databases/GTDB-TK  -t metagenomeatlas/atlas:latest /bin/bash
 
 
 Inside the docker you can run atlas as folows::
