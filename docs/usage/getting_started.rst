@@ -57,14 +57,14 @@ Create::
 
 Then run the docker::
 
-  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v $(pwd)/AtlasDB/EggNOGV2/:/databases/EggNOGV2 -v $(pwd)/AtlasDB/GTDB-TK/:/databases/GTDB-TK  -t metagenomeatlas/atlas:latest /bin/bash
-
+  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v $(pwd)/AtlasDB/EggNOGV2/:/databases/EggNOGV2 -v $(pwd)/AtlasDB/GTDB-TK/:/databases/GTDB-TK -t metagenomeatlas/atlas:latest /bin/bash
 
 Inside the docker you can run atlas as folows::
 
   atlas init -db-dir /databases /WD/reads
 
 This should create a sample.tsv and a config.yaml, whcih you can edit on your system.
+Important don't forget to align the memory of your computer with the memory defined in the config file.
 
 after that run::
 
