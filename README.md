@@ -31,7 +31,7 @@ Atlas is a easy to use metagenomic pipeline
 ![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
 # Setup
-Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
+Atlas should be run on a _linux_ sytem, with enough memory (min ~50GB but assembly usually requires 250GB).
 The only dependency is the _conda package manager_, which can easy be installed with [anaconda](http://anaconda.org/).
 We recommend you to create a conda environment for atlas to avoid any conflicts of versions.
 
