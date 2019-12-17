@@ -19,6 +19,10 @@ MAINTAINER Silas Kieser
 # Switch back to root for some install
 
 USER root
+RUN useradd -rm -d /home/atlasuser -s /bin/bash -g root -G sudo atlasuser
+USER atlasuser
+
+
 RUN export LC_ALL=en_US.UTF-8
 RUN export LANG=en_US.UTF-8
 
@@ -57,6 +61,7 @@ RUN atlas run None "logs/checkm_init.txt" -w $WORKING_DIR
 # RUN atlas download --db-dir $databaseDir
 
 RUN chmod a+w $databaseDir
+RUN chmod a+w /home/atlasuser
 
 # update atlas
 RUN rm -rf atlas
