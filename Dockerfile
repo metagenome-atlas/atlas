@@ -77,11 +77,11 @@ ENV WORKING_DIR='/AtlasTest'
 # Dryrun
 RUN atlas init --db-dir $databaseDir --threads 4 --interleaved-fastq -w $WORKING_DIR example_data/reads/test
 RUN atlas run all -w $WORKING_DIR --dryrun
-RUN atlas run binning gene2genome -w $WORKING_DIR -w $WORKING_DIR --resources mem=50 java_mem=50
+RUN atlas run all genomes/tree/checkm.nwk -w $WORKING_DIR --resources mem=50 java_mem=50 --omit-from download_gtdb add_eggNOG_header
 
-RUN atlas run all -w $WORKING_DIR --create-envs-only
+RUN atlas run all genomes/tree/checkm.nwk -w $WORKING_DIR --create-envs-only
 RUN rm -r example_data
-RUN chmod --recursive a+w $databaseDir
+RUN chmod a+w $databaseDir $databaseDir/*
 
 RUN mkdir /WD
 WORKDIR /WD
