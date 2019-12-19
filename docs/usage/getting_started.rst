@@ -36,6 +36,8 @@ Now you should be able to run atlas::
   atlas init --db-dir databases path/to/fastq/files
   atlas run
 
+.. _setup_docker:
+
 C. Use docker container
 -----------------------
 
