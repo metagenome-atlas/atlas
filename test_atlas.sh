@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 databases=./databases # path to database dir where you can store some 100gb databases
 
 # install atlas
