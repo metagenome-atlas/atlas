@@ -48,10 +48,14 @@ Example for ``cluster_config.yaml`` with queues defined::
   run_checkm_lineage_wf:
     queue: long
 
+
+
 Now, you can run atlas on a cluster with::
 
     atlas run <options> --profile cluster
 
+
+As the whole pipeline can take several days, I usually run this command in a screen on the head node, even when system administrators don't like that. On the head node atlas doesn't uses much threads/memory. It only schedules the jobs and does some steps which combine tables. Obviously you can also submit the atlas command as a long lasting job.
 
  .. The mapping between  resources and cluster are defined in the ``~/.config/snakemake/cluster/key_mapping.yaml``.
 
