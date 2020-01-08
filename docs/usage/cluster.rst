@@ -9,29 +9,53 @@ Thank the underlying, Snakemake system, atlas can be executed on virtually all c
 
 
 If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have an other cluster system, fill in an GitHub issue (feature request) so we can help you bringing the magic of atlas to your cluster system.
-For more information about cluster- and cloud submission, have a look at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executable.html>`_.
+For more information about cluster- and cloud submission, have a look at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_.
 
 Set up of cluster execution
 ---------------------------
 
-1. You need cookiecutter to be installed, which comes with atlas
+You need cookiecutter to be installed, which comes with atlas
 
-2. You should know what the default queue/partition you are using.
-
-To deploy this profile::
+Then run::
 
     cookiecutter --output-dir ~/.config/snakemake https://github.com/metagenome-atlas/clusterprofile.git
+
+This opens a interactive shell dialog and ask you for the name of the profile and your cluster system.
+We recommend you to keep the default name ``cluster``. The profile supports ``slurm``,``lsf`` and ``pbs``.
+
+The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
+
+If you need to specify **queues or accounts** you can do this for all rules or for specific rules in the ``~/.config/snakemake/cluster/cluster_config.yaml``. In addition, using this file you can overwrite the resources defined  in the config file.
+
+Example for ``cluster_config.yaml`` with queues defined::
+
+
+  __default__:
+  # default parameter for all rules
+    queue: normal
+    nodes: 1
+
+
+  # The following rules in atlas need need more time/memory.
+  # If you need to submit them to different queues you can configure this as outlined.
+
+  run_megahit:
+    queue: bigmem
+  run_spades:
+    queue: bigmem
+
+  This rules can take longer
+  run_checkm_lineage_wf:
+    queue: long
 
 Now, you can run atlas on a cluster with::
 
     atlas run <options> --profile cluster
 
 
-The resources (threads, memory and time) are defined in the atlas config file (minutes and GB). The mapping between  resources and cluster are defined in the ``~/.config/snakemake/cluster/key_mapping.yaml``.
+ .. The mapping between  resources and cluster are defined in the ``~/.config/snakemake/cluster/key_mapping.yaml``.
 
 
-If you need to define **queues or accounts** you can do this for all rules or for specific rules in the ``~/.config/snakemake/cluster/cluster_config.yaml`` (see comments there).
-In addition, using this file you can overwrite the resources defined  in the config file.
 
 
 If a job fails, you will find the "external jobid" in the error message.
@@ -46,7 +70,10 @@ The atlas argument ``--jobs`` now becomes the number of jobs simultaneously subm
 In the case of an failed job, ``--keep-going`` (default false)  allows atlas to continue with independent steps.
 
 
+Cloud execution
+===============
 
+Atlas, like any other snakemake pipeline can thanks also easily be submitted to cloud systems. I let look at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake comand line argument can just be appended to the atlas command.
 
 .. _local:
 
