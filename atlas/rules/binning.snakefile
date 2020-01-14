@@ -196,7 +196,11 @@ rule maxbin:
         fasta = BINNING_CONTIGS,
         abund = "{sample}/binning/coverage/{sample}_coverage.txt",
     output:
-        directory("{sample}/binning/maxbin/intermediate_files")
+        directory("{sample}/binning/maxbin/intermediate_files"),
+        "{sample}/binning/maxbin/{sample}.summary",
+        "{sample}/binning/maxbin/{sample}.marker",
+        "{sample}/binning/maxbin/{sample}.marker_of_each_bin.tar.gz",
+        "{sample}/binning/maxbin/{sample}.log
     params:
         mi = config["maxbin"]["max_iteration"],
         mcl = config["maxbin"]["min_contig_length"],
