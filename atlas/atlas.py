@@ -135,7 +135,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
     ).format(
         snakefile=get_snakefile(),
         working_dir=working_dir,
-        jobs="--jobs {jobs}" if jobs is not None else "",
+        jobs="--jobs {}".format(jobs) if jobs is not None else "",
         config_file=config_file,
         profile="" if (profile is None) else "--profile {}".format(profile),
         dryrun="--dryrun" if dryrun else "",
