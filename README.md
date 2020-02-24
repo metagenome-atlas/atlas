@@ -5,7 +5,7 @@
 [![CircleCI](https://circleci.com/gh/metagenome-atlas/atlas/tree/master.svg?style=svg)](https://circleci.com/gh/metagenome-atlas/atlas/tree/master)
 [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
 [![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd)
-[Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
+
 
 # Quick Start
 
