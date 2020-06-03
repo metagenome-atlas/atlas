@@ -11,6 +11,4 @@ dependencies:
     - seaborn-0.8.1
     - snakemake=5.7.4 #or5.8.2 sheetname error
     - docutils=0.16
-    - pip=20.1.1
-    - pip:
-      - cufflinks==0.12.1
+    - cufflinks-py=0.17.3
