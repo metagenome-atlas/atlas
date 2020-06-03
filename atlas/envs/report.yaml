@@ -4,11 +4,10 @@ channels:
     - defaults
 dependencies:
     - numpy=1.13.1
-    - python=3.6.10
+    - python=3.6
     - pandas=0.20.3
     - plotly=2.2.2
     - ipython=6.2.1
-    - seaborn-0.8.1
+    - seaborn=0.8.1
     - snakemake=5.7.4 #or5.8.2 sheetname error
-    - docutils=0.16
     - cufflinks-py=0.17.3
