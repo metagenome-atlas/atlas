@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=3.6
-  - snakemake
+  - snakemake=5.9.1
   - pandas
   - bbmap=37.78
   - click=7
