@@ -87,7 +87,7 @@ jobs:
           name: install environements
           command: |
               source activate ./atlasenv
-              atlas run all -w .test/Getenvs --create-envs-only
+              atlas run all -w .test/Getenvs --create-envs-only --omit-from build_qc_report build_assembly_report build_bin_report
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
@@ -137,11 +137,11 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
-      - store_test_results:
-          path: .test/Test_assembly/reports
-      - store_artifacts:
-          path: .test/Test_assembly/reports
-          destination: assembly_results
+      # - store_test_results:
+      #     path: .test/Test_assembly/reports
+      # - store_artifacts:
+      #     path: .test/Test_assembly/reports
+      #     destination: assembly_results
 
       - run:
           name: run genecatalog
