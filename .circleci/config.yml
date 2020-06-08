@@ -87,7 +87,6 @@ jobs:
           name: install environements
           command: |
               source activate ./atlasenv
-              alias conda=mamba
               atlas run all -w .test/Getenvs --create-envs-only
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
