@@ -24,6 +24,7 @@ jobs:
            conda config --add channels bioconda
            conda config --add channels conda-forge
            conda config --set always_yes true
+           conda install -y mamba
       - restore_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}
       - run:
@@ -34,7 +35,7 @@ jobs:
                 source activate ./atlasenv
                 conda list
               else
-                conda env create -p ./atlasenv --file atlasenv.yml
+                mamba env create -p ./atlasenv --file atlasenv.yml
               fi
       - save_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}
@@ -75,8 +76,8 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements2-{{ checksum "conda_envs.tar"  }}
-            - conda-environements2-
+            - conda-environements-{{ checksum "conda_envs.tar"  }}
+            - conda-environements-
       - run:
           name: Init
           command: |
@@ -86,9 +87,9 @@ jobs:
           name: install environements
           command: |
               source activate ./atlasenv
-              atlas run all -w .test/Getenvs --create-envs-only
+              atlas run all -w .test/Getenvs --create-envs-only --omit-from build_qc_report build_assembly_report build_bin_report
       - save_cache:
-          key: conda-environements2-{{ checksum "conda_envs.tar"  }}
+          key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
             - databases
       # - run:
@@ -129,18 +130,18 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements2-{{ checksum "conda_envs.tar"  }}
-            - conda-environements2-
+            - conda-environements-{{ checksum "conda_envs.tar"  }}
+            - conda-environements-
       - run:
           name: test assembly
           command: |
               source activate ./atlasenv
-              .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
-      - store_test_results:
-          path: .test/Test_assembly/reports
-      - store_artifacts:
-          path: .test/Test_assembly/reports
-          destination: assembly_results
+              .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
+      # - store_test_results:
+      #     path: .test/Test_assembly/reports
+      # - store_artifacts:
+      #     path: .test/Test_assembly/reports
+      #     destination: assembly_results
 
       - run:
           name: run genecatalog
@@ -160,8 +161,8 @@ jobs:
       - run: tar -cf conda_envs.tar atlas/envs
       - restore_cache:
           keys:
-            - conda-environements2-{{ checksum "conda_envs.tar"  }}
-            - conda-environements2-
+            - conda-environements-{{ checksum "conda_envs.tar"  }}
+            - conda-environements-
       - run:
           name: test binning
           command: |

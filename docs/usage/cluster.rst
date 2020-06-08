@@ -5,11 +5,11 @@
 Cluster execution
 =================
 
-Thank the underlying, Snakemake system, atlas can be executed on virtually all clusters and cloud systems. Instead of running all steps of the pipeline in one cluster job atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory, and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
+Thanks to the underlying snakemake system, atlas can be executed on virtually all clusters and cloud systems. Instead of running all steps of the pipeline in one cluster job, atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory, and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
 
 
-If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have an other cluster system, fill in an GitHub issue (feature request) so we can help you bringing the magic of atlas to your cluster system.
-For more information about cluster- and cloud submission, have a look at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_.
+If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have a different cluster system, file a GitHub issue (feature request) so we can help you bring the magic of atlas to your cluster system.
+For more information about cluster- and cloud submission, have a look at the `snakemake cluster docs <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_.
 
 Set up of cluster execution
 ---------------------------
@@ -21,7 +21,7 @@ Then run::
     cookiecutter --output-dir ~/.config/snakemake https://github.com/metagenome-atlas/clusterprofile.git
 
 This opens a interactive shell dialog and ask you for the name of the profile and your cluster system.
-We recommend you to keep the default name ``cluster``. The profile supports ``slurm``,``lsf`` and ``pbs``.
+We recommend you keep the default name ``cluster``. The profile supports ``slurm``,``lsf`` and ``pbs``.
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
 
@@ -55,7 +55,7 @@ Now, you can run atlas on a cluster with::
     atlas run <options> --profile cluster
 
 
-As the whole pipeline can take several days, I usually run this command in a screen on the head node, even when system administrators don't like that. On the head node atlas doesn't uses much threads/memory. It only schedules the jobs and does some steps which combine tables. Obviously you can also submit the atlas command as a long lasting job.
+As the whole pipeline can take several days, I usually run this command in a screen on the head node, even when system administrators don't normally like that. On the head node atlas only schedules the jobs and combines tables, so it doesn't use many resources. You can also submit the atlas command as a long lasting job.
 
  .. The mapping between  resources and cluster are defined in the ``~/.config/snakemake/cluster/key_mapping.yaml``.
 
@@ -69,15 +69,15 @@ You can investigate the job via this ID.
 Useful command line options
 ----------------------------
 
-The atlas argument ``--jobs`` now becomes the number of jobs simultaneously submitted to the cluster system. You can set this as high as 99 if you don't have a problem with your colleges of over-using the cluster system.
+The atlas argument ``--jobs`` now becomes the number of jobs simultaneously submitted to the cluster system. You can set this as high as 99 if your colleagues don't mind you over-using the cluster system.
 
-In the case of an failed job, ``--keep-going`` (default false)  allows atlas to continue with independent steps.
+In the case of a failed job, ``--keep-going`` (default false)  allows atlas to continue with independent steps.
 
 
 Cloud execution
 ===============
 
-Atlas, like any other snakemake pipeline can thanks also easily be submitted to cloud systems. I let look at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake comand line argument can just be appended to the atlas command.
+Atlas, like any other snakemake pipeline can  also easily be submitted to cloud systems. I suggest looking at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake comand line argument can just be appended to the atlas command.
 
 .. _local:
 
