@@ -4,15 +4,12 @@ Install
 A. Use conda
 -------------
 
-You need to install anaconda or miniconda.
-We recommend you to create a conda environment::
+You need to install [anaconda](http://anaconda.org/) or miniconda.
+We recommend you to create a conda environment, then install metagenome-atlas::
 
-    conda create -n atlasenv
-    conda activate atlasenv
-
-Then install metagenome-atlas::
-
-    conda install metagenome-atlas
+    conda create -y -n atlasenv
+    source activate atlasenv
+    conda install -y -c bioconda -c conda-forge metagenome-atlas
 
 
 B. Install the development version from GitHub
@@ -38,6 +35,42 @@ Now you should be able to run atlas::
 
   atlas init --db-dir databases path/to/fastq/files
   atlas run
+
+.. _setup_docker:
+
+C. Use docker container
+-----------------------
+
+We recommend to use the conda package as it allows deployment on clusters.
+However, if you want to directly start using atlas on a small metagenome you can use the docker container::
+
+  docker pull metagenomeatlas/atlas
+
+Go to a directory on your filesystem where you have the fastq files in a subfolder, e.g. in ``reads``
+Your present working directory will be mounted on ``/WD`` in the docker container.
+
+The docker container contains all the dependencies and some of the databases in ``/databases`` .
+The databases for functional and taxonomic annotation are downloaded while running.
+To not loose the databases after exiting the docker we recommend to mount them also on your disk.
+
+Create::
+
+  mkdir -p AtlasDB/GTDB-TK AtlasDB/EggNOGV2
+
+Then run the docker::
+
+  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v $(pwd)/AtlasDB/EggNOGV2/:/databases/EggNOGV2 -v $(pwd)/AtlasDB/GTDB-TK/:/databases/GTDB-TK -t metagenomeatlas/atlas:latest /bin/bash
+
+Inside the docker you can run atlas as folows::
+
+  atlas init -db-dir /databases /WD/reads
+
+This should create a sample.tsv and a config.yaml, whcih you can edit on your system.
+Important don't forget to align the memory of your computer with the memory defined in the config file.
+
+after that run::
+
+  atlas run all
 
 
 
@@ -77,12 +110,14 @@ atlas init
 
   Options:
     -d, --db-dir PATH               location to store databases (need ~50GB)
-                                    [default: /Users/silas/Documents/GitHub/Snak
-                                    emakeProfiles/test/databases]
+                                    [default: /Users/silas/Documents/GitHub/atla
+                                    s/databases]
     -w, --working-dir PATH          location to run atlas
     --assembler [megahit|spades]    assembler  [default: spades]
     --data-type [metagenome|metatranscriptome]
                                     sample data type  [default: metagenome]
+    --interleaved-fastq             fastq files are paired-end in one files
+                                    (interleaved)
     --threads INTEGER               number of threads to use per multi-threaded
                                     job
     --skip-qc                       Skip QC, if reads are already pre-processed
@@ -138,8 +173,7 @@ atlas run
     -c, --config-file PATH  config-file generated with 'atlas init'
     -j, --jobs INTEGER      use at most this many jobs in parallel (see cluster
                             submission for mor details).  [default: 8]
-    --no-conda              do not use conda environments. good luck!  [default:
-                            False]
+    --profile TEXT          snakemake profile e.g. for cluster execution.
     -n, --dryrun            Test execution.  [default: False]
     -h, --help              Show this message and exit.
 

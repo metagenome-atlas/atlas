@@ -28,7 +28,7 @@ RUN conda config --add channels conda-forge
 RUN conda config --set always_yes true
 
 # download atlas
-ENV version="2.3.beta1"
+ENV version="2.3.beta2"
 RUN wget https://github.com/metagenome-atlas/atlas/archive/${version}.tar.gz
 RUN tar -xzf ${version}.tar.gz && mv atlas-${version} atlas
 WORKDIR /atlas
@@ -67,15 +67,22 @@ RUN cd atlas ; pip install .
 # short test
 RUN atlas --help
 RUN atlas --version
-ENV WORKING_DIR='.test/Dryrun'
+
+# get example data
+RUN git clone https://github.com/metagenome-atlas/example_data.git
+
+
+
+ENV WORKING_DIR='/AtlasTest'
 # Dryrun
-RUN atlas init --db-dir $databaseDir --threads 3 -w $WORKING_DIR .test/reads/empty
+RUN atlas init --db-dir $databaseDir --threads 4 --interleaved-fastq -w $WORKING_DIR example_data/reads/test
 RUN atlas run all -w $WORKING_DIR --dryrun
+RUN atlas run all genomes/tree/checkm.nwk -w $WORKING_DIR --resources mem=50 java_mem=50 --omit-from download_gtdb add_eggNOG_header
 
+RUN atlas run all genomes/tree/checkm.nwk -w $WORKING_DIR --create-envs-only
+RUN rm -r example_data
+RUN chmod a+w $databaseDir $databaseDir/*
 
-
-RUN chmod --recursive a+w $databaseDir
-# Go back to the user
 RUN mkdir /WD
 WORKDIR /WD
 

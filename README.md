@@ -1,11 +1,11 @@
-# ATLAS
+# Metagenome-Atlas
 
 [![Version](https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg)](https://anaconda.org/bioconda/metagenome-atlas)
 [![Bioconda](https://img.shields.io/conda/dn/bioconda/metagenome-atlas.svg?label=Bioconda )](https://anaconda.org/bioconda/metagenome-atlas)
 [![CircleCI](https://circleci.com/gh/metagenome-atlas/atlas/tree/master.svg?style=svg)](https://circleci.com/gh/metagenome-atlas/atlas/tree/master)
 [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
 [![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd)
-[Slack](https://join.slack.com/t/metagenome-atlas/shared_invite/enQtNTEzMDk2NzI4NjI5LWYxMDVhMzNhMzY3ZDBlOTVjOWI1YzMzNjgwMTZkMDQ0MTNjMDUxZDBhMDkzOTdkMDdiYTAwZDRiOWUwMTY0NDU)
+
 
 # Quick Start
 
@@ -21,7 +21,7 @@ You want to run these three commands on the [example data](https://github.com/me
 If you have more time, then we recommend you configure atlas according to your needs.
   - check the `samples.tsv`
   - edit the `config.yaml`
-  - run atlas on any cluster system
+  - run atlas on any [cluster system](https://metagenome-atlas.readthedocs.io/en/latest/usage/cluster.html)
 For more details see [documentation](https://metagenome-atlas.rtfd.io/).
 
 # Assembly based metagenomics
@@ -31,8 +31,8 @@ Atlas is a easy to use metagenomic pipeline
 ![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
 
 # Setup
-Atlas should be run on _linux_, the assembly works also on OS X, but unfortunately not the tools used for binning.
-The only dependency is the _conda_ package manager, which can easy be installed from [here](http://anaconda.org/).
+Atlas should be run on a _linux_ sytem, with enough memory (min ~50GB but assembly usually requires 250GB).
+The only dependency is the _conda package manager_, which can easy be installed with [anaconda](http://anaconda.org/).
 We recommend you to create a conda environment for atlas to avoid any conflicts of versions.
 
 ```
@@ -41,33 +41,9 @@ We recommend you to create a conda environment for atlas to avoid any conflicts 
     conda install -y -c bioconda -c conda-forge metagenome-atlas
 ```
 
-And you can run atlas. As said above all other dependencies are installed in specific environments during the run of the pipeline.
+And you can run atlas. All other dependencies are installed in specific environments during the run of the pipeline.
 
-## Install the development version from GitHub
-If you want to install the latest version from GitHub you can use the folowing commands.
-[![Snakemake](https://img.shields.io/badge/snakemake-≥5.4.5-brightgreen.svg)](https://snakemake.bitbucket.io)
-
-get code from GitHub:
-```
-git clone https://github.com/metagenome-atlas/atlas.git
-cd atlas
-```
-Create a conda environment with all primary dependencies. All further dependencies are installed on the fly.
-```
-conda env create -f atlasenv.yml -n atlasenv
-source activate atlasenv
-```
-Install atlas:
-```
-pip install --editable .
-```
-
-Now you should be able to run atlas:
-```
-atlas init --db-dir databases path/to/fastq/files
-atlas run
-```
-
+For local execution we have also a [docker container](https://metagenome-atlas.readthedocs.io/en/latest/usage/getting_started.html#c-use-docker-container)
 
 # License
 
