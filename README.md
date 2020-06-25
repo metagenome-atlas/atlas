@@ -52,11 +52,8 @@ BSD-3.
 # Citation
 
 ATLAS: a Snakemake workflow for assembly, annotation, and genomic binning of metagenome sequence data.
-
 Kieser, S., Brown, J., Zdobnov, E. M., Trajkovski, M. & McCue, L. A. 
-
 BMC Bioinformatics 21, 257 (2020).
-
 doi: [10.1186/s12859-020-03585-4](https://doi.org/10.1186/s12859-020-03585-4)
 
 
