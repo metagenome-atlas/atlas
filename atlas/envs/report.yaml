@@ -6,7 +6,7 @@ dependencies:
     - numpy=1.13.1
     - python=3.6
     - pandas=0.20.3
-    - plotly
+    - plotly=2.2.2
     - ipython
     - seaborn=0.8
     - snakemake=5.7.4 #or5.8.2 sheetname error
