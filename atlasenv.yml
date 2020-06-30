@@ -9,5 +9,5 @@ dependencies:
   - bbmap=37.78
   - click=7
   - ruamel.yaml=0.15.99 # needs to be explicit
-  - biopython
+  - biopython=1.74
   - cookiecutter
