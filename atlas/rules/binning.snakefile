@@ -266,7 +266,7 @@ rule get_unique_cluster_attribution:
                           "You can either remove the binner (for all samples) from the config.yaml file or the sample from the sample.tsv"
                             )
             raise Exception("No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.")
-        new_d.to_csv(output[0],sep='\t')
+        new_d.to_csv(output[0],sep='\t',header=False)
 #
 
 rule get_maxbin_cluster_attribution:
