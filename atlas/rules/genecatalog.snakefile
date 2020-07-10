@@ -571,6 +571,7 @@ rule combine_egg_nogg_annotations:
         temp("Genecatalog/annotations/eggNog.emapper.annotations")
     shell:
         "cat {input} > {output}"
+        #TODO pandas concat to enshure completion of all fields
 
 localrules: add_eggNOG_header
 rule add_eggNOG_header:
