@@ -5,7 +5,7 @@ channels:
 dependencies:
   - python=3.6
   - snakemake=5.9.1
-  - pandas=0.20.3 # needs to be < 0.24 otherwise series are printed with header
+  - pandas<1 # needs to be < 0.24 otherwise series are printed with header
   - bbmap=37.78
   - click=7
   - ruamel.yaml=0.15.99 # needs to be explicit
