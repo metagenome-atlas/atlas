@@ -148,7 +148,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
 
             orf2gene['Gene'] = orf2gene[0].map(map_names)
             orf2gene.index.name='ORF'
-            orf2gene['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+            orf2gene['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True,compression='gzip')
 
 
 
