@@ -4,13 +4,13 @@ Install
 A. Use conda
 -------------
 
-You need to install [anaconda](http://anaconda.org/) or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one. 
+You need to install [anaconda](http://anaconda.org/) or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.::
 
     conda config --add channels defaults
     conda config --add channels bioconda
     conda config --add channels conda-forge
     
-The order is important by the way. Conda can be a bit slow because there are so many packages. A good way around this is to use *mamba* (another snake).
+The order is important by the way. Conda can be a bit slow because there are so many packages. A good way around this is to use *mamba* (another snake).::
 
     conda install mamba 
     
