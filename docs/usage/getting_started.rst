@@ -4,12 +4,24 @@ Install
 A. Use conda
 -------------
 
-You need to install [anaconda](http://anaconda.org/) or miniconda.
+You need to install [anaconda](http://anaconda.org/) or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one. 
+
+    conda config --add channels defaults
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
+    
+The order is important by the way. Conda can be a bit slow because there are so many packages. A good way around this is to use *mamba* (another snake).
+
+    conda install mamba 
+    
+    
+From now on you can replace `conda install` with `mamba install` and see how much faster this snake is. 
+
 We recommend you to create a conda environment, then install metagenome-atlas::
 
-    conda create -y -n atlasenv
+    mamba create -y -n atlasenv
     source activate atlasenv
-    conda install -y -c bioconda -c conda-forge metagenome-atlas
+    mamba install -y -c bioconda -c conda-forge metagenome-atlas
 
 
 B. Install the development version from GitHub
