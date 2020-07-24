@@ -273,7 +273,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
                                  utils.gen_names_for_range(len(gene_clusters_old_names),'Gene')))
 
             orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
-            orf2gene.to_csv(output.orf2gene,sep='\t',header=True)
+            orf2gene.to_csv(output.orf2gene,sep='\t',header=True,compression='gzip')
 
 else:
     raise Exception("Didn't understood the genecatalog clustermethod: {}".format(config['genecatalog']['clustermethod']))
@@ -634,7 +634,7 @@ rule gene2genome:
         gene2genome= orf2gene.groupby(['Gene','MAG']).size()
         gene2genome.name='Ncopies'
 
-        gene2genome.to_csv(output[0],sep='\t',header=True)
+        gene2genome.to_csv(output[0],sep='\t',header=True,compression='gzip')
 
 
 
