@@ -88,5 +88,10 @@ The number of threads used **for each step** can be configured in the config fil
   threads: 8
   assembly_threads: 8
 
-For local execution the ``--jobs`` command line arguments defines the number of threads used in total and by default is set to the number of processor of your system. If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine.
-If you don't want that Atlas uses all the available cores then you can specify this with the ``--jobs`` command line argument.
+For local execution the ``--cores`` command line arguments defines the number of threads used in total. Set it to the number of processors available on your machine.  If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine.
+You might also want to tell atlas how many memory (GB) you have available on our system so Atlas can take this into account.
+
+
+So on a machine with 8 processors and 250GB memory you might want to run::
+
+  atlas run all --resources mem=245 --cores 8

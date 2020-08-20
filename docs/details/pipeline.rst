@@ -3,8 +3,6 @@ The Atlas pipeline
 
 |scheme|
 
-.. |scheme| image:: ../../resources/images/ATLAS_scheme.png
-  :alt: Atlas is a workflow for assembly and binning of metagenomic reads
 
 Expected output
 ===============

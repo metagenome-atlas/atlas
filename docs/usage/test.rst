@@ -1,5 +1,8 @@
-Test atlas
-==========
+
+.. _example_data:
+
+Test atlas with example data
+----------------------------
 
 If you want to test atlas on a small example data here is a two sample, three genome minimal metagenome dataset,
 to test atlas. Even when atlas will run faster on the test data,
@@ -10,35 +13,14 @@ The database dir of the test run should be the same as for the later atlas execu
 
 The example data can be downloaded as following::
 
-  git clone https://github.com/metagenome-atlas/example_data.git
+  wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
+  tar -xzf test_reads.tar.gz
 
 We initialize a atlas working directory ``testrun`` using the test reads.
-The reads are paired end stored in one file therefore we set the ``--interleaved-fastq`` flag.
-The test samples don't require a lot of threads (set to 2), they do require However some memory (~60GB).::
+The test samples don't require a lot of threads (set to 4), they do require However some memory (~60GB).::
 
-  atlas init --db-dir databases --working-dir testrun --interleaved-fastq --threads=2 example_data/reads/test
+  atlas init --db-dir databases --working-dir testrun --threads 4 test_reads
 
 After the set up you can run::
 
-  atlas run --working-dir testrun
-
-
-Test atlas using docker container
----------------------------------
-
-Testing atlas using the docker container works similarly to the above example.
-
-Create a working directory::
-
-  mkdir DockerTest; cd DockerTest
-
-get the example data::
-
-  git clone https://github.com/metagenome-atlas/example_data.git
-
-Set up the docker as explained  :ref:`here <docker_setup>` and run it::
-
-  mkdir -p AtlasDB/GTDB-TK AtlasDB/EggNOGV2
-  docker run -i -u $(id -u):$(id -g) -v $(pwd):/WD -v $(pwd)/AtlasDB/EggNOGV2/:/databases/EggNOGV2 -v $(pwd)/AtlasDB/GTDB-TK/:/databases/GTDB-TK -t metagenomeatlas/atlas:latest /bin/bash
-
-Inside the docker you have access to the ``example_data`` and you can initialize and run atlas test example as above.
+  atlas run all --working-dir testrun
