@@ -76,9 +76,7 @@ def get_snakefile(file="Snakefile"):
 @click.option(
     "-j",
     "--jobs",
-    default=multiprocessing.cpu_count(),
     type=int,
-    show_default=True,
     help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(
@@ -129,7 +127,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
-        "--jobs {jobs} --rerun-incomplete "
+        "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "
         " {target_rule} "
@@ -137,7 +135,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
     ).format(
         snakefile=get_snakefile(),
         working_dir=working_dir,
-        jobs=jobs,
+        jobs="--jobs {}".format(jobs) if jobs is not None else "",
         config_file=config_file,
         profile="" if (profile is None) else "--profile {}".format(profile),
         dryrun="--dryrun" if dryrun else "",
