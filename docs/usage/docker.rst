@@ -6,9 +6,6 @@
 Docker
 ******
 
-Use docker container
-====================
-
 We recommend to use the conda package as it allows deployment on clusters.
 However, if you want to directly start using atlas on a small metagenome you can use the docker container::
 
@@ -41,8 +38,8 @@ after that run::
   atlas run all
 
 
-Test atlas using docker container
----------------------------------
+Test docker
+-----------
 
 Testing atlas using the docker container works similarly to the above example.
 

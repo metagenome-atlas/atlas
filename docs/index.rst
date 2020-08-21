@@ -1,6 +1,6 @@
 
 .. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg
-    :target https://anaconda.org/bioconda/metagenome-atlas
+    :target: https://anaconda.org/bioconda/metagenome-atlas
 
 .. image:: https://img.shields.io/conda/dn/bioconda/metagenome-atlas.svg?label=Bioconda
     :target: https://bioconda.github.io/recipes/metagenome-atlas/README.html
@@ -45,18 +45,11 @@ Publication
 
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
     :caption: Documentation
 
     usage/getting_started
-    usage/docker
     usage/pipline
     usage/snakemake
-
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Advanced
-
-    advanced/configuration
-    advanced/longreads
+    usage/configuration
+    usage/longreads
