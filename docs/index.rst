@@ -12,16 +12,13 @@
 .. |scheme| image:: ../resources/images/ATLAS_scheme.png
   :alt: Atlas is a workflow for assembly and binning of metagenomic reads
 
-.. _conda: http://anaconda.org/
-.. _mamba: https://github.com/TheSnakePit/mamba
-.. _snakemake: https://snakemake.github.io/
 
 
 Metagenome-Atlas
 ****************
 
 
-Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake_.
+Metagenome-atlas is a easy-to-use metagenomic pipeline based on `snakemake <https://snakemake.github.io/>`_.
 It handles all steps from QC, Assembly, Binning, to Annotation.
 
 |scheme|
@@ -52,4 +49,3 @@ Publication
     usage/pipline
     usage/snakemake
     usage/configuration
-    usage/longreads

@@ -1,3 +1,6 @@
+.. _conda: http://anaconda.org/
+.. _mamba: https://github.com/TheSnakePit/mamba
+
 Getting Started
 ***************
 
@@ -267,12 +270,7 @@ If a job fails, you will find the "external jobid" in the error message.
 You can investigate the job via this ID.
 
 
-Useful command line options
-----------------------------
-
 The atlas argument ``--jobs`` now becomes the number of jobs simultaneously submitted to the cluster system. You can set this as high as 99 if your colleagues don't mind you over-using the cluster system.
-
-In the case of a failed job, ``--keep-going`` (default false)  allows atlas to continue with independent steps.
 
 
 Cloud execution
@@ -295,3 +293,17 @@ You might also want to tell atlas how many memory (GB) you have available on our
 So on a machine with 8 processors and 250GB memory you might want to run::
 
   atlas run all --resources mem=245 --cores 8
+
+
+.. _snakemake:
+
+Useful command line options
+===========================
+
+Atlas builds on snakemake. We designed the command line interface in a way that additional snakemake arguments can be added to an atlas run call.
+
+For instance the ```--profile`` used for cluster execution. Other handy snakemake command line arguments include.
+
+ ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
+
+For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.
