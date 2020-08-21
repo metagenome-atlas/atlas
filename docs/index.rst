@@ -18,7 +18,7 @@ Metagenome-Atlas
 ****************
 
 
-Metagenome-atlas is a easy-to-use metagenomic pipeline based on `snakemake <https://snakemake.github.io/>`_.
+Metagenome-Atlas is a easy-to-use metagenomic pipeline based on `snakemake <https://snakemake.github.io/>`_.
 It handles all steps from QC, Assembly, Binning, to Annotation.
 
 You can start using atlas with three commands::

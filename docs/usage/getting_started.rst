@@ -200,12 +200,7 @@ Cluster execution
 
 Thanks to the underlying snakemake system, atlas can be executed on virtually all clusters and cloud systems. Instead of running all steps of the pipeline in one cluster job, atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory, and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
 
-See atlas sheduling jobs on a cluster in action:
-
-.. raw:: html
-
-  <script async id="asciicast-337467" src="https://asciinema.org/a/337467.js" charset="utf-8"></script>
-
+See atlas scheduling jobs on a cluster in action `<https://asciinema.org/a/337467>`_.
 
 
 If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have a different cluster system, file a GitHub issue (feature request) so we can help you bring the magic of atlas to your cluster system.
