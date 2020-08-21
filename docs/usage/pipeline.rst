@@ -1,11 +1,7 @@
-The Atlas pipeline
-==================
-
-|scheme|
 
 
 Expected output
-===============
+***************
 
 Quality control
 ---------------

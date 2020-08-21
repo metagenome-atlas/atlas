@@ -3,6 +3,9 @@
 
 .. _setup_docker:
 
+Docker
+******
+
 Use docker container
 ====================
 

@@ -2,7 +2,7 @@
 .. _configuration:
 
 Configure Atlas
-===============
+***************
 
 Example config file
 -------------------
@@ -27,11 +27,10 @@ See here for more details `human genome <http://seqanswers.com/forums/archive/in
 
 
 Detailed configuration
-----------------------
+======================
 
 .. toctree::
     :maxdepth: 1
 
-    ../advanced/qc
-    ../advanced/assembly
-    longreads
+    qc
+    assembly

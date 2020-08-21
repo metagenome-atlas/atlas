@@ -1,8 +1,8 @@
 
 .. _longreads:
 
-Use long reads with spades
-==========================
+Long reads
+==========
 
 Limitation: Hybrid assembly of long and short reads is supported with spades and metaSpades.
 However metaSpades needs a paired-end short-read library.
