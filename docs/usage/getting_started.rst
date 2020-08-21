@@ -26,7 +26,9 @@ You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you have
     conda config --add channels bioconda
     conda config --add channels conda-forge
 
-The order is important by the way. Conda can be a bit slow because there are so many packages. A good way around this is to use mamba_ (another snake).::
+The order is important by the way.
+
+Conda can be a bit slow because there are so many packages. A good way around this is to use mamba_ (another snake).::
 
     conda install mamba
 
@@ -36,7 +38,7 @@ From now on you can replace ``conda install`` with ``mamba install`` and see how
 Install metagenome-atlas
 ------------------------
 
-We recommend you to create a conda environment, then install metagenome-atlas::
+We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv``::
 
     mamba create -y -n atlasenv metagenome-atlas
     source activate atlasenv
@@ -61,10 +63,26 @@ Install atlas::
   pip install --editable .
 
 
-Now you should be able to run atlas::
+Now you should be able to run atlas.
 
-  atlas init --db-dir databases path/to/fastq/files
-  atlas run
+
+.. _`example data`:
+
+Example Data
+============
+
+If you want to test atlas on a small example data here is a two sample, three genome minimal metagenome dataset,
+to test atlas. Even when atlas will run faster on the test data,
+it will anyway download all the databases and requirements, for the a complete run,
+which can take a certain amount of time and especially disk space (>100Gb).
+
+The database dir of the test run should be the same as for the later atlas executions.
+
+The example data can be downloaded as following::
+
+  wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
+  tar -xzf test_reads.tar.gz
+
 
 
 Usage
@@ -167,35 +185,6 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     --profile TEXT          snakemake profile e.g. for cluster execution.
     -n, --dryrun            Test execution.  [default: False]
     -h, --help              Show this message and exit.
-
-
-
-.. _`example data`:
-
-Test atlas
-==========
-
-If you want to test atlas on a small example data here is a two sample, three genome minimal metagenome dataset,
-to test atlas. Even when atlas will run faster on the test data,
-it will anyway download all the databases and requirements, for the a complete run,
-which can take a certain amount of time and especially disk space (>100Gb).
-
-The database dir of the test run should be the same as for the later atlas executions.
-
-The example data can be downloaded as following::
-
-  wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
-  tar -xzf test_reads.tar.gz
-
-We initialize a atlas working directory ``testrun`` using the test reads.
-The test samples don't require a lot of threads (set to 4), they do require However some memory (~60GB).::
-
-  atlas init --db-dir databases --working-dir testrun --threads 4 test_reads
-
-After the set up you can run::
-
-  atlas run all --working-dir testrun
-
 
 
 
