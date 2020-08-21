@@ -7,8 +7,8 @@ Getting Started
 Setup
 =====
 
-Dependency
-----------
+Conda package manager
+---------------------
 
 Atlas has **one dependency**: conda_. All databases and other dependencies are installed **on the fly**.
 Atlas is based on snakemake which allows to run steps of the workflow in parallel on a cluster.
@@ -17,8 +17,7 @@ If you want to try atlas and have a linux computer (OSX may also work), you can 
 
 For real metagenomic data atlas should be run on a _linux_ sytem, with enough memory (min ~50GB but assembly usually requires 250GB).
 
-Install mamba
--------------
+
 
 You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.::
 
@@ -27,6 +26,9 @@ You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you have
     conda config --add channels conda-forge
 
 The order is important by the way.
+
+Install mamba
+-------------
 
 Conda can be a bit slow because there are so many packages. A good way around this is to use mamba_ (another snake).::
 
