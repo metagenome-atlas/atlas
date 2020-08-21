@@ -200,6 +200,13 @@ Cluster execution
 
 Thanks to the underlying snakemake system, atlas can be executed on virtually all clusters and cloud systems. Instead of running all steps of the pipeline in one cluster job, atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory, and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
 
+See atlas sheduling jobs on a cluster in action:
+
+.. raw:: html
+
+  <script async id="asciicast-337467" src="https://asciinema.org/a/337467.js" charset="utf-8"></script>
+
+
 
 If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have a different cluster system, file a GitHub issue (feature request) so we can help you bring the magic of atlas to your cluster system.
 For more information about cluster- and cloud submission, have a look at the `snakemake cluster docs <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_.
@@ -214,7 +221,7 @@ Then run::
     cookiecutter --output-dir ~/.config/snakemake https://github.com/metagenome-atlas/clusterprofile.git
 
 This opens a interactive shell dialog and ask you for the name of the profile and your cluster system.
-We recommend you keep the default name ``cluster``. The profile supports ``slurm``,``lsf`` and ``pbs``.
+We recommend you keep the default name ``cluster``. The profile was tested on ``slurm``, ``lsf`` and ``pbs``.
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
 
@@ -275,13 +282,13 @@ The number of threads used **for each step** can be configured in the config fil
   threads: 8
   assembly_threads: 8
 
-For local execution the ``--cores`` command line arguments defines the number of threads used in total. Set it to the number of processors available on your machine.  If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine.
+For local execution the ``--jobs`` command line arguments defines the number of threads used in total. Set it to the number of processors available on your machine.  If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine.
 You might also want to tell atlas how many memory (GB) you have available on our system so Atlas can take this into account.
 
 
 So on a machine with 8 processors and 250GB memory you might want to run::
 
-  atlas run all --resources mem=245 --cores 8
+  atlas run all --resources mem=245 --jobs 8
 
 
 .. _snakemake:
@@ -291,7 +298,7 @@ Useful command line options
 
 Atlas builds on snakemake. We designed the command line interface in a way that additional snakemake arguments can be added to an atlas run call.
 
-For instance the ```--profile`` used for cluster execution. Other handy snakemake command line arguments include.
+For instance the ``--profile`` used for cluster execution. Other handy snakemake command line arguments include.
 
  ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
 

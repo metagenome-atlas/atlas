@@ -21,15 +21,13 @@ Metagenome-Atlas
 Metagenome-atlas is a easy-to-use metagenomic pipeline based on `snakemake <https://snakemake.github.io/>`_.
 It handles all steps from QC, Assembly, Binning, to Annotation.
 
-|scheme|
-
-
 You can start using atlas with three commands::
 
       conda install -c bioconda -c conda-forge metagenome-atlas
       atlas init --db-dir databases path/to/fastq/files
       atlas run
 
+|scheme|
 
 
 .. _publication:
@@ -48,6 +46,5 @@ Publication
     :caption: Documentation
 
     usage/getting_started
-    usage/pipline
-    usage/snakemake
+    usage/output
     usage/configuration

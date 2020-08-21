@@ -4,7 +4,7 @@ Expected output
 ***************
 
 Quality control
----------------
+===============
 
 ::
 
@@ -26,14 +26,14 @@ Per sample it generates:
 .. _fractions:
 
 Fractions:
-``````````
+----------
 When the input was paired end, we will put out three the reads in three fractions R1,R2 and se
 The se are the paired end reads which lost their mate during the filtering.
 The se are seamlessly integrated in the next steps.
 
 
 Assembly
----------------
+===============
 
 ::
 
@@ -57,7 +57,7 @@ Besides the `reports/assembly_report.html`_ this rule outputs the following file
 
 
 Binning
----------------
+===============
 ::
 
   atlas run binning
@@ -77,7 +77,7 @@ See an `example <../_static/bin_report.html>`_ as a summary of the quality of al
 
 
 Genomes
----------------
+===============
 ::
 
     atlas run genomes
@@ -104,7 +104,7 @@ See in `Atlas example <https://github.com/metagenome-atlas/Atlas_example>`_ how 
 The predicted genes and translated protein sequences are in ``genomes/annotations/genes``.
 
 Taxonomic adnnotation
-`````````````````````
+---------------------
 ::
 
   annotations:
@@ -122,7 +122,7 @@ All trees are properly rooted using the midpoint. The files can be found in ``ge
 
 
 Gene Catalog
----------------
+===============
 
 ::
 
