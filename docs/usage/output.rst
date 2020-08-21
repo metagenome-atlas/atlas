@@ -21,7 +21,7 @@ Runs quality control of single or paired end reads and summarizes the main QC st
 Per sample it generates:
 
   - ``{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz``
-  - Various quality stats in {sample}/sequence_quality_control/read_stats
+  - Various quality stats in ``sample}/sequence_quality_control/read_stats``
 
 .. _fractions:
 
@@ -137,3 +137,11 @@ This rule produces the following output file for the whole dataset.
   - ``Genecatalog/gene_catalog.fna``
   - ``Genecatalog/gene_catalog.faa``
   - ``Genecatalog/annotations/eggNog.tsv.gz``
+
+
+All
+===
+
+  ::
+
+    atlas run all
