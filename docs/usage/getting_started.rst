@@ -7,23 +7,23 @@ Setup
 Dependency
 ----------
 
-Atlas has **one dependency**: [conda](http://anaconda.org/). All databases and other dependencies are installed **on the fly**.
+Atlas has **one dependency**: conda_. All databases and other dependencies are installed **on the fly**.
 Atlas is based on snakemake which allows to run steps of the workflow in parallel on a cluster.
 
-If you want to try atlas and have a linux computer (OSX may also work), you can use our :ref:`example data <example_data>`` for testing.
+If you want to try atlas and have a linux computer (OSX may also work), you can use our `example data`_ for testing.
 
 For real metagenomic data atlas should be run on a _linux_ sytem, with enough memory (min ~50GB but assembly usually requires 250GB).
 
 Install mamba
 -------------
 
-You need to install [anaconda](http://anaconda.org/) or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.::
+You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.::
 
     conda config --add channels defaults
     conda config --add channels bioconda
     conda config --add channels conda-forge
 
-The order is important by the way. Conda can be a bit slow because there are so many packages. A good way around this is to use [*mamba*](https://github.com/TheSnakePit/mamba) (another snake).::
+The order is important by the way. Conda can be a bit slow because there are so many packages. A good way around this is to use mamba_ (another snake).::
 
     conda install mamba
 
@@ -70,7 +70,7 @@ Usage
 Start a new project
 -------------------
 
-Let's apply atlas on your data or on our :ref:`example data <example_data>`::
+Let's apply atlas on your data or on our `example data`_::
 
   atlas init --db-dir databases path/to/fastq
 
@@ -167,7 +167,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
 
 
 
-.. _example_data:
+.. _`example data`:
 
 Test atlas
 ==========
