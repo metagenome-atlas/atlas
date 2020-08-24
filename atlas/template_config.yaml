@@ -205,3 +205,6 @@ genecatalog:
   coverage: 0.9
   extra: ""
   SubsetSize: 500000
+
+eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation
+virtual_disk: "/dev/shm"         # But you need 37G extra ram

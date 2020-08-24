@@ -471,11 +471,27 @@ rule eggNOG_annotation:
         "%s/eggNOG.yaml" % CONDAENV
     log:
         "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log"
-    shell:
-        """
-        emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
-            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> {log}
-        """
+    run:
+
+        if config['eggNOG_use_virtual_disk']:
+
+            assert config['virtual_disk'] is not None, "virtual_disk should not be none if eggNOG_use_virtual_disk=True"
+
+
+            shell("cp {params.data_dir}/eggnog.db {virtual_disk}/eggnog.db 2> {log}")
+
+            data_dir=config['virtual_disk']
+        else:
+
+            data_dir= params.data_dir+' --usemem'
+
+        shell(
+              "emapper.py --annotate_hits_table {input.seed} --no_file_comments "
+              "--override -o {params.prefix} --cpu {threads} --data_dir {data_dir} 2> {log}"
+              )
+
+
+
 
 
 #

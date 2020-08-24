@@ -212,7 +212,11 @@ def make_default_config():
                            'minid':0.9,
                            'coverage':0.9,
                            'extra':"",
-                           'SubsetSize': 500000}
+                           'SubsetSize': 500000
+                           }
+
+    conf['eggNOG_use_virtual_disk']= False
+    conf['virtual_disk']="/dev/shm"
 
     # binning
     conf["perform_genome_binning"] = True
