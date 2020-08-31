@@ -180,10 +180,18 @@ Execue Atlas
 Cluster execution
 =================
 
-Thanks to the underlying snakemake system, atlas can be executed on virtually all clusters and cloud systems. Instead of running all steps of the pipeline in one cluster job, atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory, and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
+Automatic submitting to cluster systems
+---------------------------------------
+
+Thanks to the underlying snakemake Atlas can submit parts of the pipeline automatically to a cluster system and define the appropriate resources. If one job has finished it launches the next one.
+This allows you use the full capacity of your cluster system. You even need to pay attention not to spam the other users of the cluster.
+
+
+
+
+Thanks to the underlying snakemake system, atlas can submit parts of the pipeline  to clusters and cloud systems. Instead of running all steps of the pipeline in one cluster job, atlas can automatically submit each step to your cluster system, specifying the necessary threads, memory, and runtime, based on the values in the config file. Atlas periodically checks the status of each cluster job and can re-run failed jobs or continue with other jobs.
 
 See atlas scheduling jobs on a cluster in action `<https://asciinema.org/a/337467>`_.
-
 
 If you have a common cluster system (Slurm, LSF, PBS ...) we have an easy set up (see below). Otherwise, if you have a different cluster system, file a GitHub issue (feature request) so we can help you bring the magic of atlas to your cluster system.
 For more information about cluster- and cloud submission, have a look at the `snakemake cluster docs <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_.
@@ -246,26 +254,28 @@ You can investigate the job via this ID.
 The atlas argument ``--jobs`` now becomes the number of jobs simultaneously submitted to the cluster system. You can set this as high as 99 if your colleagues don't mind you over-using the cluster system.
 
 
+.. _local:
+Local execution
+===============
+
+If you cannot use the  :ref:`automatic scheduling <cluster>` you can still try to use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
+
+In theory you don't need to adapt the parameters in the config file. However you should tell atlas how many threads and how much memory (GB) you have available on our system so Atlas can take this into account.
+
+For local execution the ``--jobs`` command line arguments defines the number of threads used in total. Set it to the number of processors available on your machine.  If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine. The same applies for the memory.
+
+For example on a machine with 16 processors and 250GB memory you might want to run::
+
+  atlas run all --resources mem=245 --jobs 16
+
+The whole pipeline can take more than a day. If for any reason the pipeline stops you can just rerun the same command after having inspected the error.
+
+
 Cloud execution
 ===============
 
 Atlas, like any other snakemake pipeline can  also easily be submitted to cloud systems. I suggest looking at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake comand line argument can just be appended to the atlas command.
 
-.. _local:
-Local execution
-===============
-The number of threads used **for each step** can be configured in the config file::
-
-  threads: 8
-  assembly_threads: 8
-
-For local execution the ``--jobs`` command line arguments defines the number of threads used in total. Set it to the number of processors available on your machine.  If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine.
-You might also want to tell atlas how many memory (GB) you have available on our system so Atlas can take this into account.
-
-
-So on a machine with 8 processors and 250GB memory you might want to run::
-
-  atlas run all --resources mem=245 --jobs 8
 
 
 .. _snakemake:
