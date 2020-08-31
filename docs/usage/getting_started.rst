@@ -255,8 +255,8 @@ The atlas argument ``--jobs`` now becomes the number of jobs simultaneously subm
 
 
 .. _local:
-Local execution
-===============
+Single machine execution
+========================
 
 If you cannot use the  :ref:`automatic scheduling <cluster>` you can still try to use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
 
