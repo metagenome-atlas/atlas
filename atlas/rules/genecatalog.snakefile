@@ -477,12 +477,12 @@ rule eggNOG_annotation:
         """
 
             if [ {params.copyto_shm} == "t" ] ;
-            do
+            then
                 cp {params.data_dir}/eggnog.db /dev/shm/eggnog.db 2> {log}
             fi
 
             emapper.py --annotate_hits_table {input.seed} --no_file_comments \
-              --override -o {params.prefix} --cpu {threads} --data_dir {data_dir} 2>> {log}
+              --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2>> {log}
         """
 
 
