@@ -482,7 +482,7 @@ rule eggNOG_annotation:
             fi
 
             emapper.py --annotate_hits_table {input.seed} --no_file_comments \
-              --override -o {params.prefix} --cpu {threads} --data_dir {data_dir} 2>> {log}
+              --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2>> {log}
         """
 
 
