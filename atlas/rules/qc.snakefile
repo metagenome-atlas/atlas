@@ -72,7 +72,8 @@ rule initialize_qc:
         inputs = lambda wc, input: io_params_for_tadpole(input,'in'),
         interleaved = lambda wc: "t" if config.get('interleaved_fastqs',False) else "f",
         outputs = lambda wc, output: io_params_for_tadpole(output,'out'),
-        verifypaired = "t" if PAIRED_END else "f"
+        verifypaired = "t" if PAIRED_END else "f",
+        extra = config['importqc_params']
     log:
         "{sample}/logs/QC/init.log"
     conda:
@@ -89,13 +90,9 @@ rule initialize_qc:
         reformat.sh {params.inputs} \
             interleaved={params.interleaved} \
             {params.outputs} \
-            iupacToN=t \
-            touppercase=t \
-            qout=33 \
+            {params.extra} \
             overwrite=true \
             verifypaired={params.verifypaired} \
-            addslash=t \
-            trimreaddescription=t \
             threads={threads} \
             -Xmx{resources.java_mem}G 2> {log}
         """
