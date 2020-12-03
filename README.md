@@ -39,4 +39,4 @@ Here are some ideas I work or want to work on when I have time. If you want to c
 - Add statistics and visualisations as in [atlas_analyze](https://github.com/metagenome-atlas/atlas_analyze)
 - Implementation of most rules as snakemake wrapper
 - Cloud execution
-- Update to new nakemake version and use cool reports.
+- Update to new Snakemake version and use cool reports.
