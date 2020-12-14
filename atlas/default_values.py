@@ -217,6 +217,7 @@ def make_default_config():
                            }
 
     conf['eggNOG_use_virtual_disk']= False
+    conf['virtual_disk'] = "/dev/shm"
 
     # binning
     conf["perform_genome_binning"] = True

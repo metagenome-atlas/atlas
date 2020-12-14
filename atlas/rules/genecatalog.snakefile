@@ -459,10 +459,9 @@ rule eggNOG_annotation:
     output:
         temp("{folder}/{prefix}.emapper.annotations")
     params:
-        data_dir = "/dev/shm" if config['eggNOG_use_virtual_disk'] else EGGNOG_DIR,
+        data_dir = config['virtual_disk'] if config['eggNOG_use_virtual_disk'] else EGGNOG_DIR,
         prefix = "{folder}/{prefix}",
         copyto_shm="t" if config['eggNOG_use_virtual_disk'] else 'f'
-
     threads:
         config.get("threads", 1)
     resources:
@@ -478,7 +477,7 @@ rule eggNOG_annotation:
 
             if [ {params.copyto_shm} == "t" ] ;
             then
-                cp {params.data_dir}/eggnog.db /dev/shm/eggnog.db 2> {log}
+                cp {EGGNOG_DIR}/eggnog.db {params.data_dir}/eggnog.db 2> {log}
             fi
 
             emapper.py --annotate_hits_table {input.seed} --no_file_comments \
