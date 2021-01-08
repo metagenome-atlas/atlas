@@ -176,8 +176,8 @@ Step           Output
 ============   ===================================
 raw            the input reads
 deduplicated   after (optional) deduplication step
-filtered       trimmed, PhiX filtered
-qc             passing reads
+filtered       trimmed, quality filtered
+qc             final reads, contaminants removed
 ============   ===================================
 """
     else:

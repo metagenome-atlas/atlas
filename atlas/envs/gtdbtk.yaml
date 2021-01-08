@@ -3,4 +3,4 @@ channels:
 - bioconda
 - defaults
 dependencies:
-- gtdbtk =1.0.*
+- gtdbtk =1.3.*

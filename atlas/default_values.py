@@ -129,6 +129,7 @@ def make_default_config():
 
     conf["simplejob_mem"]=10
     conf["simplejob_threads"]=4
+    conf["importqc_params"]= "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
 
     conf["mem"] = MEM
     conf["large_mem"] = 100
@@ -212,7 +213,11 @@ def make_default_config():
                            'minid':0.9,
                            'coverage':0.9,
                            'extra':"",
-                           'SubsetSize': 500000}
+                           'SubsetSize': 500000
+                           }
+
+    conf['eggNOG_use_virtual_disk']= False
+    conf['virtual_disk'] = "/dev/shm"
 
     # binning
     conf["perform_genome_binning"] = True

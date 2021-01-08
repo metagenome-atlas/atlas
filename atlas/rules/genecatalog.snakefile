@@ -148,7 +148,7 @@ if (config['genecatalog']['clustermethod']=='linclust') or (config['genecatalog'
 
             orf2gene['Gene'] = orf2gene[0].map(map_names)
             orf2gene.index.name='ORF'
-            orf2gene['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True)
+            orf2gene['Gene'].to_csv(output.cluster_attribution,sep='\t',header=True,compression='gzip')
 
 
 
@@ -273,7 +273,7 @@ elif config['genecatalog']['clustermethod']=='cd-hit-est':
                                  utils.gen_names_for_range(len(gene_clusters_old_names),'Gene')))
 
             orf2gene['Gene'] = orf2gene['Gene'].map(map_names)
-            orf2gene.to_csv(output.orf2gene,sep='\t',header=True)
+            orf2gene.to_csv(output.orf2gene,sep='\t',header=True,compression='gzip')
 
 else:
     raise Exception("Didn't understood the genecatalog clustermethod: {}".format(config['genecatalog']['clustermethod']))
@@ -437,6 +437,8 @@ rule eggNOG_homology_search:
         mem = config["mem"]
     threads:
         config["threads"]
+    shadow:
+        "minimal"
     conda:
         "%s/eggNOG.yaml" % CONDAENV
     log:
@@ -457,21 +459,33 @@ rule eggNOG_annotation:
     output:
         temp("{folder}/{prefix}.emapper.annotations")
     params:
-        data_dir = EGGNOG_DIR,
-        prefix = "{folder}/{prefix}"
+        data_dir = config['virtual_disk'] if config['eggNOG_use_virtual_disk'] else EGGNOG_DIR,
+        prefix = "{folder}/{prefix}",
+        copyto_shm="t" if config['eggNOG_use_virtual_disk'] else 'f'
     threads:
         config.get("threads", 1)
     resources:
         mem=20
+    shadow:
+        "minimal"
     conda:
         "%s/eggNOG.yaml" % CONDAENV
     log:
         "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log"
     shell:
         """
-        emapper.py --annotate_hits_table {input.seed} --no_file_comments --usemem \
-            --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2> {log}
+
+            if [ {params.copyto_shm} == "t" ] ;
+            then
+                cp {EGGNOG_DIR}/eggnog.db {params.data_dir}/eggnog.db 2> {log}
+            fi
+
+            emapper.py --annotate_hits_table {input.seed} --no_file_comments \
+              --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2>> {log}
         """
+
+
+
 
 
 #
@@ -568,22 +582,26 @@ rule combine_egg_nogg_annotations:
     input:
         combine_genecatalog_annotations_input
     output:
-        temp("Genecatalog/annotations/eggNog.emapper.annotations")
-    shell:
-        "cat {input} > {output}"
-
-localrules: add_eggNOG_header
-rule add_eggNOG_header:
-    input:
-        "Genecatalog/annotations/eggNog.emapper.annotations"
-    output:
         "Genecatalog/annotations/eggNog.tsv.gz"
     run:
+
         import pandas as pd
 
-        D = pd.read_csv(input[0], header=None,sep='\t')
-        D.columns = EGGNOG_HEADER
-        D.to_csv(output[0],sep="\t",index=False)
+        # read input files one after the other
+        for i,annotation_table in enumerate(input):
+            D = pd.read_csv(annotation_table, header=None,sep='\t')
+            # Add headers, to verify size
+            D.columns = EGGNOG_HEADER
+            # appedn to output file, header only the first time
+            D.to_csv(output[0],sep="\t",index=False,header= (i==0),compression='gzip',mode='a')
+
+
+
+
+
+
+
+
 
 
 
@@ -626,7 +644,7 @@ rule gene2genome:
         gene2genome= orf2gene.groupby(['Gene','MAG']).size()
         gene2genome.name='Ncopies'
 
-        gene2genome.to_csv(output[0],sep='\t',header=True)
+        gene2genome.to_csv(output[0],sep='\t',header=True,compression='gzip')
 
 
 
