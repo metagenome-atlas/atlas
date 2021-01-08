@@ -665,7 +665,7 @@ ruleorder: bam_2_sam_contigs > convert_sam_to_bam
 
 rule convert_sam_to_bam:
     input:
-        "{file}.fresh.sam"
+        "{file}.sam"
     output:
         bam="{file}.bam",
         sam=temp("{file}.forpileup.sam"),
