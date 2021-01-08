@@ -21,6 +21,11 @@ You can start using atlas with three commands:
 
 [metagenome-atlas.github.io](https://metagenome-atlas.github.io/)
 
+# Documentation
+
+https://metagenome-atlas.readthedocs.io/
+
+[Tutorial](https://github.com/metagenome-atlas/Tutorial)
 
 # Citation
 
