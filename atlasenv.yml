@@ -4,7 +4,8 @@ channels:
   - defaults
 dependencies:
   - python=3.6
-  - snakemake=5.9.1
+  - snakemake
+  - mamba
   - pandas<1 # needs to be < 0.24 otherwise series are printed with header
   - bbmap=37.78
   - click=7
