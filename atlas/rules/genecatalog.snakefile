@@ -465,7 +465,7 @@ rule eggNOG_annotation:
     threads:
         config.get("threads", 1)
     resources:
-        mem=20
+        mem=  2*config["simplejob_mem"] + (37 if config['eggNOG_use_virtual_disk'] else 0)
     shadow:
         "minimal"
     conda:
