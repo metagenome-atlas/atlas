@@ -7,5 +7,6 @@ with open(snakemake.log[0], "w") as log:
 
     T= ete3.Tree(snakemake.input.tree,quoted_node_names=True,format=1)
     T.unroot()
-    T.set_outgroup(T.get_midpoint_outgroup())
+    if len(T) > 2:
+        T.set_outgroup(T.get_midpoint_outgroup())
     T.write(outfile=snakemake.output.tree)
