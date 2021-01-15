@@ -139,10 +139,11 @@ jobs:
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --config  threads=$N_THREADS mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
       - run:
           command: |
-            mkdir -p /tmp/logs
+            mkdir -p /tmp/logs/snakemake
             cp -r .test/Test_assembly/Streptococcus/logs /tmp/logs/Streptococcus
             cp -r .test/Test_assembly/Mycoplasma/logs /tmp/logs/Mycoplasma
             cp -r .test/Test_assembly/logs /tmp/logs/global
+            cp -r .test/Test_assembly/.snakemake/log/* /tmp/logs/snakemake
           when: on_fail
       - store_artifacts:
           path: /tmp/logs
