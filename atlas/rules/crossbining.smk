@@ -37,7 +37,7 @@ rule minimap_index:
     log:
         "log/vamb/index.log"
     benchmark:
-        "log/benchmarks/vamb/mminimap_index.log"
+        "log/benchmarks/vamb/mminimap_index.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -66,17 +66,18 @@ rule minimap:
         dict = "vamb/combined_contigs.dict"
     output:
         bam = temp("vamb/mapped/{sample}.bam")
-    params:
-        walltime="864000", nodes="1", ppn=MM_PPN, mem=MM_MEM
     threads:
-        int(MM_PPN)
+        config['threads']
     log:
         "log/vamb/mapping/{sample}.minimap.log"
+    benchmark:
+        "log/benchmarks/vamb/mminimap/{sample}.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
         '''minimap2 -t {threads} -ax sr {input.mmi} {input.fq} | grep -v "^@" | cat {input.dict} - | samtools view -F 3584 -b - > {output.bam} 2>{log}'''
 
+ruleorder: sort_bam > minimap > convert_sam_to_bam
 rule sort_bam:
     input:
         "vamb/mapped/{sample}.bam"
@@ -88,7 +89,7 @@ rule sort_bam:
         2
     resources:
         mem = config['simplejob_mem'],
-        time = config['simplejob_time']
+        time = int(config["runtime"]["simple_job"])
     log:
         "log/vamb/mapping/{sample}.sortbam.log"
     conda:
@@ -99,7 +100,7 @@ rule sort_bam:
 
 rule summarize_bam_contig_depths:
     input:
-        bam = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
+        bam = expand(rules.sort_bam.output, sample=SAMPLES)
     output:
         "vamb/coverage.jgi.tsv"
     log:
@@ -135,15 +136,17 @@ rule run_vamb:
     output:
         directory("vamb/clustering")
     conda:
-        "envs/vamb.yaml"
+        "../envs/vamb.yaml"
     threads:
          config["threads"]
     resources:
         mem = config["mem"]
     log:
         "log/vamb/run_vamb.log"
+    benchmark:
+        "log/benchmarks/vamb/run_vamb.tsv"
     params:
-        params= "-o C -m 2000 --minfasta 500000""
+        params= "-o C -m 2000 --minfasta 500000"
     shell:
         "vamb --outdir {output} "
         " --jgi {input.coverage} "
@@ -164,7 +167,7 @@ rule vamb_make_bins:
         1
     resources:
         mem = config['simplejob_mem'],
-        time = config['simplejob_time']
+        time = int(config["runtime"]["simple_job"])
     log:
         "log/vamb/make_bins.log"
     shell:
