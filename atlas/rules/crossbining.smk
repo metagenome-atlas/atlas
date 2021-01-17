@@ -19,7 +19,7 @@ rule combine_contigs:
     threads:
         1
     shell:
-        "concatenate.py {output} {input} -m 2000"
+        "concatenate.py {output} {input} -m 2000 --keepnames"
         #"cat {input} > {output}"
 
 
