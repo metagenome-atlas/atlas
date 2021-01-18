@@ -7,7 +7,7 @@ localrules: combine_contigs,vamb
 
 rule vamb:
     input:
-        "vamb/bins"
+        "vamb/clustering"
 
 
 
@@ -152,27 +152,4 @@ rule run_vamb:
         " --jgi {input.coverage} "
         " --fasta {input.fasta} "
         " {params.params} "
-        "2> {log}"
-
-
-rule vamb_make_bins:
-    input:
-        vamb_dir = "vamb/clustering",#"data/vamb_bins/clusters.tsv",
-        fasta= rules.combine_contigs.output
-    output:
-        directory("vamb/bins")
-    conda:
-        "../envs/vamb.yaml"
-    threads:
-        1
-    resources:
-        mem = config['simplejob_mem'],
-        time = int(config["runtime"]["simple_job"])
-    log:
-        "log/vamb/make_bins.log"
-    shell:
-        "write_vamb_bins.py "
-        " --reference {input.contigs} "
-        " --clusters {input.vamb_dir}/clusters.tsv "
-        "--output {output} "
         "2> {log}"
