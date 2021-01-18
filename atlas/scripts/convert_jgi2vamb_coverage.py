@@ -34,7 +34,7 @@ if __name__ == '__main__':
         with open(snakemake.log[0],'w') as log:
             sys.stderr = log
 
-            with open(snakemake.output[0],'w') outf:
+            with open(snakemake.output[0],'w') as outf:
                 sys.stdout= outf
 
                 main(snakemake.input[0])

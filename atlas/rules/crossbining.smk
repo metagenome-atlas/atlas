@@ -118,18 +118,18 @@ rule summarize_bam_contig_depths:
         " --outputDepth {output} "
         " {input.bam} &> {log} "
 
-localrules: comvert_jgi2vamb_coverage
-rule comvert_jgi2vamb_coverage:
+localrules: convert_jgi2vamb_coverage
+rule convert_jgi2vamb_coverage:
     input:
         "vamb/coverage.jgi.tsv"
     output:
         "vamb/coverage.tsv"
     log:
-        "log/vamb/comvert_jgi2vamb_coverage.log"
+        "log/vamb/convert_jgi2vamb_coverage.log"
     threads:
         1
     script:
-        "../scripts/comvert_jgi2vamb_coverage.py"
+        "../scripts/convert_jgi2vamb_coverage.py"
 
 rule run_vamb:
     input:
