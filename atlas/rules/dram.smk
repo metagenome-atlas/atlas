@@ -59,8 +59,9 @@ rule DRAM_annotate:
 
 
 def get_all_dram(wildcards):
+    all_genomes = glob_wildcards("genomes/genomes/{i}.fasta").i
     return expand(rules.DRAM_annotate.output,
-           genome=get_genomes_(wildcards))
+           genome=all_genomes)
 
 rule dram:
     input:
