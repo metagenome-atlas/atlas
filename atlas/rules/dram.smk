@@ -39,7 +39,7 @@ rule DRAM_annotate:
     threads:
         config['threads']
     resources:
-        mem=config['large_memory']
+        mem=config['large_mem']
     conda:
         "../envs/dram.yaml"
     params:
