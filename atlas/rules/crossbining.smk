@@ -18,6 +18,8 @@ rule combine_contigs:
         "vamb/combined_contigs.fasta.gz"
     threads:
         1
+    conda:
+        "../envs/vamb.yaml"
     shell:
         "concatenate.py {output} {input} -m 2000 --keepnames"
         #"cat {input} > {output}"
