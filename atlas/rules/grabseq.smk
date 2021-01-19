@@ -2,7 +2,7 @@
 wildcard_constraints:
     run="[S,E,D]RR[0-9]+"
 
-rules grab_seq:
+rule grab_seq:
     output:
         "SRAreads/{run}_1.fastq.gz",
         "SRAreads/{run}_2.fastq.gz",
