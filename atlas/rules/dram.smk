@@ -52,7 +52,7 @@ rule DRAM_annotate:
         "DRAM.py annotate "
         " --input_fasta {input.fasta}"
         " --output_dir {output} "
-        " --gtdb_taxonomy {input.gtdb_dr}/{params.gtdb_file} "
+        " --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
         " --checkm_quality {input.checkm} "
         " --threads {threads} "
         " --verbose &> {log}"
