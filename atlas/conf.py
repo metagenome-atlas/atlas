@@ -17,6 +17,7 @@ ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
 ADDITIONAL_SAMPLEFILE_HEADERS=[]#,'Contigs']
+SRA_READ_PATH = "SRAreads"
 
 
 def infer_split_character(base_name):
@@ -124,7 +125,9 @@ def validate_sample_table(sampleTable):
         exit(1)
 
 
-def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv'):
+def prepare_sample_table_for_atlas(sample_table,
+                                   reads_are_QC=False,
+                                   outfile='samples.tsv'):
     """
     Write the file `samples.tsv` and complete the sample names and paths for all
     files in `path`.
@@ -132,7 +135,6 @@ def prepare_sample_table(path_to_fastq,reads_are_QC=False,outfile='samples.tsv')
             path_to_fastq (str): fastq/fasta data directory
     """
 
-    samples = get_samples_from_fastq(path_to_fastq)
 
     columns= samples.columns # R1 and R2 or only R1 , who knows
 
@@ -315,7 +317,8 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleav
     sample_file= os.path.join(working_dir,'samples.tsv')
 
     make_config(db_dir, threads, assembler,data_type,interleaved_fastq,config)
-    prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)
+    sample_table= get_samples_from_fastq(path_to_fastq)
+    prepare_sample_table_for_atlas(sample_table,reads_are_QC=skip_qc,outfile=sample_file)
 
 
 
@@ -329,7 +332,7 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleav
     short_help="prepare configuration file and sample table for atlas run\n"
                 "Based on publica data from SRA",
 )
-@click.argument("identifiers",type=click.Path(readable=True))
+@click.argument("identifiers",nargs=-1,requred=True,help="SRA run ids")
 @click.option(
     "-d",
     "--db-dir",
@@ -345,16 +348,19 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleav
     default="."
 )
 @click.option(
+    "--single-end",
+    is_flag=True,
+    help="Your reads are single end",
+)
+@click.option(
     "--skip-qc",
     is_flag=True,
     help="Skip QC, if reads are already pre-processed",
 )
-def run_init_sra(identifiers,db_dir, working_dir,skip_qc=False):
+def run_init_sra(identifiers,db_dir, working_dir,single_end,skip_qc=False):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.
 
-    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
-    the file name with the file name minus extension as the sample ID.
     """
 
     if not os.path.exists(working_dir): os.makedirs(working_dir)
@@ -363,5 +369,15 @@ def run_init_sra(identifiers,db_dir, working_dir,skip_qc=False):
     sample_file= os.path.join(working_dir,'samples.tsv')
 
     make_config(db_dir,config=config)
+    sample_table=pd.DataFrame(index=identifiers)
 
-    #prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)
+    if single_end:
+        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}.fastq.gz")
+                                            )
+    else:
+
+        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_1.fastq.gz")
+                                                    )
+        sample_table['R2'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_2.fastq.gz")
+                                                    )
+        prepare_sample_table_for_atlas(sample_table,reads_are_QC=skip_qc,outfile=sample_file)

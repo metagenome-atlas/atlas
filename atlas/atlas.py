@@ -33,7 +33,7 @@ def cli(obj):
     """
 
 cli.add_command(run_init)
-
+cli.add_command(run_init_sra)
 
 
 
