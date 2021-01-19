@@ -6,7 +6,7 @@ import subprocess
 import click
 
 from atlas import __version__
-from atlas.conf import make_config,prepare_sample_table,load_configfile
+from atlas.conf import make_config,load_configfile
 from atlas.conf import validate_config,run_init
 
 
