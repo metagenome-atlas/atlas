@@ -33,8 +33,11 @@ def infer_split_character(base_name):
 def control_sample_name(sample_name):
     "Verify that sample doesn't contain bad characters"
 
+    assert sample_name!='', "Sample name is empty do you have some hidden files in your repo? check with ls -a"
+
     if sample_name[0] in '0123456789':
         sample_name= 'S'+sample_name
+        logging.warning(f"Sample starts with a number. append 'S' {sample_name}.")
 
     return sample_name.replace("-", "_").replace(" ", "_")
 
