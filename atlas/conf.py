@@ -18,27 +18,54 @@ RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
 ADDITIONAL_SAMPLEFILE_HEADERS=[]#,'Contigs']
 
-def get_samples_from_fastq(path):
+
+def infer_split_character(base_name):
+    "Infer if fastq filename uses '_R1' '_1' to seperate filenames"
+
+    if ('_R1' in base_name) or ('_R2' in base_name):
+        return '_R'
+    elif ('_1' in base_name) or ('_2' in base_name):
+        return '_'
+    else:
+        logging.warning(f"Could't find '_R1'/'_R2' or '_1'/'_2' in your filename {base_name}. Assume you have single-end reads.")
+        return 'single_end'
+
+def get_samples_from_fastq(path,split_character='infer'):
     """
         creates table sampleID R1 R2 with the absolute paths of fastq files in a given folder
     """
     samples = defaultdict(dict)
     seen = set()
+
+
+
     for dir_name, sub_dirs, files in os.walk(os.path.abspath(path)):
         for fname in files:
 
+            # only look at fastq files
             if ".fastq" in fname or ".fq" in fname:
-
-                sample_id = fname.split(".fastq")[0].split(".fq")[0]
-
-                sample_id = sample_id.replace("_R1", "").replace("_r1", "").replace("_R2", "").replace("_r2", "")
-                sample_id = sample_id.replace("_", "-").replace(" ", "-")
-
                 fq_path = os.path.join(dir_name, fname)
+                base_name = fname.split(".fastq")[0].split(".fq")[0]
 
-                if fq_path in seen: continue
 
-                if "_R2" in fname or "_r2" in fname:
+                if (split_character is not None) and (split_character=='infer'):
+                    split_character = infer_split_character(base_name)
+
+                if split_character is None:
+                    # single end
+                    sample_id  = base_name
+
+                else:
+                    # normal paired end reads
+                    sample_id = base_name.split(split_character)[0]
+
+                # transform to underlines
+                sample_id = sample_id.replace("-", "_").replace(" ", "_")
+
+
+
+
+                if (split_character is not None) and (split_character+"2") in fname:
 
                     if 'R2' in samples[sample_id]:
                         logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
