@@ -20,6 +20,6 @@ rule grab_seq:
     shadow:
         "minimal"
     shell:
-        "grabseqs {run}"
+        "grabseqs {wildcards.run}"
         " -t {threads} "
         " -o {params.outdir}"
