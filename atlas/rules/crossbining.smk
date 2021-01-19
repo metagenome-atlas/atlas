@@ -148,9 +148,10 @@ rule run_vamb:
     benchmark:
         "log/benchmarks/vamb/run_vamb.tsv"
     params:
-        params= "-o C -m 2000 --minfasta 500000"
+        params= "-m 2000 --minfasta 500000"
     shell:
         "vamb --outdir {output} "
+        " -o '_' "
         " --jgi {input.coverage} "
         " --fasta {input.fasta} "
         " {params.params} "
