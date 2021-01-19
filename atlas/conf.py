@@ -136,32 +136,31 @@ def prepare_sample_table_for_atlas(sample_table,
     """
 
 
-    columns= samples.columns # R1 and R2 or only R1 , who knows
+    columns= sample_table.columns # R1 and R2 or only R1 , who knows
 
     if 'R2' not in columns:
         assert len(columns) == 1, "expect columns to be only ['R1']"
         columns=['se']
 
     if reads_are_QC:
-        samples.columns= ['Reads_QC_'+c for c in columns]
+        sample_table.columns= ['Reads_QC_'+c for c in columns]
     else:
-        samples.columns= ['Reads_raw_'+c for c in columns]
+        sample_table.columns= ['Reads_raw_'+c for c in columns]
 
     Headers = ADDITIONAL_SAMPLEFILE_HEADERS
 
     for h in Headers:
-        samples[h]=np.nan
+        sample_table[h]=np.nan
 
-    samples['BinGroup']= samples.index
+    sample_table['BinGroup']= sample_table.index
 
-    validate_sample_table(samples)
-
-    logging.info("Found %d samples under %s" % (len(samples), path_to_fastq))
+    validate_sample_table(sample_table)
+    logging.info("Found %d samples" % sample_table.shape[0])
     if os.path.exists(outfile):
         logging.error(f"Output file {outfile} already exists I don't dare to overwrite it.")
         exit(1)
     else:
-        samples.to_csv(outfile,sep='\t')
+        sample_table.to_csv(outfile,sep='\t')
 
 
 

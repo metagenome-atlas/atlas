@@ -7,7 +7,7 @@ import click
 
 from atlas import __version__
 from atlas.conf import make_config,load_configfile
-from atlas.conf import validate_config,run_init
+from atlas.conf import validate_config,run_init,run_init_sra
 
 
 logging.basicConfig(
