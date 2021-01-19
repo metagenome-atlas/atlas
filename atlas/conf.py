@@ -329,10 +329,13 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleav
 
 @click.command(
     "init-public",
-    short_help="prepare configuration file and sample table for atlas run\n"
-                "Based on publica data from SRA",
+    short_help="prepare configuration file and sample table for atlas run"
+                "based on public data from SRA\n"
+                "Supply a set of SRA run ids to the command:"
+                "SRR4305427 ERR1190946\n\n"
+                "Reads are automatically downloaded but not stored on your machine. Beware that sometimes multiple runs go into one sample.",
 )
-@click.argument("identifiers",nargs=-1,requred=True,help="SRA run ids")
+@click.argument("identifiers",nargs=-1)
 @click.option(
     "-d",
     "--db-dir",
