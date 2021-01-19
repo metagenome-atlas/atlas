@@ -28,16 +28,34 @@ def infer_split_character(base_name):
         return '_'
     else:
         logging.warning(f"Could't find '_R1'/'_R2' or '_1'/'_2' in your filename {base_name}. Assume you have single-end reads.")
-        return 'single_end'
+        return None
+
+def control_sample_name(sample_name):
+    "Verify that sample doesn't contain bad characters"
+
+    if sample_name[0] in '0123456789':
+        sample_name= 'S'+sample_name
+
+    return sample_name.replace("-", "_").replace(" ", "_")
+
+def add_sample_to_table(sample_dict,sample_id,header,fastq):
+    "Add fastq path to sample table, check if already in table"
+
+    if (sample_id in sample_dict) and (header in sample_dict[sample_id]):
+
+        logging.error(f"Duplicate sample {sample_id} {header} was found after renaming;"
+                     f"\n Sample1: \n{sample_dict[sample_id]} \n"
+                     f"Sample2: {fastq}"
+                      )
+        exit(1)
+    else:
+        sample_dict[sample_id][header] = fastq
 
 def get_samples_from_fastq(path,split_character='infer'):
     """
         creates table sampleID R1 R2 with the absolute paths of fastq files in a given folder
     """
     samples = defaultdict(dict)
-    seen = set()
-
-
 
     for dir_name, sub_dirs, files in os.walk(os.path.abspath(path)):
         for fname in files:
@@ -51,31 +69,25 @@ def get_samples_from_fastq(path,split_character='infer'):
                 if (split_character is not None) and (split_character=='infer'):
                     split_character = infer_split_character(base_name)
 
+
                 if split_character is None:
-                    # single end
-                    sample_id  = base_name
+                    # se reads
+                    sample_id  = control_sample_name(base_name)
+                    add_sample_to_table(samples,sample_id,'R1',fq_path)
+
 
                 else:
-                    # normal paired end reads
-                    sample_id = base_name.split(split_character)[0]
+                    sample_id = control_sample_name( base_name.split(split_character)[0] )
+                    if (split_character+"2") in base_name:
+                        add_sample_to_table(samples,sample_id,'R2',fq_path)
+                    elif (split_character+"1") in base_name:
 
-                # transform to underlines
-                sample_id = sample_id.replace("-", "_").replace(" ", "_")
+                        add_sample_to_table(samples,sample_id,'R1',fq_path)
+                    else:
 
-
-
-
-                if (split_character is not None) and (split_character+"2") in fname:
-
-                    if 'R2' in samples[sample_id]:
-                        logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
-
-                    samples[sample_id]['R2'] = fq_path
-                else:
-                    if 'R1' in samples[sample_id]:
-                        logging.error(f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}")
-
-                    samples[sample_id]['R1'] = fq_path
+                        logging.error(f"Did't find '{split_character}1' or  "             f"'{split_character}2' in fastq {sample_id} : {fq_path}"
+                                      )
+                        exit(1)
 
 
     samples= pd.DataFrame(samples).T
@@ -155,7 +167,7 @@ def load_sample_table(sample_table='samples.tsv'):
     validate_sample_table(sampleTable)
     return sampleTable
 
-def make_config(database_dir, threads, assembler, data_type='metagenome',interleaved_fastq=False,config='config.yaml'):
+def make_config(database_dir, threads=8, assembler='spades', data_type='metagenome',interleaved_fastq=False,config='config.yaml'):
     """
     Reads template config file with comments from ./template_config.yaml
     updates it by the parameters provided.
@@ -301,3 +313,52 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleav
 
     make_config(db_dir, threads, assembler,data_type,interleaved_fastq,config)
     prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)
+
+
+
+
+
+
+
+
+@click.command(
+    "init-public",
+    short_help="prepare configuration file and sample table for atlas run\n"
+                "Based on publica data from SRA",
+)
+@click.argument("identifiers",type=click.Path(readable=True))
+@click.option(
+    "-d",
+    "--db-dir",
+    default=os.path.join(os.path.realpath("."), "databases"),
+    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
+    show_default=True,
+    help="location to store databases (need ~50GB)",
+)
+@click.option("-w",
+    "--working-dir",
+    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
+    help="location to run atlas",
+    default="."
+)
+@click.option(
+    "--skip-qc",
+    is_flag=True,
+    help="Skip QC, if reads are already pre-processed",
+)
+def run_init_sra(identifiers,db_dir, working_dir,skip_qc=False):
+    """Write the file CONFIG and complete the sample names and paths for all
+    FASTQ files in PATH.
+
+    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+    the file name with the file name minus extension as the sample ID.
+    """
+
+    if not os.path.exists(working_dir): os.makedirs(working_dir)
+    config=os.path.join(working_dir,'config.yaml')
+    if not os.path.exists(db_dir): os.makedirs(db_dir)
+    sample_file= os.path.join(working_dir,'samples.tsv')
+
+    make_config(db_dir,config=config)
+
+    #prepare_sample_table(path_to_fastq,reads_are_QC=skip_qc,outfile=sample_file)
