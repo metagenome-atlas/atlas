@@ -16,7 +16,7 @@ rule prefetch:
         1
     resources:
         mem=1,
-        time= int(conf["runtime"]["simple_job"]),
+        time= int(config["runtime"]["simple_job"]),
         internet_connection=1
     conda:
         "%s/sra.yaml" % CONDAENV
