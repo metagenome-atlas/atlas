@@ -1,7 +1,7 @@
 wildcard_constraints:
     SRR="[S,E,D]RR[0-9]+"
 
-localrules: prefetch
+#localrules: prefetch
 rule prefetch:
     output:
         sra=touch(temp("SRAreads/{run}_downloaded")),
@@ -10,6 +10,8 @@ rule prefetch:
         outdir='SRAreads'
     log:
         "logs/SRAdownload/{run}.log"
+    benchmark:
+        "log/benchmarks/logs/SRAdownload/prefetch/{run}.tsv"
     threads:
         1
     resources:
@@ -19,10 +21,11 @@ rule prefetch:
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
-        "cd {params.outdir} 2> {log};"
-        "prefetch "
-        "-X 999999999 "
-        "{wildcards.SRR} &>> {log}"
+        " mkdir -p {params.outdir} 2> {log} ;" 
+        " cd {params.outdir} 2>> {log};"
+        " prefetch "
+        " -X 999999999 "
+        " {wildcards.run} &>> {log}"
 
 
 rule extract_run:
@@ -45,6 +48,6 @@ rule extract_run:
         "%s/sra.yaml" % CONDAENV
     shell:
         "cd {params.outdir} 2>> {log};"
-        "fasterq-dump "
-        "-e {threads} "
-        "&>> {log}"
+        " fasterq-dump "
+        " -e {threads} "
+        " &>> {log}"

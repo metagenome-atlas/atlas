@@ -4,4 +4,4 @@ channels:
 - conda-forge
 dependencies:
 - sra-tools
-- pgzip
+- pigz
