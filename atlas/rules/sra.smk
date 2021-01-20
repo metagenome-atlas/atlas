@@ -9,7 +9,7 @@ rule prefetch:
     params:
         outdir='SRAreads/{run}'
     log:
-        "logs/SRAdownload/{run}.log"
+        "log/SRAdownload/{run}.log"
     benchmark:
         "log/benchmarks/logs/SRAdownload/prefetch/{run}.tsv"
     threads:
@@ -20,7 +20,7 @@ rule prefetch:
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
-        "mkdir {params.outdir} 2> {log};"
+        " mkdir -p {params.outdir} 2> {log}; "
         " prefetch "
         " --output-directory {params.outdir} "
         " -X 999999999 "
@@ -37,7 +37,7 @@ rule extract_run:
         outdir='SRAreads',
         tmpdir= TMPDIR
     log:
-        "logs/SRAdownload/{run}.log"
+        "log/SRAdownload/{run}.log"
     threads:
         config['simplejob_threads']
     resources:
@@ -47,11 +47,13 @@ rule extract_run:
         "%s/sra.yaml" % CONDAENV
     shell:
         " cd {params.outdir} 2>> {log};"
+        " "
         " fasterq-dump "
         " --threads {threads} "
         " --temp {params.tmpdir} "
         " --log-level info "
         " {wildcards.run} "
         " &>> ../{log} ; "
-        ""
+        " "
         " rm -rf {wildcards.run} 2> ../{log} "
+        #" pigz -1 -p{threads} {wildcards.run}_1.fastq"
