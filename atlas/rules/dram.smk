@@ -35,7 +35,8 @@ rule DRAM_annotate:
         gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag= rules.DRAM_set_db_loc.output
     output:
-        directory("genomes/annotations/dram/intermediate_files/{genome}")
+        "genomes/annotations/dram/intermediate_files/{genome}/annotations.tsv",
+        "genomes/annotations/dram/intermediate_files/{genome}/trnas.tsv"
     threads:
         config['threads']
     resources:
@@ -43,7 +44,8 @@ rule DRAM_annotate:
     conda:
         "../envs/dram.yaml"
     params:
-        gtdb_file="gtdbtk.bac120.summary.tsv"
+        gtdb_file="gtdbtk.bac120.summary.tsv",
+        outdir= "genomes/annotations/dram/intermediate_files/{genome}"
     log:
         "log/dram/run_dram/{genome}.log"
     benchmark:
@@ -51,7 +53,7 @@ rule DRAM_annotate:
     shell:
         "DRAM.py annotate "
         " --input_fasta {input.fasta}"
-        " --output_dir {output} "
+        " --output_dir {params.outdir} "
         " --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
         " --checkm_quality {input.checkm} "
         " --threads {threads} "
@@ -60,7 +62,7 @@ rule DRAM_annotate:
 
 def get_all_dram(wildcards):
     all_genomes = glob_wildcards("genomes/genomes/{i}.fasta").i
-    return expand(rules.DRAM_annotate.output,
+    return expand(rules.DRAM_annotate.output[0],
            genome=all_genomes)
 
 rule dram:
