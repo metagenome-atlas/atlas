@@ -7,7 +7,7 @@ rule prefetch:
         sra=touch(temp("SRAreads/{run}/downloaded")),
         # not givins sra file as output allows for continue from the same download
     params:
-        outdir='SRAreads/{run}'
+        outdir= lambda wc,input: os.path.dirname(input[0])
     log:
         "log/SRAdownload/{run}.log"
     benchmark:
