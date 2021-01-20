@@ -18,8 +18,9 @@ rule grab_seq:
     conda:
         "%s/grabseq.yaml" % CONDAENV
     shadow:
-        "minimal"
+        "shallow"
     shell:
-        "grabseqs {wildcards.run}"
+        "grabseqs sra {wildcards.run}"
         " -t {threads} "
         " -o {params.outdir}"
+        " &> {log} "
