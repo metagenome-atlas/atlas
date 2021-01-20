@@ -1,7 +1,7 @@
 wildcard_constraints:
     SRR="[S,E,D]RR[0-9]+"
 
-localrules: prefetch
+#localrules: prefetch
 rule prefetch:
     output:
         sra=touch(temp("SRAreads/{run}/downloaded")),
@@ -16,6 +16,7 @@ rule prefetch:
         1
     resources:
         mem=1,
+        time= int(conf["runtime"]["simple_job"]),
         internet_connection=1
     conda:
         "%s/sra.yaml" % CONDAENV
