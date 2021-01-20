@@ -51,7 +51,8 @@ rule DRAM_annotate:
     benchmark:
         "log/benchmarks/dram/run_dram/{genome}.tsv"
     shell:
-        "DRAM.py annotate "
+        "rm -r {params.outdir} ; "
+        " DRAM.py annotate "
         " --input_fasta {input.fasta}"
         " --output_dir {params.outdir} "
         " --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
