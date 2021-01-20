@@ -3,4 +3,5 @@ channels:
 - bioconda
 - conda-forge
 dependencies:
-- parallel-fastq-dump
+- sra-tools
+- pgzip

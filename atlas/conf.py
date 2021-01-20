@@ -375,12 +375,12 @@ def run_init_sra(identifiers,db_dir, working_dir,single_end,skip_qc=False):
     sample_table=pd.DataFrame(index=identifiers)
 
     if single_end:
-        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}.fastq.gz")
+        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}.fastq")
                                             )
     else:
 
-        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_1.fastq.gz")
+        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_1.fastq")
                                                     )
-        sample_table['R2'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_2.fastq.gz")
+        sample_table['R2'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_2.fastq")
                                                     )
         prepare_sample_table_for_atlas(sample_table,reads_are_QC=skip_qc,outfile=sample_file)
