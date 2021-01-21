@@ -25,6 +25,8 @@ rule prefetch:
         " prefetch "
         " --output-directory {params.outdir} "
         " -X 999999999 "
+        " --progress "
+        " --log-level info "
         " {wildcards.run} &>> {log}"
 
 
