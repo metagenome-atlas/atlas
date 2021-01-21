@@ -55,6 +55,8 @@ rule extract_run:
         " --threads {threads} "
         " --temp {params.tmpdir} "
         " --log-level info "
+        " --progress "
+        " --print-read-nr "
         " {wildcards.run} "
         " &>> ../{log} ; "
         " "
