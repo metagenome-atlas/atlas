@@ -1,7 +1,7 @@
 wildcard_constraints:
     SRR="[S,E,D]RR[0-9]+"
 
-#localrules: prefetch
+localrules: prefetch
 rule prefetch:
     output:
         sra=touch(temp("SRAreads/{run}/downloaded")),
