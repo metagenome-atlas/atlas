@@ -4,14 +4,14 @@ wildcard_constraints:
 localrules: prefetch
 rule prefetch:
     output:
-        sra=touch(temp("SRAreads/{run}/downloaded")),
+        sra=temp(touch("SRAreads/{run}_downloaded")),
         # not givins sra file as output allows for continue from the same download
     params:
-        outdir= lambda wc,input: os.path.dirname(input[0])
+        outdir= 'SRAreads' #lambda wc,output: os.path.dirname(output[0])
     log:
         "log/SRAdownload/{run}.log"
     benchmark:
-        "log/benchmarks/logs/SRAdownload/prefetch/{run}.tsv"
+        "log/benchmarks/SRAdownload/prefetch/{run}.tsv"
     threads:
         1
     resources:
@@ -41,6 +41,8 @@ rule extract_run:
         tmpdir= TMPDIR
     log:
         "log/SRAdownload/{run}.log"
+    benchmark:
+        "log/benchmarks/SRAdownload/fasterqdump/{run}.tsv"
     threads:
         config['simplejob_threads']
     resources:
