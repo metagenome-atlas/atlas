@@ -1,6 +1,8 @@
 import datetime
 import shutil
 import sys
+from snakemake
+from subprocess import Popen, PIPE
 
 with open(snakemake.log[0],'w') as log:
 
@@ -11,9 +13,11 @@ with open(snakemake.log[0],'w') as log:
 
         subfolder = os.path.join(snakemake.params.folder, fraction)
         tmp_file=os.path.join(subfolder,"read_stats.tmp")
-        shell("""
-                mkdir -p {subfolder} 2> {log}
 
+
+
+        command = """
+                mkdir -p {subfolder} 2> {log} ;
                 reformat.sh {params_in} \
                 bhist={subfolder}/base_hist.txt \
                 qhist={subfolder}/quality_by_pos.txt \
@@ -23,11 +27,16 @@ with open(snakemake.log[0],'w') as log:
                 bqhist={subfolder}/boxplot_quality.txt \
                 threads={threads} \
                 overwrite=true \
-                unpigz=t β
+                unpigz=t \
                 -Xmx{mem}G \
                 2> >(tee -a {log} {tmp_file} )
              """.format(subfolder=subfolder, params_in=params_in, log=log,
-                        threads=threads, mem=snakemake.resources.java_mem,tmp_file=tmp_file))
+                        threads=threads, mem=snakemake.resources.java_mem,tmp_file=tmp_file)
+
+        p = Popen(command.split(' '), stdout=PIPE, stderr=PIPE)
+        output, error = p.communicate()
+        if p.returncode != 0:
+            raise Exception("Error in reformat:\n"+output.decode("utf-8")+error.decode("utf-8"))
 
         content = open(tmp_file).read()
         pos = content.find('Input:')
