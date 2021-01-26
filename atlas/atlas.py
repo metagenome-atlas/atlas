@@ -130,6 +130,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} --conda-frontend mamba "
+        " --scheduler greedy "
         " {target_rule} "
         " {args} "
     ).format(
