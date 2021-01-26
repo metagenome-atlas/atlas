@@ -4,14 +4,14 @@ wildcard_constraints:
 localrules: prefetch
 rule prefetch:
     output:
-        sra=touch(temp("SRAreads/{run}/downloaded")),
+        sra=temp(touch("SRAreads/{run}_downloaded")),
         # not givins sra file as output allows for continue from the same download
     params:
-        outdir= lambda wc,input: os.path.dirname(input[0])
+        outdir= 'SRAreads' #lambda wc,output: os.path.dirname(output[0])
     log:
         "log/SRAdownload/{run}.log"
     benchmark:
-        "log/benchmarks/logs/SRAdownload/prefetch/{run}.tsv"
+        "log/benchmarks/SRAdownload/prefetch/{run}.tsv"
     threads:
         1
     resources:
@@ -29,23 +29,41 @@ rule prefetch:
         " --log-level info "
         " {wildcards.run} &>> {log}"
 
+ruleorder: gzip > extract_run
+rule gzip:
+    input:
+        "SRAreads/{run}_{direction}.fastq",
+    output:
+        "SRAreads/{run}_{direction}.fastq.gz",
+    threads:
+        config['simplejob_threads']
+    resources:
+        time= int(config["runtime"]["simple_job"]),
+        mem=1 #default 100Mb
+    conda:
+        "%s/sra.yaml" % CONDAENV
+    shell:
+        " pigz -p{threads} -2 {input}"
+
 
 rule extract_run:
     input:
         flag=rules.prefetch.output,
     output:
-        "SRAreads/{run}_1.fastq",
-        "SRAreads/{run}_2.fastq",
+        "SRAreads/{run}_1.fastq.gz",
+        "SRAreads/{run}_2.fastq.gz",
     params:
         outdir='SRAreads',
         tmpdir= TMPDIR
     log:
         "log/SRAdownload/{run}.log"
+    benchmark:
+        "log/benchmarks/SRAdownload/fasterqdump/{run}.tsv"
     threads:
         config['simplejob_threads']
     resources:
-        time= lambda wildcards, attempt: attempt * 6, #h
-        mem=config['simplejob_mem'],
+        time= int(config["runtime"]["simple_job"]),
+        mem=1 #default 100Mb
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
@@ -53,12 +71,23 @@ rule extract_run:
         " "
         " fasterq-dump "
         " --threads {threads} "
+        " --mem{resources.mem}GB "
         " --temp {params.tmpdir} "
+        " --outdir {params.tmpdir} "
         " --log-level info "
         " --progress "
         " --print-read-nr "
         " {wildcards.run} "
         " &>> ../{log} ; "
         " "
+        " pigz -p{threads} -2 {params.tmpdir}/{wildcards.run}_1.fastq "
+        " mv {params.tmpdir}/{wildcards.run}_1.fastq {output[0]}"
+        " "
+        " pigz -p{threads} -2 {params.tmpdir}/{wildcards.run}_2.fastq "
+        " mv {params.tmpdir}/{wildcards.run}_2.fastq {output[1]}"
+        " "
         " rm -rf {wildcards.run} 2> ../{log} "
-        #" pigz -1 -p{threads} {wildcards.run}_1.fastq"
+
+rule download_all_reads:
+    input:
+        expand("SRAreads/{sample}_{fraction}.fastq.gz",sample=SAMPLES,fraction=['1','2'])

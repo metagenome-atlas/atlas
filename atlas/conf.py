@@ -351,16 +351,16 @@ def run_init(path_to_fastq,db_dir, working_dir, assembler,  data_type, interleav
     default="."
 )
 @click.option(
-    "--single-end",
-    is_flag=True,
-    help="Your reads are single end",
-)
-@click.option(
     "--skip-qc",
     is_flag=True,
     help="Skip QC, if reads are already pre-processed",
 )
-def run_init_sra(identifiers,db_dir, working_dir,single_end,skip_qc=False):
+# @click.option(
+#     "--single-end",
+#     is_flag=True,
+#     help="Your reads are single end",
+# )
+def run_init_sra(identifiers,db_dir, working_dir,skip_qc=False,single_end=False):
     """Write the file CONFIG and complete the sample names and paths for all
     FASTQ files in PATH.
 
@@ -375,12 +375,12 @@ def run_init_sra(identifiers,db_dir, working_dir,single_end,skip_qc=False):
     sample_table=pd.DataFrame(index=identifiers)
 
     if single_end:
-        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}.fastq")
+        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}.fastq.gz")
                                             )
     else:
 
-        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_1.fastq")
+        sample_table['R1'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_1.fastq.gz")
                                                     )
-        sample_table['R2'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_2.fastq")
+        sample_table['R2'] = sample_table.index.map(lambda s:             os.path.join(SRA_READ_PATH,f"{s}_2.fastq.gz")
                                                     )
         prepare_sample_table_for_atlas(sample_table,reads_are_QC=skip_qc,outfile=sample_file)
