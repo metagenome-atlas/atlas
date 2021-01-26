@@ -231,6 +231,7 @@ if not SKIP_QC:
                     dupesubs={params.dupesubs} \
                     optical={params.only_optical}\
                     threads={threads} \
+                    pigz=t unpigz=t \
                     -Xmx{resources.java_mem}G 2> {log}
                 """
 
@@ -299,6 +300,7 @@ if not SKIP_QC:
                 minbasefrequency={params.minbasefrequency} \
                 ecco={params.error_correction_pe} \
                 prealloc={params.prealloc} \
+                pigz=t unpigz=t \
                 -Xmx{resources.java_mem}G 2> {log}
             """
 
@@ -374,6 +376,7 @@ if not SKIP_QC:
                         maxindel={params.maxindel} minratio={params.minratio} \
                         minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
                         threads={threads} k={params.k} local=t \
+                        pigz=t unpigz=t ziplevel=9 \
                         -Xmx{resources.java_mem}G 2> {log}
                 fi
 
@@ -383,6 +386,7 @@ if not SKIP_QC:
                     maxindel={params.maxindel} minratio={params.minratio} \
                     minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
                     interleaved=f threads={threads} k={params.k} local=t \
+                    pigz=t unpigz=t ziplevel=9 \
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
