@@ -42,8 +42,9 @@ rule extract_run:
                 fraction= ['1','2']
                  )
     params:
-        outdir=os.path.abspath('SRAreads'),
-        tmpdir= TMPDIR
+        outdir='SRAreads',
+        sra = "SRAreads/{run}/{run}.sra",
+        tmpdir= "{TMPDIR}/{run}"
     log:
         "log/SRAdownload/{run}.log"
     benchmark:
@@ -52,32 +53,25 @@ rule extract_run:
         config['simplejob_threads']
     resources:
         time= int(config["runtime"]["simple_job"]),
-        mem=1 #default 100Mb
+        mem=2 #default 100Mb
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
-        " cd {params.outdir} 2>> {log} ;"
+        " vdb-validate {params.sra} &>> {log} ;"
         " "
-        " vdb-validate {wildcards.run}/{wildcards.run}.sra &>> ../{log} ;"
-        " "
-        " fasterq-dump "
+        " parallel-fastq-dump "
         " --threads {threads} "
-        " --mem {resources.mem}GB "
-        " --temp {params.tmpdir}/fasterqdump_tmp/ "
-        " --outdir {params.tmpdir}/fasterqdump/ "
-        " --log-level debug "
-        " --progress "
-        " --print-read-nr "
-        " {wildcards.run}/{wildcards.run}.sra "
-        " &>> ../{log} ; "
-        " cd .. ;"
-        " "
-        " pigz -p{threads} -2 {params.tmpdir}/fasterqdump/{wildcards.run}_?.fastq 2>> {log} ; "
-        " mv {params.tmpdir}/fasterqdump/{wildcards.run}_?.fastq.gz "
-        "           {params.outdir} 2>> {log} ; "
+        " --gzip --split-files "
+        " --outdir {params.outdir} "
+        " --progress --log-level info --print-read-nr  "
+        " --temp {params.tmpdir} "
+        " -s {params.sra} &> {log} "
         " "
         " rm -rf {params.outdir}/{wildcards.run} 2>> {log} ; "
         " rm -f {input} 2>> {log}"
+
+
+
 
 rule download_all_reads:
     input:

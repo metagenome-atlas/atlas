@@ -5,3 +5,4 @@ channels:
 dependencies:
 - sra-tools
 - pigz
+- parallel-fastq-dump
