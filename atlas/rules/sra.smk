@@ -7,7 +7,8 @@ rule prefetch:
         sra=temp(touch("SRAreads/{run}_downloaded")),
         # not givins sra file as output allows for continue from the same download
     params:
-        outdir= 'SRAreads' #lambda wc,output: os.path.dirname(output[0])
+        outdir="SRAreads/{run}", 
+        sra= 'SRAreads/{run}/{run}.sra'
     log:
         "log/SRAdownload/{run}.log"
     benchmark:
@@ -22,14 +23,13 @@ rule prefetch:
         "%s/sra.yaml" % CONDAENV
     shell:
         " mkdir -p {params.outdir} 2> {log}; "
+        " "
         " prefetch "
-        " --output-directory {params.outdir} "
+        " --output-file {params.sra} "
         " -X 999999999 "
         " --progress "
         " --log-level info "
-        " {wildcards.run} &>> {log}"
-        " "
-        " vdb-validate {params.outdir}/{wildcards.run}/{wildcards.run}.sra &>> {log} "
+        " {wildcards.run} &>> {log} ;"
 
 
 
@@ -44,7 +44,7 @@ rule extract_run:
     params:
         outdir='SRAreads',
         sra = "SRAreads/{run}/{run}.sra",
-        tmpdir= "{TMPDIR}/{run}"
+        tmpdir= TMPDIR
     log:
         "log/SRAdownload/{run}.log"
     benchmark:
@@ -63,9 +63,9 @@ rule extract_run:
         " --threads {threads} "
         " --gzip --split-files "
         " --outdir {params.outdir} "
-        " --progress --log-level info --print-read-nr  "
-        " --temp {params.tmpdir} "
-        " -s {params.sra} &> {log} "
+        " --tmpdir {params.tmpdir} "
+        " --skip-technical --split-3 "
+        " -s {params.sra} &> {log} ; "
         " "
         " rm -rf {params.outdir}/{wildcards.run} 2>> {log} ; "
         " rm -f {input} 2>> {log}"
