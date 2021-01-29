@@ -68,7 +68,6 @@ rule extract_run:
         " -s {params.sra} &> {log} ; "
         " "
         " rm -rf {params.outdir}/{wildcards.run} 2>> {log} ; "
-        " rm -f {input} 2>> {log}"
 
 
 
