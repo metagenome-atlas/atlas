@@ -57,28 +57,18 @@ rule extract_run:
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
-        " cd {params.outdir} 2>> {log} ;"
-        " "
-        " vdb-validate {wildcards.sra_run}/{wildcards.sra_run}.sra &>> ../{log} ;"
-        " "
-        " fasterq-dump "
+        " vdb-validate {params.sra} &>> {log} "
+        " ; "
+        " parallel-fastq-dump "
         " --threads {threads} "
-        " --mem {resources.mem}GB "
-        " --temp {params.tmpdir}/fasterqdump_tmp/ "
-        " --outdir {params.tmpdir}/fasterqdump/ "
-        " --log-level debug "
-        " --progress "
-        " --print-read-nr "
-        " {wildcards.sra_run}/{wildcards.sra_run}.sra "
-        " &>> ../{log} ; "
-        " cd .. ;"
-        " "
-        " pigz -p{threads} -2 {params.tmpdir}/fasterqdump/{wildcards.sra_run}_?.fastq 2>> {log} ; "
-        " mv {params.tmpdir}/fasterqdump/{wildcards.sra_run}_?.fastq.gz "
-        "           {params.outdir} 2>> {log} ; "
-        " "
-        " rm -rf {params.outdir}/{wildcards.sra_run} 2>> {log} ; "
-        " rm -f {input} 2>> {log}"
+        " --gzip --split-files "
+        " --outdir {params.outdir} "
+        " --tmpdir {params.tmpdir} "
+        " --skip-technical --split-3 "
+        " -s {params.sra} &> {log} "
+        " ; "
+        " rm -rf {params.outdir}/{wildcards.run} 2>> {log} "
+
 
 rule download_all_reads:
     input:
