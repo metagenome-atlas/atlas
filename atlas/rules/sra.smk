@@ -21,14 +21,15 @@ rule prefetch:
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
-        " mkdir -p {params.outdir} 2> {log}; "
+        " mkdir -p {params.outdir} 2> {log} "
+        " ; "
         " prefetch "
         " --output-directory {params.outdir} "
         " -X 999999999 "
         " --progress "
         " --log-level info "
-        " {wildcards.sra_run} &>> {log}"
-        " "
+        " {wildcards.sra_run} &>> {log} "
+        " ; "
         " vdb-validate {params.outdir}/{wildcards.sra_run}/{wildcards.sra_run}.sra &>> {log} "
 
 
