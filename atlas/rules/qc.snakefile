@@ -416,9 +416,7 @@ if not SKIP_QC:
                             with open(input.rrna_reads[i], 'rb') as infile2:
                                 shutil.copyfileobj(infile2, outFile)
 
-            # save to sampleTable
-                sampleTable.loc[wildcards.sample,'Reads_QC_'+MULTIFILE_FRACTIONS[i]] = output[i]
-            sampleTable.to_csv('samples.tsv',sep='\t')
+
 
 
 #### STATS
@@ -584,15 +582,28 @@ rule combine_read_counts:
 
         stats.to_csv(output[0], sep='\t')
 
-
+localrules: finalize_sample_qc
 rule finalize_sample_qc:
     input:
-        get_quality_controlled_reads,
+        qcreads= get_quality_controlled_reads,
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
         read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
+    run:
+        # save to sampleTable with open stream to block other processes
+        import pandas as pd
+
+        with open('samples.tsv','r+') as sample_table_file:
+
+            sample_table = pd.read_csv(sample_table_file,sep='\t',index_col=0)
+
+            for i in range(len(MULTIFILE_FRACTIONS)):
+                sample_table.loc[wildcards.sample,'Reads_QC_'+MULTIFILE_FRACTIONS[i]] = input.qcreads[i]
+
+            sample_table.to_csv(sample_table_file,sep='\t')
+
 
 
 
