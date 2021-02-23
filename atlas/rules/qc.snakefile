@@ -396,7 +396,8 @@ if not SKIP_QC:
     localrules: qcreads
     rule qcreads:
         input:
-            unpack(get_ribosomal_rna_input)
+            unpack(get_ribosomal_rna_input),
+            sample_table_file='samples.tsv'
         output:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=PROCESSED_STEPS[-1], fraction=MULTIFILE_FRACTIONS)
@@ -415,6 +416,13 @@ if not SKIP_QC:
                         if hasattr(input, 'rrna_reads'):
                             with open(input.rrna_reads[i], 'rb') as infile2:
                                 shutil.copyfileobj(infile2, outFile)
+
+            # append to sample table
+            sample_table = load_sample_table(input.sample_table_file)
+            sample_table.loc[wildcards.sample,
+                             [ 'Reads_QC_{fraction}' for fraction in MULTIFILE_FRACTIONS]
+                             ] = output
+            sample_table.to_csv(input.sample_table_file,sep='\t')
 
 
 
@@ -582,27 +590,17 @@ rule combine_read_counts:
 
         stats.to_csv(output[0], sep='\t')
 
-localrules: finalize_sample_qc
+
 rule finalize_sample_qc:
     input:
         qcreads= get_quality_controlled_reads,
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
-        read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
+        read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
-    run:
-        # save to sampleTable with open stream to block other processes
-        import pandas as pd
 
-        with open('samples.tsv','r+') as sample_table_file:
 
-            sample_table = pd.read_csv(sample_table_file,sep='\t',index_col=0)
-
-            for i in range(len(MULTIFILE_FRACTIONS)):
-                sample_table.loc[wildcards.sample,'Reads_QC_'+MULTIFILE_FRACTIONS[i]] = input.qcreads[i]
-
-            sample_table.to_csv(sample_table_file,sep='\t')
 
 
 
