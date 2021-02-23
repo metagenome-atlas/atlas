@@ -44,6 +44,7 @@ rule extract_run:
                  )
     params:
         outdir=os.path.abspath('SRAreads'),
+        sra_file= "SRAreads/{sra_run}/{sra_run}.sra",
         tmpdir= TMPDIR
     log:
         "log/SRAdownload/{sra_run}.log"
@@ -57,7 +58,7 @@ rule extract_run:
     conda:
         "%s/sra.yaml" % CONDAENV
     shell:
-        " vdb-validate {params.sra} &>> {log} "
+        " vdb-validate {params.sra_file} &>> {log} "
         " ; "
         " parallel-fastq-dump "
         " --threads {threads} "
@@ -65,9 +66,9 @@ rule extract_run:
         " --outdir {params.outdir} "
         " --tmpdir {params.tmpdir} "
         " --skip-technical --split-3 "
-        " -s {params.sra} &> {log} "
+        " -s {params.sra_file} &> {log} "
         " ; "
-        " rm -rf {params.outdir}/{wildcards.run} 2>> {log} "
+        " rm -rf {params.outdir}/{wildcards.sra_run} 2>> {log} "
 
 
 rule download_all_reads:
