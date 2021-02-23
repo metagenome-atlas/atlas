@@ -120,7 +120,7 @@ def validate_sample_table(sampleTable):
             exit(1)
 
     if not sampleTable.index.is_unique:
-        duplicated_samples=', '.join(D.index.duplicated())
+        duplicated_samples=', '.join(sampleTable.index.duplicated())
         logging.error( f"Expect Samples to be unique. Found {duplicated_samples} more than once")
         exit(1)
 
