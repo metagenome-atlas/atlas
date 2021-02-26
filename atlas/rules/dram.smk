@@ -1,6 +1,6 @@
 
 DBDIR = config['database_dir']
-genome_folder= os.path.dirname(config.get('genome_folder', 'genomes/genomes'))
+genome_folder= os.path.dirname(config.get('genome_folder', 'genomes'))
 
 def get_dram_config(wildcards):
     return config.get('dram_config_file', f"{DBDIR}/DRAM.config")
@@ -53,8 +53,7 @@ rule DRAM_annotate:
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag= rules.DRAM_set_db_loc.output
     output:
-        "genomes/annotations/dram/intermediate_files/{genome}/annotations.tsv",
-        "genomes/annotations/dram/intermediate_files/{genome}/trnas.tsv"
+        outdir= directory("annotations/dram/intermediate_files/{genome}")
     threads:
         config['threads']
     resources:
@@ -64,16 +63,14 @@ rule DRAM_annotate:
         "../envs/dram.yaml"
     params:
         gtdb_file="gtdbtk.bac120.summary.tsv",
-        outdir= "genomes/annotations/dram/intermediate_files/{genome}"
     log:
         "log/dram/run_dram/{genome}.log"
     benchmark:
         "log/benchmarks/dram/run_dram/{genome}.tsv"
     shell:
-        "rm -r {params.outdir} ; "
         " DRAM.py annotate "
         " --input_fasta {input.fasta}"
-        " --output_dir {params.outdir} "
+        " --output_dir {output.outdir} "
         " --prodigal_mode single "
         #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
         #" --checkm_quality {input.checkm} "
@@ -85,11 +82,72 @@ def get_all_dram(wildcards):
 
     all_genomes = glob_wildcards(f"{genome_folder}/{{i}}.fasta").i
 
-    return expand(rules.DRAM_annotate.output[0],
-           genome=all_genomes)
+    return expand(rules.DRAM_annotate.output.outdir,
+           genome=all_genomes
+           )
 
+
+DRAM_ANNOTATON_FILES = ['annotations.tsv','rrnas.tsv','trnas.tsv']
+
+localrules: get_all_modules
+rule concat_annotations:
+    input:
+        get_all_dram
+    output:
+        expand("annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES)
+    run:
+        from utils import io
+        for i, annotation_file in enumerate(DRAM_ANNOTATON_FILES):
+
+            input_files = [os.path.join(dram_folder,annotation_file) for dram_folder in input  ]
+
+            # drop files that don't exist for rrna and trna
+            if not i==0:
+                input_files = [f for f in input_files if os.path.exists(f) ]
+
+            io.pandas_concat(input_files, output[i],sep='\t',index_col=0, axis=0)
+
+
+rule DRAM_destill:
+    input:
+        expand("annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
+        flag= rules.DRAM_set_db_loc.output
+    output:
+        outdir= directory("annotations/dram/distil")
+    threads:
+        1
+    resources:
+        mem= config['simplejob_mem'],
+        time= config['runtime']['default']
+    conda:
+        "../envs/dram.yaml"
+    log:
+        "log/dram/distil.log"
+    shell:
+        " DRAM.py distill "
+        " --input_file {input[0]}"
+        " --rrna_path {input[1]}"
+        " --trna_path {input[2]}"
+        " --output_dir {output} "
+        "  &> {log}"
+
+
+rule get_all_modules:
+    input:
+        "annotations/dram/annotations.tsv",
+    output:
+        "annotations/dram/kegg_modules.tsv"
+    threads:
+        1
+    conda:
+        "../envs/dram.yaml"
+    log:
+        "log/dram/get_all_modules.log"
+    script:
+        "../scripts/DRAM_get_all_modules.py"
 
 
 rule dram:
     input:
-        get_all_dram
+        "annotations/dram/distil",
+        "annotations/dram/kegg_modules.tsv"
