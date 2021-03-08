@@ -77,3 +77,5 @@ def pandas_concat(input_tables,output_table,sep='\t',index_col=0,axis=0,
     del Tables
 
     out.to_csv(output_table,sep=sep,**save_arguments)
+
+    del out

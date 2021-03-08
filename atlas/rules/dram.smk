@@ -5,7 +5,6 @@ genome_folder= os.path.dirname(config.get('genome_folder', 'genomes'))
 def get_dram_config(wildcards):
     return config.get('dram_config_file', f"{DBDIR}/DRAM.config")
 
-
 rule dram_download:
     output:
         dbdir= directory(f"{DBDIR}/Dram/"),
@@ -89,14 +88,17 @@ def get_all_dram(wildcards):
 
 DRAM_ANNOTATON_FILES = ['annotations.tsv','rrnas.tsv','trnas.tsv']
 
-localrules: get_all_modules
+localrules: concat_annotations
 rule concat_annotations:
     input:
         get_all_dram
     output:
         expand("annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES)
+    resources:
+        time= config['runtime']['default'],
+    #     mem = config['mem']
     run:
-        from utils import io
+        #from utils import io
         for i, annotation_file in enumerate(DRAM_ANNOTATON_FILES):
 
             input_files = [os.path.join(dram_folder,annotation_file) for dram_folder in input  ]
@@ -105,8 +107,12 @@ rule concat_annotations:
             if not i==0:
                 input_files = [f for f in input_files if os.path.exists(f) ]
 
-            io.pandas_concat(input_files, output[i],sep='\t',index_col=0, axis=0)
 
+            shell(f"head -n1 {input_files[0]} > {output[i]} ")
+            for f in input_files:
+                shell(f"tail -n+2 {f} >> {output[i]}")
+
+            #io.pandas_concat(input_files, output[i],sep='\t',index_col=0, axis=0)
 
 rule DRAM_destill:
     input:
@@ -117,7 +123,7 @@ rule DRAM_destill:
     threads:
         1
     resources:
-        mem= config['simplejob_mem'],
+        mem= config['mem'],
         time= config['runtime']['default']
     conda:
         "../envs/dram.yaml"
@@ -139,6 +145,9 @@ rule get_all_modules:
         "annotations/dram/kegg_modules.tsv"
     threads:
         1
+    resources:
+        mem= config['simplejob_mem'],
+        time= config['runtime']['default']
     conda:
         "../envs/dram.yaml"
     log:
