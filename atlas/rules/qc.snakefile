@@ -397,7 +397,7 @@ if not SKIP_QC:
     rule qcreads:
         input:
             unpack(get_ribosomal_rna_input),
-            sample_table_file='samples.tsv'
+            sample_table_file= ancient('samples.tsv')
         output:
             expand("{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                 step=PROCESSED_STEPS[-1], fraction=MULTIFILE_FRACTIONS)
@@ -413,15 +413,18 @@ if not SKIP_QC:
                 with open(output[i], 'wb') as outFile:
                     with open(input.clean_reads[i], 'rb') as infile1:
                         shutil.copyfileobj(infile1, outFile)
+
                         if hasattr(input, 'rrna_reads'):
                             with open(input.rrna_reads[i], 'rb') as infile2:
                                 shutil.copyfileobj(infile2, outFile)
 
             # append to sample table
             sample_table = load_sample_table(input.sample_table_file)
+
             sample_table.loc[wildcards.sample,
-                             [ 'Reads_QC_{fraction}' for fraction in MULTIFILE_FRACTIONS]
+                             [ f'Reads_QC_{fraction}' for fraction in MULTIFILE_FRACTIONS]
                              ] = output
+
             sample_table.to_csv(input.sample_table_file,sep='\t')
 
 
