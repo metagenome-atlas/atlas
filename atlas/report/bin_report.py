@@ -19,18 +19,13 @@ sys.path.append(os.path.join(atlas_dir,'scripts'))
 from utils.parsers_checkm import read_checkm_output
 
 
-def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
-    sample_data = {}
+def main(report_out, bin_table):
+
     div = {}
 
-    df= pd.DataFrame()
+    df= pd.read_csv(bin_table,sep='\t',index_col=0)
 
-    for i,sample in enumerate(samples):
-        sample_data= read_checkm_output(taxonomy_table=taxonomy_files[i],
-                                        completness_table=completeness_files[i])
-        sample_data['Sample']= sample
 
-        df= df.append(sample_data)
 
 
     df.to_csv(bin_table,sep='\t')
@@ -142,9 +137,6 @@ if __name__ == "__main__":
 
     try:
         main(
-            samples=snakemake.params.samples,
-            taxonomy_files=snakemake.input.taxonomy_files,
-            completeness_files=snakemake.input.completeness_files,
             report_out=snakemake.output.report,
             bin_table=snakemake.output.bin_table
         )
@@ -152,12 +144,9 @@ if __name__ == "__main__":
     except NameError:
         import argparse
         p = argparse.ArgumentParser()
-        p.add_argument("--samples", nargs="+")
-        p.add_argument("--completeness", nargs="+")
-        p.add_argument("--taxonomy", nargs="+")
         p.add_argument("--report-out")
         p.add_argument("--bin-table")
         args = p.parse_args()
         main(
-            args.samples, args.completeness, args.taxonomy, args.report_out, args.bin_table
+            args.report_out, args.bin_table
         )

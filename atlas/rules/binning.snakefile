@@ -475,17 +475,27 @@ rule get_all_16S:
 
 
 
-
-localrules: build_bin_report
-rule build_bin_report:
+localrules: build_bin_report, combine_bin_stats
+rule combine_bin_stats:
     input:
         completeness_files = expand("{sample}/binning/{{binner}}/checkm/completeness.tsv", sample=SAMPLES),
         taxonomy_files = expand("{sample}/binning/{{binner}}/checkm/taxonomy.tsv", sample=SAMPLES)
     output:
-        report = "reports/bin_report_{binner}.html",
         bin_table = "reports/genomic_bins_{binner}.tsv"
     params:
         samples = SAMPLES,
+    log:
+        "logs/binning/report_{binner}.log"
+    script:
+        "../scripts/combine_bin_stats.py"
+
+
+
+rule build_bin_report:
+    input:
+        bin_table= "reports/genomic_bins_{binner}.tsv"
+    output:
+        report = "reports/bin_report_{binner}.html",
     conda:
         "%s/report.yaml" % CONDAENV
     log:
@@ -544,63 +554,6 @@ rule run_das_tool:
         " --score_threshold {params.score_threshold} &> {log} "
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
 
-
-# # unknown bins and contigs
-#
-if config['final_binner']=='DASTool':
-    localrules: get_unknown_bins
-    rule get_unknown_bins:
-        input:
-            score_files=expand("{{sample}}/binning/DASTool/{{sample}}_{binner}.eval", binner= config['binner']),
-            bin_dirs=expand("{{sample}}/binning/{binner}/bins", binner= config['binner']),
-        output:
-            dir= directory("{sample}/binning/Unknown/bins"),
-            scores= "{sample}/binning/Unknown/scores.tsv"
-
-        run:
-            import pandas as pd
-            import shutil
-            import os
-
-            os.makedirs(output.dir)
-
-            Scores= pd.DataFrame()
-            for i in range(len(config['binner'])):
-                score_file = input.score_files[i]
-                bin_dir = input.bin_dirs[i]
-
-                S = pd.read_csv(score_file,index_col=0,sep='\t')
-
-                S= S.loc[S.SCG_completeness==0]
-                Scores= Scores.append(S)
-
-                for bin_id in S.index:
-                    shutil.copy(os.path.join(bin_dir,bin_id+'.fasta'),
-                                os.path.join(output.dir,bin_id+'.fasta') )
-
-            Scores.to_csv(output.scores,sep='\t')
-
-    localrules: get_all_unknown_bins
-    rule get_all_unknown_bins:
-        input:
-            bins=expand("{{sample}}/binning/{binner}/bins",sample=SAMPLES,binner= config['binner']),
-            scores= expand("{sample}/binning/DASTool/{sample}_{binner}.eval",sample=SAMPLES,binner= config['binner'])
-        output:
-            dir=directory("genomes/all_unknown_bins"),
-            scores= "genomes/clustering/DASTool_quality_all_unknown_bins.tsv"
-        run:
-            os.mkdir(output.dir)
-            from glob import glob
-            import shutil
-            for bin_folder in input.bins:
-                for fasta_file in glob(bin_folder+'/*.fasta'):
-                    shutil.copy(fasta_file,output.dir)
-
-            import pandas as pd
-
-            all_scores= [pd.read_csv(file,index_col=0,sep='\t')  for file in input.scores]
-
-            pd.concat(all_scores,axis=0).to_csv(output.scores,sep='\t')
 
 
 
