@@ -25,7 +25,7 @@ CHECKMDIR = os.path.join(DBDIR, "checkm")
 CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR= os.path.join(DBDIR,'CAT')
 CAT_flag_downloaded = os.path.join(CAT_DIR,'downloaded')
-EGGNOG_DIR = os.path.join(DBDIR,'EggNOGV2')
+EGGNOG_DIR = os.path.join(DBDIR,'EggNOG_V5')
 GTDBTK_DATA_PATH=os.path.join(DBDIR,"GTDB_V06")
 CONDAENV = "../envs"
 
@@ -78,7 +78,7 @@ CHECKMFILES=[   "%s/taxon_marker_sets.tsv" % CHECKMDIR,
 def get_eggnog_db_file():
     return ancient(expand("{path}/{files}",
                   path=EGGNOG_DIR,
-                  files=["eggnog.db","eggnog_proteins.dmnd","checksum_checked"]
+                  files=["eggnog.db","eggnog_proteins.dmnd"]
                   ))
 
 localrules: download,download_eggNOG_files,verify_eggNOG_files,download_atlas_files,download_checkm_data
@@ -104,23 +104,6 @@ rule download_eggNOG_files:
         "../envs/eggNOG.yaml"
     shell:
         f"download_eggnog_data.py -yf --data_dir {EGGNOG_DIR} "
-
-rule verify_eggNOG_files:
-    input:
-        rules.download_eggNOG_files.output
-    output:
-        touch(f"{EGGNOG_DIR}/checksum_checked")
-    run:
-        # validate the download
-        for file in input:
-            if not FILES[os.path.basename(file)] == md5(file):
-                raise OSError(2, "Invalid checksum", file)
-        # check if old eggNOG dir exists
-        old_eggnogdir=EGGNOG_DIR.replace('V2','')
-        if os.path.exists(old_eggnogdir):
-            logger.info("The eggnog database form the olf v1 was found on your system."
-                        f"You can savely remove this folder {old_eggnogdir}")
-
 
 
 
@@ -187,7 +170,7 @@ rule download_gtdb:
     threads:
         1
     resources:
-        time= int(config['runtime']['default']) if 'runtime' in config else 5 
+        time= int(config['runtime']['default']) if 'runtime' in config else 5
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "download-db.sh ;"
