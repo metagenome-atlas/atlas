@@ -485,7 +485,7 @@ rule combine_bin_stats:
     params:
         samples = SAMPLES,
     log:
-        "logs/binning/report_{binner}.log"
+        "logs/binning/combine_stats_{binner}.log"
     script:
         "../scripts/combine_bin_stats.py"
 

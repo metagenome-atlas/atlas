@@ -19,7 +19,7 @@ sys.path.append(os.path.join(atlas_dir,'scripts'))
 from utils.parsers_checkm import read_checkm_output
 
 
-def main(report_out, bin_table):
+def main( bin_table,report_out):
 
     div = {}
 
@@ -137,8 +137,9 @@ if __name__ == "__main__":
 
     try:
         main(
+            bin_table=snakemake.input.bin_table
             report_out=snakemake.output.report,
-            bin_table=snakemake.output.bin_table
+
         )
 
     except NameError:
@@ -148,5 +149,5 @@ if __name__ == "__main__":
         p.add_argument("--bin-table")
         args = p.parse_args()
         main(
-            args.report_out, args.bin_table
+             args.bin_table,args.report_out
         )
