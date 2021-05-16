@@ -36,6 +36,15 @@ def main( input_files,report_out):
 ATLAS_ - Dummy Report
 =============================================================
 
+.. _ATLAS: https://github.com/metagenome-atlas/atlas
+
+.. contents::
+    :backlinks: none
+
+This is a alpha version
+-----------------------
+
+
 In this alpha version of atlas the repoprts don't work properly.
 I hope they will be available soon.
 
