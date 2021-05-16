@@ -12,7 +12,7 @@ sys.path.append(os.path.join(atlas_dir,'scripts'))
 from utils.parsers_checkm import read_checkm_output
 
 
-def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
+def main(samples, completeness_files, taxonomy_files, bin_table):
     sample_data = {}
     div = {}
 
