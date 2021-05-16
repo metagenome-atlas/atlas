@@ -219,17 +219,3 @@ workflows:
           requires:
             - build
             - get_example_data
-      # - build-docker:
-      #     requires:
-      #       - build
-      #       - getenvs
-      #       - assembly_and_genecatalog
-      #     filters:
-      #       branches:
-      #         only: master
-      # - publish-latest:
-      #     requires:
-      #       - build-docker
-      #     filters:
-      #       branches:
-      #         only: master
