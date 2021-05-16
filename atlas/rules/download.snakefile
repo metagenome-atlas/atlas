@@ -186,6 +186,8 @@ rule download_gtdb:
         "../envs/gtdbtk.yaml"
     threads:
         1
+    resources:
+        time= int(config['runtime']['default']) if 'runtime' in config else 5 
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "download-db.sh ;"
