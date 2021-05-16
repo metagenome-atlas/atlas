@@ -816,8 +816,9 @@ rule get_contigs_from_gene_names:
 
 
 
-localrules: build_assembly_report
-rule build_assembly_report:
+localrules: build_assembly_report, combine_contig_stats
+
+rule combined_contig_stats:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
@@ -825,13 +826,22 @@ rule build_assembly_report:
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:
-        report = "reports/assembly_report.html",
         combined_contig_stats = 'stats/combined_contig_stats.tsv'
     params:
         samples = SAMPLES
+    log:
+        "logs/assembly/combine_contig_stats.log"
+    script:
+        "../scripts/combine_contig_stats.py"
+
+rule build_assembly_report:
+    input:
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    output:
+        report = "reports/assembly_report.html",
     conda:
         "%s/report.yaml" % CONDAENV
     log:
         "logs/assembly/report.log"
     script:
-        "../report/bin_report.py" #"../report/assembly_report.py"
+        "../report/dummy_report.py" #"../report/assembly_report.py"
