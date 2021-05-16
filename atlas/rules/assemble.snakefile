@@ -818,7 +818,7 @@ rule get_contigs_from_gene_names:
 
 localrules: build_assembly_report, combine_contig_stats
 
-rule combined_contig_stats:
+rule combine_contig_stats:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
