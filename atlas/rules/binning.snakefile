@@ -501,7 +501,7 @@ rule build_bin_report:
     log:
         "logs/binning/report_{binner}.log"
     script:
-        "../report/bin_report.py"
+        "../report/dummy_report.py" #"../report/bin_report.py"
 
 localrules: get_unique_bin_ids
 rule get_unique_bin_ids:

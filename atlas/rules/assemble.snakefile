@@ -834,4 +834,4 @@ rule build_assembly_report:
     log:
         "logs/assembly/report.log"
     script:
-        "../report/assembly_report.py"
+        "../report/bin_report.py" #"../report/assembly_report.py"

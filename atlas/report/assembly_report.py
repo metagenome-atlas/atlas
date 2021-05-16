@@ -1,6 +1,5 @@
 import os,sys
 f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
-from cufflinks import iplot
 log=open(snakemake.log[0],"w")
 sys.stderr= log
 sys.stdout= log
