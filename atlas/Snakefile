@@ -18,7 +18,7 @@ sampleTable= load_sample_table()
 
 # minimum required snakemake version
 min_version("6.1")
-
+container: "docker://continuumio/miniconda3:4.4.10"
 
 def get_temp_dir(config):
     if config.get("tmpdir"):
