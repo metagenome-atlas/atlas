@@ -1,20 +1,30 @@
 import os, sys, stat
 
 import logging, traceback
-logging.basicConfig(filename=snakemake.log[0],
-                    level=logging.INFO,
-                    format='%(asctime)s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    )
+
+logging.basicConfig(
+    filename=snakemake.log[0],
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(''.join(["Uncaught exception: ",
-                         *traceback.format_exception(exc_type, exc_value, exc_traceback)
-                         ])
-                 )
+    logger.error(
+        "".join(
+            [
+                "Uncaught exception: ",
+                *traceback.format_exception(exc_type, exc_value, exc_traceback),
+            ]
+        )
+    )
+
+
 # Install exception handler
 sys.excepthook = handle_exception
 
@@ -22,12 +32,9 @@ import pandas as pd
 from snakemake.utils import report
 
 
+def main(input_files, report_out):
 
-def main( input_files,report_out):
-
-
-    input_files= '\n'.join(input_files)
-
+    input_files = "\n".join(input_files)
 
     report_str = """
 
@@ -60,15 +67,17 @@ Input files for this report:
 
 """
 
-    atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-    report(report_str, report_out, stylesheet=os.path.join(atlas_dir,'report', "report.css"))
-
-
+    atlas_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    report(
+        report_str,
+        report_out,
+        stylesheet=os.path.join(atlas_dir, "report", "report.css"),
+    )
 
 
 if __name__ == "__main__":
 
-    input_files =[]
+    input_files = []
     for file in snakemake.input:
 
         logger.info(f"protect file {file}")
@@ -76,7 +85,4 @@ if __name__ == "__main__":
         os.chmod(file, current_file_status & ~stat.S_IEXEC)
         input_files.append(file)
 
-    main(
-        report_out=snakemake.output.report,
-        input_files= input_files
-    )
+    main(report_out=snakemake.output.report, input_files=input_files)

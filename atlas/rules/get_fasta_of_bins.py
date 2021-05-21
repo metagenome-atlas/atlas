@@ -21,19 +21,19 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
         shutil.rmtree(out_folder)
     os.makedirs(out_folder)
 
-    CA = pd.read_csv(cluster_attribution, header=None, index_col=1,sep='\t')
+    CA = pd.read_csv(cluster_attribution, header=None, index_col=1, sep="\t")
 
     assert CA.shape[1] == 1, "File should have only two columns " + cluster_attribution
     CA = CA.iloc[:, 0]
     CA.index = CA.index.astype("str")
     # exclude cluster 0 which is unclustered at least for metabat
-    CA = CA.loc[CA!="0"]
+    CA = CA.loc[CA != "0"]
 
     contigs = SeqIO.to_dict(SeqIO.parse(contigs, "fasta"))
 
     for id in CA.index.unique():
         bin_contig_names = CA.loc[id]
-        out_file = os.path.join(out_folder,"{id}.fasta".format(id=id))
+        out_file = os.path.join(out_folder, "{id}.fasta".format(id=id))
         if type(bin_contig_names) == str:
             warnings.warn("single contig bin Bin: " + out_file)
             bin_contig_names = [bin_contig_names]
@@ -43,7 +43,7 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
 
 if __name__ == "__main__":
 
-    if 'snakemake' not in globals():
+    if "snakemake" not in globals():
 
         p = argparse.ArgumentParser()
         p.add_argument("--cluster-attribution")
@@ -53,8 +53,8 @@ if __name__ == "__main__":
         get_fasta_of_bins(**args)
     else:
 
-        with open(snakemake.log[0],"w") as log:
-            sys.stderr= sys.stdout = log
+        with open(snakemake.log[0], "w") as log:
+            sys.stderr = sys.stdout = log
 
             get_fasta_of_bins(
                 snakemake.input.cluster_attribution,

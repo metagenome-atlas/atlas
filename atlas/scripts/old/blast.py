@@ -59,7 +59,7 @@ class Tree(object):
         # taxonomy id to node mapping; ensures unique nodes despite non-unique names
         self.tree[node_id] = Node(taxonomy, node_id, parent_id, tax_level)
 
-    def lca(self, taxonomies, threshold=1.):
+    def lca(self, taxonomies, threshold=1.0):
         """Returns the taxonomy of the LCA and optionally only use the top fraction of hits.
 
         Args:
@@ -256,7 +256,7 @@ class Tree(object):
         # all have been filtered
         if not taxonomy_list:
             majority = "1"
-            p = 1.
+            p = 1.0
         else:
             taxonomy_counts = Counter(taxonomy_list)
             majority_cutoff = len(taxonomy_list) * majority_threshold

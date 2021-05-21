@@ -153,7 +153,7 @@ def get_valid_dataframe(file_path, expected_cols, **kwargs):
 
 def table_source(tsv):
     header = []
-    cols = list(pd.read_csv(tsv, nrows=1,sep='\t').columns)
+    cols = list(pd.read_csv(tsv, nrows=1, sep="\t").columns)
     if len(cols) == len(PRODIGAL_HEADER):
         if cols[1:] == PRODIGAL_HEADER[1:]:
             header = PRODIGAL_HEADER
@@ -227,8 +227,8 @@ def do_merge(gene_tsv, refseq_tsv, counts_tsv=None, eggnog=None):
 
 
 def merge_bin_data(df, completeness_tsv, taxonomy_tsv, fasta_files):
-    tax_df = pd.read_csv(taxonomy_tsv,sep='\t')
-    com_df = pd.read_csv(completeness_tsv,sep='\t')
+    tax_df = pd.read_csv(taxonomy_tsv, sep="\t")
+    com_df = pd.read_csv(completeness_tsv, sep="\t")
     m = pd.merge(
         left=tax_df, right=com_df, how="left", left_on="Bin Id", right_on="Bin Id"
     )
