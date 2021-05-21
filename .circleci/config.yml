@@ -137,8 +137,8 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
-      # - store_test_results:
-      #     path: .test/Test_assembly/reports
+      - store_test_results:
+         path: .test/Test_assembly/log
       # - store_artifacts:
       #     path: .test/Test_assembly/reports
       #     destination: assembly_results
