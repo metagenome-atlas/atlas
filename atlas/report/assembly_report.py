@@ -1,19 +1,29 @@
-import os,sys
+import os, sys
 import logging, traceback
-logging.basicConfig(filename=snakemake.log[0],
-                    level=logging.INFO,
-                    format='%(asctime)s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    )
+
+logging.basicConfig(
+    filename=snakemake.log[0],
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(''.join(["Uncaught exception: ",
-                         *traceback.format_exception(exc_type, exc_value, exc_traceback)
-                         ])
-                 )
+    logger.error(
+        "".join(
+            [
+                "Uncaught exception: ",
+                *traceback.format_exception(exc_type, exc_value, exc_traceback),
+            ]
+        )
+    )
+
+
 # Install exception handler
 sys.excepthook = handle_exception
 
@@ -24,19 +34,16 @@ from plotly import offline
 from snakemake.utils import report
 
 
-
 PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
 
-atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-
+atlas_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def main(combined_stats, report_out):
 
-
-    df = pd.read_csv(combined_stats,sep='\t',index_col=0)
+    df = pd.read_csv(combined_stats, sep="\t", index_col=0)
     div = {}
     labels = {
         "Percent_Assembled_Reads": "Percent of Assembled Reads",
@@ -45,7 +52,10 @@ def main(combined_stats, report_out):
         "N_Predicted_Genes": "Predicted Genes (count)",
     }
     for variable in [
-        "Percent_Assembled_Reads", "contig_bp", "n_contigs", "N_Predicted_Genes"
+        "Percent_Assembled_Reads",
+        "contig_bp",
+        "n_contigs",
+        "N_Predicted_Genes",
     ]:
         y_axis_label = labels[variable]
         div[variable] = offline.plot(
@@ -139,9 +149,12 @@ Downloads
 ---------
 
 """
-    report(report_str, report_out, Table_1=combined_stats, stylesheet=os.path.join(atlas_dir,'report', "report.css"))
-
-
+    report(
+        report_str,
+        report_out,
+        Table_1=combined_stats,
+        stylesheet=os.path.join(atlas_dir, "report", "report.css"),
+    )
 
 
 if __name__ == "__main__":
@@ -149,9 +162,8 @@ if __name__ == "__main__":
     try:
 
         main(
-            combined_stats=snakemake.input.combined_contig_stats
+            combined_stats=snakemake.input.combined_contig_stats,
             report_out=snakemake.output.report,
-
         )
 
     except NameError:
