@@ -93,11 +93,14 @@ import tempfile
 
 EGGNOG_HEADER = [
     "Query",
-    "Target",
-    "evalue",
-    "score",
-    "Taxonomy",
-    "Protein_name",
+    "Seed",
+    "Seed_evalue",
+    "Seed_Score",
+    "eggNOG",
+    "max_annot_lvl",
+    "COG_cat",
+    "Description",
+    "Name",
     "GO_terms",
     "EC",
     "KO",
@@ -109,12 +112,9 @@ EGGNOG_HEADER = [
     "KEGG_TC",
     "CAZy",
     "BiGG_Reaction",
-    "tax_scope",
-    "EggNog",
-    "depricated_bestOG",
-    "FunctionalCategory",
-    "Description",
-]
+    "PFAMs",
+    "md5"
+    ]
 
 
 def make_default_config():
