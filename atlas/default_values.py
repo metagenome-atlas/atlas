@@ -112,8 +112,7 @@ EGGNOG_HEADER = [
     "KEGG_TC",
     "CAZy",
     "BiGG_Reaction",
-    "PFAMs",
-    "md5"
+    "PFAMs"
     ]
 
 
