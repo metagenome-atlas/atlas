@@ -206,7 +206,7 @@ rule download_gtdb:
         "../envs/gtdbtk.yaml"
     threads: 1
     resources:
-        time=int(config.get("runtime", {"default", 5})["default"]),
+        time=int(config.get("runtime", {"default": 5})["default"]),
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "download-db.sh ;"
