@@ -2,12 +2,11 @@ from Bio import SeqIO
 from numpy import ceil
 import os
 
-def _make_test_fasta(test_file='test_ABC.fasta'):
-    with open(test_file,'w') as f:
-        for Number,Letter in enumerate("ATCG"):
-            f.write(f'>contig_{Number+1} description\n{Letter}\n')
 
-
+def _make_test_fasta(test_file="test_ABC.fasta"):
+    with open(test_file, "w") as f:
+        for Number, Letter in enumerate("ATCG"):
+            f.write(f">contig_{Number+1} description\n{Letter}\n")
 
 
 def count_Nseq(fasta_file):
@@ -20,15 +19,15 @@ def count_Nseq(fasta_file):
     >>> os.remove(fasta_file)
 
     """
-    i=0
+    i = 0
     with open(fasta_file) as f:
         for line in f:
-            if line[0]=='>':
-                i+=1
+            if line[0] == ">":
+                i += 1
     return i
 
 
-def split(fasta_file,maxSubsetSize,out_dir, simplify_headers=True):
+def split(fasta_file, maxSubsetSize, out_dir, simplify_headers=True):
     """
     Splits a fasta in subsets of size max maxSubsetSize.
     >>> fasta_file='test_ABC.fasta'
@@ -49,31 +48,31 @@ def split(fasta_file,maxSubsetSize,out_dir, simplify_headers=True):
     >>> os.remove(fasta_file)
     """
 
-    N= count_Nseq(fasta_file)
+    N = count_Nseq(fasta_file)
 
-    SubsetSize= int(ceil( N/ceil(N/ maxSubsetSize)))
-    extension= os.path.splitext(fasta_file)[-1]
+    SubsetSize = int(ceil(N / ceil(N / maxSubsetSize)))
+    extension = os.path.splitext(fasta_file)[-1]
 
     os.makedirs(out_dir)
 
-    i,subset_n=0,0
-    fout= None
-    for i,seq in enumerate(SeqIO.parse(fasta_file,'fasta')):
+    i, subset_n = 0, 0
+    fout = None
+    for i, seq in enumerate(SeqIO.parse(fasta_file, "fasta")):
         if (i % SubsetSize) == 0:
-            subset_n+=1
+            subset_n += 1
             if fout is not None:
                 fout.close()
 
-            fout = open(f"{out_dir}/subset{subset_n}{extension}",'w')
+            fout = open(f"{out_dir}/subset{subset_n}{extension}", "w")
 
         if simplify_headers:
-            seq.description=''
-        SeqIO.write(seq,fout,'fasta')
+            seq.description = ""
+        SeqIO.write(seq, fout, "fasta")
 
     fout.close()
 
 
-def header2origin(fasta_file,out,simplify_header=True):
+def header2origin(fasta_file, out, simplify_header=True):
     """
     Annotates a fasta file to it's filename:
     genome.fasta:
@@ -93,25 +92,24 @@ def header2origin(fasta_file,out,simplify_header=True):
     """
 
     if type(out) == str:
-        out_stream=open(out,'w')
+        out_stream = open(out, "w")
     else:
-        out_stream= out
+        out_stream = out
 
-    name= os.path.splitext(os.path.split(fasta_file)[-1])[0]
+    name = os.path.splitext(os.path.split(fasta_file)[-1])[0]
 
     # write names of contigs in mapping file
-    with open(fasta_file) as f :
+    with open(fasta_file) as f:
         for line in f:
-            if line[0]==">":
-                header=line[1:].strip()
+            if line[0] == ">":
+                header = line[1:].strip()
                 if simplify_header:
-                    header=header.split()[0]
+                    header = header.split()[0]
                 out_stream.write(f"{header}\t{name}\n")
     out_stream.flush()
 
 
-
-
 if __name__ == "__main__":
     import doctest, shutil
+
     doctest.testmod()

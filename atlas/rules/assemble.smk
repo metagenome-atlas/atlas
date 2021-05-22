@@ -605,7 +605,7 @@ rule finalize_contigs:
     run:
         os.symlink(os.path.relpath(input[0],os.path.dirname(output[0])),output[0])
 
-ruleorder: bam_2_sam_contigs > align_reads_to_final_contigs
+
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
@@ -661,12 +661,41 @@ rule align_reads_to_final_contigs:
             2> {log}
         """
 
+ruleorder: bam_2_sam_contigs > convert_sam_to_bam
+
+rule convert_sam_to_bam:
+    input:
+        "{file}.sam"
+    output:
+        bam="{file}.bam",
+        sam=temp("{file}.forpileup.sam"),
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("simplejob_threads", 1)
+    shadow:
+        "shallow"
+    resources:
+        mem = 2 * config.get("simplejob_threads", 1)
+    shell:
+        """samtools view \
+               -m 1G \
+               -@ {threads} \
+               -bSh1 {input} | samtools sort \
+                                   -m 1G \
+                                   -@ {threads} \
+                                   -T {wildcards.file}_tmp \
+                                   -o {output.bam} \
+                                   -O bam -
+            mv {input} {output.sam}
+        """
+
 
 rule bam_2_sam_contigs:
     input:
         "{sample}/sequence_alignment/{sample}.bam"
     output:
-        temp("{sample}/sequence_alignment/{sample}.sam")
+        temp("{sample}/sequence_alignment/{sample}.forpileup.sam")
     threads:
         config['simplejob_threads']
     resources:
@@ -684,7 +713,7 @@ rule bam_2_sam_contigs:
 rule pileup:
     input:
         fasta = "{sample}/{sample}_contigs.fasta",
-        sam = "{sample}/sequence_alignment/{sample}.sam",
+        sam = "{sample}/sequence_alignment/{sample}.forpileup.sam",
     output:
         basecov = temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
         covhist = "{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
@@ -715,30 +744,6 @@ rule pileup:
                bincov={output.bincov} 2> {log}"""
 
 
-rule convert_sam_to_bam:
-    input:
-        "{file}.sam"
-    output:
-        "{file}.bam"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("simplejob_threads", 1)
-    shadow:
-        "shallow"
-    resources:
-        mem = 2 * config.get("simplejob_threads", 1)
-    shell:
-        """samtools view \
-               -m 1G \
-               -@ {threads} \
-               -bSh1 {input} | samtools sort \
-                                   -m 1G \
-                                   -@ {threads} \
-                                   -T {wildcards.file}_tmp \
-                                   -o {output} \
-                                   -O bam -
-        """
 
 
 rule create_bam_index:
@@ -811,8 +816,9 @@ rule get_contigs_from_gene_names:
 
 
 
-localrules: build_assembly_report
-rule build_assembly_report:
+localrules: build_assembly_report, combine_contig_stats
+
+rule combine_contig_stats:
     input:
         contig_stats = expand("{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES),
         gene_tables = expand("{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES),
@@ -820,13 +826,22 @@ rule build_assembly_report:
         # mapping logs will be incomplete unless we wait on alignment to finish
         bams = expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES)
     output:
-        report = "reports/assembly_report.html",
         combined_contig_stats = 'stats/combined_contig_stats.tsv'
     params:
         samples = SAMPLES
+    log:
+        "logs/assembly/combine_contig_stats.log"
+    script:
+        "../scripts/combine_contig_stats.py"
+
+rule build_assembly_report:
+    input:
+        combined_contig_stats = 'stats/combined_contig_stats.tsv'
+    output:
+        report = "reports/assembly_report.html",
     conda:
         "%s/report.yaml" % CONDAENV
     log:
         "logs/assembly/report.log"
     script:
-        "../report/assembly_report.py"
+        "../report/dummy_report.py" #"../report/assembly_report.py"

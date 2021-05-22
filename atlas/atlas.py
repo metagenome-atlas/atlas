@@ -6,8 +6,8 @@ import subprocess
 import click
 
 from atlas import __version__
-from atlas.conf import make_config,prepare_sample_table,load_configfile
-from atlas.conf import validate_config,run_init
+from atlas.conf import make_config, prepare_sample_table, load_configfile
+from atlas.conf import validate_config, run_init
 
 
 logging.basicConfig(
@@ -16,11 +16,17 @@ logging.basicConfig(
     format="[%(asctime)s %(levelname)s] %(message)s",
 )
 
+
 def log_exception(msg):
     logging.critical(msg)
-    logging.info("Documentation is available at: https://metagenome-atlas.readthedocs.io")
-    logging.info("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
+    logging.info(
+        "Documentation is available at: https://metagenome-atlas.readthedocs.io"
+    )
+    logging.info(
+        "Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues"
+    )
     sys.exit(1)
+
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.version_option(__version__)
@@ -32,9 +38,8 @@ def cli(obj):
     For updates and reporting issues, see: https://github.com/metagenome-atlas/atlas
     """
 
+
 cli.add_command(run_init)
-
-
 
 
 def get_snakefile(file="Snakefile"):
@@ -44,33 +49,34 @@ def get_snakefile(file="Snakefile"):
     return sf
 
 
-
-
-
-
 ## QC command
+
 
 @cli.command(
     "run",
     context_settings=dict(ignore_unknown_options=True),
-    short_help="run atlas main workflow"
+    short_help="run atlas main workflow",
 )
 @click.argument(
     "workflow",
     default="all",
-    type=click.Choice(["qc","assembly","binning","genomes","genecatalog","None","all"]),
-#    show_default=True,
-#    help="Execute only subworkflow.",
+    type=click.Choice(
+        ["qc", "assembly", "binning", "genomes", "genecatalog", "None", "all"]
+    ),
+    #    show_default=True,
+    #    help="Execute only subworkflow.",
 )
-@click.option("-w",
+@click.option(
+    "-w",
     "--working-dir",
-    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
+    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
     help="location to run atlas.",
-    default="."
+    default=".",
 )
-@click.option("-c",
+@click.option(
+    "-c",
     "--config-file",
-    type=click.Path(exists=True,resolve_path=True),
+    type=click.Path(exists=True, resolve_path=True),
     help="config-file generated with 'atlas init'",
 )
 @click.option(
@@ -93,7 +99,9 @@ def get_snakefile(file="Snakefile"):
     help="Test execution.",
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snakemake_args):
+def run_workflow(
+    workflow, working_dir, config_file, jobs, profile, dryrun, snakemake_args
+):
     """Runs the ATLAS pipline
 
     By default all steps are executed but a sub-workflow can be specified.
@@ -105,31 +113,35 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
     """
 
     if config_file is None:
-        config_file = os.path.join(working_dir,'config.yaml')
+        config_file = os.path.join(working_dir, "config.yaml")
 
     if not os.path.exists(config_file):
-        logging.critical(f"config-file not found: {config_file}\n"
-                         "generate one with 'atlas init'")
+        logging.critical(
+            f"config-file not found: {config_file}\n" "generate one with 'atlas init'"
+        )
         sys.exit(1)
 
-    sample_file=os.path.join(working_dir,'samples.tsv')
+    sample_file = os.path.join(working_dir, "samples.tsv")
 
     if not os.path.exists(sample_file):
-        logging.critical(f"sample.tsv not found in the working directory. "
-                         "Generate one with 'atlas init'")
+        logging.critical(
+            f"sample.tsv not found in the working directory. "
+            "Generate one with 'atlas init'"
+        )
         sys.exit(1)
 
     validate_config(config_file, workflow)
 
     conf = load_configfile(config_file)
 
-    db_dir = conf['database_dir']
+    db_dir = conf["database_dir"]
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "
+        " --scheduler greedy "
         " {target_rule} "
         " {args} "
     ).format(
@@ -140,8 +152,8 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
         profile="" if (profile is None) else "--profile {}".format(profile),
         dryrun="--dryrun" if dryrun else "",
         args=" ".join(snakemake_args),
-        target_rule=workflow if workflow!="None" else "",
-        conda_prefix= "--conda-prefix "+os.path.join(db_dir,'conda_envs')
+        target_rule=workflow if workflow != "None" else "",
+        conda_prefix="--conda-prefix " + os.path.join(db_dir, "conda_envs"),
     )
     logging.info("Executing: %s" % cmd)
     try:
@@ -152,19 +164,18 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
         exit(1)
 
 
-
-
 # Download
 @cli.command(
     "download",
     context_settings=dict(ignore_unknown_options=True),
     short_help="download reference files (need ~50GB)",
 )
-@click.option("-d",
+@click.option(
+    "-d",
     "--db-dir",
     help="location to store databases",
-    type=click.Path(dir_okay=True,writable=True,resolve_path=True),
-    required=True
+    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
+    required=True,
 )
 @click.option(
     "-j",
@@ -175,7 +186,7 @@ def run_workflow(workflow, working_dir,config_file, jobs, profile, dryrun, snake
     help="number of simultaneous downloads",
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
-def run_download(db_dir,jobs, snakemake_args):
+def run_download(db_dir, jobs, snakemake_args):
     """Executes a snakemake workflow to download reference database files and validate based on
     their MD5 checksum.
     """
@@ -183,14 +194,15 @@ def run_download(db_dir,jobs, snakemake_args):
     cmd = (
         "snakemake --snakefile {snakefile} "
         "--jobs {jobs} --rerun-incomplete "
+        "--conda-frontend mamba --scheduler greedy "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
-        snakefile=get_snakefile("rules/download.snakefile"),
+        snakefile=get_snakefile("rules/download.smk"),
         jobs=jobs,
         db_dir=db_dir,
-        conda_prefix=os.path.join(db_dir,'conda_envs'),
+        conda_prefix=os.path.join(db_dir, "conda_envs"),
         add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
         args=" ".join(snakemake_args),
     )
