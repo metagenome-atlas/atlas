@@ -182,6 +182,7 @@ rule download_cat_db:
 
 rule download_gtdb:
     output:
+        directory(GTDBTK_DATA_PATH),
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     conda:
         "../envs/gtdbtk.yaml"
@@ -190,6 +191,7 @@ rule download_gtdb:
         time=int(config.get("runtime", {"long": 10})["long"]),
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
+        "mkdir $GTDBTK_DATA_PATH ;"
         "download-db.sh ;"
 
 
