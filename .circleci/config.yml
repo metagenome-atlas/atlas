@@ -137,14 +137,12 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
-      - store_test_results:
-         path: .test/Test_assembly/log
-      - store_test_results:
+     - store_artifacts:
          path: .test/Test_assembly/logs
-      # - store_artifacts:
-      #     path: .test/Test_assembly/reports
-      #     destination: assembly_results
-
+         destination: assembly_logs
+     - store_artifacts:
+         path: .test/Test_assembly/Streptococcus/logs
+         destination: assembly_sample_logs
 
       - run:
           name: run genecatalog
