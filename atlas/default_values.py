@@ -132,7 +132,7 @@ def make_default_config():
     ] = "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
 
     conf["mem"] = MEM
-    conf["large_mem"] = 100
+    conf["large_mem"] = 250
     conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
