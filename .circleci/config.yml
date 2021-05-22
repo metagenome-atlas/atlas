@@ -87,7 +87,7 @@ jobs:
           name: install environements
           command: |
               source activate ./atlasenv
-              atlas run all -w .test/Getenvs --conda-create-envs-only --omit-from build_qc_report --cores all build_assembly_report build_bin_report
+              atlas run all -w .test/Getenvs --conda-create-envs-only --cores all
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
