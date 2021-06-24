@@ -1,9 +1,12 @@
-import os,sys
-f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
+import os, sys
+
+f = open(os.devnull, "w")
+sys.stdout = f  # block cufflinks to plot strange code
 from cufflinks import iplot
-log=open(snakemake.log[0],"w")
-sys.stderr= log
-sys.stdout= log
+
+log = open(snakemake.log[0], "w")
+sys.stderr = log
+sys.stdout = log
 
 import pandas as pd
 import plotly.graph_objs as go
@@ -14,33 +17,25 @@ PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
 
-atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-sys.path.append(os.path.join(atlas_dir,'scripts'))
+atlas_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(atlas_dir, "scripts"))
 from utils.parsers_checkm import read_checkm_output
 
 
-def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
-    sample_data = {}
+def main(bin_table, report_out):
+
     div = {}
 
-    df= pd.DataFrame()
+    df = pd.read_csv(bin_table, sep="\t", index_col=0)
 
-    for i,sample in enumerate(samples):
-        sample_data= read_checkm_output(taxonomy_table=taxonomy_files[i],
-                                        completness_table=completeness_files[i])
-        sample_data['Sample']= sample
-
-        df= df.append(sample_data)
-
-
-    df.to_csv(bin_table,sep='\t')
+    df.to_csv(bin_table, sep="\t")
 
     div["bin_scatter"] = offline.plot(
         {
             "data": [
                 {
-                    "x": df.loc[df["Sample"] == sample,"Completeness"],
-                    "y": df.loc[df["Sample"] == sample,"Contamination"],
+                    "x": df.loc[df["Sample"] == sample, "Completeness"],
+                    "y": df.loc[df["Sample"] == sample, "Contamination"],
                     "name": sample,
                     "mode": "markers",
                     "text": df.index[df["Sample"] == sample],
@@ -50,7 +45,8 @@ def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
                 for sample in df.Sample.unique()
             ],
             "layout": {
-                "xaxis": {"title": "Completeness"}, "yaxis": {"title": "Contamination"}
+                "xaxis": {"title": "Completeness"},
+                "yaxis": {"title": "Contamination"},
             },
         },
         **PLOTLY_PARAMS,
@@ -78,7 +74,7 @@ def main(samples, completeness_files, taxonomy_files, report_out, bin_table):
         lambda s: "; ".join(str(s).split(";")[-1:])
     )
     with pd.option_context("display.precision", 3):
-        div["table"] = df.to_html(index=False).replace('\n', '\n' + 10 * ' ')
+        div["table"] = df.to_html(index=False).replace("\n", "\n" + 10 * " ")
     report_str = """
 
 .. raw:: html
@@ -142,22 +138,15 @@ if __name__ == "__main__":
 
     try:
         main(
-            samples=snakemake.params.samples,
-            taxonomy_files=snakemake.input.taxonomy_files,
-            completeness_files=snakemake.input.completeness_files,
+            bin_table=snakemake.input.bin_table,
             report_out=snakemake.output.report,
-            bin_table=snakemake.output.bin_table
         )
 
     except NameError:
         import argparse
+
         p = argparse.ArgumentParser()
-        p.add_argument("--samples", nargs="+")
-        p.add_argument("--completeness", nargs="+")
-        p.add_argument("--taxonomy", nargs="+")
         p.add_argument("--report-out")
         p.add_argument("--bin-table")
         args = p.parse_args()
-        main(
-            args.samples, args.completeness, args.taxonomy, args.report_out, args.bin_table
-        )
+        main(args.bin_table, args.report_out)

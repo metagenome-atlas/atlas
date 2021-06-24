@@ -1,4 +1,3 @@
-
 # global defaults
 MEM = 80
 JAVA_MEM_FRACTION = 0.85
@@ -94,11 +93,14 @@ import tempfile
 
 EGGNOG_HEADER = [
     "Query",
-    "Target",
-    "evalue",
-    "score",
-    "Taxonomy",
-    "Protein_name",
+    "Seed",
+    "Seed_evalue",
+    "Seed_Score",
+    "eggNOG",
+    "max_annot_lvl",
+    "COG_cat",
+    "Description",
+    "Name",
     "GO_terms",
     "EC",
     "KO",
@@ -110,28 +112,27 @@ EGGNOG_HEADER = [
     "KEGG_TC",
     "CAZy",
     "BiGG_Reaction",
-    "tax_scope",
-    "EggNog",
-    "depricated_bestOG",
-    "FunctionalCategory",
-    "Description"
-                ]
+    "PFAMs"
+    ]
+
 
 def make_default_config():
-    """ generates a dict with all the default values, if they exist
-    """
+    """generates a dict with all the default values, if they exist"""
 
     conf = {}
-    conf['data_type']='metagenome'
-    conf["interleaved_fastqs"]=False
+    conf["data_type"] = "metagenome"
+    conf["interleaved_fastqs"] = False
     conf["tmpdir"] = tempfile.gettempdir()
     conf["threads"] = 6
 
-    conf["simplejob_mem"]=10
-    conf["simplejob_threads"]=4
+    conf["simplejob_mem"] = 10
+    conf["simplejob_threads"] = 4
+    conf[
+        "importqc_params"
+    ] = "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
 
     conf["mem"] = MEM
-    conf["large_mem"] = 100
+    conf["large_mem"] = 250
     conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
@@ -182,11 +183,11 @@ def make_default_config():
     conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
-    conf["spades_use_scaffolds"] = False
+    conf["spades_use_scaffolds"] = True
     conf["spades_preset"] = "meta"
     conf["spades_extra"] = ""
     conf["spades_skip_BayesHammer"] = False
-    conf['longread_type'] = None
+    conf["longread_type"] = None
     conf["filter_contigs"] = True
     conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
     conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
@@ -206,72 +207,69 @@ def make_default_config():
     conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     # gene cluster
-    conf['genecatalog']={'source':'genomes',
-                        'clustermethod':'linclust',
-                         'minlength':100,
-                           'minid':0.9,
-                           'coverage':0.9,
-                           'extra':"",
-                           'SubsetSize': 500000}
+    conf["genecatalog"] = {
+        "source": "genomes",
+        "clustermethod": "linclust",
+        "minlength": 100,
+        "minid": 0.9,
+        "coverage": 0.9,
+        "extra": "",
+        "SubsetSize": 500000,
+    }
+
+    conf["eggNOG_use_virtual_disk"] = False
+    conf["virtual_disk"] = "/dev/shm"
 
     # binning
     conf["perform_genome_binning"] = True
 
     conf["final_binner"] = "DASTool"
-    conf["binner"] = ['metabat','maxbin']
+    conf["binner"] = ["metabat", "maxbin"]
 
-    conf["metabat"] = {"sensitivity":"sensitive",
-                       "min_contig_length" : 1500}
+    conf["metabat"] = {"sensitivity": "sensitive", "min_contig_length": 1500}
 
-    conf["concoct"]= {
-    "Nexpected_clusters": 200 ,          # important parameter
-    "read_length": 100,                  # change this parameter !
-    "Niterations": 500,
-    "min_contig_length" : 1000}
-
-    conf["maxbin"] = {'max_iteration': MAXBIN_MAX_ITERATION,
-     "prob_threshold": MAXBIN_PROB_THRESHOLD,
-     "min_contig_length": MAXBIN_MIN_CONTIG_LENGTH}
-
-    conf["DASTool"]= {
-    "search_engine": 'diamond',
-    "score_threshold": 0.5,
-    "duplicate_penalty" :0.6,
-    "megabin_penalty": 0.5
+    conf["concoct"] = {
+        "Nexpected_clusters": 200,  # important parameter
+        "read_length": 100,  # change this parameter !
+        "Niterations": 500,
+        "min_contig_length": 1000,
     }
 
-    conf["annotations"]= ["gtdb_taxonomy",
-                          "checkm_taxonomy",
-                          "gtdb_tree"]
-    conf['rename_mags_contigs']= True
+    conf["maxbin"] = {
+        "max_iteration": MAXBIN_MAX_ITERATION,
+        "prob_threshold": MAXBIN_PROB_THRESHOLD,
+        "min_contig_length": MAXBIN_MIN_CONTIG_LENGTH,
+    }
 
-    conf['genome_dereplication']=dict(
-                            filter = dict(
-                                noFilter=False,
-                                length=5000,
-                                completeness=50,
-                                contamination=10),
-                            score = dict(
-                                    completeness=1,
-                                    contamination=5,
-                                    strain_heterogeneity=0, #not in table
-                                    N50=0.5,
-                                    length=0),
-                            ANI=0.95,
-                            overlap=0.6,
-                            sketch_size=5000,
-                            opt_parameters=""
-                                )
+    conf["DASTool"] = {
+        "search_engine": "diamond",
+        "score_threshold": 0.5,
+        "duplicate_penalty": 0.6,
+        "megabin_penalty": 0.5,
+    }
 
-    conf['cat_range']=5
-    conf['cat_fraction']=0.3
+    conf["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
+    conf["rename_mags_contigs"] = True
 
-    conf["runtime"]={
-                    "default":5,
-                    "assembly":24,
-                    "long":12,
-                    "simple_job":0.5
-                    }
+    conf["genome_dereplication"] = dict(
+        filter=dict(noFilter=False, length=5000, completeness=50, contamination=10),
+        score=dict(
+            completeness=1,
+            contamination=5,
+            strain_heterogeneity=0,  # not in table
+            N50=0.5,
+            length=0,
+        ),
+        ANI=0.95,
+        overlap=0.6,
+        sketch_size=5000,
+        opt_parameters="",
+    )
+
+    conf["cat_range"] = 5
+    conf["cat_fraction"] = 0.3
+
+    conf["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simple_job": 1}
 
     # conf["diamond_run_mode"] = "fast"
     # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS

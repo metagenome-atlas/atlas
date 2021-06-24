@@ -7,17 +7,24 @@ import numpy as np
 
 from snakemake.utils import logger, min_version
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)),"scripts"))
+sys.path.append(
+    os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "scripts")
+)
 import utils
 
 from conf import update_config
-config= update_config(config)
-from default_values import * # LOAD HARDCODED values and EGGNOG_HEADER
+
+config = update_config(config)
+from default_values import *  # LOAD HARDCODED values and EGGNOG_HEADER
 from conf import load_sample_table
-sampleTable= load_sample_table()
+
+sampleTable = load_sample_table()
 
 # minimum required snakemake version
-min_version("5.4.5")
+min_version("6.1")
+
+
+container: "docker://continuumio/miniconda3:4.4.10"
 
 
 def get_temp_dir(config):
@@ -28,10 +35,7 @@ def get_temp_dir(config):
     return tmp_dir
 
 
-
-
-
-def io_params_for_tadpole(io,key='in'):
+def io_params_for_tadpole(io, key="in"):
     """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
 
@@ -45,123 +49,144 @@ def io_params_for_tadpole(io,key='in'):
             R1,R2 -> in1={R1} in2={R2}
 
     """
-    N= len(io)
-    if N==1:
+    N = len(io)
+    if N == 1:
         flag = f"{key}1={io[0]}"
-    elif N==2:
-        flag= f"{key}1={io[0]} {key}2={io[1]}"
-    elif N==3:
-        flag= f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
+    elif N == 2:
+        flag = f"{key}1={io[0]} {key}2={io[1]}"
+    elif N == 3:
+        flag = f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
     else:
-        logger.critical(("File input/output expectation is one of: "
-                         "1 file = single-end/ interleaved paired-end "
-                         "2 files = R1,R2, or"
-                         "3 files = R1,R2,se"
-                         "got: {n} files:\n{}").format('\n'.join(io),
-                                                       n=len(io)))
+        logger.critical(
+            (
+                "File input/output expectation is one of: "
+                "1 file = single-end/ interleaved paired-end "
+                "2 files = R1,R2, or"
+                "3 files = R1,R2,se"
+                "got: {n} files:\n{}"
+            ).format("\n".join(io), n=len(io))
+        )
         sys.exit(1)
     return flag
 
+
 def input_paired_only(files):
     """
-        return only paired interleaved or not
+    return only paired interleaved or not
     """
 
     if not PAIRED_END:
         raise IOError("Ask for paired end samples if not paired end workflow")
 
-    return files[:min(len(files),2)]
+    return files[: min(len(files), 2)]
 
 
 def input_params_for_bbwrap(input):
 
-    if len(input)==3:
+    if len(input) == 3:
         return f"in1={input[0]},{input[2]} in2={input[1]},null"
     else:
         return io_params_for_tadpole(input)
 
 
-#if config.get("workflow") != "download":
+# if config.get("workflow") != "download":
 
 #    config = update_config_file_paths(config)
 TMPDIR = get_temp_dir(config)
 SAMPLES = sampleTable.index.values
-SKIP_QC=False
-#GROUPS = sampleTable.BinGroup.unique()
+SKIP_QC = False
+# GROUPS = sampleTable.BinGroup.unique()
 def get_alls_samples_of_group(wildcards):
-    group_of_sample= sampleTable.loc[wildcards.sample,'BinGroup']
+    group_of_sample = sampleTable.loc[wildcards.sample, "BinGroup"]
 
-    return list(sampleTable.loc[ sampleTable.BinGroup==group_of_sample].index)
-
-
-
-PAIRED_END = sampleTable.columns.str.contains('R2').any() or config.get('interleaved_fastqs',False)
+    return list(sampleTable.loc[sampleTable.BinGroup == group_of_sample].index)
 
 
-colum_headers_QC= sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
-if len(colum_headers_QC)>=1:
-    MULTIFILE_FRACTIONS= list(colum_headers_QC.str.replace('Reads_QC_',''))
+PAIRED_END = sampleTable.columns.str.contains("R2").any() or config.get(
+    "interleaved_fastqs", False
+)
 
-    if (len(MULTIFILE_FRACTIONS)==1 ) and config.get('interleaved_fastqs',False):
-        MULTIFILE_FRACTIONS=['R1','R2']
+
+colum_headers_QC = sampleTable.columns[sampleTable.columns.str.startswith("Reads_QC_")]
+if len(colum_headers_QC) >= 1:
+    MULTIFILE_FRACTIONS = list(colum_headers_QC.str.replace("Reads_QC_", ""))
+
+    if (len(MULTIFILE_FRACTIONS) == 1) and config.get("interleaved_fastqs", False):
+        MULTIFILE_FRACTIONS = ["R1", "R2"]
 
 else:
-    MULTIFILE_FRACTIONS = ['R1', 'R2', 'se'] if PAIRED_END else ['se']
+    MULTIFILE_FRACTIONS = ["R1", "R2", "se"] if PAIRED_END else ["se"]
 
-colum_headers_raw= sampleTable.columns[sampleTable.columns.str.startswith("Reads_raw_")]
-if len(colum_headers_raw) ==0:
-    SKIP_QC=True
+colum_headers_raw = sampleTable.columns[
+    sampleTable.columns.str.startswith("Reads_raw_")
+]
+if len(colum_headers_raw) == 0:
+    SKIP_QC = True
 
     logger.info("Didn't find raw reads in sampleTable - skip QC")
     RAW_INPUT_FRACTIONS = MULTIFILE_FRACTIONS
 else:
-    RAW_INPUT_FRACTIONS = ['R1', 'R2'] if PAIRED_END else ['se']
+    RAW_INPUT_FRACTIONS = ["R1", "R2"] if PAIRED_END else ["se"]
 
 
-if (len(colum_headers_raw) ==0) and (len(colum_headers_QC) ==0):
+if (len(colum_headers_raw) == 0) and (len(colum_headers_QC) == 0):
 
-    raise IOError("Either raw reas or QC reads need to be in the sample table. "
-                  "I din't find any collums with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
-                  )
+    raise IOError(
+        "Either raw reas or QC reads need to be in the sample table. "
+        "I din't find any collums with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
+    )
 
 
 class FileNotInSampleTableException(Exception):
     """
-        Exception with sampleTable
+    Exception with sampleTable
     """
+
     def __init__(self, message):
         super(FileNotInSampleTableException, self).__init__(message)
 
 
-def get_files_from_sampleTable(sample,Headers):
+def get_files_from_sampleTable(sample, Headers):
     """
-        Function that gets some filenames form the sampleTable for a given sample and Headers.
-        It checks various possibilities for errors and throws either a
-        FileNotInSampleTableException or a IOError, when something went really wrong.
+    Function that gets some filenames form the sampleTable for a given sample and Headers.
+    It checks various possibilities for errors and throws either a
+    FileNotInSampleTableException or a IOError, when something went really wrong.
     """
 
     if not (sample in sampleTable.index):
         raise IOError(f"Sample name {sample} is not in sampleTable")
 
+    Error_details = f"\nsample: {sample}\nFiles: {Headers}"
 
-    Error_details=f"\nsample: {sample}\nFiles: {Headers}"
+    if type(Headers) == str:
+        Headers = [Headers]
 
-    if type(Headers) == str: Headers= [Headers]
+    NheadersFound = sampleTable.columns.isin(Headers).sum()
 
-    NheadersFound= sampleTable.columns.isin(Headers).sum()
-
-    if  NheadersFound==0 :
-        raise FileNotInSampleTableException(f"None of the Files ar in sampleTable, they should be added to the sampleTable later in the workflow"+Error_details)
+    if NheadersFound == 0:
+        raise FileNotInSampleTableException(
+            f"None of the Files ar in sampleTable, they should be added to the sampleTable later in the workflow"
+            + Error_details
+        )
     elif NheadersFound < len(Headers):
-        raise IOError(f"Not all of the Headers are in sampleTable, found only {NheadersFound}, something went wrong."+Error_details)
+        raise IOError(
+            f"Not all of the Headers are in sampleTable, found only {NheadersFound}, something went wrong."
+            + Error_details
+        )
 
-    files= sampleTable.loc[sample,Headers]
+    files = sampleTable.loc[sample, Headers]
 
     if files.isnull().all():
-        raise FileNotInSampleTableException("The following files were not available for this sample in the SampleTable"+Error_details)
+        raise FileNotInSampleTableException(
+            "The following files were not available for this sample in the SampleTable"
+            + Error_details
+        )
 
     elif files.isnull().any():
-        raise IOError(f"Not all of the files are in sampleTable, something went wrong."+Error_details)
+        raise IOError(
+            f"Not all of the files are in sampleTable, something went wrong."
+            + Error_details
+        )
 
     return list(files)
 
@@ -172,39 +197,44 @@ def get_quality_controlled_reads(wildcards):
     externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
     """
 
-    if config.get('interleaved_fastqs',False) and SKIP_QC:
-        QC_Headers=['Reads_QC_se']
+    if config.get("interleaved_fastqs", False) and SKIP_QC:
+        QC_Headers = ["Reads_QC_se"]
     else:
-        QC_Headers=['Reads_QC_'+f for f in MULTIFILE_FRACTIONS]
+        QC_Headers = ["Reads_QC_" + f for f in MULTIFILE_FRACTIONS]
 
     try:
-        return get_files_from_sampleTable(wildcards.sample,QC_Headers)
+        return get_files_from_sampleTable(wildcards.sample, QC_Headers)
     except FileNotInSampleTableException:
 
         # return files as named by atlas pipeline
-        return expand("{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
-                        fraction=MULTIFILE_FRACTIONS,sample=wildcards.sample)
+        return expand(
+            "{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+            sample=wildcards.sample,
+        )
 
 
-
-
-
-
-
-include: "rules/download.snakefile" # contains hard coded variables
-include: "rules/qc.snakefile"
-include: "rules/assemble.snakefile"
-include: "rules/binning.snakefile"
+include: "rules/download.smk"  # contains hard coded variables
+include: "rules/qc.smk"
+include: "rules/assemble.smk"
+include: "rules/binning.smk"
 include: "rules/genomes.smk"
-include: "rules/genecatalog.snakefile"
+include: "rules/genecatalog.smk"
 include: "rules/cat_taxonomy.smk"
 include: "rules/gtdbtk.smk"
 
 
+CONDAENV = "envs"  # overwrite definition in download.smk
 
-CONDAENV = "envs" # overwrite definition in download.smk
 
-localrules: all, qc, assembly_one_sample, assembly, genomes
+localrules:
+    all,
+    qc,
+    assembly_one_sample,
+    assembly,
+    genomes,
+
+
 rule all:
     input:
         "finished_QC",
@@ -212,7 +242,7 @@ rule all:
         "finished_binning",
         "finished_genomes",
         "finished_genecatalog",
-        "genomes/annotations/gene2genome.tsv.gz"
+        "genomes/annotations/gene2genome.tsv.gz",
 
 
 rule genecatalog:
@@ -222,29 +252,35 @@ rule genecatalog:
         "Genecatalog/clustering/orf2gene.tsv.gz",
         #"Genecatalog/counts/median_coverage.tsv.gz",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        "Genecatalog/annotations/eggNog.tsv.gz"
+        "Genecatalog/annotations/eggNog.tsv.gz",
     output:
-        temp(touch("finished_genecatalog"))
+        temp(touch("finished_genecatalog")),
 
 
 def get_genome_annotations():
 
-    annotation_file_names={"cat_taxonomy":"genomes/taxonomy/taxonomy.tsv",
-               "ssu":"genomes/SSU/ssu_summary.tsv",
-               "checkm_taxonomy":"genomes/checkm/taxonomy.tsv",
-               "checkm_tree": "genomes/tree/checkm.nwk",
-               "gtdb_tree":"genomes/tree/finished_gtdb_trees",
-               "gtdb_taxonomy":"genomes/taxonomy/gtdb/classify",
-               "genes":"genomes/annotations/genes/predicted"}
+    annotation_file_names = {
+        "cat_taxonomy": "genomes/taxonomy/taxonomy.tsv",
+        "ssu": "genomes/SSU/ssu_summary.tsv",
+        "checkm_taxonomy": "genomes/checkm/taxonomy.tsv",
+        "checkm_tree": "genomes/tree/checkm.nwk",
+        "gtdb_tree": "genomes/tree/finished_gtdb_trees",
+        "gtdb_taxonomy": "genomes/taxonomy/gtdb/classify",
+        "genes": "genomes/annotations/genes/predicted",
+    }
 
-    annotations_requested= config['annotations']
+    annotations_requested = config["annotations"]
 
     try:
-        annotations_files=["genomes/checkm/completeness.tsv"]+[annotation_file_names[an] for an in annotations_requested]
+        annotations_files = ["genomes/checkm/completeness.tsv"] + [
+            annotation_file_names[an] for an in annotations_requested
+        ]
 
     except Exception as e:
 
-        raise IOError("Error in annotations requested, check config file 'annotations' ") from e
+        raise IOError(
+            "Error in annotations requested, check config file 'annotations' "
+        ) from e
 
     return annotations_files
 
@@ -255,21 +291,24 @@ rule genomes:
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
-        *get_genome_annotations(),
-        "finished_binning"
-
+        * get_genome_annotations(),
+        "finished_binning",
     output:
-        temp(touch("finished_genomes"))
+        temp(touch("finished_genomes")),
+
 
 rule binning:
     input:
-        expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-               binner=config['final_binner'], sample =SAMPLES),
-        expand("reports/bin_report_{binner}.html", binner=config['final_binner']),
+        expand(
+            "{sample}/binning/{binner}/cluster_attribution.tsv",
+            binner=config["final_binner"],
+            sample=SAMPLES,
+        ),
+        expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
         "genomes/checkm/checkm_all_bins.tsv",
-        "finished_assembly"
+        "finished_assembly",
     output:
-        temp(touch("finished_binning"))
+        temp(touch("finished_binning")),
 
 
 rule assembly_one_sample:
@@ -278,36 +317,32 @@ rule assembly_one_sample:
         "{sample}/sequence_alignment/{sample}.bam",
         "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
         "{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
-        "{sample}/assembly/contig_stats/final_contig_stats.txt"
+        "{sample}/assembly/contig_stats/final_contig_stats.txt",
     output:
-        touch("{sample}/finished_assembly")
+        touch("{sample}/finished_assembly"),
 
 
 rule assembly:
     input:
-        expand("{sample}/finished_assembly",sample=SAMPLES),
+        expand("{sample}/finished_assembly", sample=SAMPLES),
         "reports/assembly_report.html",
-        "finished_QC"
+        "finished_QC",
     output:
-        temp(touch("finished_assembly"))
-
+        temp(touch("finished_assembly")),
 
 
 rule qc:
     input:
         expand("{sample}/sequence_quality_control/finished_QC", sample=SAMPLES),
-        read_counts = "stats/read_counts.tsv",
-        read_length_stats = ['stats/insert_stats.tsv', 'stats/read_length_stats.tsv'] if PAIRED_END else 'stats/read_length_stats.tsv',
-        report= "reports/QC_report.html",
+        read_counts="stats/read_counts.tsv",
+        read_length_stats=(
+            ["stats/insert_stats.tsv", "stats/read_length_stats.tsv"]
+            if PAIRED_END
+            else "stats/read_length_stats.tsv"
+        ),
+        report="reports/QC_report.html",
     output:
-        temp(touch("finished_QC"))
-
-
-
-
-
-
-
+        temp(touch("finished_QC")),
 
 
 # overwrite commands in rules/download.snakefile
@@ -322,21 +357,19 @@ onerror:
     print("Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues")
 
 
-
 ### pepulate resources for rules that don't have
 
 for r in workflow.rules:
     if not "mem" in r.resources:
-        r.resources["mem"]=config["mem"]
+        r.resources["mem"] = config["mem"]
     if not "time" in r.resources:
-        if r.resources["mem"]==config["simplejob_mem"]:
-            r.resources["time"]=config["runtime"]["simple_job"]
+        if r.resources["mem"] == config["simplejob_mem"]:
+            r.resources["time"] = config["runtime"]["simple_job"]
         else:
-            r.resources["time"]=config["runtime"]["default"]
+            r.resources["time"] = config["runtime"]["default"]
 
 
 #
-
 # # elif config.get("workflow") == "annotate":
 # #     localrules: annotate
 # #     rule annotate:
@@ -345,7 +378,7 @@ for r in workflow.rules:
 # #             expand("{sample}/contig_stats.txt", sample=SAMPLES),
 # #             #"reports/assembly_report.html" # not tested yet, but should work
 # #
-# #     include: "rules/annotate.snakefile"
+# #     include: "rules/annotate.smk"
 #
 # else:
 #     raise Exception("Workflow %s is not a defined workflow." % config.get("workflow", "[no --workflow specified]"))

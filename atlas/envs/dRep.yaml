@@ -8,5 +8,5 @@ dependencies:
     - mummer>=3.22
     - mash>=2
     - prodigal=2.6.3
-    - pip:
-      - drep==2.2.2
+    - fastani=1.32
+    - drep=3.2.0

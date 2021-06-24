@@ -20,7 +20,7 @@ threads: 8
 mem: 60
 
 # threads and memory for jobs needing high amount of memory. e.g GTDB-tk,checkm or assembly
-large_mem: 100
+large_mem: 250
 large_threads: 8
 assembly_threads: 8
 assembly_memory: 250
@@ -107,7 +107,7 @@ megahit_preset: default
 # Spades
 #------------
 spades_skip_BayesHammer: true
-spades_use_scaffolds: false # use contigs
+spades_use_scaffolds: true # if false use contigs
 #Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order).
 spades_k: auto
 spades_preset: meta    # meta, ,normal, rna  single end libraries doesn't work for metaspades
@@ -120,7 +120,7 @@ longread_type: none # [none,"pacbio", "nanopore", "sanger", "trusted-contigs", "
 # filter out assembled noise
 # this is more important for assemblys from megahit
 filter_contigs: true
-prefilter_minimum_contig_length: 200
+prefilter_minimum_contig_length: 300
 # trim contig tips
 contig_trim_bp: 0
 # require contigs to have read support
@@ -128,7 +128,7 @@ minimum_average_coverage: 1
 minimum_percent_covered_bases: 20
 minimum_mapped_reads: 0
 # after filtering
-minimum_contig_length: 300
+minimum_contig_length: 500
 
 
 ########################
@@ -137,7 +137,7 @@ minimum_contig_length: 300
 
 # Mapping reads to contigs
 #--------------------------
-contig_min_id: 0.76
+contig_min_id: 0.9
 contig_map_paired_only: true
 contig_max_distance_between_pairs: 1000
 maximum_counted_map_sites: 10
@@ -205,3 +205,6 @@ genecatalog:
   coverage: 0.9
   extra: ""
   SubsetSize: 500000
+
+eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation
+virtual_disk: "/dev/shm"         # But you need 37G extra ram
