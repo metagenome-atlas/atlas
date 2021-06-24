@@ -20,7 +20,7 @@ threads: 8
 mem: 60
 
 # threads and memory for jobs needing high amount of memory. e.g GTDB-tk,checkm or assembly
-large_mem: 100
+large_mem: 250
 large_threads: 8
 assembly_threads: 8
 assembly_memory: 250
@@ -107,7 +107,7 @@ megahit_preset: default
 # Spades
 #------------
 spades_skip_BayesHammer: true
-spades_use_scaffolds: false # use contigs
+spades_use_scaffolds: true # if false use contigs
 #Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order).
 spades_k: auto
 spades_preset: meta    # meta, ,normal, rna  single end libraries doesn't work for metaspades

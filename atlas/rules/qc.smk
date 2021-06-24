@@ -631,4 +631,4 @@ rule build_qc_report:
     conda:
         "%s/report.yaml" % CONDAENV
     script:
-         "../report/qc_report.py"
+         "../report/dummy_report.py" #"../report/qc_report.py"

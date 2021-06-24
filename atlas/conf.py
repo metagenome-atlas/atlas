@@ -139,6 +139,7 @@ def validate_sample_table(sampleTable):
 def prepare_sample_table_for_atlas(
     sample_table, reads_are_QC=False, outfile="samples.tsv"
 ):
+
     """
     Write the file `samples.tsv` and complete the sample names and paths for all
     files in `path`.
