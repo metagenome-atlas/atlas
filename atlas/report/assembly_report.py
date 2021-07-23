@@ -1,9 +1,12 @@
-import os,sys
-f = open(os.devnull, 'w'); sys.stdout = f # block cufflinks to plot strange code
+import os, sys
+
+f = open(os.devnull, "w")
+sys.stdout = f  # block cufflinks to plot strange code
 from cufflinks import iplot
-log=open(snakemake.log[0],"w")
-sys.stderr= log
-sys.stdout= log
+
+log = open(snakemake.log[0], "w")
+sys.stderr = log
+sys.stdout = log
 
 import pandas as pd
 import plotly.graph_objs as go
@@ -11,35 +14,34 @@ from plotly import offline
 from snakemake.utils import report
 
 
-
 PLOTLY_PARAMS = dict(
     include_plotlyjs=False, show_link=False, output_type="div", image_height=700
 )
 
-atlas_dir= os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-sys.path.append(os.path.join(atlas_dir,'scripts'))
+atlas_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(atlas_dir, "scripts"))
 from utils.parsers_bbmap import parse_bbmap_log_file
-
-
 
 
 def parse_map_stats(sample_data, out_tsv):
     stats_df = pd.DataFrame()
     for sample in sample_data.keys():
-        df = pd.read_csv(sample_data[sample]["contig_stats"],sep='\t')
+        df = pd.read_csv(sample_data[sample]["contig_stats"], sep="\t")
         assert df.shape[0] == 1, "Assumed only one row in file {}; found {}".format(
             sample_data[sample]["contig_stats"], df.iloc[0]
         )
         df = df.iloc[0]
         df.name = sample
-        genes_df = pd.read_csv(sample_data[sample]["gene_table"], index_col=0,sep='\t')
+        genes_df = pd.read_csv(sample_data[sample]["gene_table"], index_col=0, sep="\t")
         df["N_Predicted_Genes"] = genes_df.shape[0]
-        used_reads,mapped_reads= parse_bbmap_log_file(sample_data[sample]["mapping_log"])
+        used_reads, mapped_reads = parse_bbmap_log_file(
+            sample_data[sample]["mapping_log"]
+        )
         df["Assembled_Reads"] = mapped_reads
-        df["Percent_Assembled_Reads"] = mapped_reads/used_reads *100
+        df["Percent_Assembled_Reads"] = mapped_reads / used_reads * 100
 
         stats_df = stats_df.append(df)
-    stats_df = stats_df.loc[:, ~ stats_df.columns.str.startswith("scaf_")]
+    stats_df = stats_df.loc[:, ~stats_df.columns.str.startswith("scaf_")]
     stats_df.columns = stats_df.columns.str.replace("ctg_", "")
     stats_df.to_csv(out_tsv, sep="\t")
     return stats_df
@@ -71,7 +73,10 @@ def main(samples, contig_stats, gene_tables, mapping_logs, report_out, combined_
         "N_Predicted_Genes": "Predicted Genes (count)",
     }
     for variable in [
-        "Percent_Assembled_Reads", "contig_bp", "n_contigs", "N_Predicted_Genes"
+        "Percent_Assembled_Reads",
+        "contig_bp",
+        "n_contigs",
+        "N_Predicted_Genes",
     ]:
         y_axis_label = labels[variable]
         div[variable] = offline.plot(
@@ -165,9 +170,12 @@ Downloads
 ---------
 
 """
-    report(report_str, report_out, Table_1=combined_stats, stylesheet=os.path.join(atlas_dir,'report', "report.css"))
-
-
+    report(
+        report_str,
+        report_out,
+        Table_1=combined_stats,
+        stylesheet=os.path.join(atlas_dir, "report", "report.css"),
+    )
 
 
 if __name__ == "__main__":
@@ -180,7 +188,7 @@ if __name__ == "__main__":
             gene_tables=snakemake.input.gene_tables,
             mapping_logs=snakemake.input.mapping_logs,
             report_out=snakemake.output.report,
-            combined_stats=snakemake.output.combined_contig_stats
+            combined_stats=snakemake.output.combined_contig_stats,
         )
 
     except NameError:

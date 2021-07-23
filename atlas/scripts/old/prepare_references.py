@@ -8,7 +8,9 @@ from collections import defaultdict
 from itertools import groupby
 
 
-logging.basicConfig(level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, datefmt="%Y-%m-%d %H:%M", format="[%(asctime)s] %(message)s"
+)
 
 
 def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=100):
@@ -21,10 +23,10 @@ def print_fasta_record(name, seq, out_handle=sys.stdout, wrap=100):
         wrap (Optional[int]) : line width of fasta sequence; None is supported for no wrapping
 
     """
-    print('>', name, sep='', file=out_handle)
+    print(">", name, sep="", file=out_handle)
     if wrap:
         for i in range(0, len(seq), wrap):
-            print(seq[i:i + wrap], file=out_handle)
+            print(seq[i : i + wrap], file=out_handle)
     else:
         print(seq, file=out_handle)
 
@@ -48,7 +50,7 @@ def format_fasta_record(name, seq, wrap=100):
     record = ">" + name + "\n"
     if wrap:
         for i in range(0, len(seq), wrap):
-            record += seq[i:i+wrap] + "\n"
+            record += seq[i : i + wrap] + "\n"
     else:
         record += seq + "\n"
     return record.strip()
@@ -79,12 +81,12 @@ def read_fasta(fh):
         >>> os.remove("test.fasta")
 
     """
-    for header, group in groupby(fh, lambda line: line[0] == '>'):
+    for header, group in groupby(fh, lambda line: line[0] == ">"):
         if header:
             line = next(group)
             name = line[1:].strip()
         else:
-            seq = ''.join(line.strip() for line in group)
+            seq = "".join(line.strip() for line in group)
             yield name, seq
 
 
@@ -103,7 +105,9 @@ def cli(obj):
 @click.argument("unirefclusters", type=click.Path(exists=True))
 @click.argument("outmap", type=click.Path())
 @click.argument("outfasta", type=click.Path())
-def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclusters, outmap, outfasta):
+def prepare_metacyc_reference(
+    fasta, seqids, reactions, pathwaylinks, unirefclusters, outmap, outfasta
+):
     """
     # via uniprot
     fasta uniref100.fasta.gz
@@ -121,15 +125,19 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclus
     seqids_obj = ""
     with open(seqids) as fh:
         for line in fh:
-            if line.startswith(";;"): continue
-            if not line.strip(): continue
-            seqids_obj += " " + line.strip() if line.strip().startswith('"') else line.strip()
+            if line.startswith(";;"):
+                continue
+            if not line.strip():
+                continue
+            seqids_obj += (
+                " " + line.strip() if line.strip().startswith('"') else line.strip()
+            )
 
     # strip the first and last parentheses
     seqids_str = seqids_obj[1:-1]
 
     # fix the parentheses within entries
-    for reg in re.findall(r'\|(.*?)\|', seqids_obj[1:-1]):
+    for reg in re.findall(r"\|(.*?)\|", seqids_obj[1:-1]):
         # remove parenthesis between pipes
         seqids_str = seqids_str.replace(reg, reg.replace("(", "").replace(")", ""))
     seqids_str = seqids_str.replace("|", "")
@@ -140,12 +148,13 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclus
     with open(pathwaylinks) as fh:
         for line in fh:
             # deal with header lines
-            if line.startswith("#"): continue
+            if line.startswith("#"):
+                continue
             toks = line.strip().split("\t")
             pathway_str = toks[1]
             # formaldehyde oxidation V (H<sub>4</sub>MPT pathway)
             # superpathway of anthocyanin biosynthesis (from delphinidin 3-<i>O</i>-glucoside)
-            for http_format in re.findall(r'(\<.*?\>)', toks[1]):
+            for http_format in re.findall(r"(\<.*?\>)", toks[1]):
                 pathway_str = pathway_str.replace(http_format, "")
             # &beta; --> beta
             pathway_str = pathway_str.replace("&beta;", "beta")
@@ -178,7 +187,11 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclus
                     except KeyError:
                         # some pathways do not have a description
                         pass
-                reaction_links[name] = {"ec": ec_numbers, "pathways": pathways, "pathway_names": pathway_names}
+                reaction_links[name] = {
+                    "ec": ec_numbers,
+                    "pathways": pathways,
+                    "pathway_names": pathway_names,
+                }
                 name = ""
                 ec_numbers = []
                 pathways = []
@@ -188,7 +201,7 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclus
     uniprot_to_ecs = defaultdict(set)
     uniprot_to_pathways = defaultdict(set)
 
-    for metacyc_entry in re.findall(r'\((.*?)\)', seqids_str):
+    for metacyc_entry in re.findall(r"\((.*?)\)", seqids_str):
         # space delimited string
         toks = [t.replace('"', "") for t in metacyc_entry.split()]
 
@@ -246,9 +259,15 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclus
                     # pathway is defined in reactions.dat, but not in present in pathway-links.dat
                     pass
 
-            print(uid, "|".join(uniprot_to_reactions[uid]), "|".join(uniprot_to_ecs[uid]),
-                  "|".join(uniprot_to_pathways[uid]), "|".join(pathway_descriptions), sep="\t",
-                  file=fo)
+            print(
+                uid,
+                "|".join(uniprot_to_reactions[uid]),
+                "|".join(uniprot_to_ecs[uid]),
+                "|".join(uniprot_to_pathways[uid]),
+                "|".join(pathway_descriptions),
+                sep="\t",
+                file=fo,
+            )
 
     logging.info("%d unique UniProt entries in the map" % len(uniprot_to_reactions))
 
@@ -261,7 +280,9 @@ def prepare_metacyc_reference(fasta, seqids, reactions, pathwaylinks, unirefclus
             if uniprot_id in uniprot_to_reactions:
                 counter += 1
                 print_fasta_record(uniprot_id, seq, fo)
-        logging.info("%d unique sequences in the reference fasta out of %d input" % (counter, i))
+        logging.info(
+            "%d unique sequences in the reference fasta out of %d input" % (counter, i)
+        )
 
 
 @cli.command("prepare-refseq", short_help="prepares refseq mapping files")
@@ -312,11 +333,16 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
 
     logging.info("Reading in %s" % namesdmp)
     with open(namesdmp) as dmp:
-        for tax_id, group in groupby(dmp, key=lambda x: [i.strip() for i in x.strip().split("|")][0]):
+        for tax_id, group in groupby(
+            dmp, key=lambda x: [i.strip() for i in x.strip().split("|")][0]
+        ):
             scientific_name = ""
             synonym = ""
             for line in group:
-                toks = [x.strip().replace("'", "").replace('"','') for x in line.strip().split("|")]
+                toks = [
+                    x.strip().replace("'", "").replace('"', "")
+                    for x in line.strip().split("|")
+                ]
                 if toks[-2] == "scientific name":
                     tax_to_scientific_name[toks[0]] = toks[1]
                 elif toks[-2] == "misspelling":
@@ -332,12 +358,18 @@ def prepare_refseq_reference(fasta, namesdmp, nodesdmp, namemap, tree):
                 name_to_tax[toks[1]] = toks[0]
 
     logging.info("Iterating over %s" % fasta)
-    with gzip.open(fasta, 'rt') as fa:
+    with gzip.open(fasta, "rt") as fa:
         for name, seq in read_fasta(fa):
             name_parts = name.partition(" ")
             # biotin--[acetyl-CoA-carboxylase] synthetase [Aeromonas allosaccharophila]
             function = name_parts[2].rpartition("[")[0].strip()
-            taxonomy_name = name_parts[2].rpartition("[")[2].strip("]").replace("'","").replace('"','')
+            taxonomy_name = (
+                name_parts[2]
+                .rpartition("[")[2]
+                .strip("]")
+                .replace("'", "")
+                .replace('"', "")
+            )
             # phosphoribosyltransferase [[Haemophilus] parasuis]
             if "[[" in name_parts[2]:
                 taxonomy_name = "[%s" % taxonomy_name
@@ -389,12 +421,16 @@ def prepare_eggnog_reference(fasta, namemap, outputfasta, outputmap):
         fasta_counter += 1
         name = name.partition(".")[-1]
         # we were unable to translate this to meaningful metadata
-        if not name in names: continue
+        if not name in names:
+            continue
         # save the entry
         fasta_names.add(name)
         # print this nonredundant fasta
         print_fasta_record(name, seq, outputfasta)
-    logging.info("Total unique matching fasta entries: %d (from %d entries)" % (len(fasta_names), fasta_counter))
+    logging.info(
+        "Total unique matching fasta entries: %d (from %d entries)"
+        % (len(fasta_names), fasta_counter)
+    )
     # the union of IDs
     with open(namemap, "r", encoding="ISO-8859-1") as nm, open(outputmap, "w") as ofh:
         reader = csv.reader(nm, delimiter="\t")
@@ -442,12 +478,17 @@ def prepare_cazy(faminfo, cazydb_fasta, out_map, out_fasta):
     with open(cazydb_fasta) as fh:
         for name, seq in read_fasta(fh):
             name_parts = name.split("|", 2)
-            cazy_fasta_map[name_parts[0]] = {"seq":seq, "ecs":"" if len(name_parts) == 2 else name_parts[2], "cazy_family": name_parts[1]}
+            cazy_fasta_map[name_parts[0]] = {
+                "seq": seq,
+                "ecs": "" if len(name_parts) == 2 else name_parts[2],
+                "cazy_family": name_parts[1],
+            }
 
     with open(out_map, "w") as omap, open(out_fasta, "w") as ofa:
         for name, meta in cazy_fasta_map.items():
             # removes masked sequences
-            if meta["seq"].islower(): continue
+            if meta["seq"].islower():
+                continue
             print(format_fasta_record(name, meta["seq"]), file=ofa)
             # cazy_gene, cazy_family, cazy_class, cazy_ecs
 
@@ -458,7 +499,9 @@ def prepare_cazy(faminfo, cazydb_fasta, out_map, out_fasta):
             else:
                 cazy_class = fam_info[meta["cazy_family"]]
 
-            print(name, meta["cazy_family"], cazy_class, meta["ecs"], sep="\t", file=omap)
+            print(
+                name, meta["cazy_family"], cazy_class, meta["ecs"], sep="\t", file=omap
+            )
 
 
 @cli.command("prepare-enzyme", short_help="prepares EC reference from ENZYME")
@@ -498,9 +541,12 @@ def prepare_enzyme(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
             for uniprot_entry in toks[2].split(";"):
                 uniprot_entry = uniprot_entry.strip()
 
-                if not uniprot_entry or "obsolete" in uniprot_entry: continue
+                if not uniprot_entry or "obsolete" in uniprot_entry:
+                    continue
                 if uniprot_entry in uniprot_to_uniparc:
-                    print("Uniprot Entry", uniprot_entry, "is not unique", "\nLINE:", line)
+                    print(
+                        "Uniprot Entry", uniprot_entry, "is not unique", "\nLINE:", line
+                    )
                     sys.exit(1)
 
                 uniprot_to_uniparc[uniprot_entry] = toks[0]
@@ -542,7 +588,9 @@ def prepare_enzyme(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                     for uniprot_entry in uniprot_entries:
                         uniparc_id = uniprot_to_uniparc[uniprot_entry]
 
-                        uniparc_mappings[uniparc_id].append([uniprot_entry, ec_id, recommended_name])
+                        uniparc_mappings[uniparc_id].append(
+                            [uniprot_entry, ec_id, recommended_name]
+                        )
                         enzyme.add(uniparc_id)
 
     with open(out_map, "w") as ofh:
@@ -559,10 +607,17 @@ def prepare_enzyme(enzyme_dat, uniparc_map, uniparc_fasta, out_map, out_fasta):
                     # ECs are coupled with a name
                     names.append(name_list[2])
 
-            print(uniparc_id, "|".join(uniprots), "|".join(ecs), "|".join(names), sep="\t", file=ofh)
+            print(
+                uniparc_id,
+                "|".join(uniprots),
+                "|".join(ecs),
+                "|".join(names),
+                sep="\t",
+                file=ofh,
+            )
 
     click.echo("parsing %s" % uniparc_fasta)
-    with gzip.open(uniparc_fasta, 'rt') as fh, open(out_fasta, "w") as ofh:
+    with gzip.open(uniparc_fasta, "rt") as fh, open(out_fasta, "w") as ofh:
         for name, seq in read_fasta(fh):
             name = name.partition(" ")[0]
             if name in enzyme:
@@ -610,8 +665,8 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
         next(fh)
         for line in fh:
             toks = line.strip().split("\t")
-            assert(len(toks) == 2)
-            assert(toks[0] not in class_to_description)
+            assert len(toks) == 2
+            assert toks[0] not in class_to_description
             class_to_description[toks[0]] = toks[1]
 
     cog_to_name = {}
@@ -619,9 +674,9 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
         next(fh)
         for line in fh:
             toks = line.strip().split("\t")
-            assert(len(toks) == 3)
-            assert(toks[0] not in cog_to_name)
-            cog_to_name[toks[0]] = {"function":toks[1], "name":toks[2]}
+            assert len(toks) == 3
+            assert toks[0] not in cog_to_name
+            cog_to_name[toks[0]] = {"function": toks[1], "name": toks[2]}
 
     cog_map = defaultdict(dict)
     with open(namemap) as fh:
@@ -641,7 +696,9 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
                 # ftp://ftp.ncbi.nih.gov/pub/COG/COG2014/static/lists/listCOGs.html
                 continue
 
-            cog_functional_class_description = "; ".join([class_to_description[i] for i in cog_functional_class])
+            cog_functional_class_description = "; ".join(
+                [class_to_description[i] for i in cog_functional_class]
+            )
 
             # update existing COG start and stop
             if protein_id in cog_map and cog_id in cog_map[protein_id]:
@@ -651,24 +708,35 @@ def prepare_refseq_reference(fasta, namemap, funcdef, namedef, out_fasta, out_ma
                 if domain_stop > cog_map[protein_id][cog_id]["domain_stop"]:
                     cog_map[protein_id][cog_id]["domain_stop"] = domain_stop
             else:
-                cog_map[protein_id][cog_id] = {"cog_functional_class":cog_functional_class,
-                                               "cog_annotation":cog_annotation,
-                                               "domain_start":domain_start,
-                                               "domain_stop":domain_stop,
-                                               "cog_functional_class_description":cog_functional_class_description}
+                cog_map[protein_id][cog_id] = {
+                    "cog_functional_class": cog_functional_class,
+                    "cog_annotation": cog_annotation,
+                    "domain_start": domain_start,
+                    "domain_stop": domain_stop,
+                    "cog_functional_class_description": cog_functional_class_description,
+                }
 
     with gzip.open(fasta, mode="rt") as fh:
         for name, seq in read_fasta(fh):
             protein_id = name.split("|")[1]
             if protein_id in cog_map:
                 for i, (cog_id, cog_data) in enumerate(cog_map[protein_id].items()):
-                    cog_seq = seq[cog_data["domain_start"] - 1:cog_data["domain_stop"]]
+                    cog_seq = seq[
+                        cog_data["domain_start"] - 1 : cog_data["domain_stop"]
+                    ]
                     # print the fasta entry for a cog sequence
                     print_fasta_record("%s_%d" % (protein_id, i), cog_seq, out_fasta)
                     # print the metadata for a cog; unique primary key is first column
-                    print("%s_%d" % (protein_id, i), protein_id, cog_id,
-                          cog_data["cog_functional_class"], cog_data["cog_annotation"],
-                          cog_data["cog_functional_class_description"], sep="\t", file=out_map)
+                    print(
+                        "%s_%d" % (protein_id, i),
+                        protein_id,
+                        cog_id,
+                        cog_data["cog_functional_class"],
+                        cog_data["cog_annotation"],
+                        cog_data["cog_functional_class_description"],
+                        sep="\t",
+                        file=out_map,
+                    )
 
 
 if __name__ == "__main__":
