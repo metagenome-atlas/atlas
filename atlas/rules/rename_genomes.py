@@ -59,9 +59,9 @@ def genome2cluster(Drep_folder):
     return map_genome2cluster
 
 
-def get_mapfile_bins(mapfile_bins, pre_dereplication, dereplication, old2new):
+def get_mapfile_bins(mapfile_bins, dereplication, old2new):
 
-    Genome_map = genome2cluster(pre_dereplication).map(genome2cluster(dereplication))
+    Genome_map = genome2cluster(dereplication)
 
     Genome_map.index = Genome_map.index.str.replace(".fasta", "")
     Genome_map = Genome_map.str.replace(".fasta", "")
@@ -92,7 +92,6 @@ if __name__ == "__main__":
 
         get_mapfile_bins(
             mapfile_bins=snakemake.output.mapfile_bins,
-            pre_dereplication=snakemake.input.pre_dereplication,
             dereplication=snakemake.input.genomes,
             old2new=snakemake.output.mapfile_genomes,
         )

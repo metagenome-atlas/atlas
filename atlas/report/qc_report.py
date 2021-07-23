@@ -1,18 +1,20 @@
 import os, sys
 
-f = open(os.devnull, "w")
-sys.stdout = f  # block cufflinks to plot strange code
-from cufflinks import iplot
-
 log = open(snakemake.log[0], "w")
 sys.stderr = log
 sys.stdout = log
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objs as go
+
+pd.options.plotting.backend = "plotly"
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from plotly import offline
+
+
 import zipfile
-from plotly import offline, tools
 from snakemake.utils import report
 
 
@@ -59,7 +61,7 @@ def get_pe_read_quality_plot(df, quality_range, colorscale="Viridis", **kwargs):
     N = len(df["mean_1"].columns)
     c = ["hsl(" + str(h) + ",50%" + ",50%)" for h in np.linspace(0, 360, N + 1)]
 
-    fig = tools.make_subplots(rows=1, cols=2, shared_yaxes=True)
+    fig = make_subplots(rows=1, cols=2, shared_yaxes=True)
 
     for i, sample in enumerate(df["mean_1"].columns):
         fig.append_trace(
@@ -100,11 +102,10 @@ def get_pe_read_quality_plot(df, quality_range, colorscale="Viridis", **kwargs):
     #
     # df1 = df[["mean_1", "mean_2"]]
     # return offline.plot(
-    #     df1.iplot(
+    #     df1.plot(
     #         subplots=True,
     #         shape=(1, 2),
     #         shared_yaxes=True,
-    #         asFigure=True,
     #         kind="line",
     #         layout = go.Layout(
     #             yaxis = dict(range=quality_range, autorange=True, title="Quality score"),
@@ -121,8 +122,7 @@ def get_pe_read_quality_plot(df, quality_range, colorscale="Viridis", **kwargs):
 
 def draw_se_read_quality(df, quality_range, **kwargs):
     return offline.plot(
-        df.iplot(
-            asFigure=True,
+        df.plot(
             kind="line",
             layout=go.Layout(
                 yaxis=dict(
@@ -149,8 +149,7 @@ def main(report_out, read_counts, zipfiles_QC, min_quality, zipfiles_raw=None):
             data.drop("clean", axis=1, inplace=True)
 
         div[variable] = offline.plot(
-            data.iplot(
-                asFigure=True,
+            data.plot(
                 kind="bar",
                 xTitle="Samples",
                 yTitle=variable.replace("_", " "),

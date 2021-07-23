@@ -93,11 +93,14 @@ import tempfile
 
 EGGNOG_HEADER = [
     "Query",
-    "Target",
-    "evalue",
-    "score",
-    "Taxonomy",
-    "Protein_name",
+    "Seed",
+    "Seed_evalue",
+    "Seed_Score",
+    "eggNOG",
+    "max_annot_lvl",
+    "COG_cat",
+    "Description",
+    "Name",
     "GO_terms",
     "EC",
     "KO",
@@ -109,12 +112,8 @@ EGGNOG_HEADER = [
     "KEGG_TC",
     "CAZy",
     "BiGG_Reaction",
-    "tax_scope",
-    "EggNog",
-    "depricated_bestOG",
-    "FunctionalCategory",
-    "Description",
-]
+    "PFAMs"
+    ]
 
 
 def make_default_config():
@@ -133,7 +132,7 @@ def make_default_config():
     ] = "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
 
     conf["mem"] = MEM
-    conf["large_mem"] = 100
+    conf["large_mem"] = 250
     conf["large_threads"] = 16
     conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
@@ -184,7 +183,7 @@ def make_default_config():
     conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
     conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     conf["spades_k"] = SPADES_K
-    conf["spades_use_scaffolds"] = False
+    conf["spades_use_scaffolds"] = True
     conf["spades_preset"] = "meta"
     conf["spades_extra"] = ""
     conf["spades_skip_BayesHammer"] = False

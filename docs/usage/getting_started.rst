@@ -47,6 +47,30 @@ We recommend you to install metagenome-atlas into a conda environment e.g. named
 
 
 
+Install metagenome-atlas from GitHub
+------------------------------------
+
+Alternatively you can install metagenome Atlas directly form GitHub. This allows you to access versions that are not yet in the conda release, e.g. versions that are still in development.
+::
+
+
+    git clone https://github.com/metagenome-atlas/atlas.git
+    cd atlas
+    
+    # optional change to different branch
+    # git checkout branchname
+
+    # create dependencies for atlas
+    mamba env create -n atlas-dev --file atlasenv.yml
+    conda activate atlas-dev
+
+    # install atlas version. Changes in this files are directly available in the atlas dev version
+    pip install --editable .
+    cd ..
+
+
+
+
 
 .. _`example data`:
 

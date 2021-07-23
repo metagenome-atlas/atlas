@@ -141,6 +141,7 @@ def run_workflow(
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "
+        " --scheduler greedy "
         " {target_rule} "
         " {args} "
     ).format(
@@ -193,11 +194,12 @@ def run_download(db_dir, jobs, snakemake_args):
     cmd = (
         "snakemake --snakefile {snakefile} "
         "--jobs {jobs} --rerun-incomplete "
+        "--conda-frontend mamba --scheduler greedy "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
-        snakefile=get_snakefile("rules/download.snakefile"),
+        snakefile=get_snakefile("rules/download.smk"),
         jobs=jobs,
         db_dir=db_dir,
         conda_prefix=os.path.join(db_dir, "conda_envs"),
