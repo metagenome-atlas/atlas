@@ -16,11 +16,13 @@ rule combine_contigs:
         expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
     output:
         "Crossbinning/combined_contigs.fasta.gz",
+    log:
+        "log/crossbining/index.log",
     threads: 1
     conda:
         "../envs/vamb.yaml"
     shell:
-        "concatenate.py {output} {input} -m 2000 --keepnames"
+        "concatenate.py {output} {input} -m 2000 --keepnames > {log} 2>&1"
 
 
 rule minimap_index:
@@ -34,7 +36,7 @@ rule minimap_index:
         mem=config["large_mem"],
     threads: 1
     log:
-        "log/vamb/index.log",
+        "log/crossbinning/vamb/index.log",
     benchmark:
         "log/benchmarks/crossbining/mminimap_index.tsv"
     conda:
@@ -109,7 +111,7 @@ rule summarize_bam_contig_depths:
     output:
         "Crossbinning/vamb/coverage.jgi.tsv",
     log:
-        "log/vamb/combine_coverage.log",
+        "log/crossbinning/vamb/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
     threads: config["threads"]
@@ -131,7 +133,7 @@ rule convert_jgi2vamb_coverage:
     output:
         "Crossbinning/vamb/coverage.tsv",
     log:
-        "log/vamb/convert_jgi2vamb_coverage.log",
+        "log/crossbinning/vamb/convert_jgi2vamb_coverage.log",
     threads: 1
     script:
         "../scripts/convert_jgi2vamb_coverage.py"
@@ -150,7 +152,7 @@ rule run_vamb:
         mem=config["mem"],
         time=config["runtime"]["default"],
     log:
-        "log/vamb/run_vamb.log",
+        "log/crossbinning/vamb/run_vamb.log",
     benchmark:
         "log/benchmarks/vamb/run_vamb.tsv"
     params:

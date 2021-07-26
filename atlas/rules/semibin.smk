@@ -103,7 +103,7 @@ rule semibin_train:
         " --data {input.data} "
         " --data_split {input.data_split} "
         " --cannot-link {input.cannot_link} "
-        " {extra} "
+        " {params.extra} "
         "2> {log}"
 
 
