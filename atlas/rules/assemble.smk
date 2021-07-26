@@ -28,13 +28,13 @@ def get_preprocessing_steps(config):
 
 assembly_preprocessing_steps = get_preprocessing_steps(config)
 
-
+# I have problems with se reads
 if  SKIP_QC & (len(MULTIFILE_FRACTIONS)<3):
-    # I have problems with se reads
+
 
     rule init_pre_assembly_processing:
-        input:
-            get_quality_controlled_reads #expect SE or R1,R2 or R1,R2,SE
+        input: #expect SE or R1,R2 or R1,R2,SE
+            get_quality_controlled_reads
         output:
              temp(expand("{{sample}}/assembly/reads/QC_{fraction}.fastq.gz",fraction= MULTIFILE_FRACTIONS))
         params:
@@ -68,6 +68,7 @@ if  SKIP_QC & (len(MULTIFILE_FRACTIONS)<3):
             """
 
 else:
+
     localrules: init_pre_assembly_processing
     rule init_pre_assembly_processing:
         input:
@@ -83,6 +84,7 @@ else:
             assert len(input) == len(output), "Input and ouput files have not same number, can not create symlinks for all."
             for i in range(len(input)):
                 os.symlink(os.path.abspath(input[i]),output[i])
+
 #
 # rule normalize_coverage_across_kmers:
 #     input:

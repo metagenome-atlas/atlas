@@ -112,8 +112,8 @@ EGGNOG_HEADER = [
     "KEGG_TC",
     "CAZy",
     "BiGG_Reaction",
-    "PFAMs"
-    ]
+    "PFAMs",
+]
 
 
 def make_default_config():
