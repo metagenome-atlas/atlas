@@ -146,7 +146,7 @@ rule run_vamb:
         directory("Crossbinning/vamb/clustering"),
     conda:
         "../envs/vamb.yaml"
-    threads: config["threads"]
+    threads: 1 #config["threads"]
     resources:
         mem=config["mem"],
         time = config["runtime"]["default"]
@@ -163,3 +163,6 @@ rule run_vamb:
         " --fasta {input.fasta} "
         " {params.params} "
         "2> {log}"
+
+
+include: "semibin.smk"
