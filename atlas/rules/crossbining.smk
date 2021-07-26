@@ -23,7 +23,6 @@ rule combine_contigs:
         "concatenate.py {output} {input} -m 2000 --keepnames"
 
 
-
 rule minimap_index:
     input:
         contigs=rules.combine_contigs.output,
@@ -71,7 +70,7 @@ rule minimap:
         bam=temp("Crossbinning/mapping/{sample}.bam"),
     threads: config["threads"]
     resources:
-        mem = config["mem"],
+        mem=config["mem"],
     log:
         "log/crossbining/mapping/{sample}.minimap.log",
     benchmark:
@@ -146,10 +145,10 @@ rule run_vamb:
         directory("Crossbinning/vamb/clustering"),
     conda:
         "../envs/vamb.yaml"
-    threads: 1 #config["threads"]
+    threads: 1  #config["threads"]
     resources:
         mem=config["mem"],
-        time = config["runtime"]["default"]
+        time=config["runtime"]["default"],
     log:
         "log/vamb/run_vamb.log",
     benchmark:
