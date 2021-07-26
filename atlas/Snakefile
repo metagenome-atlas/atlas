@@ -220,7 +220,6 @@ include: "rules/assemble.smk"
 include: "rules/binning.smk"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.smk"
-include: "rules/cat_taxonomy.smk"
 include: "rules/gtdbtk.smk"
 
 
