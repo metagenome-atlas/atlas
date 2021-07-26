@@ -367,8 +367,6 @@ for r in workflow.rules:
             r.resources["time"] = config["runtime"]["simple_job"]
         else:
             r.resources["time"] = config["runtime"]["default"]
-
-
 #
 # # elif config.get("workflow") == "annotate":
 # #     localrules: annotate
