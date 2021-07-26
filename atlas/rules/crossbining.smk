@@ -88,11 +88,11 @@ ruleorder: sort_bam > minimap > convert_sam_to_bam
 
 rule sort_bam:
     input:
-        "Crossbinning/mapped/{sample}.bam",
+        "Crossbinning/mapping/{sample}.bam",
     output:
-        temp("Crossbinning/mapped/{sample}.sort.bam"),
+        temp("Crossbinning/mapping/{sample}.sort.bam"),
     params:
-        prefix="Crossbinning/mapped/tmp.{sample}",
+        prefix="Crossbinning/mapping/tmp.{sample}",
     threads: 2
     resources:
         mem=config["simplejob_mem"],
