@@ -361,7 +361,7 @@ onerror:
 for r in workflow.rules:
     if not "mem" in r.resources:
         r.resources["mem"] = config["mem"]
-    r.resources["mem_mb"] = r.resources["mem"]*1000
+    r.resources["mem_mb"] = r.resources["mem"] * 1000
 
     if not "time" in r.resources:
         if r.resources["mem"] == config["simplejob_mem"]:
