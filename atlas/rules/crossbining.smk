@@ -69,7 +69,7 @@ rule minimap:
         mmi="Crossbinning/combined_contigs.mmi",
         dict="Crossbinning/combined_contigs.dict",
     output:
-        bam=temp("Crossbinning/mapping/{sample}.bam"),
+        bam=temp("Crossbinning/mapping/{sample}.unsorted.bam"),
     threads: config["threads"]
     resources:
         mem=config["mem"],
@@ -88,9 +88,9 @@ ruleorder: sort_bam > minimap > convert_sam_to_bam
 
 rule sort_bam:
     input:
-        "Crossbinning/mapping/{sample}.bam",
+        "Crossbinning/mapping/{sample}.unsorted.bam",
     output:
-        temp("Crossbinning/mapping/{sample}.sort.bam"),
+        "Crossbinning/mapping/{sample}.bam",
     params:
         prefix="Crossbinning/mapping/tmp.{sample}",
     threads: 2
