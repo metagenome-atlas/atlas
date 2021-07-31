@@ -11,18 +11,46 @@ rule vamb:
         "Crossbinning/vamb/clustering",
 
 
+
+rule filter_contigs:
+    input:
+        "{sample}/{sample}_contigs.fasta"
+    output:
+        "Crossbinning/filtered_contigs/{sample}.fasta.gz"
+
+    params:
+        min_length= config['cobining_min_contig_length']
+    log:
+        "log/Crossbinning/filter_contigs/{sample}.log"
+    conda:
+        "../envs/required_packages.yaml"
+    threads: config.get("simplejob_threads", 1)
+    resources:
+        mem=config["simplejob_mem"],
+        java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+    shell:
+        " reformat.sh in={input} "
+        " fastaminlen={params.min_length} "
+        " out={output} "
+        " overwrite=true "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G 2> {log} "
+
+
+
+
+localrules: combine_contigs
 rule combine_contigs:
     input:
-        expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
+        ancient(expand("Crossbinning/filtered_contigs/{sample}.fasta.gz", sample=SAMPLES)),
     output:
         "Crossbinning/combined_contigs.fasta.gz",
     log:
-        "log/crossbining/index.log",
+        "log/crossbining/combine_contigs.log",
     threads: 1
-    conda:
-        "../envs/vamb.yaml"
-    shell:
-        "concatenate.py {output} {input} -m 2000 --keepnames > {log} 2>&1"
+    run:
+        from utils.io import cat_files
+        cat_files(input, output[0])
 
 
 rule minimap_index:
@@ -150,7 +178,7 @@ rule run_vamb:
     threads: 1  #config["threads"]
     resources:
         mem=config["mem"],
-        time=config["runtime"]["default"],
+        time=config["runtime"]["long"],
     log:
         "log/crossbinning/vamb/run_vamb.log",
     benchmark:

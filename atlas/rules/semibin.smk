@@ -1,5 +1,9 @@
 SEMIBIN_DATA_PATH = os.path.join(DBDIR, "SemiBin_GTDB")
 
+def get__filtered_sample_contigs(wildcards):
+
+    return "Crossbinning/filtered_contigs/{sample}.fasta.gz".format(**wildcards)
+
 localrules: semibin_download_gtdb
 rule semibin_download_gtdb:
     output:
@@ -17,10 +21,11 @@ rule semibin_download_gtdb:
 
 rule semibin_predict_taxonomy:
     input:
-        fasta=rules.combine_contigs.output,
+        fasta=get__filtered_sample_contigs,
         db=SEMIBIN_DATA_PATH,
     output:
-        "Crossbinning/SemiBin/inconsitent_taxonomy.tsv",
+        "Crossbinning/SemiBin/samples/{sample}/cannot/cannot_bin.txt",
+        "Crossbinning/SemiBin/samples/{sample}/mmseqs_contig_annotation/taxonomyResult.tsv"
     conda:
         "../envs/semibin.yaml"
     threads: 1
@@ -28,12 +33,14 @@ rule semibin_predict_taxonomy:
         mem=config["large_mem"],
         time=config["runtime"]["default"],
     log:
-        "log/semibin/predict_taxonomy.log",
+        "log/semibin/predict_taxonomy/{sample}.log",
     benchmark:
-        "log/benchmarks/semibin/predict_taxonomy.tsv"
+        "log/benchmarks/semibin/predict_taxonomy/{sample}.tsv"
     params:
-        output_dir=lambda wc, output: os.path.dirname(output[0]),
-        name=lambda wc, output: os.path.basename(output[0]),
+        output_dir= "Crossbinning/SemiBin/samples/{sample}",
+        name=lambda wc, output: os.path.basename(output[0]).replace('.txt',''),
+    shadow:
+        "minimal"
     shell:
         "SemiBin predict_taxonomy "
         " --input-fasta {input.fasta} "
@@ -77,7 +84,7 @@ rule semibin_generate_data_multi:
 
 rule semibin_train:
     input:
-        fasta=rules.combine_contigs.output,
+        fasta= get__filtered_sample_contigs,
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Crossbinning/SemiBin/samples/{sample}/data.csv",
         data_split="Crossbinning/SemiBin/samples/{sample}/data_split.csv",
@@ -96,7 +103,7 @@ rule semibin_train:
         "log/benchmarks/semibin/train/{sample}.tsv"
     params:
         output_dir=lambda wc, output: os.path.dirname(output[0]),
-        extra=" --epoches 20",
+        extra=" --epoches 20 --mode single ",
     shell:
         "SemiBin train "
         " --input-fasta {input.fasta} "
@@ -104,7 +111,7 @@ rule semibin_train:
         " --output {params.output_dir} "
         " --threads {threads} "
         " --data {input.data} "
-        " --data_split {input.data_split} "
+        " --data-split {input.data_split} "
         " --cannot-link {input.cannot_link} "
         " {params.extra} "
         " 2> {log}"
@@ -112,7 +119,7 @@ rule semibin_train:
 
 rule run_semibin:
     input:
-        fasta=rules.combine_contigs.output,
+        fasta=get__filtered_sample_contigs,
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Crossbinning/SemiBin/samples/{sample}/data.csv",
         model=rules.semibin_train.output[0],
@@ -130,7 +137,8 @@ rule run_semibin:
         "log/benchmarks/semibin/bin/{sample}.tsv"
     params:
         output_dir="Crossbinning/SemiBin",
-        extra=" --minfasta-kbs 200 --recluster --max-node 1 --max-edges 200 ",
+        min_bin_kbs= config["cobining_min_bin_size"] // 1000,
+        extra= config['semibin_options'],
     shell:
         "SemiBin train "
         " --input-fasta {input.fasta} "
@@ -139,8 +147,10 @@ rule run_semibin:
         " --threads {threads} "
         " --data {input.data} "
         " --model {input.model} "
+        " --minfasta-kbs {params.min_bin_kbs}"
         " {params.extra} "
         " 2> {log}"
+
 
 rule semibin:
     input:
