@@ -44,7 +44,7 @@ def control_sample_name(sample_name):
 
     if sample_name[0] in "0123456789":
         sample_name = "S" + sample_name
-        logging.warning(f"Sample starts with a number. append 'S' {sample_name}.")
+        logging.warning(f"Sample starts with a number. prepend 'S' {sample_name}.")
 
     return sample_name.replace("-", "_").replace(" ", "_")
 
@@ -151,7 +151,7 @@ def prepare_sample_table_for_atlas(
 
     if "R2" not in columns:
         assert len(columns) == 1, "expect columns to be only ['R1']"
-        columns = ["se"]
+        sample_table.columns = ["se"]
 
     if reads_are_QC:
         sample_table.columns = ["Reads_QC_" + c for c in columns]
