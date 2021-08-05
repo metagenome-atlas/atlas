@@ -5,9 +5,9 @@ channels:
 dependencies:
   - python=3.7
   - mamba
-  - bbmap
-  - snakemake>=6.1
-  - pandas>1
+  - bbmap=38
+  - snakemake=6.6
+  - pandas=1.2
   - click=7
   - ruamel.yaml=0.15.99 # needs to be explicit
   - biopython=1.74
