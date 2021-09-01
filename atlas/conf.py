@@ -168,7 +168,7 @@ def make_config(
 
     yaml = YAML()
     yaml.version = (1, 1)
-    yaml.default_flow_style = False
+    #yaml.default_flow_style = False
 
     template_conf_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "template_config.yaml"
