@@ -8,6 +8,6 @@ dependencies:
   - snakemake=6.7
   - pandas=1.2
   - click=7
-  - ruamel.yaml=0.15.99 # needs to be explicit
+  - ruamel.yaml=0.17
   - biopython=1.74
   - cookiecutter
