@@ -277,7 +277,7 @@ rule align_reads_to_Genecatalog:
 
 rule pileup_Genecatalog:
     input:
-        sam="Genecatalog/alignments/{sample}.sam",
+        sam="Genecatalog/alignments/{sample}.forpileup.sam",
         bam="Genecatalog/alignments/{sample}.bam",
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
