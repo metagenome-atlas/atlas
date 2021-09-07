@@ -167,7 +167,7 @@ def make_config(
     from ruamel.yaml import YAML  # used for yaml reading with comments
 
     yaml = YAML()
-    yaml.version = (1, 1)
+    #yaml.version = (1, 1)
     #yaml.default_flow_style = False
 
     template_conf_file = os.path.join(
