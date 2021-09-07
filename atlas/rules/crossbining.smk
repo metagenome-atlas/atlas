@@ -21,7 +21,7 @@ rule filter_contigs:
     params:
         min_length= config['cobining_min_contig_length']
     log:
-        "log/Crossbinning/filter_contigs/{sample}.log"
+        "logs/crossbinning/filter_contigs/{sample}.log"
     conda:
         "../envs/required_packages.yaml"
     threads: config.get("simplejob_threads", 1)
@@ -46,7 +46,7 @@ rule combine_contigs:
     output:
         "Crossbinning/combined_contigs.fasta.gz",
     log:
-        "log/crossbining/combine_contigs.log",
+        "logs/crossbinning/combine_contigs.log",
     threads: 1
     run:
         from utils.io import cat_files
@@ -61,12 +61,12 @@ rule minimap_index:
     params:
         index_size="12G",
     resources:
-        mem=config["large_mem"],
+        mem=config["mem"], # limited num of fatnodes (>200g)
     threads: 1
     log:
-        "log/crossbinning/vamb/index.log",
+        "logs/crossbinning/vamb/index.log",
     benchmark:
-        "log/benchmarks/crossbining/mminimap_index.tsv"
+        "logs/benchmarks/crossbinning/mminimap_index.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -77,12 +77,12 @@ rule samtools_dict:
     input:
         contigs=rules.combine_contigs.output,
     output:
-        dict="Crossbinning/mapping/combined_contigs.dict",
+        dict="Crossbinning/combined_contigs.dict",
     resources:
         mem=config["simplejob_mem"],
     threads: 1
     log:
-        "log/crossbining/samtools_dict.log",
+        "logs/crossbinning/samtools_dict.log",
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -102,9 +102,9 @@ rule minimap:
     resources:
         mem=config["mem"],
     log:
-        "log/crossbining/mapping/{sample}.minimap.log",
+        "logs/crossbinning/mapping/{sample}.minimap.log",
     benchmark:
-        "log/benchmarks/crossbining/mminimap/{sample}.tsv"
+        "logs/benchmarks/crossbinning/mminimap/{sample}.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -118,7 +118,7 @@ rule sort_bam:
     input:
         "Crossbinning/mapping/{sample}.unsorted.bam",
     output:
-        "Crossbinning/mapping/{sample}.bam",
+        "Crossbinning/mapping/{sample}.sorted.bam",
     params:
         prefix="Crossbinning/mapping/tmp.{sample}",
     threads: 2
@@ -126,7 +126,7 @@ rule sort_bam:
         mem=config["simplejob_mem"],
         time=int(config["runtime"]["simple_job"]),
     log:
-        "log/crossbining/mapping/{sample}.sortbam.log",
+        "logs/crossbinning/mapping/{sample}.sortbam.log",
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -139,7 +139,7 @@ rule summarize_bam_contig_depths:
     output:
         "Crossbinning/vamb/coverage.jgi.tsv",
     log:
-        "log/crossbinning/vamb/combine_coverage.log",
+        "logs/crossbinning/vamb/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
     threads: config["threads"]
@@ -161,7 +161,7 @@ rule convert_jgi2vamb_coverage:
     output:
         "Crossbinning/vamb/coverage.tsv",
     log:
-        "log/crossbinning/vamb/convert_jgi2vamb_coverage.log",
+        "logs/crossbinning/vamb/convert_jgi2vamb_coverage.log",
     threads: 1
     script:
         "../scripts/convert_jgi2vamb_coverage.py"
@@ -175,14 +175,14 @@ rule run_vamb:
         directory("Crossbinning/vamb/clustering"),
     conda:
         "../envs/vamb.yaml"
-    threads: 1  #config["threads"]
+    threads: config["threads"]
     resources:
         mem=config["mem"],
         time=config["runtime"]["long"],
     log:
-        "log/crossbinning/vamb/run_vamb.log",
+        "logs/crossbinning/vamb/run_vamb.log",
     benchmark:
-        "log/benchmarks/vamb/run_vamb.tsv"
+        "logs/benchmarks/vamb/run_vamb.tsv"
     params:
         params="-m 2000 --minfasta 500000",
     shell:
