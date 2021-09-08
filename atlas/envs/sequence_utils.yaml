@@ -3,11 +3,6 @@ channels:
     - bioconda
     - defaults
 dependencies:
-<<<<<<< HEAD
-    - biopython=1.70
-    - pandas=1.3
-=======
     - biopython=1.74
     - pandas=1.2
     - matplotlib-base
->>>>>>> newyaml
