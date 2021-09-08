@@ -3,9 +3,9 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - python=3.6
+    - python=3.8
     - bbmap=38
     - pigz
     - bzip2=1.0
-    - pandas=1.3
+    - pandas=1.2
     - samtools=1.13
