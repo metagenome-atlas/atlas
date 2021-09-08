@@ -12,11 +12,11 @@ rule vamb:
 
 # def should_add_seperator():
 #
-#     seperator = config['crossbinning_seperator']
+#     seperator = config['cobinning_seperator']
 #
 #     if any('_' in SAMPLES) and (separator=='_'):
 #
-#         logger.error("You are trying to do crossbinning. \n"
+#         logger.error("You are trying to do cobinning. \n"
 #                      "The Samplenames contain '_' which might lead to confusion. \n"
 #                      "Add the folowing option to the config.yaml:\n\n"
 #                      "   cobinning_separator: ':' "
@@ -40,7 +40,7 @@ rule filter_contigs:
         prefix= "{sample}{config[cobinning_separator]}",
         addprefix = "f" if config['cobinning_separator']=='_' else 't'
     log:
-        "logs/crossbinning/filter_contigs/{sample}.log"
+        "logs/cobinning/filter_contigs/{sample}.log"
     conda:
         "../envs/required_packages.yaml"
     threads: 1
@@ -66,7 +66,7 @@ rule combine_contigs:
     output:
         "Cobinning/combined_contigs.fasta.gz",
     log:
-        "logs/crossbinning/combine_contigs.log",
+        "logs/cobinning/combine_contigs.log",
     threads: 1
     run:
         from utils.io import cat_files
@@ -84,9 +84,9 @@ rule minimap_index:
         mem=config["mem"], # limited num of fatnodes (>200g)
     threads: 1
     log:
-        "logs/crossbinning/vamb/index.log",
+        "logs/cobinning/vamb/index.log",
     benchmark:
-        "logs/benchmarks/crossbinning/mminimap_index.tsv"
+        "logs/benchmarks/cobinning/mminimap_index.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -102,7 +102,7 @@ rule samtools_dict:
         mem=config["simplejob_mem"],
     threads: 1
     log:
-        "logs/crossbinning/samtools_dict.log",
+        "logs/cobinning/samtools_dict.log",
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -122,9 +122,9 @@ rule minimap:
     resources:
         mem=config["mem"],
     log:
-        "logs/crossbinning/mapping/{sample}.minimap.log",
+        "logs/cobinning/mapping/{sample}.minimap.log",
     benchmark:
-        "logs/benchmarks/crossbinning/mminimap/{sample}.tsv"
+        "logs/benchmarks/cobinning/mminimap/{sample}.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -146,7 +146,7 @@ rule sort_bam:
         mem=config["simplejob_mem"],
         time=int(config["runtime"]["simple_job"]),
     log:
-        "logs/crossbinning/mapping/{sample}.sortbam.log",
+        "logs/cobinning/mapping/{sample}.sortbam.log",
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -159,7 +159,7 @@ rule summarize_bam_contig_depths:
     output:
         "Cobinning/vamb/coverage.jgi.tsv",
     log:
-        "logs/crossbinning/vamb/combine_coverage.log",
+        "logs/cobinning/vamb/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
     threads: config["threads"]
@@ -181,7 +181,7 @@ rule convert_jgi2vamb_coverage:
     output:
         "Cobinning/vamb/coverage.tsv",
     log:
-        "logs/crossbinning/vamb/convert_jgi2vamb_coverage.log",
+        "logs/cobinning/vamb/convert_jgi2vamb_coverage.log",
     threads: 1
     script:
         "../scripts/convert_jgi2vamb_coverage.py"
@@ -200,7 +200,7 @@ rule run_vamb:
         mem=config["mem"],
         time=config["runtime"]["long"],
     log:
-        "logs/crossbinning/vamb/run_vamb.log",
+        "logs/cobinning/vamb/run_vamb.log",
     benchmark:
         "logs/benchmarks/vamb/run_vamb.tsv"
     params:
