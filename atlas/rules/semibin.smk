@@ -71,7 +71,7 @@ rule semibin_generate_data_multi:
         "log/benchmarks/semibin/generate_data_multi.tsv"
     params:
         output_dir="Crossbinning/SemiBin",
-        separator="_",
+        separator=config['crossbinning_separator'],
     shell:
         "SemiBin generate_data_multi "
         " --input-fasta {input.fasta} "
@@ -113,6 +113,7 @@ rule semibin_train:
         " --data {input.data} "
         " --data-split {input.data_split} "
         " --cannot-link {input.cannot_link} "
+        " --mode single "
         " {params.extra} "
         " 2> {log}"
 

@@ -10,6 +10,23 @@ rule vamb:
     input:
         "Crossbinning/vamb/clustering",
 
+# def should_add_seperator():
+#
+#     seperator = config['crossbinning_seperator']
+#
+#     if any('_' in SAMPLES) and (separator=='_'):
+#
+#         logger.error("You are trying to do crossbinning. \n"
+#                      "The Samplenames contain '_' which might lead to confusion. \n"
+#                      "Add the folowing option to the config.yaml:\n\n"
+#                      "   cobinning_separator: ':' "
+#                      )
+#
+#         exit(1)
+#
+#
+#     return  "f" if seperator=='_' else 't'
+
 
 
 rule filter_contigs:
@@ -19,21 +36,24 @@ rule filter_contigs:
         "Crossbinning/filtered_contigs/{sample}.fasta.gz"
 
     params:
-        min_length= config['cobining_min_contig_length']
+        min_length= config['cobining_min_contig_length'],
+        prefix= "{sample}{config[cobinning_separator]}",
+        addprefix = "f" if config['cobinning_separator']=='_' else 't'
     log:
         "logs/crossbinning/filter_contigs/{sample}.log"
     conda:
         "../envs/required_packages.yaml"
-    threads: config.get("simplejob_threads", 1)
+    threads: 1
     resources:
         mem=config["simplejob_mem"],
         java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
     shell:
-        " reformat.sh in={input} "
-        " fastaminlen={params.min_length} "
+        " rename.sh in={input} "
+        " prefix={params.prefix} "
+        " addprefix={params.addprefix} "
+        " minscaf={params.min_length} "
         " out={output} "
         " overwrite=true "
-        " threads={threads} "
         " -Xmx{resources.java_mem}G 2> {log} "
 
 
@@ -184,10 +204,13 @@ rule run_vamb:
     benchmark:
         "logs/benchmarks/vamb/run_vamb.tsv"
     params:
-        params="-m 2000 --minfasta 500000",
+        params="-m 2000 ", #TODO: I don't know what this is for
+        minfasta=conf["cobining_min_contig_length"],
+        separator= config['cobinning_separator']
     shell:
         "vamb --outdir {output} "
-        " -o '_' "
+        " --minfasta {params.minfasta} "
+        " -o '{params.separator}' "
         " --jgi {input.coverage} "
         " --fasta {input.fasta} "
         " {params.params} "

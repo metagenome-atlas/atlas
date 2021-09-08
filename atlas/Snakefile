@@ -221,7 +221,7 @@ include: "rules/binning.smk"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.smk"
 include: "rules/gtdbtk.smk"
-include: "rules/crossbining.smk"
+include: "rules/cobinning.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
