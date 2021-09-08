@@ -205,7 +205,7 @@ rule run_vamb:
         "logs/benchmarks/vamb/run_vamb.tsv"
     params:
         params="-m 2000 ", #TODO: I don't know what this is for
-        minfasta=conf["cobining_min_contig_length"],
+        minfasta=config["cobining_min_contig_length"],
         separator= config['cobinning_separator']
     shell:
         "vamb --outdir {output} "
