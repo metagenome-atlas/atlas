@@ -32,8 +32,8 @@ sys.excepthook = handle_exception
 import pandas as pd
 from utils.utils import gen_names_for_range
 
-vamb_cluster_file= "Crossbinning/vamb/clustering/clusters.tsv"# HACK:
-output_culsters = "Crossbinning/vamb/Clusters.tsv"
+vamb_cluster_file= "Cobinning/vamb/clustering/clusters.tsv"# HACK:
+output_culsters = "Cobinning/vamb/Clusters.tsv"
 
 
 logging.info(f"Load vamb cluster file {vamb_cluster_file}")

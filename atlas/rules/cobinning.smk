@@ -8,7 +8,7 @@ localrules:
 
 rule vamb:
     input:
-        "Crossbinning/vamb/clustering",
+        "Cobinning/vamb/clustering",
 
 # def should_add_seperator():
 #
@@ -33,7 +33,7 @@ rule filter_contigs:
     input:
         "{sample}/{sample}_contigs.fasta"
     output:
-        "Crossbinning/filtered_contigs/{sample}.fasta.gz"
+        "Cobinning/filtered_contigs/{sample}.fasta.gz"
 
     params:
         min_length= config['cobining_min_contig_length'],
@@ -62,9 +62,9 @@ rule filter_contigs:
 localrules: combine_contigs
 rule combine_contigs:
     input:
-        ancient(expand("Crossbinning/filtered_contigs/{sample}.fasta.gz", sample=SAMPLES)),
+        ancient(expand("Cobinning/filtered_contigs/{sample}.fasta.gz", sample=SAMPLES)),
     output:
-        "Crossbinning/combined_contigs.fasta.gz",
+        "Cobinning/combined_contigs.fasta.gz",
     log:
         "logs/crossbinning/combine_contigs.log",
     threads: 1
@@ -77,7 +77,7 @@ rule minimap_index:
     input:
         contigs=rules.combine_contigs.output,
     output:
-        mmi=temp("Crossbinning/combined_contigs.mmi"),
+        mmi=temp("Cobinning/combined_contigs.mmi"),
     params:
         index_size="12G",
     resources:
@@ -97,7 +97,7 @@ rule samtools_dict:
     input:
         contigs=rules.combine_contigs.output,
     output:
-        dict="Crossbinning/combined_contigs.dict",
+        dict="Cobinning/combined_contigs.dict",
     resources:
         mem=config["simplejob_mem"],
     threads: 1
@@ -114,10 +114,10 @@ rule minimap:
         fq=lambda wildcards: input_paired_only(
             get_quality_controlled_reads(wildcards)
         ),
-        mmi="Crossbinning/combined_contigs.mmi",
-        dict="Crossbinning/combined_contigs.dict",
+        mmi="Cobinning/combined_contigs.mmi",
+        dict="Cobinning/combined_contigs.dict",
     output:
-        bam=temp("Crossbinning/mapping/{sample}.unsorted.bam"),
+        bam=temp("Cobinning/mapping/{sample}.unsorted.bam"),
     threads: config["threads"]
     resources:
         mem=config["mem"],
@@ -136,11 +136,11 @@ ruleorder: sort_bam > minimap > convert_sam_to_bam
 
 rule sort_bam:
     input:
-        "Crossbinning/mapping/{sample}.unsorted.bam",
+        "Cobinning/mapping/{sample}.unsorted.bam",
     output:
-        "Crossbinning/mapping/{sample}.sorted.bam",
+        "Cobinning/mapping/{sample}.sorted.bam",
     params:
-        prefix="Crossbinning/mapping/tmp.{sample}",
+        prefix="Cobinning/mapping/tmp.{sample}",
     threads: 2
     resources:
         mem=config["simplejob_mem"],
@@ -157,7 +157,7 @@ rule summarize_bam_contig_depths:
     input:
         bam=expand(rules.sort_bam.output, sample=SAMPLES),
     output:
-        "Crossbinning/vamb/coverage.jgi.tsv",
+        "Cobinning/vamb/coverage.jgi.tsv",
     log:
         "logs/crossbinning/vamb/combine_coverage.log",
     conda:
@@ -177,9 +177,9 @@ localrules:
 
 rule convert_jgi2vamb_coverage:
     input:
-        "Crossbinning/vamb/coverage.jgi.tsv",
+        "Cobinning/vamb/coverage.jgi.tsv",
     output:
-        "Crossbinning/vamb/coverage.tsv",
+        "Cobinning/vamb/coverage.tsv",
     log:
         "logs/crossbinning/vamb/convert_jgi2vamb_coverage.log",
     threads: 1
@@ -189,10 +189,10 @@ rule convert_jgi2vamb_coverage:
 
 rule run_vamb:
     input:
-        coverage="Crossbinning/vamb/coverage.tsv",
+        coverage="Cobinning/vamb/coverage.tsv",
         fasta=rules.combine_contigs.output,
     output:
-        directory("Crossbinning/vamb/clustering"),
+        directory("Cobinning/vamb/clustering"),
     conda:
         "../envs/vamb.yaml"
     threads: config["threads"]
