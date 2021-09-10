@@ -28,7 +28,7 @@ rule semibin_predict_taxonomy:
         "Cobinning/SemiBin/samples/{sample}/mmseqs_contig_annotation/taxonomyResult.tsv"
     conda:
         "../envs/semibin.yaml"
-    threads: 1
+    threads: config["threads"]
     resources:
         mem=config["large_mem"],
         time=config["runtime"]["default"],
@@ -44,6 +44,7 @@ rule semibin_predict_taxonomy:
     shell:
         "SemiBin predict_taxonomy "
         " --input-fasta {input.fasta} "
+        " --threads {threads} "
         " --output {params.output_dir} "
         " --cannot-name {params.name} "
         " --reference-db {input.db}/GTDB "
