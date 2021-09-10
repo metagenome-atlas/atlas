@@ -29,8 +29,7 @@ sys.excepthook = handle_exception
 
 
 import pandas as pd
-import plotly.graph_objs as go
-from plotly import offline
+import plotly.express as px
 from snakemake.utils import report
 
 
