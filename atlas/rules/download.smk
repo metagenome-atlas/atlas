@@ -90,7 +90,6 @@ def get_eggnog_db_file():
 localrules:
     download,
     download_eggNOG_files,
-    verify_eggNOG_files,
     download_atlas_files,
     download_checkm_data,
 

@@ -567,14 +567,7 @@ rule run_das_tool:
         contigs=BINNING_CONTIGS,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
-        expand(
-            "{{sample}}/binning/DASTool/{{sample}}{postfix}",
-            postfix=[
-                "_DASTool_summary.txt",
-                "_DASTool_hqBins.pdf",
-                "_DASTool_scores.pdf",
-            ],
-        ),
+        "{sample}/binning/DASTool/{sample}_DASTool_summary.txt",
         expand(
             "{{sample}}/binning/DASTool/{{sample}}_{binner}.eval",
             binner=config["binner"],
@@ -600,7 +593,6 @@ rule run_das_tool:
         " --search_engine diamond "
         " --proteins {input.proteins} "
         " --write_bin_evals 1 "
-        " --create_plots 1 --write_bin_evals 1 "
         " --megabin_penalty {params.megabin_penalty}"
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "
