@@ -3,4 +3,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - dram
+  - dram=1.2
