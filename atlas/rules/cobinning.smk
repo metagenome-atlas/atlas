@@ -37,7 +37,7 @@ rule filter_contigs:
 
     params:
         min_length= config['cobining_min_contig_length'],
-        prefix= "{sample}{config[cobinning_separator]}",
+        prefix= lambda wc: wc.Sample + config['cobinning_separator'] ,
         addprefix = "f" if config['cobinning_separator']=='_' else 't'
     log:
         "logs/cobinning/filter_contigs/{sample}.log"
