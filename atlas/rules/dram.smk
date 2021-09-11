@@ -36,7 +36,7 @@ rule dram_download:
 
 
 
-localrules: DRAM_set_db_loc, get_lists_of_genomes
+localrules: DRAM_set_db_loc
 rule DRAM_set_db_loc:
     input:
         get_dram_config
@@ -57,31 +57,23 @@ checkpoint get_lists_of_genomes:
         directory(temp("annotations/dram/genome_lists"))
     run:
         from glob import glob
-        all_fasta_files = glob(input[0]+"/*.fasta")
+        all_fasta_files = glob(snakemake.input[0]+"/*.fasta")
 
-        if len(all_fasta_files)==0:
-            raise Exception(f"No genome fasta files found in folder {input[0]}")
-
-        os.makedirs(output[0])
+        os.makedirs(snakemake.output[0])
 
         N= 10 # N subsets
-        for i in range(0,len(all_fasta_files)//N+1):
+        for subset in range(1,len(all_fasta_files)//N+1):
 
-            with open(output[0]+f'/subset_{i+1}.txt','w') as outf:
+            with open(snakemake.output[0]+'/subset_{1}.txt','w') as outf:
                 outf.write(' '.join( all_fasta_files[i*N:(i+1)*N]))
 
 
 
-def dram_annotate_input(wildcards,input):
-
-    fasta_files= open(input.genome_list).read().strip().split()
-
-    assert len(fasta_files) > 0
-
-    return ' '.join(f'--input_fasta {fasta}' for fasta in fasta_files )
-
 rule DRAM_annotate:
     input:
+        #fasta=f"{genome_folder}/{{genome}}.fasta",
+        #checkm= "genomes/checkm/completeness.tsv",
+        #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         genome_folder= get_genome_folder,
         genome_list= "annotations/dram/genome_lists/{subset}.txt",
         flag= rules.DRAM_set_db_loc.output
@@ -94,35 +86,28 @@ rule DRAM_annotate:
         time= config['runtime']['default']
     conda:
         "../envs/dram.yaml"
-    shadow:
-        "shallow"
     params:
         gtdb_file="gtdbtk.bac120.summary.tsv",
-        input = dram_annotate_input
     log:
         "log/dram/run_dram/{subset}.log"
     benchmark:
         "log/benchmarks/dram/run_dram/{subset}.tsv"
     shell:
         " DRAM.py annotate "
-        "  {params.input} "
+        " --input_fasta $(cat {input.genome_list}) "
         " --output_dir {output.outdir} "
         " --prodigal_mode single "
+        #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
+        #" --checkm_quality {input.checkm} "
         " --threads {threads} "
         " --verbose &> {log}"
 
 
 def get_all_dram(wildcards):
 
-    genome_lists_folder= checkpoints.get_lists_of_genomes.get().output[0]
+    genome_lists_path =  os.path.join(checkpoints.get_lists_of_genomes.get().output,"{subset}.txt")
 
-    all_subsets = glob_wildcards(os.path.join(genome_lists_folder,"{subset}.txt")).subset
-
-    if len(all_subsets)==0:
-
-        raise Exception(f"No genome list file is found in {genome_lists_folder}\n"
-                        "Remove this empty folder and start anew.")
-
+    all_subsets = glob_wildcards(genome_lists_path).subset
 
 
     return expand(rules.DRAM_annotate.output.outdir,
