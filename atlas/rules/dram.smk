@@ -1,8 +1,6 @@
 
 DBDIR = config['database_dir']
-
-
-
+genome_folder= os.path.dirname(config.get('genome_folder', 'genomes'))
 
 def get_dram_config(wildcards):
     return config.get('dram_config_file', f"{DBDIR}/DRAM.config")
@@ -34,8 +32,6 @@ rule dram_download:
 
 
 
-
-
 localrules: DRAM_set_db_loc
 rule DRAM_set_db_loc:
     input:
@@ -49,36 +45,14 @@ rule DRAM_set_db_loc:
     shell:
         "DRAM-setup.py import_config --config_loc {input}"
 
-
-checkpoint get_lists_of_genomes:
-    input:
-        get_genome_folder
-    output:
-        directory(temp("annotations/dram/genome_lists"))
-    run:
-        from glob import glob
-        all_fasta_files = glob(snakemake.input[0]+"/*.fasta")
-
-        os.makedirs(snakemake.output[0])
-
-        N= 10 # N subsets
-        for subset in range(1,len(all_fasta_files)//N+1):
-
-            with open(snakemake.output[0]+'/subset_{1}.txt','w') as outf:
-                outf.write(' '.join( all_fasta_files[i*N:(i+1)*N]))
-
-
-
 rule DRAM_annotate:
     input:
-        #fasta=f"{genome_folder}/{{genome}}.fasta",
+        fasta=f"{genome_folder}/{{genome}}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
-        genome_folder= get_genome_folder,
-        genome_list= "annotations/dram/genome_lists/{subset}.txt",
         flag= rules.DRAM_set_db_loc.output
     output:
-        outdir= directory("annotations/dram/intermediate_files/{subset}")
+        outdir= directory("annotations/dram/intermediate_files/{genome}")
     threads:
         config['threads']
     resources:
@@ -89,12 +63,12 @@ rule DRAM_annotate:
     params:
         gtdb_file="gtdbtk.bac120.summary.tsv",
     log:
-        "log/dram/run_dram/{subset}.log"
+        "log/dram/run_dram/{genome}.log"
     benchmark:
-        "log/benchmarks/dram/run_dram/{subset}.tsv"
+        "log/benchmarks/dram/run_dram/{genome}.tsv"
     shell:
         " DRAM.py annotate "
-        " --input_fasta $(cat {input.genome_list}) "
+        " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
         " --prodigal_mode single "
         #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
@@ -105,13 +79,10 @@ rule DRAM_annotate:
 
 def get_all_dram(wildcards):
 
-    genome_lists_path =  os.path.join(checkpoints.get_lists_of_genomes.get().output,"{subset}.txt")
-
-    all_subsets = glob_wildcards(genome_lists_path).subset
-
+    all_genomes = glob_wildcards(f"{genome_folder}/{{i}}.fasta").i
 
     return expand(rules.DRAM_annotate.output.outdir,
-           subset=all_subsets
+           genome=all_genomes
            )
 
 
