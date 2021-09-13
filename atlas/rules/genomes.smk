@@ -1,9 +1,3 @@
-if "genome_dir" in config:
-    genome_dir = config["genome_dir"]
-    assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
-else:
-    genome_dir = "genomes/genomes"
-
 
 ## dRep
 localrules:
@@ -173,11 +167,23 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
+def get_genome_folder(wildcards):
+
+    if 'genome_dir' in config:
+
+        genome_dir = config['genome_folder']
+
+        assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
+
+    else:
+        genome_dir= checkpoints.rename_genomes.get().output.dir
+
+    return genome_dir
+
+
 def get_genomes_(wildcards):
 
-    if genome_dir == "genomes/genomes":
-        checkpoints.rename_genomes.get()  # test if checkpoint passed
-
+    genome_dir =get_genome_folder(wildcards)
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
@@ -195,7 +201,7 @@ def get_genomes_(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir=genome_dir,
+        dir= get_genome_folder,
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
@@ -230,7 +236,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        genome_dir,
+        get_genome_folder,
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta"),
@@ -422,7 +428,7 @@ rule combine_bined_coverages_MAGs:
 
 # rule predict_genes_genomes:
 #     input:
-#         dir=genome_dir
+#         dir= get_genome_folder
 #     output:
 #         directory("genomes/annotations/genes")
 #     conda:
@@ -514,7 +520,7 @@ rule run_prokka_bins:
 
 
 def genome_all_prokka_input(wildcards):
-    genome_dir = genome_dir
+    genome_dir = get_genome_folder
     return expand(
         "genomes/annotations/prokka/{genome}/{genome}.tsv",
         genome=glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome,
