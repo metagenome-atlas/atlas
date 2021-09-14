@@ -4,8 +4,5 @@ channels:
     - defaults
 dependencies:
     - python=3.8
-    - docutils
     - pandas=1.2
     - plotly=5.3
-    - ipython
-    - snakemake-minimal=6.7
