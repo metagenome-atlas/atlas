@@ -34,11 +34,11 @@ sys.excepthook = handle_exception
 import os, sys
 import pandas as pd
 import plotly.express as px
-from plotly import pio
+import plotly.io as pio
 
 
 
-
+pio.templates.default = "seaborn"
 HTML_PARAMS = dict(
     include_plotlyjs=False, full_html=False,
 )
@@ -56,7 +56,7 @@ labels = {
 }
 
 
-pio.templates.default = "seaborn"
+
 
 PLOT_PARAMS= dict( labels=labels)
 
