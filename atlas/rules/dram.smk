@@ -1,6 +1,6 @@
 
 DBDIR = config['database_dir']
-genome_folder= os.path.dirname(config.get('genome_folder', 'genomes'))
+
 
 def get_dram_config(wildcards):
     return config.get('dram_config_file', f"{DBDIR}/DRAM.config")
@@ -47,7 +47,7 @@ rule DRAM_set_db_loc:
 
 rule DRAM_annotate:
     input:
-        fasta=f"{genome_folder}/{{genome}}.fasta",
+        fasta=f"{genome_dir}/{{genome}}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag= rules.DRAM_set_db_loc.output
@@ -79,7 +79,10 @@ rule DRAM_annotate:
 
 def get_all_dram(wildcards):
 
-    all_genomes = glob_wildcards(f"{genome_folder}/{{i}}.fasta").i
+    if genome_dir == "genomes/genomes":
+        checkpoints.rename_genomes.get()  # test if checkpoint passed
+
+    all_genomes = glob_wildcards(f"{genome_dir}/{{i}}.fasta").i
 
     return expand(rules.DRAM_annotate.output.outdir,
            genome=all_genomes
@@ -116,7 +119,7 @@ rule concat_annotations:
 
 rule DRAM_destill:
     input:
-        expand("annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
+        rules.concat_annotations.output,
         flag= rules.DRAM_set_db_loc.output
     output:
         outdir= directory("annotations/dram/distil")
