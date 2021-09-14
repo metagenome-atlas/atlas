@@ -4,6 +4,29 @@ def get__filtered_sample_contigs(wildcards):
 
     return "Cobinning/filtered_contigs/{sample}.fasta.gz".format(**wildcards)
 
+
+# problem due to error in semibin unzip and efficency
+def get__filtered_sample_contigs_unziped(wildcards):
+
+    return "Cobinning/filtered_contigs/{sample}.fasta".format(**wildcards)
+
+rule unzip_filtered_contigs:
+    input:
+        "Cobinning/filtered_contigs/{sample}.fasta.gz"
+    output:
+        temp("Cobinning/filtered_contigs/{sample}.fasta")
+    conda:
+        "../envs/required_packages.yaml"
+    threads:
+        config.get("simplejob_threads", 1)
+    group:
+        "semibin_unzip"
+    shell:
+        "unpigz -p {threads} --keep {input}"
+
+
+
+
 localrules: semibin_download_gtdb
 rule semibin_download_gtdb:
     output:
@@ -21,7 +44,7 @@ rule semibin_download_gtdb:
 
 rule semibin_predict_taxonomy:
     input:
-        fasta=get__filtered_sample_contigs,
+        fasta="{sample}/{sample}_contigs.fasta",
         db=SEMIBIN_DATA_PATH,
     output:
         "Cobinning/SemiBin/samples/{sample}/cannot/cannot_bin.txt",
@@ -72,7 +95,7 @@ rule semibin_generate_data_multi:
         "log/benchmarks/semibin/generate_data_multi.tsv"
     params:
         output_dir="Cobinning/SemiBin",
-        separator=config['cobinning_separator'],
+        separator=get_cobinning_separator(),
     shell:
         "SemiBin generate_data_multi "
         " --input-fasta {input.fasta} "
@@ -85,7 +108,7 @@ rule semibin_generate_data_multi:
 
 rule semibin_train:
     input:
-        fasta= get__filtered_sample_contigs,
+        fasta= "{sample}/{sample}_contigs.fasta",
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
         data_split="Cobinning/SemiBin/samples/{sample}/data_split.csv",
@@ -121,7 +144,7 @@ rule semibin_train:
 
 rule run_semibin:
     input:
-        fasta=get__filtered_sample_contigs,
+        fasta="{sample}/{sample}_contigs.fasta",
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
         model=rules.semibin_train.output[0],

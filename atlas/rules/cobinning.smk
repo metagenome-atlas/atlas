@@ -10,51 +10,82 @@ rule vamb:
     input:
         "Cobinning/vamb/clustering",
 
-# def should_add_seperator():
-#
-#     seperator = config['cobinning_seperator']
-#
-#     if any('_' in SAMPLES) and (separator=='_'):
-#
-#         logger.error("You are trying to do cobinning. \n"
-#                      "The Samplenames contain '_' which might lead to confusion. \n"
-#                      "Add the folowing option to the config.yaml:\n\n"
-#                      "   cobinning_separator: ':' "
-#                      )
-#
-#         exit(1)
-#
-#
-#     return  "f" if seperator=='_' else 't'
+def get_cobinning_separator():
+
+    seperator = config['cobinning_separator']
+
+    if any([seperator in s for s in SAMPLES]):
+
+        logger.error("You are trying to do cobinning. \n"
+                     f"The Samplenames contain '{seperator}' which will lead to confusion. \n"
+                     "Change the seperator: "
+                     "E.g. Add the folowing option to the config.yaml:\n\n"
+                     "   cobinning_separator: ':' "
+                     )
+
+        raise Exception("You are trying to do cobinning. "
+                        f"The Samplenames contain '{seperator}' which will lead to confusion."
+                        )
 
 
+    return  seperator
 
-rule filter_contigs:
-    input:
-        "{sample}/{sample}_contigs.fasta"
-    output:
-        "Cobinning/filtered_contigs/{sample}.fasta.gz"
+if get_cobinning_separator()!='_':
 
-    params:
-        min_length= config['cobining_min_contig_length'],
-        prefix= lambda wc: wc.sample + config['cobinning_separator'] ,
-        addprefix = "f" if config['cobinning_separator']=='_' else 't'
-    log:
-        "logs/cobinning/filter_contigs/{sample}.log"
-    conda:
-        "../envs/required_packages.yaml"
-    threads: 1
-    resources:
-        mem=config["simplejob_mem"],
-        java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
-    shell:
-        " rename.sh in={input} "
-        " prefix={params.prefix} "
-        " addprefix={params.addprefix} "
-        " minscaf={params.min_length} "
-        " out={output} "
-        " overwrite=true "
-        " -Xmx{resources.java_mem}G 2> {log} "
+
+    rule filter_contigs:
+        input:
+            "{sample}/{sample}_contigs.fasta"
+        output:
+            temp("Cobinning/filtered_contigs/{sample}.fasta.gz")
+
+        params:
+            min_length= config['cobining_min_contig_length'],
+            prefix= lambda wc: wc.sample + config['cobinning_separator'] ,
+        log:
+            "logs/cobinning/filter_contigs/{sample}.log"
+        conda:
+            "../envs/required_packages.yaml"
+        threads: 1
+        resources:
+            mem=config["simplejob_mem"],
+            java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+        shell:
+            " rename.sh in={input} "
+            " prefix={params.prefix} "
+            " addprefix=t "
+            " addunderscore=f"
+            " minscaf={params.min_length} "
+            " out={output} "
+            " overwrite=true "
+            " -Xmx{resources.java_mem}G 2> {log} "
+
+
+else:
+
+
+    rule filter_contigs:
+        input:
+            "{sample}/{sample}_contigs.fasta"
+        output:
+            temp("Cobinning/filtered_contigs/{sample}.fasta.gz")
+
+        params:
+            min_length= config['cobining_min_contig_length'],
+        log:
+            "logs/cobinning/filter_contigs/{sample}.log"
+        conda:
+            "../envs/required_packages.yaml"
+        threads: 1
+        resources:
+            mem=config["simplejob_mem"],
+            java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+        shell:
+            " reformat.sh in={input} "
+            " fastaminlen={params.min_length} "
+            " out={output} "
+            " overwrite=true "
+            " -Xmx{resources.java_mem}G 2> {log} "
 
 
 
