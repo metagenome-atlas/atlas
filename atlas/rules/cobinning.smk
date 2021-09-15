@@ -10,82 +10,29 @@ rule vamb:
     input:
         "Cobinning/vamb/clustering",
 
-def get_cobinning_separator():
 
-    seperator = config['cobinning_separator']
+rule filter_contigs:
+    input:
+        "{sample}/{sample}_contigs.fasta"
+    output:
+        temp("Cobinning/filtered_contigs/{sample}.fasta")
 
-    if any([seperator in s for s in SAMPLES]):
-
-        logger.error("You are trying to do cobinning. \n"
-                     f"The Samplenames contain '{seperator}' which will lead to confusion. \n"
-                     "Change the seperator: "
-                     "E.g. Add the folowing option to the config.yaml:\n\n"
-                     "   cobinning_separator: ':' "
-                     )
-
-        raise Exception("You are trying to do cobinning. "
-                        f"The Samplenames contain '{seperator}' which will lead to confusion."
-                        )
-
-
-    return  seperator
-
-if get_cobinning_separator()!='_':
-
-
-    rule filter_contigs:
-        input:
-            "{sample}/{sample}_contigs.fasta"
-        output:
-            temp("Cobinning/filtered_contigs/{sample}.fasta.gz")
-
-        params:
-            min_length= config['cobining_min_contig_length'],
-            prefix= lambda wc: wc.sample + config['cobinning_separator'] ,
-        log:
-            "logs/cobinning/filter_contigs/{sample}.log"
-        conda:
-            "../envs/required_packages.yaml"
-        threads: 1
-        resources:
-            mem=config["simplejob_mem"],
-            java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
-        shell:
-            " rename.sh in={input} "
-            " prefix={params.prefix} "
-            " addprefix=t "
-            " addunderscore=f"
-            " minscaf={params.min_length} "
-            " out={output} "
-            " overwrite=true "
-            " -Xmx{resources.java_mem}G 2> {log} "
-
-
-else:
-
-
-    rule filter_contigs:
-        input:
-            "{sample}/{sample}_contigs.fasta"
-        output:
-            temp("Cobinning/filtered_contigs/{sample}.fasta.gz")
-
-        params:
-            min_length= config['cobining_min_contig_length'],
-        log:
-            "logs/cobinning/filter_contigs/{sample}.log"
-        conda:
-            "../envs/required_packages.yaml"
-        threads: 1
-        resources:
-            mem=config["simplejob_mem"],
-            java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
-        shell:
-            " reformat.sh in={input} "
-            " fastaminlen={params.min_length} "
-            " out={output} "
-            " overwrite=true "
-            " -Xmx{resources.java_mem}G 2> {log} "
+    params:
+        min_length= config['cobining_min_contig_length'],
+    log:
+        "logs/cobinning/filter_contigs/{sample}.log"
+    conda:
+        "../envs/required_packages.yaml"
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+    shell:
+        " reformat.sh in={input} "
+        " fastaminlen={params.min_length} "
+        " out={output} "
+        " overwrite=true "
+        " -Xmx{resources.java_mem}G 2> {log} "
 
 
 
@@ -93,15 +40,31 @@ else:
 localrules: combine_contigs
 rule combine_contigs:
     input:
-        ancient(expand("Cobinning/filtered_contigs/{sample}.fasta.gz", sample=SAMPLES)),
+        ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
     output:
         "Cobinning/combined_contigs.fasta.gz",
     log:
         "logs/cobinning/combine_contigs.log",
+    params:
+        seperator= config['cobinning_separator'],
+        samples = SAMPLES
     threads: 1
     run:
-        from utils.io import cat_files
-        cat_files(input, output[0])
+        import gzip as gz
+
+        with gz.open(output[0],'wt') as fout:
+
+            for sample,input_fasta in zip(params.samples,input):
+                with open(input_fasta) as fin:
+
+                    for line in fin:
+                        # if line is a header add sample name
+                        if line[0]=='>':
+                            line=f'>{sample}{params.seperator}'+ line[1:]
+                        # write each line to the combined file
+                        fout.write(line)
+
+
 
 
 rule minimap_index:
