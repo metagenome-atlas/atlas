@@ -1,0 +1,39 @@
+<html>
+    <head>
+
+        <title>Metagenome-Atlas - QC Report</title>
+
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+        <style type="text/css">
+            {css_content}
+        </style>
+
+    </head>
+    <body>
+
+
+    <div class="container" id="notebook-container">
+
+        <h1>Quality Control Report</h1>
+
+
+        <h2>Total assembly length</h2>
+
+            {div['Total']}
+
+
+        <h2>Read quality after QC<h/2>
+
+          {div['quality_QC']}
+
+        <h2>Quality of initial reads<h/2>
+
+          {div['quality_raw']}
+
+
+
+            </div>
+    </body>
+</html>
