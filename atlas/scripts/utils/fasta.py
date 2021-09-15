@@ -71,12 +71,13 @@ def split(fasta_file, maxSubsetSize, out_dir, simplify_headers=True):
 
     fout.close()
 
-def parse_fasta_headers(fasta_file,simplify_header=True):
+
+def parse_fasta_headers(fasta_file, simplify_header=True):
     """
-        returns list of fasta headers
+    returns list of fasta headers
     """
 
-    headers= []
+    headers = []
 
     with open(fasta_file) as f:
         for line in f:
@@ -89,6 +90,7 @@ def parse_fasta_headers(fasta_file,simplify_header=True):
                 headers.append(header)
 
     return headers
+
 
 def header2origin(fasta_file, out, simplify_header=True):
     """

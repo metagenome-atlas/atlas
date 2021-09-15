@@ -8,14 +8,13 @@ localrules:
 
 rule filter_contigs:
     input:
-        "{sample}/{sample}_contigs.fasta"
+        "{sample}/{sample}_contigs.fasta",
     output:
-        temp("Cobinning/filtered_contigs/{sample}.fasta")
-
+        temp("Cobinning/filtered_contigs/{sample}.fasta"),
     params:
-        min_length= config['cobining_min_contig_length'],
+        min_length=config["cobining_min_contig_length"],
     log:
-        "logs/cobinning/filter_contigs/{sample}.log"
+        "logs/cobinning/filter_contigs/{sample}.log",
     conda:
         "../envs/required_packages.yaml"
     threads: 1
@@ -30,9 +29,10 @@ rule filter_contigs:
         " -Xmx{resources.java_mem}G 2> {log} "
 
 
+localrules:
+    combine_contigs,
 
 
-localrules: combine_contigs
 rule combine_contigs:
     input:
         ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
@@ -41,25 +41,23 @@ rule combine_contigs:
     log:
         "logs/cobinning/combine_contigs.log",
     params:
-        seperator= config['cobinning_separator'],
-        samples = SAMPLES
+        seperator=config["cobinning_separator"],
+        samples=SAMPLES,
     threads: 1
     run:
         import gzip as gz
 
-        with gz.open(output[0],'wt') as fout:
+        with gz.open(output[0], "wt") as fout:
 
-            for sample,input_fasta in zip(params.samples,input):
+            for sample, input_fasta in zip(params.samples, input):
                 with open(input_fasta) as fin:
 
                     for line in fin:
                         # if line is a header add sample name
-                        if line[0]=='>':
-                            line=f'>{sample}{params.seperator}'+ line[1:]
+                        if line[0] == ">":
+                            line = f">{sample}{params.seperator}" + line[1:]
                         # write each line to the combined file
                         fout.write(line)
-
-
 
 
 rule minimap_index:
@@ -70,7 +68,7 @@ rule minimap_index:
     params:
         index_size="12G",
     resources:
-        mem=config["mem"], # limited num of fatnodes (>200g)
+        mem=config["mem"],  # limited num of fatnodes (>200g)
     threads: 1
     log:
         "logs/cobinning/vamb/index.log",
@@ -193,9 +191,9 @@ rule run_vamb:
     benchmark:
         "logs/benchmarks/vamb/run_vamb.tsv"
     params:
-        params="-m 2000 ", #TODO: I don't know what this is for
+        params="-m 2000 ",  #TODO: I don't know what this is for
         minfasta=config["cobining_min_contig_length"],
-        separator= config['cobinning_separator']
+        separator=config["cobinning_separator"],
     shell:
         "vamb --outdir {output} "
         " --minfasta {params.minfasta} "
@@ -206,18 +204,19 @@ rule run_vamb:
         "2> {log}"
 
 
-
 rule parse_vamb_output:
     input:
-        rules.run_vamb.output
+        rules.run_vamb.output,
     output:
-        renamed_clusters = "Cobinning/vamb/clusters.tsv"
-        cluster_atributions= expand( "{sample}/binning/Vamb/cluster_attribution.tsv",sample=SAMPLES)
+        renamed_clusters="Cobinning/vamb/clusters.tsv",
+        cluster_atributions=expand(
+            "{sample}/binning/Vamb/cluster_attribution.tsv", sample=SAMPLES
+        ),
     params:
-        separator = config['cobinning_separator'],
-        fasta_extension= '.fna',
-        output_path = "{{sample}}/binning/Vamb/cluster_attribution.tsv",
-        samples= SAMPLES
+        separator=config["cobinning_separator"],
+        fasta_extension=".fna",
+        output_path="{{sample}}/binning/Vamb/cluster_attribution.tsv",
+        samples=SAMPLES,
     script:
         "../scripts/parse_vamb.py"
 
@@ -225,11 +224,7 @@ rule parse_vamb_output:
 rule vamb:
     input:
         "Cobinning/vamb/clustering",
-        "Cobinning/vamb/clusters.tsv"
-
-
-
-
+        "Cobinning/vamb/clusters.tsv",
 
 
 include: "semibin.smk"

@@ -290,8 +290,7 @@ rule get_unique_cluster_attribution:
                 "I add longest contig to make the pipline continue"
             )
 
-
-            new_d[f'{wildcards.sample}_0'] = "{sample}_{binner}_1".format(**wildcards)            
+            new_d[f"{wildcards.sample}_0"] = "{sample}_{binner}_1".format(**wildcards)
 
         new_d.to_csv(output[0], sep="\t", header=False)
 
