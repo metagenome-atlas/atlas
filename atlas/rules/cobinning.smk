@@ -10,12 +10,10 @@ rule filter_contigs:
     input:
         "{sample}/{sample}_contigs.fasta"
     output:
-        "Cobinning/filtered_contigs/{sample}.fasta.gz"
+        temp("Cobinning/filtered_contigs/{sample}.fasta")
 
     params:
         min_length= config['cobining_min_contig_length'],
-        prefix= "{sample}{config[cobinning_separator]}",
-        addprefix = "f" if config['cobinning_separator']=='_' else 't'
     log:
         "logs/cobinning/filter_contigs/{sample}.log"
     conda:
@@ -25,10 +23,8 @@ rule filter_contigs:
         mem=config["simplejob_mem"],
         java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
     shell:
-        " rename.sh in={input} "
-        " prefix={params.prefix} "
-        " addprefix={params.addprefix} "
-        " minscaf={params.min_length} "
+        " reformat.sh in={input} "
+        " fastaminlen={params.min_length} "
         " out={output} "
         " overwrite=true "
         " -Xmx{resources.java_mem}G 2> {log} "
@@ -39,15 +35,31 @@ rule filter_contigs:
 localrules: combine_contigs
 rule combine_contigs:
     input:
-        ancient(expand("Cobinning/filtered_contigs/{sample}.fasta.gz", sample=SAMPLES)),
+        ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
     output:
         "Cobinning/combined_contigs.fasta.gz",
     log:
         "logs/cobinning/combine_contigs.log",
+    params:
+        seperator= config['cobinning_separator'],
+        samples = SAMPLES
     threads: 1
     run:
-        from utils.io import cat_files
-        cat_files(input, output[0])
+        import gzip as gz
+
+        with gz.open(output[0],'wt') as fout:
+
+            for sample,input_fasta in zip(params.samples,input):
+                with open(input_fasta) as fin:
+
+                    for line in fin:
+                        # if line is a header add sample name
+                        if line[0]=='>':
+                            line=f'>{sample}{params.seperator}'+ line[1:]
+                        # write each line to the combined file
+                        fout.write(line)
+
+
 
 
 rule minimap_index:
