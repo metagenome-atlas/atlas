@@ -6,29 +6,6 @@ localrules:
     vamb,
 
 
-rule vamb:
-    input:
-        "Cobinning/vamb/clustering",
-
-# def should_add_seperator():
-#
-#     seperator = config['cobinning_seperator']
-#
-#     if any('_' in SAMPLES) and (separator=='_'):
-#
-#         logger.error("You are trying to do cobinning. \n"
-#                      "The Samplenames contain '_' which might lead to confusion. \n"
-#                      "Add the folowing option to the config.yaml:\n\n"
-#                      "   cobinning_separator: ':' "
-#                      )
-#
-#         exit(1)
-#
-#
-#     return  "f" if seperator=='_' else 't'
-
-
-
 rule filter_contigs:
     input:
         "{sample}/{sample}_contigs.fasta"
@@ -215,6 +192,32 @@ rule run_vamb:
         " --fasta {input.fasta} "
         " {params.params} "
         "2> {log}"
+
+
+
+rule parse_vamb_output:
+    input:
+        rules.run_vamb.output
+    output:
+        renamed_clusters = "Cobinning/vamb/clusters.tsv"
+        cluster_atributions= expand( "{sample}/binning/Vamb/cluster_attribution.tsv",sample=SAMPLES)
+    params:
+        separator = config['cobinning_separator'],
+        fasta_extension= '.fna',
+        output_path = "{{sample}}/binning/Vamb/cluster_attribution.tsv",
+        samples= SAMPLES
+    script:
+        "../scripts/parse_vamb.py"
+
+
+rule vamb:
+    input:
+        "Cobinning/vamb/clustering",
+        "Cobinning/vamb/clusters.tsv"
+
+
+
+
 
 
 include: "semibin.smk"
