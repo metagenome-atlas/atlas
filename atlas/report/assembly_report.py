@@ -112,12 +112,15 @@ def make_html(html_template_file, css_file, report_out,div):
 
 # main
 
-reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'reports'))
+reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'report'))
 
 div= make_plots(combined_stats=snakemake.input.combined_contig_stats)
+
+logging.info(div.keys())
+
 make_html(
     div= div,
-    css_file= os.path.join(reports_dir,"reports.css" ),
+    css_file= os.path.join(reports_dir,"report.css" ),
     report_out=snakemake.output.report,
     html_template_file = os.path.join(reports_dir,"template_assembly_report.html" )
 
