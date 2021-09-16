@@ -12,8 +12,6 @@ rule get_all_bins:
             sample=SAMPLES,
             binner=config["final_binner"],
         ),
-        #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-        #       sample= SAMPLES, binner= config['final_binner'])
     output:
         temp(directory("genomes/all_bins")),
     run:
