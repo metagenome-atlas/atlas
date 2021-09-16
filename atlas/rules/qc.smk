@@ -766,31 +766,16 @@ rule finalize_sample_qc:
         touch("{sample}/sequence_quality_control/finished_QC"),
 
 
-def zipfile_input(wildcards):
-    """
-    returns dict of list with all the zipfiles of stats.
-    when QC is skipped only the QC stats are returned.
-    """
-    output = dict(
-        zipfiles_QC=expand(
-            "{sample}/sequence_quality_control/read_stats/QC.zip", sample=SAMPLES
-        )
-    )
-
-    if not SKIP_QC:
-        output["zipfiles_raw"] = expand(
-            "{sample}/sequence_quality_control/read_stats/raw.zip", sample=SAMPLES
-        )
-
-    return output
-
 
 rule build_qc_report:
     input:
-        unpack(zipfile_input),
+        zipfiles_QC=expand(
+            "{sample}/sequence_quality_control/read_stats/QC.zip",
+            sample=SAMPLES
+        ),
         read_counts="stats/read_counts.tsv",
         read_length_stats=(
-            ["stats/insert_stats.tsv", "stats/read_length_stats.tsv"]
+            ["stats/read_length_stats.tsv","stats/insert_stats.tsv"]
             if PAIRED_END
             else "stats/read_length_stats.tsv"
         ),
@@ -800,7 +785,8 @@ rule build_qc_report:
         "logs/QC/report.log",
     params:
         min_quality=config["preprocess_minimum_base_quality"],
+        samples=SAMPLES
     conda:
-        "%s/report.yaml" % CONDAENV
+        "../envs/report.yaml"
     script:
-        "../report/dummy_report.py"  #"../report/qc_report.py"
+        "../report/qc_report.py"
