@@ -2,8 +2,7 @@ import os, sys
 import logging, traceback
 
 logging.basicConfig(
-    #    filename=snakemake.log[0], # HACK
-    #    level=logging.INFO,
+    filename=snakemake.log[0],
     level=logging.DEBUG,
     format="%(asctime)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -46,13 +45,21 @@ output_culsters = snakemake.output.renamed_clusters
 big_bins = []
 
 for file in os.listdir(bin_dir):
-    binname, extension = os.path.split(file)
+    bin_name, extension = os.path.splitext(file)
+
+    logging.debug(f"Found file {bin_name} with extension {extension}")
+
     if extension == fasta_extension:
-        bins.append(big_bins)
+        big_bins.append(bin_name)
+
+
+logging.info(f"Found {len(big_bins)} bins created by Vamb (above size limit)\n"
+             f"E.g. {big_bins[:5]}"
+             )
 
 
 logging.info(f"Load vamb cluster file {vamb_cluster_file}")
-clusters = pd.read_table(vamb_cluster_file, header=None)
+clusters_contigs = pd.read_table(vamb_cluster_file, header=None)
 
 clusters_contigs.columns = ["OriginalName", "Contig"]
 
@@ -70,7 +77,7 @@ clusters["Large_enough"] = clusters.OriginalName.isin(big_bins)
 del clusters_contigs
 
 logging.info(f"Write reformated table to {output_culsters}")
-clusters.to_csv(output_culsters, sep="\t")
+clusters.to_csv(output_culsters, sep="\t",index=False)
 
 clusters = clusters.query("Large_enough")
 
@@ -86,7 +93,7 @@ for sample, cl in clusters.groupby("Sample"):
     )
 
 
-samples_without_bins = set(snakemake.params.samples).difference(set(clusters.Samples))
+samples_without_bins = set(snakemake.params.samples).difference(set(clusters.Sample))
 
 if len(samples_without_bins) > 0:
     logging.warning(

@@ -35,6 +35,8 @@ localrules:
 
 rule combine_contigs:
     input:
+        #Trigers rerun if contigs change
+        expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
         ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
     output:
         "Cobinning/combined_contigs.fasta.gz",
@@ -204,18 +206,22 @@ rule run_vamb:
         "2> {log}"
 
 
+vamb_cluster_attribution_path= "{sample}/binning/vamb/cluster_attribution.tsv"
+
 rule parse_vamb_output:
     input:
         rules.run_vamb.output,
     output:
-        renamed_clusters="Cobinning/vamb/clusters.tsv",
+        renamed_clusters="Cobinning/vamb/clusters.tsv.gz",
         cluster_atributions=expand(
-            "{sample}/binning/Vamb/cluster_attribution.tsv", sample=SAMPLES
+            vamb_cluster_attribution_path, sample=SAMPLES
         ),
+    log:
+        "logs/cobinning/vamb_parse_output.log"
     params:
         separator=config["cobinning_separator"],
         fasta_extension=".fna",
-        output_path="{{sample}}/binning/Vamb/cluster_attribution.tsv",
+        output_path= lambda wc: vamb_cluster_attribution_path,
         samples=SAMPLES,
     script:
         "../scripts/parse_vamb.py"
@@ -224,7 +230,8 @@ rule parse_vamb_output:
 rule vamb:
     input:
         "Cobinning/vamb/clustering",
-        "Cobinning/vamb/clusters.tsv",
+        "Cobinning/vamb/clusters.tsv.gz",
+        expand("{sample}/binning/vamb/cluster_attribution.tsv", sample=SAMPLES)
 
 
 include: "semibin.smk"
