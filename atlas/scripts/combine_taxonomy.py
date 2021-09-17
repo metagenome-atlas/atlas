@@ -39,10 +39,12 @@ gtdb_classify_folder= snakemake.input.folder
 
 taxonomy_files= glob(f"{gtdb_classify_folder}/gtdbtk.*.summary.tsv")
 
-logging.INFO(f"Found {len(taxonomy_files)} gtdb taxonomy files.")
-if 0==len(taxonomy_files) or len(taxonomy_files) <2:
+N_taxonomy_files= len(taxonomy_files)
+logging.info(f"Found {N_taxonomy_files} gtdb taxonomy files.")
 
-    raise Exception(f"Found inadequate number of taxonomy files 'gtdbtk.*.summary.tsv' in {gtdb_classify_folder}"
+if (0==N_taxonomy_files) or (N_taxonomy_files >2):
+
+    raise Exception(f"Found {N_taxonomy_files} number of taxonomy files 'gtdbtk.*.summary.tsv' in {gtdb_classify_folder} expect 1 or 2."
                     )
 
 

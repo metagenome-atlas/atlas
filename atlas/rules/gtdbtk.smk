@@ -77,7 +77,7 @@ rule combine_taxonomy:
     log:
         "logs/taxonomy/gtdbtk/combine.txt"
     script:
-        "scripts/combine_taxonomy.py"
+        "../scripts/combine_taxonomy.py"
 
 
 

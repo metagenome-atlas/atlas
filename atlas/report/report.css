@@ -15,6 +15,15 @@ p {
   font-size: 14pt;
 }
 
+.float-container {
+    padding: 2px;
+}
+
+.float-child {
+    width: 50%;
+    float: left;
+    padding: 2px;
+}
 
 @media not print {
   #notebook-container {
@@ -28,15 +37,4 @@ p {
 @media print {
   #notebook-container {
     width: 100%;
-  }
-
-
-  .float-container {
-      padding: 0px;
-  }
-
-  .float-child {
-      width: 50%;
-      float: left;
-      padding: 0px;
   }
