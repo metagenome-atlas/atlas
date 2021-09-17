@@ -543,7 +543,7 @@ rule build_bin_report:
     log:
         "logs/binning/report_{binner}.log",
     script:
-        "../report/dummy_report.py"  #"../report/bin_report.py"
+        "../report/bin_report.py"
 
 
 localrules:
