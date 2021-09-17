@@ -55,8 +55,6 @@ labels = {
 PLOT_PARAMS= dict( labels=labels)
 
 
-N = len(samples)
-color_range = ["hsl(" + str(h) + ",50%" + ",50%)" for h in np.linspace(0, 360, N + 1)]
 
 
 
@@ -95,7 +93,7 @@ def get_stats_from_zips(zips, samples):
     return quality_pe, quality_se
 
 
-def get_pe_read_quality_plot(df, quality_range):
+def get_pe_read_quality_plot(df, quality_range,color_range):
 
     fig= subplots.make_subplots(cols=2)
 
@@ -140,7 +138,7 @@ def get_pe_read_quality_plot(df, quality_range):
 
 
 
-def draw_se_read_quality(df, quality_range):
+def draw_se_read_quality(df, quality_range,color_range):
 
     fig= subplots.make_subplots(cols=1)
 
@@ -174,7 +172,13 @@ def make_plots(samples,zipfiles_QC,read_counts,read_length ,min_quality, insert_
 
     div = {}
 
+
+
     ## Quality along read
+
+    N = len(samples)
+    color_range = ["hsl(" + str(h) + ",50%" + ",50%)" for h in np.linspace(0, 360, N + 1)]
+
 
     # load quality profiles for QC and low
     Quality_QC_pe, Quality_QC_se = get_stats_from_zips(zipfiles_QC,samples)
@@ -193,21 +197,21 @@ def make_plots(samples,zipfiles_QC,read_counts,read_length ,min_quality, insert_
     if paired:
 
         div["quality_QC"] = get_pe_read_quality_plot(
-            Quality_QC_pe, quality_range
+            Quality_QC_pe, quality_range, color_range
         ).to_html(**HTML_PARAMS)
 
     #     div["quality_raw"] = get_pe_read_quality_plot(
-    #         Quality_raw_pe, quality_range
+    #         Quality_raw_pe, quality_range, color_range
     #     ).to_html(**HTML_PARAMS)
 
     else:
 
         div["quality_QC"] = draw_se_read_quality(
-            Quality_QC_se, quality_range
+            Quality_QC_se, quality_range, color_range
         ).to_html(**HTML_PARAMS)
 
     #     div["quality_raw"] = draw_se_read_quality(
-    #         Quality_raw_se, quality_range
+    #         Quality_raw_se, quality_range, color_range
     #     ).to_html(**HTML_PARAMS)
 
 
@@ -299,7 +303,7 @@ def make_html(html_template_file, css_file, report_out,div):
 
 # main
 
-reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'reports'))
+reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'report'))
 
 # If paired we have information about insert size
 if type(snakemake.input.read_length_stats)==str:
@@ -318,7 +322,7 @@ div= make_plots(samples = snakemake.params.samples,
 
 make_html(
     div= div,
-    css_file= os.path.join(reports_dir,"reports.css" ),
+    css_file= os.path.join(reports_dir,"report.css" ),
     report_out=snakemake.output.report,
     html_template_file = os.path.join(reports_dir,"template_QC_report.html" )
 
