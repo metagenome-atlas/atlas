@@ -14,7 +14,7 @@ rule semibin_download_gtdb:
         "../envs/semibin.yaml"
     threads: 1
     shell:
-        "SemiBin download_GTDB --reference-db {output}/GTDB 2> {log}"
+        "SemiBin download_GTDB --reference-db {output} 2> {log}"
 
         # Semibin 0.2 has the following error https:/github.com/BigDataBiology/SemiBin/issues/31
 
