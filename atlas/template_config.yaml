@@ -146,11 +146,12 @@ maximum_counted_map_sites: 10
 # Binning
 ########################
 
-final_binner: DASTool             # [DASTool or one of the binner, e.g. maxbin]
+final_binner: vamb             # [SemiBin, DASTool, vamb, maxbin]
 
 binner:                           # If DASTool is used as final_binner, use predictions of this binners
   - metabat
   - maxbin
+  - vamb
 
 
 metabat:
