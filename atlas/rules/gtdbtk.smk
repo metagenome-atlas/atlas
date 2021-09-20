@@ -68,6 +68,20 @@ rule classify:
         "--cpus {threads} &> {log[0]}"
 
 
+rule combine_taxonomy:
+    input:
+        folder= f"{gtdb_dir}/classify",
+    output:
+        combined=f"{gtdb_dir}/gtdbtk.combined.summary.tsv",
+        taxonomy="genomes/taxonomy/gtdb_taxonomy.tsv"
+    log:
+        "logs/taxonomy/gtdbtk/combine.txt"
+    script:
+        "../scripts/combine_taxonomy.py"
+
+
+
+
 msa_paths = {
     "checkm": "genomes/checkm/storage/tree/concatenated.fasta",
     "gtdbtk.bac120": f"{gtdb_dir}/align/gtdbtk.bac120.user_msa.fasta",

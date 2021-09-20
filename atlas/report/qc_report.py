@@ -1,38 +1,74 @@
 import os, sys
+import logging, traceback
 
-log = open(snakemake.log[0], "w")
-sys.stderr = log
-sys.stdout = log
-
-import numpy as np
-import pandas as pd
-
-pd.options.plotting.backend = "plotly"
-
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-from plotly import offline
-
-
-import zipfile
-from snakemake.utils import report
-
-
-PLOTLY_PARAMS = dict(
-    include_plotlyjs=False, show_link=False, output_type="div", image_height=700
+logging.basicConfig(
+    filename=snakemake.log[0],
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
 
-def get_stats_from_zips(zips):
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logger.error(
+        "".join(
+            [
+                "Uncaught exception: ",
+                *traceback.format_exception(exc_type, exc_value, exc_traceback),
+            ]
+        )
+    )
+
+
+# Install exception handler
+sys.excepthook = handle_exception
+
+#### Begining of scripts
+
+
+
+
+import pandas as pd
+import plotly.express as px
+import plotly.io as pio
+from plotly import subplots
+import plotly.graph_objs as go
+import numpy as np
+
+
+pio.templates.default = "seaborn"
+HTML_PARAMS = dict(
+    include_plotlyjs=False, full_html=False,
+)
+
+
+labels = {
+    "Total_Reads": "Total Reads",
+    "Total_Bases": "Total Bases"
+}
+
+
+PLOT_PARAMS= dict( labels=labels)
+
+
+
+
+
+
+import zipfile
+
+
+def get_stats_from_zips(zips, samples):
     # def get_read_stats(samples, step):
     quality_pe = pd.DataFrame()
     quality_se = pd.DataFrame()
-    for zfile in zips:
+    for zfile,sample in zip(zips,samples):
         zf = zipfile.ZipFile(zfile)
-        # local testing files
-        sample = zfile.split("/")[0]  # HACK: sample name is first name of path
-        # relative path from snakemake
-        # sample = zfile.partition(os.path.sep)[0]
+
 
         # single end only
         if "boxplot_quality.txt" in zf.namelist():
@@ -49,6 +85,7 @@ def get_stats_from_zips(zips):
                 with zf.open("pe/boxplot_quality.txt") as f:
                     df = pd.read_csv(f, index_col=0, sep="\t")
                     df.columns = [df.columns, [sample] * df.shape[1]]
+
                     quality_pe = pd.concat(
                         (quality_pe, df[["mean_1", "mean_2"]]), axis=1
                     )
@@ -56,277 +93,237 @@ def get_stats_from_zips(zips):
     return quality_pe, quality_se
 
 
-def get_pe_read_quality_plot(df, quality_range, colorscale="Viridis", **kwargs):
+def get_pe_read_quality_plot(df, quality_range,color_range):
 
-    N = len(df["mean_1"].columns)
-    c = ["hsl(" + str(h) + ",50%" + ",50%)" for h in np.linspace(0, 360, N + 1)]
-
-    fig = make_subplots(rows=1, cols=2, shared_yaxes=True)
+    fig= subplots.make_subplots(cols=2)
 
     for i, sample in enumerate(df["mean_1"].columns):
-        fig.append_trace(
-            dict(
-                x=df.index,
-                y=df["mean_1"][sample].values,
-                type="scatter",
-                name=sample,
-                legendgroup=sample,
-                marker=dict(color=c[i]),
-            ),
-            1,
-            1,
-        )
 
-        fig.append_trace(
-            dict(
-                x=df.index,
-                y=df["mean_2"][sample].values,
-                type="scatter",
-                name=sample,
-                legendgroup=sample,
-                showlegend=False,
-                marker=dict(color=c[i]),
-            ),
-            1,
-            2,
-        )
+            fig.append_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df["mean_1"][sample].values,
+                    type="scatter",
+                    name=sample,
+                    legendgroup=sample,
+                    marker=dict(color=color_range[i]),
+                ),
+                1,
+                1,
+            )
 
-    fig["layout"].update(
+
+            fig.append_trace(
+                dict(
+                    x=df.index,
+                    y=df["mean_2"][sample].values,
+                    type="scatter",
+                    name=sample,
+                    legendgroup=sample,
+                    showlegend=False,
+                    marker=dict(color=color_range[i]),
+                ),
+                1,
+                2,
+            )
+
+
+    fig.update_layout(
         yaxis=dict(range=quality_range, autorange=True, title="Average quality score"),
         xaxis1=dict(title="Position forward read"),
         xaxis2=dict(autorange="reversed", title="Position reverse read"),
     )
 
-    return offline.plot(fig, **kwargs, **PLOTLY_PARAMS)
-
-    #
-    # df1 = df[["mean_1", "mean_2"]]
-    # return offline.plot(
-    #     df1.plot(
-    #         subplots=True,
-    #         shape=(1, 2),
-    #         shared_yaxes=True,
-    #         kind="line",
-    #         layout = go.Layout(
-    #             yaxis = dict(range=quality_range, autorange=True, title="Quality score"),
-    #             xaxis1 = dict(title='Position forward read'),
-    #             xaxis2 = dict(autorange='reversed',title='Position reverse read')
-    #                 )
-    #     ),
-    #
-    # )
+    return fig
 
 
-# ,
 
+def draw_se_read_quality(df, quality_range,color_range):
 
-def draw_se_read_quality(df, quality_range, **kwargs):
-    return offline.plot(
-        df.plot(
-            kind="line",
-            layout=go.Layout(
-                yaxis=dict(
-                    range=quality_range, autorange=True, title="Average quality score"
+    fig= subplots.make_subplots(cols=1)
+
+    for i, sample in enumerate(df.columns):
+
+            fig.append_trace(
+                go.Scatter(
+                    x=df.index,
+                    y=df[sample].values,
+                    type="scatter",
+                    name=sample,
+                    legendgroup=sample,
+                    marker=dict(color=color_range[i]),
                 ),
-                xaxis=dict(title="Position read"),
-            ),
-        ),
-        **kwargs,
-        **PLOTLY_PARAMS,
+                1,
+                1,
+            )
+
+    fig.update_layout(
+    yaxis=dict(range=quality_range, autorange=True, title="Average quality score"),
+    xaxis=dict(title="Position read")
     )
+    return fig
 
 
-def main(report_out, read_counts, zipfiles_QC, min_quality, zipfiles_raw=None):
+
+
+
+
+def make_plots(samples,zipfiles_QC,read_counts,read_length ,min_quality, insert_size_stats):
+
     div = {}
 
-    # N reads / N bases
+
+
+    ## Quality along read
+
+    N = len(samples)
+    color_range = ["hsl(" + str(h) + ",50%" + ",50%)" for h in np.linspace(0, 360, N + 1)]
+
+
+    # load quality profiles for QC and low
+    Quality_QC_pe, Quality_QC_se = get_stats_from_zips(zipfiles_QC,samples)
+    # Quality_raw_pe, Quality_raw_se = get_stats_from_zips(zipfiles_QC,samples)
+
+    #detrmine range of quality values and if paired
+    max_quality = 1 + np.nanmax((Quality_QC_pe.max().max(), Quality_QC_se.max().max()))
+    quality_range = [min_quality,max_quality]
+
+    paired= (Quality_QC_pe.shape[0] > 0)
+
+
+
+    # create plots if paired or not
+
+    if paired:
+
+        div["quality_QC"] = get_pe_read_quality_plot(
+            Quality_QC_pe, quality_range, color_range
+        ).to_html(**HTML_PARAMS)
+
+    #     div["quality_raw"] = get_pe_read_quality_plot(
+    #         Quality_raw_pe, quality_range, color_range
+    #     ).to_html(**HTML_PARAMS)
+
+    else:
+
+        div["quality_QC"] = draw_se_read_quality(
+            Quality_QC_se, quality_range, color_range
+        ).to_html(**HTML_PARAMS)
+
+    #     div["quality_raw"] = draw_se_read_quality(
+    #         Quality_raw_se, quality_range, color_range
+    #     ).to_html(**HTML_PARAMS)
+
+
+
+
+    # Total reads plot
+
     df = pd.read_csv(read_counts, index_col=[0, 1], sep="\t")
-    for variable in ["Total_Reads", "Total_Bases"]:
 
-        data = df[variable].unstack()[df.loc[df.index[0][0]].index]
+    df.drop('clean',axis=0,level=1,inplace=True)
 
-        if "clean" in data.columns:
-            data.drop("clean", axis=1, inplace=True)
+    data_qc= df.query('Step=="QC"')
 
-        div[variable] = offline.plot(
-            data.plot(
-                kind="bar",
-                xTitle="Samples",
-                yTitle=variable.replace("_", " "),
-                layout=go.Layout(xaxis=dict(tickangle=45)),
-            ),
-            **PLOTLY_PARAMS,
-        )
+    for var in ["Total_Reads","Total_Bases"]:
 
-    Report_numbers = """
-
-Total reads per sample
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. raw:: html
-
-    {div[Total_Reads]}
-
-{Legend}
-
-Total bases per sample
-~~~~~~~~~~~~~~~~~~~~~~
-.. raw:: html
-
-    {div[Total_Bases]}
-
-For details see Table Table1_.
-"""
-    if data.shape[1] > 1:
-        Legend = """
-============   ===================================
-Step           Output
-============   ===================================
-raw            the input reads
-deduplicated   after (optional) deduplication step
-filtered       trimmed, quality filtered
-qc             final reads, contaminants removed
-============   ===================================
-"""
-    else:
-        Legend = ""
-
-    Report_read_quality_qc = """
-
-Reads quality after QC
-~~~~~~~~~~~~~~~~~~~~~~
-"""
-
-    Quality_pe, Quality_se = get_stats_from_zips(zipfiles_QC)
-
-    max_quality = 1 + np.nanmax((Quality_pe.max().max(), Quality_se.max().max()))
-    if Quality_pe.shape[0] > 0:
-        div["quality_qc_pe"] = get_pe_read_quality_plot(
-            Quality_pe, [min_quality, max_quality]
-        )
-        Report_read_quality_qc += """
-Paired end
-**********
-.. raw:: html
-
-    {div[quality_qc_pe]}
+        fig= px.strip(data_qc, y=var ,**PLOT_PARAMS )
+        fig.update_yaxes(range=(0, data_qc[var].max()*1.1))
+        div[var] = fig.to_html( **HTML_PARAMS)
 
 
-"""
 
-    if Quality_se.shape[0] > 0:
 
-        if (Quality_se.shape[0] > 0) & (Quality_se.shape[0] > 0):
-            Report_read_quality_qc += """
-Single end
-+++++++++++
+    ## reads plot across different steps
 
-Paired end reads that lost their mate during filtering.
+    total_reads= df.Total_Reads.unstack()
+    fig= px.bar(data_frame=total_reads,barmode='group', labels={'value':'Reads'} )
 
-"""
 
-        div["quality_qc_se"] = draw_se_read_quality(
-            Quality_se, [min_quality, max_quality]
-        )
-        Report_read_quality_qc += """
+    fig.update_yaxes(title='Number of reads')
+    fig.update_xaxes(tickangle=45)
+    # fig.update_layout(hovermode="x unified")
 
-.. raw:: html
+    div['Reads']= fig.to_html(**HTML_PARAMS)
 
-    {div[quality_qc_se]}
 
-"""
+    ## Read length plot
 
-    if zipfiles_raw is None:
-        Report_read_quality_raw = ""
+    data_length= pd.read_table( read_length,index_col=0).T
+    data_length.index.name='Sample'
+
+
+
+    fig= px.bar(data_frame=data_length,x= 'Median',
+                        error_x= 'Max',
+                        error_x_minus='Min',
+                        hover_data= ['Median','Max', 'Min', 'Avg','Std_Dev','Mode']
+
+                       )
+
+    fig.update_xaxes(title='Read length')
+
+    div['Length']= fig.to_html(**HTML_PARAMS)
+
+    ### Insert insert_size_stats
+    if insert_size_stats is None:
+        div['Insert']="<p>Insert size information is not available for single end reads.</p>"
     else:
 
-        Report_read_quality_raw = """
-
-Reads quality before QC
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. raw:: html
-
-    {div[quality_raw]}
-
-"""
-        Quality_pe, Quality_se = get_stats_from_zips(zipfiles_raw)
-        if Quality_pe.shape[0] > 0:
-            div["quality_raw"] = get_pe_read_quality_plot(
-                Quality_pe, [min_quality, max_quality]
-            )
-        elif Quality_se.shape[0] > 0:
-            div["quality_raw"] = draw_se_read_quality(
-                Quality_se, [min_quality, max_quality]
-            )
-        else:
-            raise IndexError()
-
-    report_str = (
-        """
-
-.. raw:: html
-
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        data_insert= pd.read_table(insert_size_stats,index_col=0)
+        data_insert.index.name='Sample'
 
 
-=============================================================
-ATLAS_ - QC Summary
-=============================================================
 
-.. _ATLAS: https://github.com/metagenome-atlas/atlas
+        fig= px.bar(data_frame=data_insert,x= 'Mean',
+                            error_x= 'STDev',
+                            hover_data= ['Mean','Median', 'Mode', 'PercentOfPairs'],
+                            labels={"PercentOfPairs": "Percent of pairs"}
+                           )
 
-.. contents::
-    :backlinks: none
+        fig.update_xaxes(title='Insert size')
 
-
-Summary
--------
+        div['Insert']= fig.to_html(**HTML_PARAMS)
 
 
-"""
-        + Report_numbers
-        + Report_read_quality_qc
-        + Report_read_quality_raw
-        + """
 
-Downloads
----------
-
-"""
-    )
-
-    report(
-        report_str,
-        report_out,
-        Table1=read_counts,
-        stylesheet=os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "report.css"
-        ),
-    )
+    return div
 
 
-if __name__ == "__main__":
+def make_html(html_template_file, css_file, report_out,div):
 
-    try:
-        main(
-            report_out=snakemake.output.report,
-            read_counts=snakemake.input.read_counts,
-            zipfiles_raw=snakemake.input.zipfiles_raw
-            if hasattr(snakemake.input, "zipfiles_raw")
-            else None,
-            zipfiles_QC=snakemake.input.zipfiles_QC,
-            min_quality=snakemake.params.min_quality,
-        )
-    except NameError:
-        import argparse
+    html_template=open(html_template_file).read()
+    css_content= open(css_file).read()
 
-        p = argparse.ArgumentParser()
-        p.add_argument("--report_out")
-        p.add_argument("--read_counts")
-        p.add_argument("--zipfiles_raw", nargs="+")
-        p.add_argument("--zipfiles_QC", nargs="+")
-        p.add_argument("--min_quality")
-        args = p.parse_args()
+    html_string= html_template.format(div=div,css_content=css_content )
 
-        main(**vars(args))
+    with open(report_out,'w') as outf:
+        outf.write(html_string)
+
+
+# main
+
+reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'report'))
+
+# If paired we have information about insert size
+if type(snakemake.input.read_length_stats)==str:
+    read_length_path = snakemake.input.read_length_stats
+    insert_size_stats = None
+else:
+    read_length_path, insert_size_stats = snakemake.input.read_length_stats
+
+div= make_plots(samples = snakemake.params.samples,
+                zipfiles_QC = snakemake.input.zipfiles_QC,
+                read_counts= snakemake.input.read_counts,
+                read_length = read_length_path,
+                min_quality = snakemake.params.min_quality,
+                insert_size_stats= insert_size_stats
+                )
+
+make_html(
+    div= div,
+    css_file= os.path.join(reports_dir,"report.css" ),
+    report_out=snakemake.output.report,
+    html_template_file = os.path.join(reports_dir,"template_QC_report.html" )
+
+)

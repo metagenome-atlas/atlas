@@ -3,10 +3,6 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - python=3.7
-    - docutils
+    - python=3.8
     - pandas=1.2
-    - plotly=4.14
-    - ipython
-    - seaborn=0.11
-    - snakemake=6.0
+    - plotly=5.3
