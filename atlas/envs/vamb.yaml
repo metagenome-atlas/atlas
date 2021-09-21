@@ -4,7 +4,4 @@ channels:
     - pytorch
     - defaults
 dependencies:
-    - pytorch
-    - torchvision
-    - cudatoolkit=10.2
-    - vamb
+    - vamb>=3.0.3,<3.1

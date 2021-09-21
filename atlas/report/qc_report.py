@@ -14,7 +14,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(
+    logging.error(
         "".join(
             [
                 "Uncaught exception: ",
@@ -29,20 +29,14 @@ sys.excepthook = handle_exception
 
 #### Begining of scripts
 
+from common_report import *
+
 
 import pandas as pd
 import plotly.express as px
-import plotly.io as pio
 from plotly import subplots
 import plotly.graph_objs as go
 import numpy as np
-
-
-pio.templates.default = "seaborn"
-HTML_PARAMS = dict(
-    include_plotlyjs=False,
-    full_html=False,
-)
 
 
 labels = {"Total_Reads": "Total Reads", "Total_Bases": "Total Bases"}
@@ -264,21 +258,6 @@ def make_plots(
     return div
 
 
-def make_html(html_template_file, css_file, report_out, div):
-
-    html_template = open(html_template_file).read()
-    css_content = open(css_file).read()
-
-    html_string = html_template.format(div=div, css_content=css_content)
-
-    with open(report_out, "w") as outf:
-        outf.write(html_string)
-
-
-# main
-
-reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "report"))
-
 # If paired we have information about insert size
 if type(snakemake.input.read_length_stats) == str:
     read_length_path = snakemake.input.read_length_stats
@@ -297,7 +276,6 @@ div = make_plots(
 
 make_html(
     div=div,
-    css_file=os.path.join(reports_dir, "report.css"),
     report_out=snakemake.output.report,
     html_template_file=os.path.join(reports_dir, "template_QC_report.html"),
 )
