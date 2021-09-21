@@ -248,6 +248,11 @@ def make_default_config():
         "megabin_penalty": 0.5,
     }
 
+    conf["cobining_min_contig_length"] = 2000
+    conf["cobining_min_bin_size"] = 200 * 1000
+    conf["semibin_options"] = " --recluster --max-node 1 --max-edges 200 "
+    conf["cobinning_separator"] = ":"
+
     conf["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
     conf["rename_mags_contigs"] = True
 

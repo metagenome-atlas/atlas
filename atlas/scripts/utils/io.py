@@ -84,4 +84,8 @@ def pandas_concat(
 
     out = pd.concat(Tables, axis=axis, **concat_arguments).sort_index()
 
+    del Tables
+
     out.to_csv(output_table, sep=sep, **save_arguments)
+
+    del out

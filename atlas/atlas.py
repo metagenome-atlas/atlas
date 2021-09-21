@@ -59,7 +59,6 @@ def get_snakefile(file="Snakefile"):
 )
 @click.argument(
     "workflow",
-    default="all",
     type=click.Choice(
         ["qc", "assembly", "binning", "genomes", "genecatalog", "None", "all"]
     ),
@@ -83,7 +82,7 @@ def get_snakefile(file="Snakefile"):
     "-j",
     "--jobs",
     type=int,
-    default= multiprocessing.cpu_count(),
+    default=multiprocessing.cpu_count(),
     help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(

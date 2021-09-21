@@ -959,4 +959,4 @@ rule build_assembly_report:
     log:
         "logs/assembly/report.log",
     script:
-        "../report/dummy_report.py"  #"../report/assembly_report.py"
+        "../report/assembly_report.py"
