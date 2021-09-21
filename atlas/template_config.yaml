@@ -75,8 +75,17 @@ contaminant_ambiguous: best
 # Pre-assembly-processing
 ########################
 
+# Advanced Error correction
 error_correction_before_assembly : true
+spades_skip_BayesHammer: true # Skip error correction in spades assembler
 
+## Normalize read depth
+# only recommended if metagenome is complicated
+normalize_reads_before_assembly: false
+normalization_target_depth: 1000  # almost no filtering unless grossly over-represented
+normalization_minimum_kmers: 3    # Remove very low represented kmers
+
+# Merging of pairs
 # join R1 and R2 at overlap; unjoined reads are still utilized
 merge_pairs_before_assembly : true
 merging_k: 62
@@ -106,7 +115,6 @@ megahit_preset: default
 
 # Spades
 #------------
-spades_skip_BayesHammer: true
 spades_use_scaffolds: true # if false use contigs
 #Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order).
 spades_k: auto

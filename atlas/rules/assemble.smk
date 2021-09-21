@@ -100,79 +100,93 @@ else:
 #
 rule normalize_pe:
     input:
-        get_quality_controlled_reads #expect SE or R1,R2 or R1,R2,SE
+        get_quality_controlled_reads,  #expect SE or R1,R2 or R1,R2,SE
     output:
-        temp(expand("{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
-            fraction=['R1','R2']))
+        temp(
+            expand(
+                "{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
+                fraction=["R1", "R2"],
+            )
+        ),
     params:
-        k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-        t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
-        minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
+        k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+        t=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
+        minkmers=config.get(
+            "normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS
+        ),
         #
-        input = lambda wc, input: "in={0} in2={1}".format(*input),
-        extra= lambda wc, input: "extra={2}".format(*input)  if len(input)==3 else "",
-        output_paired = lambda wc, output: "out={0} out2={1}".format(*output),
-        tmpdir = "tmpdir=%s" % TMPDIR if TMPDIR else ""
+        input=lambda wc, input: "in={0} in2={1}".format(*input),
+        extra=lambda wc, input: "extra={2}".format(*input) if len(input) == 3 else "",
+        output_paired=lambda wc, output: "out={0} out2={1}".format(*output),
+        tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
     log:
-        "{sample}/logs/assembly/pre_process/normalization.log"
+        "{sample}/logs/assembly/pre_process/normalization.log",
     benchmark:
         "logs/benchmarks/assembly/pre_process/normalization/{sample}.txt"
     conda:
         "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
+    threads: config.get("threads", 1)
     resources:
-        mem = config["mem"],
-        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         """
-            bbnorm.sh {params.input} \
-                {params.extra} \
-                {params.output} \
-                {params.tmpdir} \
-                k={params.k} target={params.t} \
-                minkmers={params.minkmers} prefilter=t \
-                threads={threads} \
-                -Xmx{resources.java_mem}G 2>> {log}
+        bbnorm.sh {params.input} \
+            {params.extra} \
+            {params.output} \
+            {params.tmpdir} \
+            k={params.k} target={params.t} \
+            minkmers={params.minkmers} prefilter=t \
+            threads={threads} \
+            -Xmx{resources.java_mem}G 2>> {log}
         """
+
 
 rule normalize_se:
     input:
-        get_quality_controlled_reads #expect SE or R1,R2 or R1,R2,SE
+        get_quality_controlled_reads,  #expect SE or R1,R2 or R1,R2,SE
     output:
-        temp(expand("{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
-            fraction=['se']))
+        temp(
+            expand(
+                "{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
+                fraction=["se"],
+            )
+        ),
     params:
-        k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-        t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
-        minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
+        k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+        t=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
+        minkmers=config.get(
+            "normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS
+        ),
         #
-        input = lambda wc, input: "in={}".format(input[-1]),
-        extra= lambda wc, input: "extra={0},{1}".format(*input)  if len(input)==3 else "",
-        output_paired = lambda wc, output: "out={}".format(output[-1]),
-        tmpdir = "tmpdir=%s" % TMPDIR if TMPDIR else ""
+        input=lambda wc, input: "in={}".format(input[-1]),
+        extra=(
+            lambda wc, input: "extra={0},{1}".format(*input) if len(input) == 3 else ""
+        ),
+        output_paired=lambda wc, output: "out={}".format(output[-1]),
+        tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
     log:
-        "{sample}/logs/assembly/pre_process/normalization.log"
+        "{sample}/logs/assembly/pre_process/normalization.log",
     benchmark:
         "logs/benchmarks/assembly/pre_process/normalization/{sample}.txt"
     conda:
         "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("threads", 1)
+    threads: config.get("threads", 1)
     resources:
-        mem = config["mem"],
-        java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         """
-            bbnorm.sh {params.input} \
-                {params.extra} \
-                {params.output} \
-                {params.tmpdir} \
-                k={params.k} target={params.t} \
-                minkmers={params.minkmers} prefilter=t \
-                threads={threads} \
-                -Xmx{resources.java_mem}G 2>> {log}
+        bbnorm.sh {params.input} \
+            {params.extra} \
+            {params.output} \
+            {params.tmpdir} \
+            k={params.k} target={params.t} \
+            minkmers={params.minkmers} prefilter=t \
+            threads={threads} \
+            -Xmx{resources.java_mem}G 2>> {log}
         """
+
 
 rule error_correction:
     input:

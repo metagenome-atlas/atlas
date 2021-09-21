@@ -28,7 +28,7 @@ DUPLICATES_ALLOW_SUBSTITUTIONS = 2
 NORMALIZATION_KMER_LENGTH = 21
 
 # almost no filtering unless grossly over-represented
-NORMALIZATION_TARGET_DEPTH = 10000  # 500
+NORMALIZATION_TARGET_DEPTH = 1000  # 500
 # allow very low represented kmers to remain
 NORMALIZATION_MINIMUM_KMERS = 3  # 15
 
