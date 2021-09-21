@@ -48,6 +48,6 @@ def load_gtdb_tax(taxonomy_file, remove_prefix=False):
 
     D = pd.read_table(taxonomy_file, index_col=0)
 
-    checkmTax = tax2table(D["classification"], remove_prefix=remove_prefix)
+    Tax = tax2table(D["classification"], remove_prefix=remove_prefix)
 
-    return checkmTax
+    return Tax

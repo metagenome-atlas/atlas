@@ -53,9 +53,10 @@ for file in os.listdir(bin_dir):
         big_bins.append(bin_name)
 
 
-logging.info(f"Found {len(big_bins)} bins created by Vamb (above size limit)\n"
-             f"E.g. {big_bins[:5]}"
-             )
+logging.info(
+    f"Found {len(big_bins)} bins created by Vamb (above size limit)\n"
+    f"E.g. {big_bins[:5]}"
+)
 
 
 logging.info(f"Load vamb cluster file {vamb_cluster_file}")
@@ -77,7 +78,7 @@ clusters["Large_enough"] = clusters.OriginalName.isin(big_bins)
 del clusters_contigs
 
 logging.info(f"Write reformated table to {output_culsters}")
-clusters.to_csv(output_culsters, sep="\t",index=False)
+clusters.to_csv(output_culsters, sep="\t", index=False)
 
 clusters = clusters.query("Large_enough")
 

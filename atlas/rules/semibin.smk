@@ -1,10 +1,10 @@
 SEMIBIN_DATA_PATH = os.path.join(DBDIR, "SemiBin_GTDB")
 
 
+localrules:
+    semibin_download_gtdb,
 
 
-
-localrules: semibin_download_gtdb
 rule semibin_download_gtdb:
     output:
         directory(SEMIBIN_DATA_PATH),
@@ -15,18 +15,17 @@ rule semibin_download_gtdb:
     threads: 1
     shell:
         "SemiBin download_GTDB --reference-db {output} 2> {log}"
-
         # Semibin 0.2 has the following error https:/github.com/BigDataBiology/SemiBin/issues/31
 
 
 rule semibin_predict_taxonomy:
     input:
         "{sample}/{sample}_contigs.fasta",
-        fasta= ancient("Cobinning/filtered_contigs/{sample}.fasta"),
+        fasta=ancient("Cobinning/filtered_contigs/{sample}.fasta"),
         db=SEMIBIN_DATA_PATH,
     output:
         "Cobinning/SemiBin/{sample}/cannot/cannot_bin.txt",
-        "Cobinning/SemiBin/{sample}/mmseqs_contig_annotation/taxonomyResult.tsv"
+        "Cobinning/SemiBin/{sample}/mmseqs_contig_annotation/taxonomyResult.tsv",
     conda:
         "../envs/semibin.yaml"
     threads: config["threads"]
@@ -38,8 +37,8 @@ rule semibin_predict_taxonomy:
     benchmark:
         "logs/benchmarks/semibin/predict_taxonomy/{sample}.tsv"
     params:
-        output_dir= "Cobinning/SemiBin/{sample}",
-        name=lambda wc, output: os.path.basename(output[0]).replace('.txt',''),
+        output_dir="Cobinning/SemiBin/{sample}",
+        name=lambda wc, output: os.path.basename(output[0]).replace(".txt", ""),
     shadow:
         "minimal"
     shell:
@@ -73,7 +72,7 @@ rule semibin_generate_data_multi:
         "logs/benchmarks/semibin/generate_data_multi.tsv"
     params:
         output_dir="Cobinning/SemiBin",
-        separator=config['cobinning_separator'],
+        separator=config["cobinning_separator"],
     shell:
         "SemiBin generate_data_multi "
         " --input-fasta {input.fasta} "
@@ -87,7 +86,7 @@ rule semibin_generate_data_multi:
 rule semibin_train:
     input:
         "{sample}/{sample}_contigs.fasta",
-        fasta= ancient("Cobinning/filtered_contigs/{sample}.fasta"),
+        fasta=ancient("Cobinning/filtered_contigs/{sample}.fasta"),
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
         data_split="Cobinning/SemiBin/samples/{sample}/data_split.csv",
@@ -124,7 +123,7 @@ rule semibin_train:
 rule run_semibin:
     input:
         "{sample}/{sample}_contigs.fasta",
-        fasta= ancient("Cobinning/filtered_contigs/{sample}.fasta"),
+        fasta=ancient("Cobinning/filtered_contigs/{sample}.fasta"),
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
         model=rules.semibin_train.output[0],
@@ -142,8 +141,8 @@ rule run_semibin:
         "logs/benchmarks/semibin/bin/{sample}.tsv"
     params:
         output_dir="Cobinning/SemiBin/{sample}/",
-        min_bin_kbs= config["cobining_min_bin_size"] / 1000,
-        extra= config['semibin_options'],
+        min_bin_kbs=config["cobining_min_bin_size"] / 1000,
+        extra=config["semibin_options"],
     shell:
         "SemiBin bin "
         " --input-fasta {input.fasta} "
@@ -159,23 +158,21 @@ rule run_semibin:
 
 rule parse_semibin_output:
     input:
-        rules.run_semibin.output[0]
+        rules.run_semibin.output[0],
     output:
-        "{sample}/binning/SemiBin/cluster_attribution.tsv"
+        "{sample}/binning/SemiBin/cluster_attribution.tsv",
     log:
         "logs/semibin/parse_output/{sample}.log",
     params:
-        extension='.fa'
+        extension=".fa",
     script:
         "../scripts/parse_semibin.py"
-
-
-
-
 
 
 rule semibin:
     input:
         expand("Cobinning/SemiBin/{sample}/output_recluster_bins/", sample=SAMPLES),
-        expand("{sample}/binning/SemiBin/cluster_attribution.tsv", sample=SAMPLES)
+        expand("{sample}/binning/SemiBin/cluster_attribution.tsv", sample=SAMPLES),
+
+
 # alternative to pretrained model --environment: Environment for the built-in model(human_gut/dog_gut/ocean).”

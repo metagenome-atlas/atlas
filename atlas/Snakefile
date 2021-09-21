@@ -225,7 +225,6 @@ include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 
 
-
 CONDAENV = "envs"  # overwrite definition in download.smk
 
 
@@ -267,7 +266,7 @@ def get_genome_annotations():
         "checkm_taxonomy": "genomes/checkm/taxonomy.tsv",
         "checkm_tree": "genomes/tree/checkm.nwk",
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
-        "gtdb_taxonomy": "genomes/taxonomy/gtdb/classify",
+        "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
         "genes": "genomes/annotations/genes/predicted",
     }
 

@@ -206,22 +206,21 @@ rule run_vamb:
         "2> {log}"
 
 
-vamb_cluster_attribution_path= "{sample}/binning/vamb/cluster_attribution.tsv"
+vamb_cluster_attribution_path = "{sample}/binning/vamb/cluster_attribution.tsv"
+
 
 rule parse_vamb_output:
     input:
         rules.run_vamb.output,
     output:
         renamed_clusters="Cobinning/vamb/clusters.tsv.gz",
-        cluster_atributions=expand(
-            vamb_cluster_attribution_path, sample=SAMPLES
-        ),
+        cluster_atributions=expand(vamb_cluster_attribution_path, sample=SAMPLES),
     log:
-        "logs/cobinning/vamb_parse_output.log"
+        "logs/cobinning/vamb_parse_output.log",
     params:
         separator=config["cobinning_separator"],
         fasta_extension=".fna",
-        output_path= lambda wc: vamb_cluster_attribution_path,
+        output_path=lambda wc: vamb_cluster_attribution_path,
         samples=SAMPLES,
     script:
         "../scripts/parse_vamb.py"
@@ -231,7 +230,7 @@ rule vamb:
     input:
         "Cobinning/vamb/clustering",
         "Cobinning/vamb/clusters.tsv.gz",
-        expand("{sample}/binning/vamb/cluster_attribution.tsv", sample=SAMPLES)
+        expand("{sample}/binning/vamb/cluster_attribution.tsv", sample=SAMPLES),
 
 
 include: "semibin.smk"
