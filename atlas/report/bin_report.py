@@ -14,7 +14,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(
+    logging.error(
         "".join(
             [
                 "Uncaught exception: ",
@@ -36,8 +36,7 @@ import pandas as pd
 import plotly.express as px
 
 
-from utils.taxonomy import  tax2table
-
+from utils.taxonomy import tax2table
 
 
 def make_plots(bin_table):
@@ -97,23 +96,15 @@ def make_plots(bin_table):
     return div
 
 
-## make html report
-
-
-def make_html(html_template_file, css_file, report_out, div):
-
-
 # main
-
 
 
 div = make_plots(bin_table=snakemake.input.bin_table)
 
-logging.info(div.keys())
 
 make_html(
-    div= div,
+    div=div,
     report_out=snakemake.output.report,
-    html_template_file = os.path.join(reports_dir,"template_bin_report.html" ),
-    wildcards= snakemake.wildcards
+    html_template_file=os.path.join(reports_dir, "template_bin_report.html"),
+    wildcards=snakemake.wildcards,
 )

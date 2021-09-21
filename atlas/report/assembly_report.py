@@ -14,7 +14,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(
+    logging.error(
         "".join(
             [
                 "Uncaught exception: ",
@@ -83,8 +83,6 @@ def make_plots(combined_stats):
     return div
 
 
-
-
 # main
 
 
@@ -92,7 +90,7 @@ div = make_plots(combined_stats=snakemake.input.combined_contig_stats)
 
 
 make_html(
-    div= div,
+    div=div,
     report_out=snakemake.output.report,
     html_template_file=os.path.join(reports_dir, "template_assembly_report.html"),
 )

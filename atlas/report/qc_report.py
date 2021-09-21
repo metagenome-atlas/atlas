@@ -14,7 +14,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(
+    logging.error(
         "".join(
             [
                 "Uncaught exception: ",
@@ -37,7 +37,6 @@ import plotly.express as px
 from plotly import subplots
 import plotly.graph_objs as go
 import numpy as np
-
 
 
 labels = {"Total_Reads": "Total Reads", "Total_Bases": "Total Bases"}
@@ -259,9 +258,6 @@ def make_plots(
     return div
 
 
-
-
-
 # If paired we have information about insert size
 if type(snakemake.input.read_length_stats) == str:
     read_length_path = snakemake.input.read_length_stats
@@ -279,7 +275,7 @@ div = make_plots(
 )
 
 make_html(
-    div= div,
+    div=div,
     report_out=snakemake.output.report,
     html_template_file=os.path.join(reports_dir, "template_QC_report.html"),
 )
