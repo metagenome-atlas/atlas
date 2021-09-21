@@ -17,6 +17,8 @@ p {
 
 .float-container {
     padding: 2px;
+    height:100%;
+    width:100%;
 }
 
 .float-child {

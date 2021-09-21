@@ -30,15 +30,14 @@ sys.excepthook = handle_exception
 #### Begining of scripts
 
 
+from common_report import *
+
 import pandas as pd
 import plotly.express as px
-from utils.taxonomy import tax2table
 
-pio.templates.default = "seaborn"
-HTML_PARAMS = dict(
-    include_plotlyjs=False,
-    full_html=False,
-)
+
+from utils.taxonomy import  tax2table
+
 
 
 def make_plots(bin_table):
@@ -103,26 +102,18 @@ def make_plots(bin_table):
 
 def make_html(html_template_file, css_file, report_out, div):
 
-    html_template = open(html_template_file).read()
-    css_content = open(css_file).read()
-
-    html_string = html_template.format(div=div, css_content=css_content)
-
-    with open(report_out, "w") as outf:
-        outf.write(html_string)
-
 
 # main
 
-reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "report"))
+
 
 div = make_plots(bin_table=snakemake.input.bin_table)
 
 logging.info(div.keys())
 
 make_html(
-    div=div,
-    css_file=os.path.join(reports_dir, "report.css"),
+    div= div,
     report_out=snakemake.output.report,
-    html_template_file=os.path.join(reports_dir, "template_bin_report.html"),
+    html_template_file = os.path.join(reports_dir,"template_bin_report.html" ),
+    wildcards= snakemake.wildcards
 )
