@@ -193,8 +193,8 @@ rule run_vamb:
     benchmark:
         "logs/benchmarks/vamb/run_vamb.tsv"
     params:
-        mincontig=config["cobining_min_contig_length"], # min contig length for binning
-        minfasta=config["cobining_min_bin_size"], # min bin size for output
+        mincontig=config["cobining_min_contig_length"],  # min contig length for binning
+        minfasta=config["cobining_min_bin_size"],  # min bin size for output
         separator=config["cobinning_separator"],
     shell:
         "vamb --outdir {output} "

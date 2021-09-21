@@ -56,10 +56,11 @@ rule semibin_generate_data_multi:
         fasta=rules.combine_contigs.output,
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
     output:
-        expand("Cobinning/SemiBin/samples/{sample}/{files}",
-        sample=SAMPLES,
-        files=  ["data.csv","data_split.csv"]
-        )
+        expand(
+            "Cobinning/SemiBin/samples/{sample}/{files}",
+            sample=SAMPLES,
+            files=["data.csv", "data_split.csv"],
+        ),
     conda:
         "../envs/semibin.yaml"
     threads: config["threads"]
