@@ -30,17 +30,16 @@ sys.excepthook = handle_exception
 #### Begining of scripts
 
 
-
 import os, sys
 import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 
 
-
 pio.templates.default = "seaborn"
 HTML_PARAMS = dict(
-    include_plotlyjs=False, full_html=False,
+    include_plotlyjs=False,
+    full_html=False,
 )
 
 
@@ -56,40 +55,36 @@ labels = {
 }
 
 
-
-
-PLOT_PARAMS= dict( labels=labels)
+PLOT_PARAMS = dict(labels=labels)
 
 
 def make_plots(combined_stats):
 
     ## Make figures with PLOTLY
-    #load and rename data
+    # load and rename data
     df = pd.read_csv(combined_stats, sep="\t", index_col=0)
     df.sort_index(ascending=True, inplace=True)
-    df.index.name ='Sample'
-
+    df.index.name = "Sample"
 
     # create plots store in div
-    div={}
+    div = {}
 
+    fig = px.strip(df, y="Percent_Assembled_Reads", **PLOT_PARAMS)
+    fig.update_yaxes(range=[0, 100])
+    div["Percent_Assembled_Reads"] = fig.to_html(**HTML_PARAMS)
 
-    fig= px.strip(df, y="Percent_Assembled_Reads" ,**PLOT_PARAMS )
-    fig.update_yaxes(range=[0,100])
-    div["Percent_Assembled_Reads"] = fig.to_html( **HTML_PARAMS)
+    fig = px.strip(df, y="N_Predicted_Genes", **PLOT_PARAMS)
+    div["N_Predicted_Genes"] = fig.to_html(**HTML_PARAMS)
 
-    fig= px.strip(df, y="N_Predicted_Genes" ,**PLOT_PARAMS )
-    div["N_Predicted_Genes"] = fig.to_html( **HTML_PARAMS)
-
-
-    fig= px.scatter(df,y='L50',x='N50',hover_name= df.index,**PLOT_PARAMS)
+    fig = px.scatter(df, y="L50", x="N50", hover_name=df.index, **PLOT_PARAMS)
     div["N50"] = fig.to_html(**HTML_PARAMS)
 
-    fig= px.scatter(df,y='L90',x='N90',hover_name= df.index,**PLOT_PARAMS)
+    fig = px.scatter(df, y="L90", x="N90", hover_name=df.index, **PLOT_PARAMS)
     div["N90"] = fig.to_html(**HTML_PARAMS)
 
-
-    fig= px.scatter(df,y='contig_bp',x='n_contigs',hover_name= df.index,**PLOT_PARAMS)
+    fig = px.scatter(
+        df, y="contig_bp", x="n_contigs", hover_name=df.index, **PLOT_PARAMS
+    )
     div["Total"] = fig.to_html(**HTML_PARAMS)
 
     return div
@@ -98,30 +93,28 @@ def make_plots(combined_stats):
 ## make html report
 
 
+def make_html(html_template_file, css_file, report_out, div):
 
-def make_html(html_template_file, css_file, report_out,div):
+    html_template = open(html_template_file).read()
+    css_content = open(css_file).read()
 
-    html_template=open(html_template_file).read()
-    css_content= open(css_file).read()
+    html_string = html_template.format(div=div, css_content=css_content)
 
-    html_string= html_template.format(div=div,css_content=css_content )
-
-    with open(report_out,'w') as outf:
+    with open(report_out, "w") as outf:
         outf.write(html_string)
 
 
 # main
 
-reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'report'))
+reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "report"))
 
-div= make_plots(combined_stats=snakemake.input.combined_contig_stats)
+div = make_plots(combined_stats=snakemake.input.combined_contig_stats)
 
 logging.info(div.keys())
 
 make_html(
-    div= div,
-    css_file= os.path.join(reports_dir,"report.css" ),
+    div=div,
+    css_file=os.path.join(reports_dir, "report.css"),
     report_out=snakemake.output.report,
-    html_template_file = os.path.join(reports_dir,"template_assembly_report.html" )
-
+    html_template_file=os.path.join(reports_dir, "template_assembly_report.html"),
 )

@@ -3,7 +3,7 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        dir= get_genome_folder,
+        dir=get_genome_folder,
         flag=rules.download_gtdb.output,
     output:
         directory(f"{gtdb_dir}/identify"),
@@ -45,7 +45,7 @@ checkpoint align:
 rule classify:
     input:
         rules.align.output,
-        genome_dir= get_genome_folder,
+        genome_dir=get_genome_folder,
     output:
         directory(f"{gtdb_dir}/classify"),
     threads: config["threads"]  #pplacer needs much memory for not many threads
@@ -70,16 +70,14 @@ rule classify:
 
 rule combine_taxonomy:
     input:
-        folder= f"{gtdb_dir}/classify",
+        folder=f"{gtdb_dir}/classify",
     output:
         combined=f"{gtdb_dir}/gtdbtk.combined.summary.tsv",
-        taxonomy="genomes/taxonomy/gtdb_taxonomy.tsv"
+        taxonomy="genomes/taxonomy/gtdb_taxonomy.tsv",
     log:
-        "logs/taxonomy/gtdbtk/combine.txt"
+        "logs/taxonomy/gtdbtk/combine.txt",
     script:
         "../scripts/combine_taxonomy.py"
-
-
 
 
 msa_paths = {

@@ -766,16 +766,14 @@ rule finalize_sample_qc:
         touch("{sample}/sequence_quality_control/finished_QC"),
 
 
-
 rule build_qc_report:
     input:
         zipfiles_QC=expand(
-            "{sample}/sequence_quality_control/read_stats/QC.zip",
-            sample=SAMPLES
+            "{sample}/sequence_quality_control/read_stats/QC.zip", sample=SAMPLES
         ),
         read_counts="stats/read_counts.tsv",
         read_length_stats=(
-            ["stats/read_length_stats.tsv","stats/insert_stats.tsv"]
+            ["stats/read_length_stats.tsv", "stats/insert_stats.tsv"]
             if PAIRED_END
             else "stats/read_length_stats.tsv"
         ),
@@ -785,7 +783,7 @@ rule build_qc_report:
         "logs/QC/report.log",
     params:
         min_quality=config["preprocess_minimum_base_quality"],
-        samples=SAMPLES
+        samples=SAMPLES,
     conda:
         "../envs/report.yaml"
     script:

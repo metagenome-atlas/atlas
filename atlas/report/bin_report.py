@@ -30,52 +30,70 @@ sys.excepthook = handle_exception
 #### Begining of scripts
 
 
-
-
 import pandas as pd
 import plotly.express as px
-from utils.taxonomy import  tax2table
+from utils.taxonomy import tax2table
 
 pio.templates.default = "seaborn"
 HTML_PARAMS = dict(
-    include_plotlyjs=False, full_html=False,
+    include_plotlyjs=False,
+    full_html=False,
 )
-
 
 
 def make_plots(bin_table):
 
-    div={}
+    div = {}
 
-    div['input_file']=bin_table
+    div["input_file"] = bin_table
 
     # Prepare data
 
-    df= pd.read_table(bin_table)
-    df= df.join(tax2table(df['Taxonomy (contained)'],remove_prefix=True).fillna('NA'))
+    df = pd.read_table(bin_table)
+    df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
 
-    df['Quality Score']= df.eval('Completeness - 5* Contamination')
+    df["Quality Score"] = df.eval("Completeness - 5* Contamination")
 
-    div['QualityScore']="<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
+    div[
+        "QualityScore"
+    ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
 
     # 2D plot
-    fig= px.scatter(data_frame=df,y='Completeness',x='Contamination',color='phylum',size='Genome size (Mbp)',
-              hover_data=['genus'],hover_name='Bin Id')
-    fig.update_yaxes(range=(50,102))
-    fig.update_xaxes(range=(-0.2,10.1))
-    div['2D']= fig.to_html(**HTML_PARAMS)
-
+    fig = px.scatter(
+        data_frame=df,
+        y="Completeness",
+        x="Contamination",
+        color="phylum",
+        size="Genome size (Mbp)",
+        hover_data=["genus"],
+        hover_name="Bin Id",
+    )
+    fig.update_yaxes(range=(50, 102))
+    fig.update_xaxes(range=(-0.2, 10.1))
+    div["2D"] = fig.to_html(**HTML_PARAMS)
 
     ## By sample
-    fig= px.strip(data_frame=df,y='Quality Score',x='Sample', color='phylum',hover_data=['genus'],hover_name='Bin Id')
-    fig.update_yaxes(range=(50,102))
-    div['bySample']= fig.to_html(**HTML_PARAMS)
-
+    fig = px.strip(
+        data_frame=df,
+        y="Quality Score",
+        x="Sample",
+        color="phylum",
+        hover_data=["genus"],
+        hover_name="Bin Id",
+    )
+    fig.update_yaxes(range=(50, 102))
+    div["bySample"] = fig.to_html(**HTML_PARAMS)
 
     # By Phylum
-    fig= px.strip(data_frame=df,y='Quality Score',x='phylum',hover_data=['genus'],hover_name='Bin Id')
-    fig.update_yaxes(range=(50,102))
-    div['byPhylum']= fig.to_html(**HTML_PARAMS)
+    fig = px.strip(
+        data_frame=df,
+        y="Quality Score",
+        x="phylum",
+        hover_data=["genus"],
+        hover_name="Bin Id",
+    )
+    fig.update_yaxes(range=(50, 102))
+    div["byPhylum"] = fig.to_html(**HTML_PARAMS)
 
     return div
 
@@ -83,30 +101,28 @@ def make_plots(bin_table):
 ## make html report
 
 
+def make_html(html_template_file, css_file, report_out, div):
 
-def make_html(html_template_file, css_file, report_out,div):
+    html_template = open(html_template_file).read()
+    css_content = open(css_file).read()
 
-    html_template=open(html_template_file).read()
-    css_content= open(css_file).read()
+    html_string = html_template.format(div=div, css_content=css_content)
 
-    html_string= html_template.format(div=div,css_content=css_content )
-
-    with open(report_out,'w') as outf:
+    with open(report_out, "w") as outf:
         outf.write(html_string)
 
 
 # main
 
-reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..",'report'))
+reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "report"))
 
-div= make_plots(bin_table=snakemake.input.bin_table)
+div = make_plots(bin_table=snakemake.input.bin_table)
 
 logging.info(div.keys())
 
 make_html(
-    div= div,
-    css_file= os.path.join(reports_dir,"report.css" ),
+    div=div,
+    css_file=os.path.join(reports_dir, "report.css"),
     report_out=snakemake.output.report,
-    html_template_file = os.path.join(reports_dir,"template_bin_report.html" )
-
+    html_template_file=os.path.join(reports_dir, "template_bin_report.html"),
 )

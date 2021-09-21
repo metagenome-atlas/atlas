@@ -86,6 +86,6 @@ def pandas_concat(
 
     del Tables
 
-    out.to_csv(output_table,sep=sep,**save_arguments)
+    out.to_csv(output_table, sep=sep, **save_arguments)
 
     del out

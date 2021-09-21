@@ -35,25 +35,24 @@ import numpy as np
 from utils.taxonomy import tax2table
 
 from glob import glob
-gtdb_classify_folder= snakemake.input.folder
 
-taxonomy_files= glob(f"{gtdb_classify_folder}/gtdbtk.*.summary.tsv")
+gtdb_classify_folder = snakemake.input.folder
 
-N_taxonomy_files= len(taxonomy_files)
+taxonomy_files = glob(f"{gtdb_classify_folder}/gtdbtk.*.summary.tsv")
+
+N_taxonomy_files = len(taxonomy_files)
 logging.info(f"Found {N_taxonomy_files} gtdb taxonomy files.")
 
-if (0==N_taxonomy_files) or (N_taxonomy_files >2):
+if (0 == N_taxonomy_files) or (N_taxonomy_files > 2):
 
-    raise Exception(f"Found {N_taxonomy_files} number of taxonomy files 'gtdbtk.*.summary.tsv' in {gtdb_classify_folder} expect 1 or 2."
-                    )
-
-
-
+    raise Exception(
+        f"Found {N_taxonomy_files} number of taxonomy files 'gtdbtk.*.summary.tsv' in {gtdb_classify_folder} expect 1 or 2."
+    )
 
 
-DT= pd.concat([pd.read_table(file,index_col=0) for file in taxonomy_files],axis=0)
+DT = pd.concat([pd.read_table(file, index_col=0) for file in taxonomy_files], axis=0)
 
 DT.to_csv(snakemake.output.combined)
 
-Tax= tax2table(DT.classification, remove_prefix=True)
-Tax.to_csv(snakemake.output.taxonomy,sep='\t')
+Tax = tax2table(DT.classification, remove_prefix=True)
+Tax.to_csv(snakemake.output.taxonomy, sep="\t")

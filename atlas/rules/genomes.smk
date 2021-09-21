@@ -1,4 +1,3 @@
-
 ## dRep
 localrules:
     get_all_bins,
@@ -167,21 +166,21 @@ checkpoint rename_genomes:
 
 def get_genome_folder(wildcards):
 
-    if 'genome_dir' in config:
+    if "genome_dir" in config:
 
-        genome_dir = config['genome_folder']
+        genome_dir = config["genome_folder"]
 
         assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
 
     else:
-        genome_dir= checkpoints.rename_genomes.get().output.dir
+        genome_dir = checkpoints.rename_genomes.get().output.dir
 
     return genome_dir
 
 
 def get_genomes_(wildcards):
 
-    genome_dir =get_genome_folder(wildcards)
+    genome_dir = get_genome_folder(wildcards)
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
@@ -199,7 +198,7 @@ def get_genomes_(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir= get_genome_folder,
+        dir=get_genome_folder,
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
