@@ -142,8 +142,6 @@ rule normalize_reads:
         """
 
 
-
-
 rule error_correction:
     input:
         expand(
@@ -220,8 +218,6 @@ rule merge_pairs:
             {params.flags} k={params.kmer} \
             extend2={params.extend2} 2> {log}
         """
-
-
 
 
 assembly_params = {}
@@ -343,16 +339,17 @@ else:
 
     if PAIRED_END:
 
-        ASSEMBLY_FRACTIONS = ['R1','R2']
+        ASSEMBLY_FRACTIONS = ["R1", "R2"]
         if config.get("merge_pairs_before_assembly", True):
             ASSEMBLY_FRACTIONS += ["me"]
     else:
 
         ASSEMBLY_FRACTIONS = deepcopy(MULTIFILE_FRACTIONS)
 
-        if config["spades_preset"]=='meta':
-            logging.error("Metaspades cannot handle single end libraries. Use another assembler or specify 'spades_preset': normal"
-                          )
+        if config["spades_preset"] == "meta":
+            logging.error(
+                "Metaspades cannot handle single end libraries. Use another assembler or specify 'spades_preset': normal"
+            )
             exit(1)
 
     assembly_params["spades"] = {"meta": "--meta", "normal": "", "rna": "--rna"}
