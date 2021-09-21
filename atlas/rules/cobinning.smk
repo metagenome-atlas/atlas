@@ -36,8 +36,8 @@ localrules:
 rule combine_contigs:
     input:
         #Trigers rerun if contigs change
-        expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
-        ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
+        flag = expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
+        fasta = ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
     output:
         "Cobinning/combined_contigs.fasta.gz",
     log:
@@ -51,7 +51,7 @@ rule combine_contigs:
 
         with gz.open(output[0], "wt") as fout:
 
-            for sample, input_fasta in zip(params.samples, input):
+            for sample, input_fasta in zip(params.samples, input.fasta):
                 with open(input_fasta) as fin:
 
                     for line in fin:
