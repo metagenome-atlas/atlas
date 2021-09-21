@@ -34,6 +34,8 @@ from common_report import *
 
 import pandas as pd
 import plotly.express as px
+
+
 from utils.taxonomy import  tax2table
 
 
@@ -92,6 +94,6 @@ logging.info(div.keys())
 make_html(
     div= div,
     report_out=snakemake.output.report,
-    html_template_file = os.path.join(reports_dir,"template_bin_report.html" )
-
+    html_template_file = os.path.join(reports_dir,"template_bin_report.html" ),
+    wildcards= snakemake.wildcards
 )
