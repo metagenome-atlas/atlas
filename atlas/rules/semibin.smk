@@ -14,7 +14,7 @@ rule semibin_download_gtdb:
         "../envs/semibin.yaml"
     threads: 1
     shell:
-        "SemiBin download_GTDB --reference-db {output}/GTDB 2> {log}"
+        "SemiBin download_GTDB --reference-db {output} 2> {log}"
         # Semibin 0.2 has the following error https:/github.com/BigDataBiology/SemiBin/issues/31
 
 
@@ -56,11 +56,10 @@ rule semibin_generate_data_multi:
         fasta=rules.combine_contigs.output,
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
     output:
-        expand(
-            "Cobinning/SemiBin/{sample}/{files}",
-            sample=SAMPLES,
-            files=["data.csv", "data_split.csv"],
-        ),
+        expand("Cobinning/SemiBin/samples/{sample}/{files}",
+        sample=SAMPLES,
+        files=  ["data.csv","data_split.csv"]
+        )
     conda:
         "../envs/semibin.yaml"
     threads: config["threads"]
@@ -89,8 +88,8 @@ rule semibin_train:
         "{sample}/{sample}_contigs.fasta",
         fasta=ancient("Cobinning/filtered_contigs/{sample}.fasta"),
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
-        data="Cobinning/SemiBin/{sample}/data.csv",
-        data_split="Cobinning/SemiBin/{sample}/data_split.csv",
+        data="Cobinning/SemiBin/samples/{sample}/data.csv",
+        data_split="Cobinning/SemiBin/samples/{sample}/data_split.csv",
         cannot_link=rules.semibin_predict_taxonomy.output[0],
     output:
         "Cobinning/SemiBin/{sample}/model.h5",
@@ -126,7 +125,7 @@ rule run_semibin:
         "{sample}/{sample}_contigs.fasta",
         fasta=ancient("Cobinning/filtered_contigs/{sample}.fasta"),
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
-        data="Cobinning/SemiBin/{sample}/data.csv",
+        data="Cobinning/SemiBin/samples/{sample}/data.csv",
         model=rules.semibin_train.output[0],
     output:
         directory("Cobinning/SemiBin/{sample}/output_recluster_bins/"),
