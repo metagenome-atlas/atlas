@@ -115,7 +115,7 @@ rule normalize_reads:
         histout="{sample}/assembly/normalization/histogram_after.tsv.gz",
     params:
         k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-        t=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
+        target=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
         mindepth=config["normalization_minimum_kmer_depth"],
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output.reads, key="out"),
@@ -139,8 +139,7 @@ rule normalize_reads:
         " histout={output.histout} "
         " mindepth={params.mindepth} "
         " k={params.k} "
-        " target={params.t} "
-        " minkmers={params.minkmers} "
+        " target={params.target} "
         " prefilter=t "
         " threads={threads} "
         " -Xmx{resources.java_mem}G 2>> {log} "
