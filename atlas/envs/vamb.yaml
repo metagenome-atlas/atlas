@@ -4,4 +4,10 @@ channels:
     - pytorch
     - defaults
 dependencies:
-    - vamb>=3.0.3,<3.1
+    - pytorch
+    - pip
+    - torchvision
+    - cudatoolkit=10.2
+    - pysam
+    - pip:
+       - git+https://github.com/RasmussenLab/vamb@v3.0.3
