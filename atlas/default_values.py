@@ -136,7 +136,9 @@ def make_default_config():
     config["large_threads"] = 16
     config["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
     config["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
-    config["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
+    config[
+        "preprocess_allowable_kmer_mismatches"
+    ] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
     config[
         "preprocess_reference_kmer_match_length"
     ] = PREPROCESS_REFERENCE_KMER_MATCH_LENGTH
