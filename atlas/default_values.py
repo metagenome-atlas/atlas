@@ -160,9 +160,16 @@ def make_default_config():
     conf["normalize_reads_before_assembly"] = False
     conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
     conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
-    conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
+    conf["normalization_minimum_kmer_depth"] = 5
 
     conf["error_correction_before_assembly"] = True
+    conf["error_correction_remove_lowdepth"] = True
+    conf["error_correction_kmer"] = 31
+    conf["error_correction_lowdepth_fraction"] = 0.1
+    conf["error_correction_minimum_kmer_depth"] = 2
+    conf["error_correction_aggressive"] = False
+    conf["error_correction_minprob"] = 0.7 # for memory issues only , I think
+
 
     conf["merge_pairs_before_assembly"] = True
     conf["merging_k"] = MERGING_K

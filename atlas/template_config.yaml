@@ -75,24 +75,30 @@ contaminant_ambiguous: best
 # Pre-assembly-processing
 ########################
 
-# Advanced Error correction
-error_correction_before_assembly : true
-spades_skip_BayesHammer: true # Skip error correction in spades assembler
 
 ## Normalize read depth
 # only recommended if metagenome is complicated
 normalize_reads_before_assembly: false
 normalization_target_depth: 1000  # almost no filtering unless grossly over-represented
-normalization_minimum_kmers: 3    # Remove very low represented kmers
+normalization_minimum_kmer_depth: 5    # Remove low abundant kmers
+
+
+# Advanced Error correction
+error_correction_before_assembly : true
+spades_skip_BayesHammer: true # Skip error correction in spades assembler
+error_correction_kmer: 31 # can be longer e.g. 62 but takes more memory
+
+# remove reads with k-mers that cannot be used for assembly.
+# Filter reads that have a 10% of k-mers below a minimum depth.
+error_correction_remove_lowdepth: true
+error_correction_minimum_kmer_depth: 2 #
+error_correction_aggressive: false
 
 # Merging of pairs
 # join R1 and R2 at overlap; unjoined reads are still utilized
 merge_pairs_before_assembly : true
 merging_k: 62
-# extend reads while merging to this many nucleotides
-merging_extend2: 40
-# Iterations are performed until extend2 x iterations
-merging_flags: "ecct iterations=5"
+
 
 ########################
 # Assembly

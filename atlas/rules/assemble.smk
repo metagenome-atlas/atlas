@@ -114,17 +114,14 @@ rule normalize_reads:
     params:
         k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         t=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
-        minkmers=config.get(
-            "normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS
-        ),
-
+        mindepth=config["normalization_minimum_kmer_depth"],
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
         tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
     log:
-        "{sample}/logs/assembly/pre_process/normalization.log",
+        "{sample}/logs/assembly/pre_process/normalization_{previous_steps}.log",
     benchmark:
-        "logs/benchmarks/assembly/pre_process/normalization/{sample}.txt"
+        "logs/benchmarks/assembly/pre_process/normalization/{sample}_{previous_steps}.txt"
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("threads", 1)
@@ -132,15 +129,18 @@ rule normalize_reads:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        """
-        bbnorm.sh {params.inputs} \
-            {params.outputs} \
-            {params.tmpdir} \
-            k={params.k} target={params.t} \
-            minkmers={params.minkmers} prefilter=t \
-            threads={threads} \
-            -Xmx{resources.java_mem}G 2>> {log}
-        """
+        " bbnorm.sh {params.inputs} "
+        " {params.outputs} "
+        " {params.tmpdir} "
+        " tossbadreads=t "
+        " mindepth={params.mindepth} "
+        " k={params.k} "
+        " target={params.t} "
+        " minkmers={params.minkmers} "
+        " prefilter=t "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G 2>> {log} "
+
 
 
 rule error_correction:
@@ -168,17 +168,31 @@ rule error_correction:
     params:
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
+        prefilter = 2, # Ignore kmers with less than 2 occurance
+        minprob= config["error_correction_minprob"],
+        tossdepth= config["error_correction_minimum_kmer_depth"],
+        tossjunk = "t" if config["error_correction_remove_lowdepth"] else "f",
+        lowdepthfraction= config["error_correction_lowdepth_fraction"],
+        aggressive= config["error_correction_aggressive"],
+        shave= "f" # Shave and rinse can produce substantially better assemblies for low-depth data, but they are very slow for large metagenomes.
     threads: config.get("threads", 1)
     shell:
-        """
-        tadpole.sh -Xmx{resources.java_mem}G \
-            prealloc=1 \
-            {params.inputs} \
-            {params.outputs} \
-            mode=correct \
-            threads={threads} \
-            ecc=t ecco=t 2>> {log}
-        """
+        "tadpole.sh -Xmx{resources.java_mem}G "
+        " prefilter={params.prefilter} "
+        " prealloc=1 "
+        " {params.inputs} "
+        " {params.outputs} "
+        " mode=correct "
+        " aggressive={params.aggressive} "
+        " tossjunk={params.tossjunk} "
+        " lowdepthfraction={params.lowdepthfraction}"
+        " tossdepth={params.tossdepth} "
+        " merge=t "
+        " shave={params.shave} rinse={params.shave} "
+        " threads={threads} "
+        " ecc=t ecco=t "
+        "2>> {log} "
+
 
 
 rule merge_pairs:
