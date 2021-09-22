@@ -112,7 +112,9 @@ rule normalize_reads:
             )
         ),
         histin="{sample}/assembly/normalization/histogram_{previous_steps}_before_normalization.tsv.gz",
-        histout="{sample}/assembly/normalization/histogram_{previous_steps}_after.tsv.gz",
+        histout=(
+            "{sample}/assembly/normalization/histogram_{previous_steps}_after.tsv.gz"
+        ),
     params:
         k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         target=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
