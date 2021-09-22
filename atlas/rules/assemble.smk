@@ -144,7 +144,7 @@ rule normalize_reads:
         " target={params.target} "
         " prefilter=t "
         " threads={threads} "
-        " -Xmx{resources.java_mem}G 2>> {log} "
+        " -Xmx{resources.java_mem}G &> {log} "
 
 
 rule error_correction:
@@ -195,7 +195,7 @@ rule error_correction:
         " shave={params.shave} rinse={params.shave} "
         " threads={threads} "
         " ecc=t ecco=t "
-        "2>> {log} "
+        "&> {log} "
 
 
 rule merge_pairs:
@@ -234,7 +234,7 @@ rule merge_pairs:
             outmerged={output[2]} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
-            extend2={params.extend2} 2> {log}
+            extend2={params.extend2} &> {log}
         """
 
 
