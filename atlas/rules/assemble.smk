@@ -111,8 +111,8 @@ rule normalize_reads:
                 fraction=MULTIFILE_FRACTIONS,
             )
         ),
-        histin="{sample}/assembly/normalization/histogram_before.tsv.gz",
-        histout="{sample}/assembly/normalization/histogram_after.tsv.gz",
+        histin="{sample}/assembly/normalization/histogram_{previous_steps}_before_normalization.tsv.gz",
+        histout="{sample}/assembly/normalization/histogram_{previous_steps}_after.tsv.gz",
     params:
         k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         target=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
