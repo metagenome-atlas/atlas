@@ -142,7 +142,7 @@ rule run_semibin:
         "logs/benchmarks/semibin/bin/{sample}.tsv"
     params:
         output_dir="Cobinning/SemiBin/{sample}/",
-        min_bin_kbs=config["cobining_min_bin_size"] / 1000,
+        min_bin_kbs=int(config["cobining_min_bin_size"] / 1000),
         extra=config["semibin_options"],
     shell:
         "SemiBin bin "
