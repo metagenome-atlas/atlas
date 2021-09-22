@@ -137,7 +137,7 @@ rule normalize_reads:
         " {params.outputs} "
         " {params.tmpdir} "
         " tossbadreads=t "
-        " hist={output.hist} "
+        " hist={output.histin} "
         " histout={output.histout} "
         " mindepth={params.mindepth} "
         " k={params.k} "
