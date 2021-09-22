@@ -100,12 +100,15 @@ else:
 #
 rule normalize_reads:
     input:
-        get_quality_controlled_reads,  #expect SE or R1,R2 or R1,R2,SE
+        expand(
+            "{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+        ),
     output:
         temp(
             expand(
-                "{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
-                fraction=["R1", "R2"],
+                "{{sample}}/assembly/reads/{{previous_steps}}.normalized_{fraction}.fastq.gz",
+                fraction=MULTIFILE_FRACTIONS,
             )
         ),
     params:
@@ -114,10 +117,9 @@ rule normalize_reads:
         minkmers=config.get(
             "normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS
         ),
-        #
-        input=lambda wc, input: "in={0} in2={1}".format(*input),
-        extra=lambda wc, input: "extra={2}".format(*input) if len(input) == 3 else "",
-        output_paired=lambda wc, output: "out={0} out2={1}".format(*output),
+
+        inputs=lambda wc, input: io_params_for_tadpole(input),
+        outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
         tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
     log:
         "{sample}/logs/assembly/pre_process/normalization.log",
@@ -131,9 +133,8 @@ rule normalize_reads:
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         """
-        bbnorm.sh {params.input} \
-            {params.extra} \
-            {params.output} \
+        bbnorm.sh {params.inputs} \
+            {params.outputs} \
             {params.tmpdir} \
             k={params.k} target={params.t} \
             minkmers={params.minkmers} prefilter=t \
