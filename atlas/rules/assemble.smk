@@ -142,7 +142,6 @@ rule normalize_reads:
         " -Xmx{resources.java_mem}G 2>> {log} "
 
 
-
 rule error_correction:
     input:
         expand(
@@ -168,13 +167,13 @@ rule error_correction:
     params:
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
-        prefilter = 2, # Ignore kmers with less than 2 occurance
-        minprob= config["error_correction_minprob"],
-        tossdepth= config["error_correction_minimum_kmer_depth"],
-        tossjunk = "t" if config["error_correction_remove_lowdepth"] else "f",
-        lowdepthfraction= config["error_correction_lowdepth_fraction"],
-        aggressive= config["error_correction_aggressive"],
-        shave= "f" # Shave and rinse can produce substantially better assemblies for low-depth data, but they are very slow for large metagenomes.
+        prefilter=2,  # Ignore kmers with less than 2 occurance
+        minprob=config["error_correction_minprob"],
+        tossdepth=config["error_correction_minimum_kmer_depth"],
+        tossjunk="t" if config["error_correction_remove_lowdepth"] else "f",
+        lowdepthfraction=config["error_correction_lowdepth_fraction"],
+        aggressive=config["error_correction_aggressive"],
+        shave="f",  # Shave and rinse can produce substantially better assemblies for low-depth data, but they are very slow for large metagenomes.
     threads: config.get("threads", 1)
     shell:
         "tadpole.sh -Xmx{resources.java_mem}G "
@@ -192,7 +191,6 @@ rule error_correction:
         " threads={threads} "
         " ecc=t ecco=t "
         "2>> {log} "
-
 
 
 rule merge_pairs:

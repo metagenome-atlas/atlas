@@ -168,8 +168,7 @@ def make_default_config():
     conf["error_correction_lowdepth_fraction"] = 0.1
     conf["error_correction_minimum_kmer_depth"] = 2
     conf["error_correction_aggressive"] = False
-    conf["error_correction_minprob"] = 0.7 # for memory issues only , I think
-
+    conf["error_correction_minprob"] = 0.7  # for memory issues only , I think
 
     conf["merge_pairs_before_assembly"] = True
     conf["merging_k"] = MERGING_K
