@@ -561,10 +561,7 @@ if not SKIP_QC:
 
             # append to sample table
             sample_table = load_sample_table(input.sample_table_file)
-            sample_table.loc[
-                wildcards.sample,
-                ["Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
-            ] = output
+            sample_table.loc[ wildcards.sample, [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS]] = output
             sample_table.to_csv(input.sample_table_file, sep="\t")
 
 
