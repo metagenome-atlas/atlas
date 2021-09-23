@@ -358,70 +358,69 @@ def run_init(
         sample_table, reads_are_QC=skip_qc, outfile=sample_file
     )
 
-
-@click.command(
-    "init-public",
-    short_help="Prepare atlas run from public data from SRA",
-    help="prepare configuration file and sample table for atlas run"
-    "based on public data from SRA\n"
-    "Supply a set of SRA run ids to the command:"
-    "SRR4305427 ERR1190946\n\n"
-    "Reads are automatically downloaded but not stored on your machine. Beware that sometimes multiple runs go into one sample.",
-)
-@click.argument("identifiers", nargs=-1)
-@click.option(
-    "-d",
-    "--db-dir",
-    default=os.path.join(os.path.realpath("."), "databases"),
-    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
-    show_default=True,
-    help="location to store databases (need ~50GB)",
-)
-@click.option(
-    "-w",
-    "--working-dir",
-    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
-    help="location to run atlas",
-    default=".",
-)
-@click.option(
-    "--skip-qc",
-    is_flag=True,
-    help="Skip QC, if reads are already pre-processed",
-)
-# @click.option(
-#     "--single-end",
-#     is_flag=True,
-#     help="Your reads are single end",
+# 
+# @click.command(
+#     "init-public",
+#     short_help="Prepare atlas run from public data from SRA",
+#     help="prepare configuration file and sample table for atlas run"
+#     "based on public data from SRA\n"
+#     "Supply a set of SRA run ids to the command:"
+#     "SRR4305427 ERR1190946\n\n"
+#     "Reads are automatically downloaded but not stored on your machine. Beware that sometimes multiple runs go into one sample.",
 # )
-def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
-    """Write the file CONFIG and complete the sample names and paths for all
-    FASTQ files in PATH.
-
-    """
-
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
-    config = os.path.join(working_dir, "config.yaml")
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
-    sample_file = os.path.join(working_dir, "samples.tsv")
-
-    make_config(db_dir, config=config)
-    sample_table = pd.DataFrame(index=identifiers)
-
-    if single_end:
-        sample_table["R1"] = sample_table.index.map(
-            lambda s: os.path.join(SRA_READ_PATH, f"{s}.fastq.gz")
-        )
-    else:
-
-        sample_table["R1"] = sample_table.index.map(
-            lambda s: os.path.join(SRA_READ_PATH, f"{s}_1.fastq.gz")
-        )
-        sample_table["R2"] = sample_table.index.map(
-            lambda s: os.path.join(SRA_READ_PATH, f"{s}_2.fastq.gz")
-        )
-        prepare_sample_table_for_atlas(
-            sample_table, reads_are_QC=skip_qc, outfile=sample_file
-        )
+# @click.argument("identifiers", nargs=-1)
+# @click.option(
+#     "-d",
+#     "--db-dir",
+#     default=os.path.join(os.path.realpath("."), "databases"),
+#     type=click.Path(dir_okay=True, writable=True, resolve_path=True),
+#     show_default=True,
+#     help="location to store databases (need ~50GB)",
+# )
+# @click.option(
+#     "-w",
+#     "--working-dir",
+#     type=click.Path(dir_okay=True, writable=True, resolve_path=True),
+#     help="location to run atlas",
+#     default=".",
+# )
+# @click.option(
+#     "--skip-qc",
+#     is_flag=True,
+#     help="Skip QC, if reads are already pre-processed",
+# )
+# # @click.option(
+# #     "--single-end",
+# #     is_flag=True,
+# #     help="Your reads are single end",
+# # )
+# def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
+#     """Write the file CONFIG and complete the sample.tsv
+#
+#     """
+#
+#     if not os.path.exists(working_dir):
+#         os.makedirs(working_dir)
+#     config = os.path.join(working_dir, "config.yaml")
+#     if not os.path.exists(db_dir):
+#         os.makedirs(db_dir)
+#     sample_file = os.path.join(working_dir, "samples.tsv")
+#
+#     make_config(db_dir, config=config)
+#     sample_table = pd.DataFrame(index=identifiers)
+#
+#     if single_end:
+#         sample_table["R1"] = sample_table.index.map(
+#             lambda s: os.path.join(SRA_READ_PATH, f"{s}.fastq.gz")
+#         )
+#     else:
+#
+#         sample_table["R1"] = sample_table.index.map(
+#             lambda s: os.path.join(SRA_READ_PATH, f"{s}_1.fastq.gz")
+#         )
+#         sample_table["R2"] = sample_table.index.map(
+#             lambda s: os.path.join(SRA_READ_PATH, f"{s}_2.fastq.gz")
+#         )
+#         prepare_sample_table_for_atlas(
+#             sample_table, reads_are_QC=skip_qc, outfile=sample_file
+#         )
