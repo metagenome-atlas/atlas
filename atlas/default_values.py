@@ -165,12 +165,12 @@ def make_default_config():
     config["normalization_minimum_kmer_depth"] = 5
 
     config["error_correction_before_assembly"] = True
-    config["error_correction_remove_lowdepth"] = True
+    config["error_correction_remove_lowdepth"] = False
     config["error_correction_kmer"] = 31
-    config["error_correction_lowdepth_fraction"] = 0.1
-    config["error_correction_minimum_kmer_depth"] = 2
+    config["error_correction_lowdepth_fraction"] = 0.5
+    config["error_correction_minimum_kmer_depth"] = 1
     config["error_correction_aggressive"] = False
-    config["error_correction_minprob"] = 0.7  # for memory issues only , I think
+    config["error_correction_minprob"] = 0.5  # for memory issues only , I think
 
     config["merge_pairs_before_assembly"] = True
     config["merging_k"] = MERGING_K
