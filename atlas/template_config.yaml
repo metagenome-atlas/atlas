@@ -75,14 +75,6 @@ contaminant_ambiguous: best
 # Pre-assembly-processing
 ########################
 
-
-## Normalize read depth
-# only recommended if metagenome is complicated
-normalize_reads_before_assembly: false
-normalization_target_depth: 1000  # almost no filtering unless grossly over-represented
-normalization_minimum_kmer_depth: 5    # Remove low abundant kmers
-
-
 # Advanced Error correction
 error_correction_before_assembly : true
 spades_skip_BayesHammer: true # Skip error correction in spades assembler
