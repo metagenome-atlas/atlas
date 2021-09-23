@@ -82,8 +82,8 @@ error_correction_kmer: 31 # can be longer e.g. 62 but takes more memory
 
 # remove reads with k-mers that cannot be used for assembly.
 # Filter reads that have a 10% of k-mers below a minimum depth.
-error_correction_remove_lowdepth: true
-error_correction_minimum_kmer_depth: 2 #
+error_correction_remove_lowdepth: false
+error_correction_minimum_kmer_depth: 1 #
 error_correction_aggressive: false
 
 # Merging of pairs
