@@ -10,12 +10,7 @@ from copy import deepcopy
 def get_preprocessing_steps(config):
     preprocessing_steps = ["QC"]
     if config.get("normalize_reads_before_assembly", False):
-        # preprocessing_steps.append("normalized")
-        raise NotImplementedError(
-            "Normalization is depricated. It showed to reduce assembly performance at least for metagenomics."
-            "remove the line 'normalize_reads_before_assembly' in your config file."
-            " If you would like to have added the feature again write an issue."
-        )
+        preprocessing_steps.append("normalized")
 
     if config.get("error_correction_before_assembly", True):
         preprocessing_steps.append("errorcorr")
@@ -103,61 +98,53 @@ else:
 
 
 #
-# rule normalize_coverage_across_kmers:
-#     input:
-#         get_quality_controlled_reads #expect SE or R1,R2 or R1,R2,SE
-#     output:
-#         temp(expand("{{sample}}/assembly/reads/QC.normalized_{fraction}.fastq.gz",
-#             fraction=MULTIFILE_FRACTIONS))
-#     params:
-#         k = config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
-#         t = config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
-#         minkmers = config.get("normalization_minimum_kmers", NORMALIZATION_MINIMUM_KMERS),
-#         input_single = lambda wc, input: "in=%s" % input.se if hasattr(input, 'se') else "null",
-#         extra_single = lambda wc, input: "extra={0},{1}" % (**input) if len(input)==3 else "",
-#         has_paired_end_files = lambda wc, input: "t" if len(input)>1 else "f",
-#         input_paired = lambda wc, input: "in=%s in2=%s" % (input.R1, input.R2) if hasattr(input, 'R1') else "null",
-#         extra_paired = lambda wc, input: "extra=%s" % input.se if hasattr(input, 'se') else "",
-#         output_single = lambda wc, output, input: "out=%s" % output[2] if hasattr(input, 'R1') else "out=%s" % output[0],
-#         output_paired = lambda wc, output, input: "out=%s out2=%s" % (output[0], output[1]) if hasattr(input, 'R1') else "null",
-#         tmpdir = "tmpdir=%s" % TMPDIR if TMPDIR else ""
-#     log:
-#         "{sample}/logs/assembly/pre_process/normalization.log"
-#     benchmark:
-#         "logs/benchmarks/assembly/pre_process/normalization/{sample}.txt"
-#     conda:
-#         "%s/required_packages.yaml" % CONDAENV
-#     threads:
-#         config.get("threads", 1)
-#     resources:
-#         mem = config["mem"],
-#         java_mem = int(config["mem"] * JAVA_MEM_FRACTION)
-#     shell:
-#         """
-#         if [ {params.input_single} != "null" ];
-#         then
-#             bbnorm.sh {params.input_single} \
-#                 {params.extra_single} \
-#                 {params.output_single} \
-#                 {params.tmpdir} \
-#                 k={params.k} target={params.t} \
-#                 minkmers={params.minkmers} prefilter=t \
-#                 threads={threads} \
-#                 -Xmx{resources.java_mem}G 2> {log}
-#         fi
-#
-#         if [ {params.has_paired_end_files} = "t" ];
-#         then
-#             bbnorm.sh {params.input_paired} \
-#                 {params.extra_paired} \
-#                 {params.output_paired} \
-#                 {params.tmpdir} \
-#                 k={params.k} target={params.t} \
-#                 minkmers={params.minkmers} prefilter=t \
-#                 threads={threads} \
-#                 -Xmx{resources.java_mem}G 2>> {log}
-#         fi
-#         """
+rule normalize_reads:
+    input:
+        expand(
+            "{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+        ),
+    output:
+        reads=temp(
+            expand(
+                "{{sample}}/assembly/reads/{{previous_steps}}.normalized_{fraction}.fastq.gz",
+                fraction=MULTIFILE_FRACTIONS,
+            )
+        ),
+        histin="{sample}/assembly/normalization/histogram_{previous_steps}_before_normalization.tsv.gz",
+        histout=(
+            "{sample}/assembly/normalization/histogram_{previous_steps}_after.tsv.gz"
+        ),
+    params:
+        k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
+        target=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
+        mindepth=config["normalization_minimum_kmer_depth"],
+        inputs=lambda wc, input: io_params_for_tadpole(input),
+        outputs=lambda wc, output: io_params_for_tadpole(output.reads, key="out"),
+        tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
+    log:
+        "{sample}/logs/assembly/pre_process/normalization_{previous_steps}.log",
+    benchmark:
+        "logs/benchmarks/assembly/pre_process/normalization/{sample}_{previous_steps}.txt"
+    conda:
+        "%s/required_packages.yaml" % CONDAENV
+    threads: config.get("threads", 1)
+    resources:
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    shell:
+        " bbnorm.sh {params.inputs} "
+        " {params.outputs} "
+        " {params.tmpdir} "
+        " tossbadreads=t "
+        " hist={output.histin} "
+        " histout={output.histout} "
+        " mindepth={params.mindepth} "
+        " k={params.k} "
+        " target={params.target} "
+        " prefilter=t "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G &> {log} "
 
 
 rule error_correction:
@@ -185,17 +172,30 @@ rule error_correction:
     params:
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
+        prefilter=2,  # Ignore kmers with less than 2 occurance
+        minprob=config["error_correction_minprob"],
+        tossdepth=config["error_correction_minimum_kmer_depth"],
+        tossjunk="t" if config["error_correction_remove_lowdepth"] else "f",
+        lowdepthfraction=config["error_correction_lowdepth_fraction"],
+        aggressive=config["error_correction_aggressive"],
+        shave="f",  # Shave and rinse can produce substantially better assemblies for low-depth data, but they are very slow for large metagenomes.
     threads: config.get("threads", 1)
     shell:
-        """
-        tadpole.sh -Xmx{resources.java_mem}G \
-            prealloc=1 \
-            {params.inputs} \
-            {params.outputs} \
-            mode=correct \
-            threads={threads} \
-            ecc=t ecco=t 2>> {log}
-        """
+        "tadpole.sh -Xmx{resources.java_mem}G "
+        " prefilter={params.prefilter} "
+        " prealloc=1 "
+        " {params.inputs} "
+        " {params.outputs} "
+        " mode=correct "
+        " aggressive={params.aggressive} "
+        " tossjunk={params.tossjunk} "
+        " lowdepthfraction={params.lowdepthfraction}"
+        " tossdepth={params.tossdepth} "
+        " merge=t "
+        " shave={params.shave} rinse={params.shave} "
+        " threads={threads} "
+        " ecc=t ecco=t "
+        "&> {log} "
 
 
 rule merge_pairs:
@@ -234,21 +234,8 @@ rule merge_pairs:
             outmerged={output[2]} \
             outu={output[0]} outu2={output[1]} \
             {params.flags} k={params.kmer} \
-            extend2={params.extend2} 2> {log}
+            extend2={params.extend2} &> {log}
         """
-
-
-localrules:
-    passtrough_se_merged,
-
-
-rule passtrough_se_merged:
-    input:
-        "{sample}/assembly/reads/{previous_steps}_se.fastq.gz",
-    output:
-        temp("{sample}/assembly/reads/{previous_steps}.merged_se.fastq.gz"),
-    shell:
-        "cp {input} {output}"
 
 
 assembly_params = {}
@@ -261,11 +248,7 @@ if config.get("assembler", "megahit") == "megahit":
     }
     ASSEMBLY_FRACTIONS = MULTIFILE_FRACTIONS
     if PAIRED_END and config.get("merge_pairs_before_assembly", True):
-
-        if "se" in MULTIFILE_FRACTIONS:
-            ASSEMBLY_FRACTIONS = ["R1", "R2", "co"]
-        else:
-            ASSEMBLY_FRACTIONS = ["R1", "R2", "me"]
+        ASSEMBLY_FRACTIONS = ["R1", "R2", "me"]
 
     localrules:
         merge_se_me_for_megahit,
@@ -372,9 +355,20 @@ if config.get("assembler", "megahit") == "megahit":
 
 else:
 
-    ASSEMBLY_FRACTIONS = deepcopy(MULTIFILE_FRACTIONS)
-    if config.get("merge_pairs_before_assembly", True) and PAIRED_END:
-        ASSEMBLY_FRACTIONS += ["me"]
+    if PAIRED_END:
+
+        ASSEMBLY_FRACTIONS = ["R1", "R2"]
+        if config.get("merge_pairs_before_assembly", True):
+            ASSEMBLY_FRACTIONS += ["me"]
+    else:
+
+        ASSEMBLY_FRACTIONS = deepcopy(MULTIFILE_FRACTIONS)
+
+        if config["spades_preset"] == "meta":
+            logging.error(
+                "Metaspades cannot handle single end libraries. Use another assembler or specify 'spades_preset': normal"
+            )
+            exit(1)
 
     assembly_params["spades"] = {"meta": "--meta", "normal": "", "rna": "--rna"}
 
