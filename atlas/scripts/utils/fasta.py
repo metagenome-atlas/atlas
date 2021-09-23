@@ -72,6 +72,26 @@ def split(fasta_file, maxSubsetSize, out_dir, simplify_headers=True):
     fout.close()
 
 
+def parse_fasta_headers(fasta_file, simplify_header=True):
+    """
+    returns list of fasta headers
+    """
+
+    headers = []
+
+    with open(fasta_file) as f:
+        for line in f:
+            if line[0] == ">":
+                header = line[1:].strip()
+
+                if simplify_header:
+                    header = header.split()[0]
+
+                headers.append(header)
+
+    return headers
+
+
 def header2origin(fasta_file, out, simplify_header=True):
     """
     Annotates a fasta file to it's filename:

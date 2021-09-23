@@ -8,13 +8,14 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+logging.captureWarnings(True)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(
+    logging.error(
         "".join(
             [
                 "Uncaught exception: ",
@@ -27,153 +28,71 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
+#### Begining of scripts
 
+from common_report import *
+
+import os, sys
 import pandas as pd
-import plotly.graph_objs as go
-from plotly import offline
-from snakemake.utils import report
+import plotly.express as px
 
 
-PLOTLY_PARAMS = dict(
-    include_plotlyjs=False, show_link=False, output_type="div", image_height=700
-)
+labels = {
+    "Percent_Assembled_Reads": "Percent of Assembled Reads",
+    "contig_bp": "Total BP",
+    "n_contigs": "Contigs (count)",
+    "N_Predicted_Genes": "Predicted Genes (count)",
+    "N50": "N50-number",
+    "L50": "N50-length (bp)",
+    "N90": "N90-number",
+    "L90": "N90-length (bp)",
+}
 
-atlas_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+PLOT_PARAMS = dict(labels=labels)
 
 
-def main(combined_stats, report_out):
+def make_plots(combined_stats):
 
+    ## Make figures with PLOTLY
+    # load and rename data
     df = pd.read_csv(combined_stats, sep="\t", index_col=0)
+    df.sort_index(ascending=True, inplace=True)
+    df.index.name = "Sample"
+    df["Sample"] = df.index
+
+    # create plots store in div
     div = {}
-    labels = {
-        "Percent_Assembled_Reads": "Percent of Assembled Reads",
-        "contig_bp": "Total BP",
-        "n_contigs": "Contigs (count)",
-        "N_Predicted_Genes": "Predicted Genes (count)",
-    }
-    for variable in [
-        "Percent_Assembled_Reads",
-        "contig_bp",
-        "n_contigs",
-        "N_Predicted_Genes",
-    ]:
-        y_axis_label = labels[variable]
-        div[variable] = offline.plot(
-            df[variable].iplot(
-                asFigure=True,
-                kind="bar",
-                xTitle="Samples",
-                layout=go.Layout(
-                    xaxis=dict(tickangle=45), yaxis=dict(title=y_axis_label)
-                ),
-            ),
-            **PLOTLY_PARAMS,
-        )
-    div["L50"] = offline.plot(
-        df[["L50", "L90"]].iplot(
-            asFigure=True,
-            kind="bar",
-            xTitle="Samples",
-            layout=go.Layout(xaxis=dict(tickangle=45), yaxis=(dict(title="Bases"))),
-        ),
-        **PLOTLY_PARAMS,
+
+    fig = px.strip(df, y="Percent_Assembled_Reads", **PLOT_PARAMS)
+    fig.update_yaxes(range=[0, 100])
+    div["Percent_Assembled_Reads"] = fig.to_html(**HTML_PARAMS)
+
+    fig = px.strip(df, y="N_Predicted_Genes", **PLOT_PARAMS)
+    div["N_Predicted_Genes"] = fig.to_html(**HTML_PARAMS)
+
+    fig = px.scatter(df, y="L50", x="N50", hover_name="Sample", **PLOT_PARAMS)
+    div["N50"] = fig.to_html(**HTML_PARAMS)
+
+    fig = px.scatter(df, y="L90", x="N90", hover_name="Sample", **PLOT_PARAMS)
+    div["N90"] = fig.to_html(**HTML_PARAMS)
+
+    fig = px.scatter(
+        df, y="contig_bp", x="n_contigs", hover_name="Sample", **PLOT_PARAMS
     )
-    report_str = """
+    div["Total"] = fig.to_html(**HTML_PARAMS)
 
-.. raw:: html
-
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    return div
 
 
-=============================================================
-ATLAS_ - Assembly Summary
-=============================================================
-
-.. _ATLAS: https://github.com/metagenome-atlas/atlas
-
-.. contents::
-    :backlinks: none
+# main
 
 
-Summary
--------
-
-Fragmentation
-*************
-
-L50/L90 is a measure of how fractionated assemblies are:
-50%/ 90% of the assembly is made up of contigs of Length L50/L90 or longer. Sometimes refered to as N50/N90.
+div = make_plots(combined_stats=snakemake.input.combined_contig_stats)
 
 
-.. raw:: html
-
-    {div[L50]}
-
-
-Assembly Length
-***************
-
-.. raw:: html
-
-    {div[contig_bp]}
-
-
-Number of Contigs
-*****************
-
-.. raw:: html
-
-    {div[n_contigs]}
-
-
-Number of Predicted Genes
-*************************
-
-.. raw:: html
-
-    {div[N_Predicted_Genes]}
-
-
-Percent of Assembled Reads
-**************************
-
-.. raw:: html
-
-    {div[Percent_Assembled_Reads]}
-
-
-For more information see Table_1_
-
-
-Downloads
----------
-
-"""
-    report(
-        report_str,
-        report_out,
-        Table_1=combined_stats,
-        stylesheet=os.path.join(atlas_dir, "report", "report.css"),
-    )
-
-
-if __name__ == "__main__":
-
-    try:
-
-        main(
-            combined_stats=snakemake.input.combined_contig_stats,
-            report_out=snakemake.output.report,
-        )
-
-    except NameError:
-        import argparse
-
-        p = argparse.ArgumentParser()
-        p.add_argument("--report-out")
-        p.add_argument("--combined-stats")
-        args = p.parse_args()
-        main(
-            args.combined_stats,
-            args.report_out,
-        )
+make_html(
+    div=div,
+    report_out=snakemake.output.report,
+    html_template_file=os.path.join(reports_dir, "template_assembly_report.html"),
+)

@@ -284,15 +284,14 @@ rule get_unique_cluster_attribution:
         new_d = d.map(map_cluster_ids)
         new_d.dropna(inplace=True)
         if new_d.shape[0] == 0:
-            logger.error(
+
+            logger.warning(
                 f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
-                "This will break the continuationof the pipeline. "
-                "Check what happened. Maybe the the assembly is too small. "
-                "You can either remove the binner (for all samples) from the config.yaml file or the sample from the sample.tsv"
+                "I add longest contig to make the pipline continue"
             )
-            raise Exception(
-                "No bins detected with binner {wildcards.binner} in sample {wildcards.sample}."
-            )
+
+            new_d[f"{wildcards.sample}_0"] = "{sample}_{binner}_1".format(**wildcards)
+
         new_d.to_csv(output[0], sep="\t", header=False)
 
 
@@ -543,7 +542,7 @@ rule build_bin_report:
     log:
         "logs/binning/report_{binner}.log",
     script:
-        "../report/dummy_report.py"  #"../report/bin_report.py"
+        "../report/bin_report.py"
 
 
 localrules:
@@ -567,14 +566,7 @@ rule run_das_tool:
         contigs=BINNING_CONTIGS,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
-        expand(
-            "{{sample}}/binning/DASTool/{{sample}}{postfix}",
-            postfix=[
-                "_DASTool_summary.txt",
-                "_DASTool_hqBins.pdf",
-                "_DASTool_scores.pdf",
-            ],
-        ),
+        "{sample}/binning/DASTool/{sample}_DASTool_summary.txt",
         expand(
             "{{sample}}/binning/DASTool/{{sample}}_{binner}.eval",
             binner=config["binner"],
@@ -600,7 +592,6 @@ rule run_das_tool:
         " --search_engine diamond "
         " --proteins {input.proteins} "
         " --write_bin_evals 1 "
-        " --create_plots 1 --write_bin_evals 1 "
         " --megabin_penalty {params.megabin_penalty}"
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "

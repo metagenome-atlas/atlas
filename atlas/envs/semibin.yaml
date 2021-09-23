@@ -3,4 +3,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - mmseqs2=13
+  - python=3.8
+  - semibin=0.3

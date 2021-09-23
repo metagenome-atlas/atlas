@@ -1,152 +1,111 @@
 import os, sys
+import logging, traceback
 
-f = open(os.devnull, "w")
-sys.stdout = f  # block cufflinks to plot strange code
-from cufflinks import iplot
-
-log = open(snakemake.log[0], "w")
-sys.stderr = log
-sys.stdout = log
-
-import pandas as pd
-import plotly.graph_objs as go
-from plotly import offline
-from snakemake.utils import report
-
-PLOTLY_PARAMS = dict(
-    include_plotlyjs=False, show_link=False, output_type="div", image_height=700
+logging.basicConfig(
+    filename=snakemake.log[0],
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-atlas_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(os.path.join(atlas_dir, "scripts"))
-from utils.parsers_checkm import read_checkm_output
+logging.captureWarnings(True)
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logging.error(
+        "".join(
+            [
+                "Uncaught exception: ",
+                *traceback.format_exception(exc_type, exc_value, exc_traceback),
+            ]
+        )
+    )
 
 
-def main(bin_table, report_out):
+# Install exception handler
+sys.excepthook = handle_exception
+
+#### Begining of scripts
+
+
+from common_report import *
+
+import pandas as pd
+import plotly.express as px
+
+
+from utils.taxonomy import tax2table
+
+
+def make_plots(bin_table):
 
     div = {}
 
-    df = pd.read_csv(bin_table, sep="\t", index_col=0)
+    div["input_file"] = bin_table
 
-    df.to_csv(bin_table, sep="\t")
+    # Prepare data
+    df = pd.read_table(bin_table)
+    df.index= df['Bin Id']
+    df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
 
-    div["bin_scatter"] = offline.plot(
-        {
-            "data": [
-                {
-                    "x": df.loc[df["Sample"] == sample, "Completeness"],
-                    "y": df.loc[df["Sample"] == sample, "Contamination"],
-                    "name": sample,
-                    "mode": "markers",
-                    "text": df.index[df["Sample"] == sample],
-                    "hoverinfo": "text",
-                    "showlegend": True,
-                }
-                for sample in df.Sample.unique()
-            ],
-            "layout": {
-                "xaxis": {"title": "Completeness"},
-                "yaxis": {"title": "Contamination"},
-            },
-        },
-        **PLOTLY_PARAMS,
+    df["Quality Score"] = df.eval("Completeness - 5* Contamination")
+
+    div[
+        "QualityScore"
+    ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
+
+    # 2D plot
+    fig = px.scatter(
+        data_frame=df,
+        y="Completeness",
+        x="Contamination",
+        color="phylum",
+        size="Genome size (Mbp)",
+        hover_data=["genus"],
+        hover_name="Bin Id",
     )
-    # subset the checkm stats dataframe
-    df = df[(df.Contamination <= 5) & (df.Completeness >= 90)].copy()
-    df.index.name = "Bin ID"
-    df.reset_index(inplace=True)
-    df = df[
-        [
-            "Bin ID",
-            "Completeness",
-            "Contamination",
-            "Taxonomy (contained)",
-            "Taxonomy (sister lineage)",
-            "GC",
-            "Genome size (Mbp)",
-            "Gene count",
-        ]
-    ]
-    df["Taxonomy (contained)"] = df["Taxonomy (contained)"].apply(
-        lambda s: "; ".join(str(s).split(";")[-2:])
+    fig.update_yaxes(range=(50, 102))
+    fig.update_xaxes(range=(-0.2, 10.1))
+    div["2D"] = fig.to_html(**HTML_PARAMS)
+
+    ## By sample
+    fig = px.strip(
+        data_frame=df,
+        y="Quality Score",
+        x="Sample",
+        color="phylum",
+        hover_data=["genus"],
+        hover_name="Bin Id",
     )
-    df["Taxonomy (sister lineage)"] = df["Taxonomy (sister lineage)"].apply(
-        lambda s: "; ".join(str(s).split(";")[-1:])
+    fig.update_yaxes(range=(50, 102))
+    div["bySample"] = fig.to_html(**HTML_PARAMS)
+
+    # By Phylum
+    fig = px.strip(
+        data_frame=df,
+        y="Quality Score",
+        x="phylum",
+        hover_data=["genus"],
+        hover_name="Bin Id",
     )
-    with pd.option_context("display.precision", 3):
-        div["table"] = df.to_html(index=False).replace("\n", "\n" + 10 * " ")
-    report_str = """
+    fig.update_yaxes(range=(50, 102))
+    div["byPhylum"] = fig.to_html(**HTML_PARAMS)
 
-.. raw:: html
-
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    return div
 
 
-=============================================================
-ATLAS_ - Bin Summary
-=============================================================
-
-.. _ATLAS: https://github.com/metagenome-atlas/atlas
-
-.. contents::
-    :backlinks: none
+# main
 
 
-Summary
--------
-
-Recovered Bins
-**************
-
-.. raw:: html
-
-    {div[bin_scatter]}
-
-In some cases, percentages can be above 100% (See: `CheckM Issue 107`_).
-
-.. _CheckM Issue 107: https://github.com/Ecogenomics/CheckM/issues/107
+div = make_plots(bin_table=snakemake.input.bin_table)
 
 
-Best Bins
-*********
-
-Genomes with >90% completeness and <5% contamination:
-
-.. raw:: html
-
-    {div[table]}
-
-
-See full list at Table_1_.
-
-
-Downloads
----------
-
-    """
-    report(
-        report_str,
-        report_out,
-        Table_1=bin_table,
-        stylesheet=os.path.join(
-            os.path.abspath(os.path.dirname(__file__)), "report.css"
-        ),
-    )
-
-
-if __name__ == "__main__":
-
-    try:
-        main(
-            bin_table=snakemake.input.bin_table,
-            report_out=snakemake.output.report,
-        )
-
-    except NameError:
-        import argparse
-
-        p = argparse.ArgumentParser()
-        p.add_argument("--report-out")
-        p.add_argument("--bin-table")
-        args = p.parse_args()
-        main(args.bin_table, args.report_out)
+make_html(
+    div=div,
+    report_out=snakemake.output.report,
+    html_template_file=os.path.join(reports_dir, "template_bin_report.html"),
+    wildcards=snakemake.wildcards,
+)
