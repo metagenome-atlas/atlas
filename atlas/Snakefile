@@ -373,5 +373,5 @@ for r in workflow.rules:
             r.resources["time"] = config["runtime"]["simple_job"]
         else:
             r.resources["time"] = config["runtime"]["default"]
-            
+
     r.resources["time_min"] = r.resources["time"] * 60
