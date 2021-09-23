@@ -358,7 +358,7 @@ def run_init(
         sample_table, reads_are_QC=skip_qc, outfile=sample_file
     )
 
-# 
+#
 # @click.command(
 #     "init-public",
 #     short_help="Prepare atlas run from public data from SRA",
@@ -394,33 +394,33 @@ def run_init(
 # #     is_flag=True,
 # #     help="Your reads are single end",
 # # )
-# def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
-#     """Write the file CONFIG and complete the sample.tsv
-#
-#     """
-#
-#     if not os.path.exists(working_dir):
-#         os.makedirs(working_dir)
-#     config = os.path.join(working_dir, "config.yaml")
-#     if not os.path.exists(db_dir):
-#         os.makedirs(db_dir)
-#     sample_file = os.path.join(working_dir, "samples.tsv")
-#
-#     make_config(db_dir, config=config)
-#     sample_table = pd.DataFrame(index=identifiers)
-#
-#     if single_end:
-#         sample_table["R1"] = sample_table.index.map(
-#             lambda s: os.path.join(SRA_READ_PATH, f"{s}.fastq.gz")
-#         )
-#     else:
-#
-#         sample_table["R1"] = sample_table.index.map(
-#             lambda s: os.path.join(SRA_READ_PATH, f"{s}_1.fastq.gz")
-#         )
-#         sample_table["R2"] = sample_table.index.map(
-#             lambda s: os.path.join(SRA_READ_PATH, f"{s}_2.fastq.gz")
-#         )
-#         prepare_sample_table_for_atlas(
-#             sample_table, reads_are_QC=skip_qc, outfile=sample_file
-#         )
+def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
+    """Write the file CONFIG and complete the sample.tsv
+
+    """
+
+    if not os.path.exists(working_dir):
+        os.makedirs(working_dir)
+    config = os.path.join(working_dir, "config.yaml")
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir)
+    sample_file = os.path.join(working_dir, "samples.tsv")
+
+    make_config(db_dir, config=config)
+    sample_table = pd.DataFrame(index=identifiers)
+
+    if single_end:
+        sample_table["R1"] = sample_table.index.map(
+            lambda s: os.path.join(SRA_READ_PATH, f"{s}.fastq.gz")
+        )
+    else:
+
+        sample_table["R1"] = sample_table.index.map(
+            lambda s: os.path.join(SRA_READ_PATH, f"{s}_1.fastq.gz")
+        )
+        sample_table["R2"] = sample_table.index.map(
+            lambda s: os.path.join(SRA_READ_PATH, f"{s}_2.fastq.gz")
+        )
+        prepare_sample_table_for_atlas(
+            sample_table, reads_are_QC=skip_qc, outfile=sample_file
+        )
