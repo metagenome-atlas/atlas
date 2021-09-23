@@ -8,6 +8,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+logging.captureWarnings(True)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -46,8 +47,8 @@ def make_plots(bin_table):
     div["input_file"] = bin_table
 
     # Prepare data
-
     df = pd.read_table(bin_table)
+    df.index= df['Bin Id']
     df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
 
     df["Quality Score"] = df.eval("Completeness - 5* Contamination")

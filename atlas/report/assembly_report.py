@@ -8,6 +8,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+logging.captureWarnings(True)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -58,6 +59,7 @@ def make_plots(combined_stats):
     df = pd.read_csv(combined_stats, sep="\t", index_col=0)
     df.sort_index(ascending=True, inplace=True)
     df.index.name = "Sample"
+    df["Sample"] = df.index
 
     # create plots store in div
     div = {}
@@ -69,14 +71,14 @@ def make_plots(combined_stats):
     fig = px.strip(df, y="N_Predicted_Genes", **PLOT_PARAMS)
     div["N_Predicted_Genes"] = fig.to_html(**HTML_PARAMS)
 
-    fig = px.scatter(df, y="L50", x="N50", hover_name=df.index, **PLOT_PARAMS)
+    fig = px.scatter(df, y="L50", x="N50", hover_name="Sample", **PLOT_PARAMS)
     div["N50"] = fig.to_html(**HTML_PARAMS)
 
-    fig = px.scatter(df, y="L90", x="N90", hover_name=df.index, **PLOT_PARAMS)
+    fig = px.scatter(df, y="L90", x="N90", hover_name="Sample", **PLOT_PARAMS)
     div["N90"] = fig.to_html(**HTML_PARAMS)
 
     fig = px.scatter(
-        df, y="contig_bp", x="n_contigs", hover_name=df.index, **PLOT_PARAMS
+        df, y="contig_bp", x="n_contigs", hover_name="Sample", **PLOT_PARAMS
     )
     div["Total"] = fig.to_html(**HTML_PARAMS)
 
