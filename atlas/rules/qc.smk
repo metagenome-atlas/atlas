@@ -304,6 +304,7 @@ if not SKIP_QC:
                     dupesubs={params.dupesubs} \
                     optical={params.only_optical}\
                     threads={threads} \
+                    pigz=t unpigz=t \
                     -Xmx{resources.java_mem}G 2> {log}
                 """
 
@@ -421,6 +422,7 @@ if not SKIP_QC:
                 minbasefrequency={params.minbasefrequency} \
                 ecco={params.error_correction_pe} \
                 prealloc={params.prealloc} \
+                pigz=t unpigz=t \
                 -Xmx{resources.java_mem}G 2> {log}
             """
 
@@ -513,6 +515,7 @@ if not SKIP_QC:
                         maxindel={params.maxindel} minratio={params.minratio} \
                         minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
                         threads={threads} k={params.k} local=t \
+                        pigz=t unpigz=t ziplevel=9 \
                         -Xmx{resources.java_mem}G 2> {log}
                 fi
 
@@ -522,6 +525,7 @@ if not SKIP_QC:
                     maxindel={params.maxindel} minratio={params.minratio} \
                     minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
                     interleaved=f threads={threads} k={params.k} local=t \
+                    pigz=t unpigz=t ziplevel=9 \
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
@@ -534,6 +538,7 @@ if not SKIP_QC:
     rule qcreads:
         input:
             unpack(get_ribosomal_rna_input),
+            sample_table_file="samples.tsv",
         output:
             expand(
                 "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
@@ -554,11 +559,10 @@ if not SKIP_QC:
                             with open(input.rrna_reads[i], "rb") as infile2:
                                 shutil.copyfileobj(infile2, outFile)
 
-                # save to sampleTable
-                sampleTable.loc[
-                    wildcards.sample, "Reads_QC_" + MULTIFILE_FRACTIONS[i]
-                ] = output[i]
-            sampleTable.to_csv("samples.tsv", sep="\t")
+            # append to sample table
+            sample_table = load_sample_table(input.sample_table_file)
+            sample_table.loc[ wildcards.sample, [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS]] = output
+            sample_table.to_csv(input.sample_table_file, sep="\t")
 
 
 #### STATS
@@ -753,7 +757,7 @@ rule combine_read_counts:
 
 rule finalize_sample_qc:
     input:
-        get_quality_controlled_reads,
+        qcreads=get_quality_controlled_reads,
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip=expand(
             "{{sample}}/sequence_quality_control/read_stats/{step}.zip",
