@@ -358,42 +358,42 @@ def run_init(
         sample_table, reads_are_QC=skip_qc, outfile=sample_file
     )
 
-#
-# @click.command(
-#     "init-public",
-#     short_help="Prepare atlas run from public data from SRA",
-#     help="prepare configuration file and sample table for atlas run"
-#     "based on public data from SRA\n"
-#     "Supply a set of SRA run ids to the command:"
-#     "SRR4305427 ERR1190946\n\n"
-#     "Reads are automatically downloaded but not stored on your machine. Beware that sometimes multiple runs go into one sample.",
-# )
-# @click.argument("identifiers", nargs=-1)
+
+@click.command(
+    "init-public",
+    short_help="Prepare atlas run from public data from SRA",
+    help="prepare configuration file and sample table for atlas run"
+    "based on public data from SRA\n"
+    "Supply a set of SRA run ids to the command:"
+    "SRR4305427 ERR1190946\n\n"
+    "Reads are automatically downloaded but not stored on your machine. Beware that sometimes multiple runs go into one sample.",
+)
+@click.argument("identifiers", nargs=-1)
+@click.option(
+    "-d",
+    "--db-dir",
+    default=os.path.join(os.path.realpath("."), "databases"),
+    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
+    show_default=True,
+    help="location to store databases (need ~50GB)",
+)
+@click.option(
+    "-w",
+    "--working-dir",
+    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
+    help="location to run atlas",
+    default=".",
+)
+@click.option(
+    "--skip-qc",
+    is_flag=True,
+    help="Skip QC, if reads are already pre-processed",
+)
 # @click.option(
-#     "-d",
-#     "--db-dir",
-#     default=os.path.join(os.path.realpath("."), "databases"),
-#     type=click.Path(dir_okay=True, writable=True, resolve_path=True),
-#     show_default=True,
-#     help="location to store databases (need ~50GB)",
-# )
-# @click.option(
-#     "-w",
-#     "--working-dir",
-#     type=click.Path(dir_okay=True, writable=True, resolve_path=True),
-#     help="location to run atlas",
-#     default=".",
-# )
-# @click.option(
-#     "--skip-qc",
+#     "--single-end",
 #     is_flag=True,
-#     help="Skip QC, if reads are already pre-processed",
+#     help="Your reads are single end",
 # )
-# # @click.option(
-# #     "--single-end",
-# #     is_flag=True,
-# #     help="Your reads are single end",
-# # )
 def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
     """Write the file CONFIG and complete the sample.tsv
 

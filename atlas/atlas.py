@@ -40,7 +40,9 @@ def cli(obj):
 
 
 cli.add_command(run_init)
-cli.add_command(run_init_sra)
+
+## TODO: add sra init to CLI
+#cli.add_command(run_init_sra)
 
 
 def get_snakefile(file="Snakefile"):
