@@ -538,7 +538,7 @@ if not SKIP_QC:
     rule qcreads:
         input:
             unpack(get_ribosomal_rna_input),
-            sample_table_file='samples.tsv'
+            sample_table_file="samples.tsv",
         output:
             expand(
                 "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
@@ -561,12 +561,11 @@ if not SKIP_QC:
 
             # append to sample table
             sample_table = load_sample_table(input.sample_table_file)
-            sample_table.loc[wildcards.sample,
-                             [ 'Reads_QC_{fraction}' for fraction in MULTIFILE_FRACTIONS]
-                             ] = output
-            sample_table.to_csv(input.sample_table_file,sep='\t')
-
-
+            sample_table.loc[
+                wildcards.sample,
+                ["Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
+            ] = output
+            sample_table.to_csv(input.sample_table_file, sep="\t")
 
 
 #### STATS
@@ -761,10 +760,15 @@ rule combine_read_counts:
 
 rule finalize_sample_qc:
     input:
-        qcreads= get_quality_controlled_reads,
+        qcreads=get_quality_controlled_reads,
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
-        reads_stats_zip = expand("{{sample}}/sequence_quality_control/read_stats/{step}.zip", step=PROCESSED_STEPS),
-        read_length_hist = "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt",
+        reads_stats_zip=expand(
+            "{{sample}}/sequence_quality_control/read_stats/{step}.zip",
+            step=PROCESSED_STEPS,
+        ),
+        read_length_hist=(
+            "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
+        ),
     output:
         touch("{sample}/sequence_quality_control/finished_QC"),
 

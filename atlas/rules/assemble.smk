@@ -560,28 +560,28 @@ if config["filter_contigs"]:
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
             """
-                bbwrap.sh nodisk=t \
-                ref={input.fasta} \
-                {params.input} \
-                trimreaddescriptions=t \
-                out={output.sam} \
-                threads={threads} \
-                pairlen={params.max_distance_between_pairs} \
-                pairedonly={params.paired_only} \
-                minid={params.min_id} \
-                mdtag=t \
-                xstag=fs \
-                nmtag=t \
-                sam=1.3 \
-                local=t \
-                ambiguous={params.ambiguous} \
-                secondary=t \
-                saa=f \
-                append=t \
-                machineout=t \
-                unpigz=t \
-                maxsites={params.maxsites} \
-                -Xmx{resources.java_mem}G 2> {log}
+            bbwrap.sh nodisk=t \
+            ref={input.fasta} \
+            {params.input} \
+            trimreaddescriptions=t \
+            out={output.sam} \
+            threads={threads} \
+            pairlen={params.max_distance_between_pairs} \
+            pairedonly={params.paired_only} \
+            minid={params.min_id} \
+            mdtag=t \
+            xstag=fs \
+            nmtag=t \
+            sam=1.3 \
+            local=t \
+            ambiguous={params.ambiguous} \
+            secondary=t \
+            saa=f \
+            append=t \
+            machineout=t \
+            unpigz=t \
+            maxsites={params.maxsites} \
+            -Xmx{resources.java_mem}G 2> {log}
             """
 
     rule pileup_prefilter:
