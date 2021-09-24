@@ -614,9 +614,9 @@ rule make_lists_gunc:
     input:
         bins="{sample}/binning/{binner}/bins",
     output:
-        scatter.split("{sample}/binning/{binner}/gunc/genome_list/{scatteritem}.txt"),
+        scatter.split("{sample}/binning/{binner}/GUNC/genome_list/{scatteritem}.txt"),
     run:
-        glob_argument = "{sample}/binning/{binner}/bins/*.fasta"
+        glob_argument = f"{{sample}}/binning/{{binner}}/bins/*.{config['GUNC']['format']}"
         all_bins = glob(glob_argument)
         n = len(output)
         step = len(all_bins) // n
