@@ -26,6 +26,8 @@ CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
 EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V5")
 GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V06")
 CONDAENV = "../envs"
+GUNC_DIR = os.path.join(DBDIR, "GUNC")
+
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
 FILES = {
@@ -192,6 +194,20 @@ rule download_gtdb:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "mkdir $GTDBTK_DATA_PATH ;"
         "download-db.sh ;"
+
+
+rule download_GUNC_db:
+    output:
+        f'{GUNC_DIR}/gunc_db_{config["GUNC"]["database_type"]}.dmnd',
+    conda:
+        "%s/gunc.yaml" % CONDAENV
+    params:
+        database_type = config["GUNC"]["database_type"],
+    log:
+        "{sample}/binning/{binner}/GUNC/log/download_db{params.data_type}.log",
+    shell:
+        "gunc download_db {resources.tmpdir} -db {params.database_type} &> {log} ;"
+        "mv {resources.tmpdir}/gunc_db_{params.database_type}*.dmnd {output} 2>> {log}"
 
 
 onsuccess:

@@ -175,6 +175,10 @@ DASTool:
   search_engine: 'diamond'
   score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
 
+GUNC:
+  database_type: progenomes   #progenomes or gtdb
+  format: .fasta
+
 genome_dereplication:
   ANI: 0.95
   overlap: 0.6

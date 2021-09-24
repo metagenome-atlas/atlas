@@ -606,4 +606,69 @@ rule run_das_tool:
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
 
 
+scattergather:
+    split=8,
+
+
+rule make_lists_gunc:
+    input:
+        bins="{sample}/binning/{binner}/bins",
+    output:
+        scatter.split("{sample}/binning/{binner}/gunc/genome_list/{scatteritem}.txt"),
+    run:
+        glob_argument = "{sample}/binning/{binner}/bins/*.fasta"
+        all_bins = glob(glob_argument)
+        n = len(output)
+        step = len(all_bins) // n
+        for i in range(n):
+            with open(output[i], "w") as f:
+                f.write(" ".join(all_bins[(i * step) : ((i + 1) * step)]))
+                if i <= (len(all_bins) % n):
+                    f.write(" " + all_bins[-i])
+
+
+rule copy_MAGs:
+    input:
+        "{sample}/binning/{binner}/GUNC/genome_list/{scatteritem}.txt",
+    output:
+        temp(directory("{sample}/binning/{binner}/GUNC/intermediate_dir/tmp_unzipped.{scatteritem}/")),
+    shell:
+        "mkdir {output} && ( cat {input}; echo; echo {output} ) | xargs cp"
+
+
+rule run_gunc:
+    input:
+        db=f'{config["database_dir"]}/GUNC/gunc_db_{config["GUNC"]["database_type"]}.dmnd',
+        fasta_dir=rules.copy_MAGs.output,
+    output:
+        temp(directory("{sample}/binning/{binner}/GUNC/intermediate_dir/results_gunc_{scatteritem}/")),
+    conda:
+        "%s/gunc.yaml" % CONDAENV
+    params:
+        format=config["GUNC"]["format"],
+    log:
+        "{sample}/binning/{binner}/GUNC/log/run_{scatteritem}.log",
+    threads: 8
+    shell:
+        "mkdir {output} && gunc run --threads {threads} --db_file {input.db} --input_dir {input.fasta_dir}/ "
+        "--file_suffix {params.format} "
+        "--out_dir {output} &> {log}"
+
+
+rule concatenate_gunc:
+    input:
+        gather.split(rules.run_gunc.output),
+    output:
+        "{sample}/binning/{binner}/GUNC/GUNC_output.tsv",
+    run:
+        import pandas as pd
+        GUNC_output = pd.DataFrame()
+        for i in input:
+            glob_argument = f"{i}/*.tsv"
+            for path_to_tsv in glob.glob(glob_argument):
+                tmp_df = pd.read_csv(path_to_tsv, sep="\t")
+                GUNC_output = pd.concat([GUNC_output, tmp_df], ignore_index=True)
+                GUNC_output.to_csv("{sample}/binning/{binner}/GUNC/GUNC_output.tsv", sep="\t")
+
+
 #
