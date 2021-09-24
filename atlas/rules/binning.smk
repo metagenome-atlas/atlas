@@ -381,6 +381,9 @@ rule run_checkm_tree_qa:
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: 1
+    resources:
+        mem=config['simplejob_mem'],
+        time=config["simplejob_time"]
     shell:
         """
         checkm tree_qa \
@@ -463,6 +466,9 @@ rule find_16S:
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: 1
+    resources:
+        mem=config['simplejob_mem'],
+        time=config["simplejob_time"]
     shell:
         """
         rm -r {params.output_dir} && \

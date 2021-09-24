@@ -502,6 +502,7 @@ rule calculate_contigs_stats:
     threads: 1
     resources:
         mem=1,
+        time= config["runtime"]["simplejob"]
     shell:
         "stats.sh in={input} format=3 > {output}"
 
@@ -636,8 +637,8 @@ if config["filter_contigs"]:
             "%s/required_packages.yaml" % CONDAENV
         threads: 1
         resources:
-            mem=config["mem"],
-            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+            mem=config["simplejob_mem"],
+            java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         shell:
             """filterbycoverage.sh in={input.fasta} \
             cov={input.covstats} \
@@ -854,6 +855,9 @@ rule predict_genes:
     benchmark:
         "logs/benchmarks/prodigal/{sample}.txt"
     threads: 1
+    resources:
+        mem=config["simplejob_mem"]
+        time=1
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
