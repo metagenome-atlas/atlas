@@ -365,13 +365,20 @@ onerror:
 
 for r in workflow.rules:
     if not "mem" in r.resources:
-        r.resources["mem"] = config["mem"]
-    r.resources["mem_mb"] = r.resources["mem"] * 1000
+        # jobs with low number of threads are simplejobs
+        if r.threads<= 2:
+            r.resources["mem"]= config["simplejob_mem"]
+        else:
+            r.resources["mem"] = config["mem"]
 
+
+    # add time if ot present. Simple jobs use simple time
     if not "time" in r.resources:
-        if r.resources["mem"] == config["simplejob_mem"]:
+        if r.resources["mem"] =< config["simplejob_mem"]:
             r.resources["time"] = config["runtime"]["simplejob"]
         else:
             r.resources["time"] = config["runtime"]["default"]
 
+    # convert to new units
+    r.resources["mem_mb"] = r.resources["mem"] * 1000
     r.resources["time_min"] = r.resources["time"] * 60
