@@ -370,7 +370,7 @@ for r in workflow.rules:
 
     if not "time" in r.resources:
         if r.resources["mem"] == config["simplejob_mem"]:
-            r.resources["time"] = config["runtime"]["simple_job"]
+            r.resources["time"] = config["runtime"]["simplejob"]
         else:
             r.resources["time"] = config["runtime"]["default"]
 

@@ -486,8 +486,8 @@ rule rename_contigs:
     threads:
         config.get("simplejob_threads", 1)
     resources:
-        mem=config["simple_job_mem"],
-        time=config["runtime"]["simple_job"]
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"]
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 

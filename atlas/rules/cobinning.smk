@@ -133,7 +133,7 @@ rule sort_bam:
     threads: 2
     resources:
         mem=config["simplejob_mem"],
-        time=int(config["runtime"]["simple_job"]),
+        time=int(config["runtime"]["simplejob"]),
     log:
         "logs/cobinning/mapping/{sample}.sortbam.log",
     conda:
