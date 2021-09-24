@@ -366,7 +366,7 @@ onerror:
 for r in workflow.rules:
     if not "mem" in r.resources:
         # jobs with low number of threads are simplejobs
-        if r.threads<= 2:
+        if r.threads <= 2:
             r.resources["mem"]= config["simplejob_mem"]
         else:
             r.resources["mem"] = config["mem"]
@@ -374,7 +374,7 @@ for r in workflow.rules:
 
     # add time if ot present. Simple jobs use simple time
     if not "time" in r.resources:
-        if r.resources["mem"] =< config["simplejob_mem"]:
+        if r.resources["mem"] <= config["simplejob_mem"]:
             r.resources["time"] = config["runtime"]["simplejob"]
         else:
             r.resources["time"] = config["runtime"]["default"]
