@@ -449,6 +449,9 @@ else:
             mem=config["assembly_memory"],
             time=config["runtime"]["assembly"],
         shell:
+            # remove pipeline_state file to create all output files again
+            " rm -f {params.p[outdir]}/pipeline_state/stage_*_copy_files 2> {log} ; "
+            " "
             "spades.py "
             " --threads {threads} "
             " --memory {resources.mem} "
@@ -459,7 +462,7 @@ else:
             " {params.p[inputs]} "
             " {params.p[longreads]} "
             " {params.p[skip_error_correction]} "
-            " > {log} 2>&1 "
+            " >> {log} 2>&1 "
 
     localrules:
         rename_spades_output,
