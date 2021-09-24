@@ -483,6 +483,11 @@ rule rename_contigs:
         "{sample}/assembly/{sample}_prefilter_contigs.fasta",
     conda:
         "%s/required_packages.yaml" % CONDAENV
+    threads:
+        config.get("simplejob_threads", 1)
+    resources:
+        mem=config["simple_job_mem"],
+        time=config["runtime"]["simple_job"]
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
