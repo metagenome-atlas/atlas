@@ -453,8 +453,8 @@ rule predict_genes_genomes:
         "logs/genomes/prodigal/{genome}.txt",
     threads: 1
     resources:
-        mem=config['simplejob_mem'],
-        time=config["simplejob_time"]
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \

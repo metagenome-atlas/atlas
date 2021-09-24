@@ -382,8 +382,8 @@ rule run_checkm_tree_qa:
         "%s/checkm.yaml" % CONDAENV
     threads: 1
     resources:
-        mem=config['simplejob_mem'],
-        time=config["simplejob_time"]
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         checkm tree_qa \
@@ -467,8 +467,8 @@ rule find_16S:
         "%s/checkm.yaml" % CONDAENV
     threads: 1
     resources:
-        mem=config['simplejob_mem'],
-        time=config["simplejob_time"]
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         rm -r {params.output_dir} && \

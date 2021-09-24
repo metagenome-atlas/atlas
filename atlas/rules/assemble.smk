@@ -483,11 +483,10 @@ rule rename_contigs:
         "{sample}/assembly/{sample}_prefilter_contigs.fasta",
     conda:
         "%s/required_packages.yaml" % CONDAENV
-    threads:
-        config.get("simplejob_threads", 1)
+    threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        time=config["runtime"]["simplejob"]
+        time=config["runtime"]["simplejob"],
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
@@ -502,7 +501,7 @@ rule calculate_contigs_stats:
     threads: 1
     resources:
         mem=1,
-        time= config["runtime"]["simplejob"]
+        time=config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 > {output}"
 
@@ -856,8 +855,8 @@ rule predict_genes:
         "logs/benchmarks/prodigal/{sample}.txt"
     threads: 1
     resources:
-        mem=config["simplejob_mem"]
-        time=1
+        mem=config["simplejob_mem"],
+        time=1,
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \

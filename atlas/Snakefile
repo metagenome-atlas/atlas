@@ -367,7 +367,6 @@ for r in workflow.rules:
     if not "mem" in r.resources:
         r.resources["mem"] = config["mem"]
 
-
     # add time if ot present. Simple jobs use simple time
     if not "time" in r.resources:
         if r.resources["mem"] <= config["simplejob_mem"]:

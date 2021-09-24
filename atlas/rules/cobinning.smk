@@ -88,8 +88,8 @@ rule samtools_dict:
     output:
         dict="Cobinning/combined_contigs.dict",
     resources:
-        mem=config['simplejob_mem'],
-        time=config["simplejob_time"]
+        mem=config["simplejob_mem"],
+        ttime=config["runtime"]["simplejob"],
     threads: 1
     log:
         "logs/cobinning/samtools_dict.log",
