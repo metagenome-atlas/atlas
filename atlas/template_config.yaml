@@ -98,6 +98,7 @@ merging_k: 62
 # megahit OR spades
 assembler: spades
 
+minimum_contig_length: 1000
 # Megahit
 #-----------
 # 2 is for metagenomes, 3 for genomes with 30x coverage
@@ -122,8 +123,6 @@ longread_type: none # [none,"pacbio", "nanopore", "sanger", "trusted-contigs", "
 # Preprocessed long reads can be defined in the sample table with 'longreads' , for more info see the spades manual
 
 
-prefilter_minimum_contig_length: 1000
-
 # Filtering
 #------------
 # filter out assembled noise
@@ -135,8 +134,8 @@ contig_trim_bp: 0
 minimum_average_coverage: 1
 minimum_percent_covered_bases: 20
 minimum_mapped_reads: 0
-# after filtering
-minimum_contig_length: 1000
+
+
 
 
 ########################

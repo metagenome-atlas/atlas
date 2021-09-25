@@ -42,8 +42,7 @@ MEGAHIT_MERGE_LEVEL = "20,0.98"
 MEGAHIT_PRUNE_LEVEL = 2
 MEGAHIT_LOW_LOCAL_RATIO = 0.2
 SPADES_K = "auto"
-# basically no filtering after assembly
-PREFILTER_MINIMUM_CONTIG_LENGTH = 200  # 500
+
 # this is bumped up slightly to filter non-merged R1 and R2 sequences
 MINIMUM_CONTIG_LENGTH = 300  # 2200
 
@@ -189,7 +188,6 @@ def make_default_config():
     config["megahit_low_local_ratio"] = MEGAHIT_LOW_LOCAL_RATIO
     config["megahit_preset"] = "default"
     config["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
-    config["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
     config["spades_k"] = SPADES_K
     config["spades_use_scaffolds"] = True
     config["spades_preset"] = "meta"
