@@ -862,7 +862,7 @@ rule predict_genes:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time=config["runtime"]["default"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
