@@ -537,8 +537,7 @@ if not SKIP_QC:
 
     rule qcreads:
         input:
-            unpack(get_ribosomal_rna_input),
-            sample_table_file="samples.tsv",
+            unpack(get_ribosomal_rna_input)
         output:
             expand(
                 "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
@@ -560,7 +559,7 @@ if not SKIP_QC:
                                 shutil.copyfileobj(infile2, outFile)
 
             # append to sample table
-            sample_table = load_sample_table(input.sample_table_file)
+            sample_table = load_sample_table()
             sample_table.loc[
                 wildcards.sample,
                 [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
