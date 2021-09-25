@@ -307,11 +307,8 @@ if config.get("assembler", "megahit") == "megahit":
             k_step=config.get("megahit_k_step", MEGAHIT_K_STEP),
             merge_level=config.get("megahit_merge_level", MEGAHIT_MERGE_LEVEL),
             prune_level=config.get("megahit_prune_level", MEGAHIT_PRUNE_LEVEL),
-            low_local_ratio=config.get(
-                "megahit_low_local_ratio", MEGAHIT_LOW_LOCAL_RATIO
-            ),
-            min_contig_len=config["minimum_contig_length"]
-            ),
+            low_local_ratio=config["megahit_low_local_ratio"],
+            min_contig_len=config["minimum_contig_length"],
             outdir=lambda wc, output: os.path.dirname(output[0]),
             inputs=lambda wc, input: megahit_input_parsing(input),
             preset=assembly_params["megahit"][config["megahit_preset"]],
@@ -490,14 +487,14 @@ rule rename_contigs:
         mem=config["simplejob_mem"],
         time=config["runtime"]["simplejob"],
     log:
-        "{sample}/logs/assembly/post_process/rename_and_filter_size.log"
+        "{sample}/logs/assembly/post_process/rename_and_filter_size.log",
     params:
-        minlength= config['minimum_contig_length']
+        minlength=config["minimum_contig_length"],
     shell:
         "rename.sh "
         " in={input} out={output} ow=t "
         " prefix={wildcards.sample} "
-        " minscaf={params.minlength} &> {log}"
+        " minscaf={params.minlength} &> {log} "
 
 
 rule calculate_contigs_stats:
