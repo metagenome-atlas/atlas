@@ -39,16 +39,18 @@ rule semibin_predict_taxonomy:
     params:
         output_dir="Cobinning/SemiBin/{sample}",
         name=lambda wc, output: os.path.basename(output[0]).replace(".txt", ""),
+        tmp_dir= config['tmpdir']
     shadow:
         "minimal"
     shell:
+        " export TMPDIR={params.tmp_dir} &> {log} ;"
         "SemiBin predict_taxonomy "
         " --input-fasta {input.fasta} "
         " --threads {threads} "
         " --output {params.output_dir} "
         " --cannot-name {params.name} "
         " --reference-db {input.db}/GTDB "
-        " > {log} 2> {log}"
+        " >> {log} 2> {log}"
 
 
 rule semibin_generate_data_multi:
