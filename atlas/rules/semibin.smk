@@ -158,6 +158,7 @@ rule run_semibin:
         " {params.extra} "
         " 2> {log}"
 
+localrules: parse_semibin_output
 
 rule parse_semibin_output:
     input:
