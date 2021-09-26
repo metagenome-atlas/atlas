@@ -4,6 +4,7 @@ channels:
     - pytorch
     - defaults
 dependencies:
+    - python=3.7 # vamb  3.0.1 needs python3.7 I don't know about vamb 3.0.3
     - pytorch
     - pip
     - torchvision
