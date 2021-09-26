@@ -50,7 +50,7 @@ rule semibin_predict_taxonomy:
         " --output {params.output_dir} "
         " --cannot-name {params.name} "
         " --reference-db {input.db}/GTDB "
-        " >> {log} 2> {log}"
+        " &>> {log} "
 
 
 rule semibin_generate_data_multi:
