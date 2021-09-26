@@ -248,7 +248,7 @@ localrules:
 
 
 localrules:
-    get_unique_cluster_attribution,
+    get_unique_cluster_attribution,get_maxbin_cluster_attribution
 
 
 rule get_unique_cluster_attribution:
