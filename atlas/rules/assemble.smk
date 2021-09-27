@@ -474,8 +474,8 @@ else:
             "cp {input} {output}"
 
 
+# standardizes header labels within contig FASTAs
 rule rename_contigs:
-    # standardizes header labels within contig FASTAs
     input:
         "{sample}/assembly/{sample}_raw_contigs.fasta",
     output:
