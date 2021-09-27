@@ -544,6 +544,8 @@ if not SKIP_QC:
                 step=PROCESSED_STEPS[-1],
                 fraction=MULTIFILE_FRACTIONS,
             ),
+        params:
+            sample_table= "samples.tsv"
         threads: 1
         run:
             import shutil
@@ -559,12 +561,12 @@ if not SKIP_QC:
                                 shutil.copyfileobj(infile2, outFile)
 
             # append to sample table
-            sample_table = load_sample_table()
+            sample_table = load_sample_table(params.sample_table_file)
             sample_table.loc[
                 wildcards.sample,
                 [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
             ] = output
-            sample_table.to_csv(input.sample_table_file, sep="\t")
+            sample_table.to_csv(params.sample_table_file, sep="\t")
 
 
 #### STATS
