@@ -401,6 +401,7 @@ rule eggNOG_annotation:
         if [ {params.copyto_shm} == "t" ] ;
         then
             cp {EGGNOG_DIR}/eggnog.db {params.data_dir}/eggnog.db 2> {log}
+            cp {EGGNOG_DIR}/eggnog_proteins.dmnd {params.data_dir}/eggnog_proteins.dmnd 2>> {log}
         fi
 
         emapper.py --annotate_hits_table {input.seed} --no_file_comments \
