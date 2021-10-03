@@ -233,7 +233,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        genome_dir,
+        get_genome_folder,
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta"),
@@ -425,7 +425,7 @@ rule combine_bined_coverages_MAGs:
 
 # rule predict_genes_genomes:
 #     input:
-#         dir=genome_dir
+#         dir=get_genome_folder
 #     output:
 #         directory("genomes/annotations/genes")
 #     conda:
