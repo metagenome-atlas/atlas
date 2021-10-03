@@ -46,14 +46,9 @@ rule DRAM_set_db_loc:
         "DRAM-setup.py import_config --config_loc {input}"
 
 
-def path_to_genome(wildcards):
-
-    genome_dir= get_genome_folder(wildcards)
-    return "{genome_dir}/{genome}.fasta".format(genome_dir= genome_dir, genome= wildcards.genome)
-
 rule DRAM_annotate:
     input:
-        fasta=path_to_genome,
+        fasta=get_a_genome,
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag=rules.DRAM_set_db_loc.output,

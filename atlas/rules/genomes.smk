@@ -177,6 +177,17 @@ def get_genome_folder(wildcards):
 
     return genome_dir
 
+def get_a_genome(wildcards):
+
+    genome_dir= get_genome_folder(wildcards)
+    path_to_genome = "{genome_dir}/{genome}.fasta".format(genome_dir= genome_dir, genome= wildcards.genome)
+
+    assert os.path.isfile(path_to_genome), f"path should be a fasta file: {path_to_genome}"
+    assert os.path.exists(path_to_genome), f"File should exist: {path_to_genome}"
+
+
+    return path_to_genome
+
 
 def get_genomes_(wildcards):
 
@@ -442,7 +453,7 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        "genomes/genomes/{genome}.fasta",
+        get_a_genome,
     output:
         fna="genomes/annotations/genes/{genome}.fna",
         faa="genomes/annotations/genes/{genome}.faa",
