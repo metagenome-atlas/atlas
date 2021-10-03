@@ -48,7 +48,7 @@ rule DRAM_set_db_loc:
 
 rule DRAM_annotate:
     input:
-        fasta=get_a_genome,
+        fasta="genomes/genomes/{genome}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag=rules.DRAM_set_db_loc.output,

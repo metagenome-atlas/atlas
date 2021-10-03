@@ -164,34 +164,10 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-def get_genome_folder(wildcards):
-
-    if "genome_dir" in config:
-
-        genome_dir = config["genome_folder"]
-
-        assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
-
-    else:
-        genome_dir = checkpoints.rename_genomes.get().output.dir
-
-    return genome_dir
-
-def get_a_genome(wildcards):
-
-    genome_dir= get_genome_folder(wildcards)
-    path_to_genome = "{genome_dir}/{genome}.fasta".format(genome_dir= genome_dir, genome= wildcards.genome)
-
-    assert os.path.isfile(path_to_genome), f"path should be a fasta file: {path_to_genome}"
-    assert os.path.exists(path_to_genome), f"File should exist: {path_to_genome}"
-
-
-    return path_to_genome
-
 
 def get_genomes_(wildcards):
 
-    genome_dir = get_genome_folder(wildcards)
+    genome_dir = checkpoints.rename_genomes.get().output.dir
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
@@ -209,7 +185,7 @@ def get_genomes_(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir=get_genome_folder,
+        dir="genomes/genomes",
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
@@ -244,7 +220,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        get_genome_folder,
+        "genomes/genomes",
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta"),
@@ -436,7 +412,7 @@ rule combine_bined_coverages_MAGs:
 
 # rule predict_genes_genomes:
 #     input:
-#         dir=get_genome_folder
+#         dir="genomes/genomes"
 #     output:
 #         directory("genomes/annotations/genes")
 #     conda:
@@ -453,7 +429,7 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        get_a_genome,
+        "genomes/genomes/{genome}.fasta",
     output:
         fna="genomes/annotations/genes/{genome}.fna",
         faa="genomes/annotations/genes/{genome}.faa",
