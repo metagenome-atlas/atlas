@@ -61,7 +61,7 @@ rule DRAM_annotate:
     conda:
         "../envs/dram.yaml"
     params:
-        gtdb_file="gtdbtk.bac120.summary.tsv",
+        extra = config.get("dram_extra","")
     log:
         "log/dram/run_dram/{genome}.log",
     benchmark:
@@ -71,6 +71,7 @@ rule DRAM_annotate:
         " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
         " --threads {threads} "
+        " {params.extra} "
         " --verbose &> {log}"
         #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
         #" --checkm_quality {input.checkm} "
