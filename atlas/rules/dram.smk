@@ -70,9 +70,6 @@ rule DRAM_annotate:
         " DRAM.py annotate "
         " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
-        " --prodigal_mode single "
-
-
         " --threads {threads} "
         " --verbose &> {log}"
         #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
