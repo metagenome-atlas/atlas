@@ -53,7 +53,7 @@ rule DRAM_annotate:
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag=rules.DRAM_set_db_loc.output,
     output:
-        outdir=directory("annotations/dram/intermediate_files/{genome}"),
+        outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["threads"]
     resources:
         mem=config["simplejob_mem"],
@@ -98,7 +98,7 @@ rule concat_annotations:
     input:
         get_all_dram,
     output:
-        expand("annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
+        expand("genomes/annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
     resources:
         time=config["runtime"]["default"],
     #     mem = config['mem']
@@ -127,7 +127,7 @@ rule DRAM_destill:
         rules.concat_annotations.output,
         flag=rules.DRAM_set_db_loc.output,
     output:
-        outdir=directory("annotations/dram/distil"),
+        outdir=directory("genomes/annotations/dram/distil"),
     threads: 1
     resources:
         mem=config["simplejob_mem"],
@@ -147,9 +147,9 @@ rule DRAM_destill:
 
 rule get_all_modules:
     input:
-        "annotations/dram/annotations.tsv",
+        "genomes/annotations/dram/annotations.tsv",
     output:
-        "annotations/dram/kegg_modules.tsv",
+        "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1
     resources:
         mem=config["simplejob_mem"],
@@ -164,5 +164,5 @@ rule get_all_modules:
 
 rule dram:
     input:
-        "annotations/dram/distil",
-        "annotations/dram/kegg_modules.tsv",
+        "genomes/annotations/dram/distil",
+        "genomes/annotations/dram/kegg_modules.tsv",

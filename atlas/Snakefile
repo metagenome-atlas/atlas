@@ -269,8 +269,8 @@ def get_genome_annotations():
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
         "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
         "genes": "genomes/annotations/genes/predicted",
-        "kegg_modules": "annotations/dram/kegg_modules.tsv",
-        "dram": "annotations/dram/distil",
+        "kegg_modules": "genomes/annotations/dram/kegg_modules.tsv",
+        "dram": "genomes/annotations/dram/distil",
     }
 
     annotations_requested = config["annotations"]
