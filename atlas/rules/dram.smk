@@ -81,8 +81,7 @@ rule DRAM_annotate:
 
 def get_all_dram(wildcards):
 
-    if genome_dir == "genomes/genomes":
-        checkpoints.rename_genomes.get()  # test if checkpoint passed
+    genome_dir = get_genome_folder(wildcards)
 
     all_genomes = glob_wildcards(f"{genome_dir}/{{i}}.fasta").i
 
@@ -91,10 +90,11 @@ def get_all_dram(wildcards):
 
 DRAM_ANNOTATON_FILES = ["annotations.tsv", "rrnas.tsv", "trnas.tsv"]
 
+DRAM_ANNOTATON_FILES = ["annotations.tsv", "rrnas.tsv", "trnas.tsv"]
+
 
 localrules:
     concat_annotations,
-
 
 rule concat_annotations:
     input:
@@ -132,8 +132,8 @@ rule DRAM_destill:
         outdir=directory("annotations/dram/distil"),
     threads: 1
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["default"],
+        mem=config["simplejob_mem"],
+        ttime=config["runtime"]["simplejob"],
     conda:
         "../envs/dram.yaml"
     log:

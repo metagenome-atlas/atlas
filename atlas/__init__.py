@@ -1,4 +1,4 @@
-__version__ = "2.6a4"
+__version__ = "2.8.0"
 
 from .scripts import utils
 

@@ -17,7 +17,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
-    logger.error(
+    logging.error(
         "".join(
             [
                 "Uncaught exception: ",
@@ -34,7 +34,7 @@ sys.excepthook = handle_exception
 import pandas as pd
 
 annotation_file = snakemake.input[0]
-mouse_output_table = snakemake.output[0]
+module_output_table = snakemake.output[0]
 
 from mag_annotator.utils import get_database_locs
 from mag_annotator.summarize_genomes import build_module_net, make_module_coverage_frame
@@ -57,4 +57,4 @@ module_coverage_frame = make_module_coverage_frame(
     annotations, all_module_nets, groupby_column="fasta"
 )
 
-module_coverage_frame.to_csv(mouse_output_table, sep="\t")
+module_coverage_frame.to_csv(module_output_table, sep="\t")

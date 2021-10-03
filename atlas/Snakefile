@@ -220,7 +220,9 @@ include: "rules/assemble.smk"
 include: "rules/binning.smk"
 include: "rules/genomes.smk"
 include: "rules/genecatalog.smk"
+include: "rules/sra.smk"
 include: "rules/gtdbtk.smk"
+include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 
 
@@ -250,7 +252,7 @@ rule genecatalog:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/clustering/orf2gene.tsv.gz",
-        #"Genecatalog/counts/median_coverage.tsv.gz",
+        "Genecatalog/counts/median_coverage.tsv.gz",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
         "Genecatalog/annotations/eggNog.tsv.gz",
     output:
@@ -265,8 +267,10 @@ def get_genome_annotations():
         "checkm_taxonomy": "genomes/checkm/taxonomy.tsv",
         "checkm_tree": "genomes/tree/checkm.nwk",
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
-        "gtdb_taxonomy": "genomes/taxonomy/gtdb/classify",
+        "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
         "genes": "genomes/annotations/genes/predicted",
+        "kegg_modules": "annotations/dram/kegg_modules.tsv",
+        "dram": "annotations/dram/distil",
     }
 
     annotations_requested = config["annotations"]
@@ -362,10 +366,14 @@ onerror:
 for r in workflow.rules:
     if not "mem" in r.resources:
         r.resources["mem"] = config["mem"]
-    r.resources["mem_mb"] = r.resources["mem"] * 1000
 
+    # add time if ot present. Simple jobs use simple time
     if not "time" in r.resources:
-        if r.resources["mem"] == config["simplejob_mem"]:
-            r.resources["time"] = config["runtime"]["simple_job"]
+        if r.resources["mem"] <= config["simplejob_mem"]:
+            r.resources["time"] = config["runtime"]["simplejob"]
         else:
             r.resources["time"] = config["runtime"]["default"]
+
+    # convert to new units
+    r.resources["mem_mb"] = r.resources["mem"] * 1000
+    r.resources["time_min"] = r.resources["time"] * 60

@@ -1,10 +1,3 @@
-if "genome_dir" in config:
-    genome_dir = config["genome_dir"]
-    assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
-else:
-    genome_dir = "genomes/genomes"
-
-
 ## dRep
 localrules:
     get_all_bins,
@@ -18,8 +11,6 @@ rule get_all_bins:
             sample=SAMPLES,
             binner=config["final_binner"],
         ),
-        #cluster_attribution=expand("{sample}/binning/{binner}/cluster_attribution.tsv",
-        #       sample= SAMPLES, binner= config['final_binner'])
     output:
         temp(directory("genomes/all_bins")),
     run:
@@ -173,11 +164,23 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
+def get_genome_folder(wildcards):
+
+    if "genome_dir" in config:
+
+        genome_dir = config["genome_folder"]
+
+        assert os.path.exists(genome_dir), f"genome_dir ({genome_dir}) doesn't exist"
+
+    else:
+        genome_dir = checkpoints.rename_genomes.get().output.dir
+
+    return genome_dir
+
+
 def get_genomes_(wildcards):
 
-    if genome_dir == "genomes/genomes":
-        checkpoints.rename_genomes.get()  # test if checkpoint passed
-
+    genome_dir = get_genome_folder(wildcards)
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
@@ -195,7 +198,7 @@ def get_genomes_(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir=genome_dir,
+        dir=get_genome_folder,
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
@@ -451,6 +454,7 @@ rule predict_genes_genomes:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \

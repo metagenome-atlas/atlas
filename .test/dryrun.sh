@@ -29,7 +29,7 @@ atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
 #
 # done
 #
-atlas run -w $WD --dryrun $@
+atlas run all -w $WD --dryrun $@
 #
 
 # # skip QC

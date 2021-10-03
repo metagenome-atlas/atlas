@@ -28,7 +28,7 @@ DUPLICATES_ALLOW_SUBSTITUTIONS = 2
 NORMALIZATION_KMER_LENGTH = 21
 
 # almost no filtering unless grossly over-represented
-NORMALIZATION_TARGET_DEPTH = 10000  # 500
+NORMALIZATION_TARGET_DEPTH = 1000  # 500
 # allow very low represented kmers to remain
 NORMALIZATION_MINIMUM_KMERS = 3  # 15
 
@@ -42,8 +42,7 @@ MEGAHIT_MERGE_LEVEL = "20,0.98"
 MEGAHIT_PRUNE_LEVEL = 2
 MEGAHIT_LOW_LOCAL_RATIO = 0.2
 SPADES_K = "auto"
-# basically no filtering after assembly
-PREFILTER_MINIMUM_CONTIG_LENGTH = 200  # 500
+
 # this is bumped up slightly to filter non-merged R1 and R2 sequences
 MINIMUM_CONTIG_LENGTH = 300  # 2200
 
@@ -119,95 +118,102 @@ EGGNOG_HEADER = [
 def make_default_config():
     """generates a dict with all the default values, if they exist"""
 
-    conf = {}
-    conf["data_type"] = "metagenome"
-    conf["interleaved_fastqs"] = False
-    conf["tmpdir"] = tempfile.gettempdir()
-    conf["threads"] = 6
+    config = {}
+    config["data_type"] = "metagenome"
+    config["interleaved_fastqs"] = False
+    config["tmpdir"] = tempfile.gettempdir()
+    config["threads"] = 6
 
-    conf["simplejob_mem"] = 10
-    conf["simplejob_threads"] = 4
-    conf[
+    config["simplejob_mem"] = 10
+    config["simplejob_threads"] = 4
+    config[
         "importqc_params"
     ] = "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
 
-    conf["mem"] = MEM
-    conf["large_mem"] = 250
-    conf["large_threads"] = 16
-    conf["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
-    conf["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
-    conf["preprocess_allowable_kmer_mismatches"] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
-    conf[
+    config["mem"] = MEM
+    config["large_mem"] = 250
+    config["large_threads"] = 16
+    config["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
+    config["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
+    config[
+        "preprocess_allowable_kmer_mismatches"
+    ] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
+    config[
         "preprocess_reference_kmer_match_length"
     ] = PREPROCESS_REFERENCE_KMER_MATCH_LENGTH
-    conf[
+    config[
         "preprocess_minimum_passing_read_length"
     ] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
-    conf["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
+    config["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
 
-    conf["deduplicate"] = True
-    conf["error_correction_overlapping_pairs"] = True
+    config["deduplicate"] = True
+    config["error_correction_overlapping_pairs"] = True
 
-    conf["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
-    conf["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
-    conf["contaminant_kmer_length"] = CONTAMINANT_KMER_LENGTH
-    conf["contaminant_minimum_hits"] = CONTAMINANT_MINIMUM_HITS
-    conf["contaminant_ambiguous"] = CONTAMINANT_AMBIGUOUS
+    config["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
+    config["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
+    config["contaminant_kmer_length"] = CONTAMINANT_KMER_LENGTH
+    config["contaminant_minimum_hits"] = CONTAMINANT_MINIMUM_HITS
+    config["contaminant_ambiguous"] = CONTAMINANT_AMBIGUOUS
 
-    conf["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
-    conf["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
+    config["duplicates_only_optical"] = DUPLICATES_ONLY_OPTICAL
+    config["duplicates_allow_substitutions"] = DUPLICATES_ALLOW_SUBSTITUTIONS
 
-    conf["normalize_reads_before_assembly"] = False
-    conf["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
-    conf["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
-    conf["normalization_minimum_kmers"] = NORMALIZATION_MINIMUM_KMERS
+    config["normalize_reads_before_assembly"] = False
+    config["normalization_kmer_length"] = NORMALIZATION_KMER_LENGTH
+    config["normalization_target_depth"] = NORMALIZATION_TARGET_DEPTH
+    config["normalization_minimum_kmer_depth"] = 5
 
-    conf["error_correction_before_assembly"] = True
+    config["error_correction_before_assembly"] = True
+    config["error_correction_remove_lowdepth"] = False
+    config["error_correction_kmer"] = 31
+    config["error_correction_lowdepth_fraction"] = 0.5
+    config["error_correction_minimum_kmer_depth"] = 1
+    config["error_correction_aggressive"] = False
+    config["error_correction_minprob"] = 0.5  # for memory issues only , I think
 
-    conf["merge_pairs_before_assembly"] = True
-    conf["merging_k"] = MERGING_K
-    conf["merging_extend2"] = MERGING_EXTEND2
-    conf["merging_flags"] = MERGING_FLAGS
+    config["merge_pairs_before_assembly"] = True
+    config["merging_k"] = MERGING_K
+    config["merging_extend2"] = MERGING_EXTEND2
+    config["merging_flags"] = MERGING_FLAGS
 
-    conf["assembler"] = "spades"
-    conf["assembly_memory"] = ASSEMBLY_MEMORY
-    conf["assembly_threads"] = ASSEMBLY_THREADS
-    conf["megahit_min_count"] = MEGAHIT_MIN_COUNT
-    conf["megahit_k_min"] = MEGAHIT_K_MIN
-    conf["megahit_k_max"] = MEGAHIT_K_MAX
-    conf["megahit_k_step"] = MEGAHIT_K_STEP
-    conf["megahit_merge_level"] = MEGAHIT_MERGE_LEVEL
-    conf["megahit_prune_level"] = MEGAHIT_PRUNE_LEVEL
-    conf["megahit_low_local_ratio"] = MEGAHIT_LOW_LOCAL_RATIO
-    conf["megahit_preset"] = "default"
-    conf["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
-    conf["prefilter_minimum_contig_length"] = PREFILTER_MINIMUM_CONTIG_LENGTH
-    conf["spades_k"] = SPADES_K
-    conf["spades_use_scaffolds"] = True
-    conf["spades_preset"] = "meta"
-    conf["spades_extra"] = ""
-    conf["spades_skip_BayesHammer"] = False
-    conf["longread_type"] = None
-    conf["filter_contigs"] = True
-    conf["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
-    conf["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
-    conf["minimum_mapped_reads"] = MINIMUM_MAPPED_READS
-    conf["contig_trim_bp"] = CONTIG_TRIM_BP
+    config["assembler"] = "spades"
+    config["assembly_memory"] = ASSEMBLY_MEMORY
+    config["assembly_threads"] = ASSEMBLY_THREADS
+    config["megahit_min_count"] = MEGAHIT_MIN_COUNT
+    config["megahit_k_min"] = MEGAHIT_K_MIN
+    config["megahit_k_max"] = MEGAHIT_K_MAX
+    config["megahit_k_step"] = MEGAHIT_K_STEP
+    config["megahit_merge_level"] = MEGAHIT_MERGE_LEVEL
+    config["megahit_prune_level"] = MEGAHIT_PRUNE_LEVEL
+    config["megahit_low_local_ratio"] = MEGAHIT_LOW_LOCAL_RATIO
+    config["megahit_preset"] = "default"
+    config["minimum_contig_length"] = MINIMUM_CONTIG_LENGTH
+    config["spades_k"] = SPADES_K
+    config["spades_use_scaffolds"] = True
+    config["spades_preset"] = "meta"
+    config["spades_extra"] = ""
+    config["spades_skip_BayesHammer"] = False
+    config["longread_type"] = None
+    config["filter_contigs"] = True
+    config["minimum_average_coverage"] = MINIMUM_AVERAGE_COVERAGE
+    config["minimum_percent_covered_bases"] = MINIMUM_PERCENT_COVERED_BASES
+    config["minimum_mapped_reads"] = MINIMUM_MAPPED_READS
+    config["contig_trim_bp"] = CONTIG_TRIM_BP
 
-    # conf["translation_table"] = 11
+    # config["translation_table"] = 11
 
     # map reads to contigs and to genes
-    conf["minimum_region_overlap"] = MINIMUM_REGION_OVERLAP
-    conf["feature_counts_allow_overlap"] = FEATURE_COUNTS_ALLOW_OVERLAP
-    conf["contig_count_multi_mapped_reads"] = CONTIG_COUNT_MULTI_MAPPED_READS
-    conf["contig_min_id"] = CONTIG_MIN_ID
-    conf["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
-    conf["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
+    config["minimum_region_overlap"] = MINIMUM_REGION_OVERLAP
+    config["feature_counts_allow_overlap"] = FEATURE_COUNTS_ALLOW_OVERLAP
+    config["contig_count_multi_mapped_reads"] = CONTIG_COUNT_MULTI_MAPPED_READS
+    config["contig_min_id"] = CONTIG_MIN_ID
+    config["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
+    config["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
 
-    conf["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
+    config["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     # gene cluster
-    conf["genecatalog"] = {
+    config["genecatalog"] = {
         "source": "genomes",
         "clustermethod": "linclust",
         "minlength": 100,
@@ -217,41 +223,46 @@ def make_default_config():
         "SubsetSize": 500000,
     }
 
-    conf["eggNOG_use_virtual_disk"] = False
-    conf["virtual_disk"] = "/dev/shm"
+    config["eggNOG_use_virtual_disk"] = False
+    config["virtual_disk"] = "/dev/shm"
 
     # binning
-    conf["perform_genome_binning"] = True
+    config["perform_genome_binning"] = True
 
-    conf["final_binner"] = "DASTool"
-    conf["binner"] = ["metabat", "maxbin"]
+    config["final_binner"] = "DASTool"
+    config["binner"] = ["metabat", "maxbin"]
 
-    conf["metabat"] = {"sensitivity": "sensitive", "min_contig_length": 1500}
+    config["metabat"] = {"sensitivity": "sensitive", "min_contig_length": 1500}
 
-    conf["concoct"] = {
+    config["concoct"] = {
         "Nexpected_clusters": 200,  # important parameter
         "read_length": 100,  # change this parameter !
         "Niterations": 500,
         "min_contig_length": 1000,
     }
 
-    conf["maxbin"] = {
+    config["maxbin"] = {
         "max_iteration": MAXBIN_MAX_ITERATION,
         "prob_threshold": MAXBIN_PROB_THRESHOLD,
         "min_contig_length": MAXBIN_MIN_CONTIG_LENGTH,
     }
 
-    conf["DASTool"] = {
+    config["DASTool"] = {
         "search_engine": "diamond",
         "score_threshold": 0.5,
         "duplicate_penalty": 0.6,
         "megabin_penalty": 0.5,
     }
 
-    conf["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
-    conf["rename_mags_contigs"] = True
+    config["cobining_min_contig_length"] = 2000
+    config["cobining_min_bin_size"] = 200 * 1000
+    config["semibin_options"] = " --recluster --max-node 1 --max-edges 200 "
+    config["cobinning_separator"] = ":"
 
-    conf["genome_dereplication"] = dict(
+    config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
+    config["rename_mags_contigs"] = True
+
+    config["genome_dereplication"] = dict(
         filter=dict(noFilter=False, length=5000, completeness=50, contamination=10),
         score=dict(
             completeness=1,
@@ -266,22 +277,22 @@ def make_default_config():
         opt_parameters="",
     )
 
-    conf["cat_range"] = 5
-    conf["cat_fraction"] = 0.3
+    config["cat_range"] = 5
+    config["cat_fraction"] = 0.3
 
-    conf["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simple_job": 1}
+    config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simplejob": 1}
 
-    # conf["diamond_run_mode"] = "fast"
-    # conf["diamond_top_seqs"] = DIAMOND_TOP_SEQS
-    # conf["diamond_e_value"] = DIAMOND_E_VALUE
-    # conf["diamond_min_identity"] = DIAMOND_MIN_IDENTITY
-    # conf["diamond_query_coverage"] = DIAMOND_QUERY_COVERAGE
-    # conf["diamond_gap_open"] = DIAMOND_GAP_OPEN
-    # conf["diamond_gap_extend"] = DIAMOND_GAP_EXTEND
-    # conf["diamond_block_size"] = DIAMOND_BLOCK_SIZE
-    # conf["diamond_index_chunks"] = DIAMOND_INDEX_CHUNKS
-    # conf["summary_method"] = SUMMARY_METHOD
-    # conf["aggregation_method"] = AGGREGATION_METHOD
-    # conf["majority_threshold"] = MAJORITY_THRESHOLD
+    # config["diamond_run_mode"] = "fast"
+    # config["diamond_top_seqs"] = DIAMOND_TOP_SEQS
+    # config["diamond_e_value"] = DIAMOND_E_VALUE
+    # config["diamond_min_identity"] = DIAMOND_MIN_IDENTITY
+    # config["diamond_query_coverage"] = DIAMOND_QUERY_COVERAGE
+    # config["diamond_gap_open"] = DIAMOND_GAP_OPEN
+    # config["diamond_gap_extend"] = DIAMOND_GAP_EXTEND
+    # config["diamond_block_size"] = DIAMOND_BLOCK_SIZE
+    # config["diamond_index_chunks"] = DIAMOND_INDEX_CHUNKS
+    # config["summary_method"] = SUMMARY_METHOD
+    # config["aggregation_method"] = AGGREGATION_METHOD
+    # config["majority_threshold"] = MAJORITY_THRESHOLD
 
-    return conf
+    return config

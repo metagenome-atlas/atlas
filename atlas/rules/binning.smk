@@ -248,7 +248,7 @@ localrules:
 
 
 localrules:
-    get_unique_cluster_attribution,
+    get_unique_cluster_attribution,get_maxbin_cluster_attribution
 
 
 rule get_unique_cluster_attribution:
@@ -284,15 +284,14 @@ rule get_unique_cluster_attribution:
         new_d = d.map(map_cluster_ids)
         new_d.dropna(inplace=True)
         if new_d.shape[0] == 0:
-            logger.error(
+
+            logger.warning(
                 f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
-                "This will break the continuationof the pipeline. "
-                "Check what happened. Maybe the the assembly is too small. "
-                "You can either remove the binner (for all samples) from the config.yaml file or the sample from the sample.tsv"
+                "I add longest contig to make the pipline continue"
             )
-            raise Exception(
-                "No bins detected with binner {wildcards.binner} in sample {wildcards.sample}."
-            )
+
+            new_d[f"{wildcards.sample}_0"] = "{sample}_{binner}_1".format(**wildcards)
+
         new_d.to_csv(output[0], sep="\t", header=False)
 
 
@@ -382,6 +381,9 @@ rule run_checkm_tree_qa:
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         checkm tree_qa \
@@ -464,6 +466,9 @@ rule find_16S:
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """
         rm -r {params.output_dir} && \
@@ -543,7 +548,7 @@ rule build_bin_report:
     log:
         "logs/binning/report_{binner}.log",
     script:
-        "../report/dummy_report.py"  #"../report/bin_report.py"
+        "../report/bin_report.py"
 
 
 localrules:
