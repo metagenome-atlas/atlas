@@ -28,9 +28,9 @@ def tax2table(Taxonomy_Series, split_character=";", remove_prefix=False):
     Tax.columns = TAXONMIC_LEVELS[: len(Tax.columns)]
 
     if remove_prefix:
-        Tax = Tax.applymap(lambda s: s[3:], na_action='ignore').replace("", np.nan)
+        Tax = Tax.applymap(lambda s: s[3:], na_action="ignore").replace("", np.nan)
     else:
-        Tax[Tax.applymap(len, na_action='ignore') == 3] = np.nan
+        Tax[Tax.applymap(len, na_action="ignore") == 3] = np.nan
 
     return Tax
 
