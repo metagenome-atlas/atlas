@@ -164,7 +164,6 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-
 def get_genomes_(wildcards):
 
     genome_dir = checkpoints.rename_genomes.get().output.dir

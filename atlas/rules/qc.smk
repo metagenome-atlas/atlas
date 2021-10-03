@@ -537,7 +537,7 @@ if not SKIP_QC:
 
     rule qcreads:
         input:
-            unpack(get_ribosomal_rna_input)
+            unpack(get_ribosomal_rna_input),
         output:
             expand(
                 "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
@@ -545,7 +545,7 @@ if not SKIP_QC:
                 fraction=MULTIFILE_FRACTIONS,
             ),
         params:
-            sample_table= "samples.tsv"
+            sample_table="samples.tsv",
         threads: 1
         run:
             import shutil

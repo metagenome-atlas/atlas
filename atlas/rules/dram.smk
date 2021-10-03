@@ -61,7 +61,7 @@ rule DRAM_annotate:
     conda:
         "../envs/dram.yaml"
     params:
-        extra = config.get("dram_extra","")
+        extra=config.get("dram_extra", ""),
     log:
         "log/dram/run_dram/{genome}.log",
     benchmark:
@@ -91,6 +91,7 @@ DRAM_ANNOTATON_FILES = ["annotations.tsv", "rrnas.tsv", "trnas.tsv"]
 
 localrules:
     concat_annotations,
+
 
 rule concat_annotations:
     input:

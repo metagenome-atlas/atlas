@@ -210,7 +210,9 @@ rule run_vamb:
 vamb_cluster_attribution_path = "{sample}/binning/vamb/cluster_attribution.tsv"
 
 
-localrules: parse_vamb_output
+localrules:
+    parse_vamb_output,
+
 
 rule parse_vamb_output:
     input:
