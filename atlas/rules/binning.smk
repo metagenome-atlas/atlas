@@ -348,7 +348,7 @@ rule run_checkm_lineage_wf:
         "{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
     params:
         output_dir=lambda wc, output: os.path.dirname(output[0]),
-        tmpdir= config['tmpdir']
+        tmpdir=config["tmpdir"],
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: config.get("threads", 1)

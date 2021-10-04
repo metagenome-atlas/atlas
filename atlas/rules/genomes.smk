@@ -190,7 +190,7 @@ rule run_all_checkm_lineage_wf:
         "genomes/checkm/storage/tree/concatenated.fasta",
     params:
         output_dir=lambda wc, output: os.path.dirname(output[0]),
-        tmpdir= config['tmpdir']
+        tmpdir=config["tmpdir"],
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: config.get("threads", 1)
