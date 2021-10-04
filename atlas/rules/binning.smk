@@ -364,7 +364,7 @@ rule run_checkm_lineage_wf:
         rm -r {params.output_dir}
         checkm lineage_wf \
             --file {params.output_dir}/completeness.tsv \
-            --tmpdir {parms.tmpdir} \
+            --tmpdir {params.tmpdir} \
             --tab_table \
             --quiet \
             --extension fasta \

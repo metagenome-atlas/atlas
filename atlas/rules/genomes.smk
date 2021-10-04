@@ -205,7 +205,7 @@ rule run_all_checkm_lineage_wf:
         """
         rm -r {params.output_dir}
         checkm lineage_wf \
-            --tmpdir {parms.tmpdir} \
+            --tmpdir {params.tmpdir} \
             --file {params.output_dir}/completeness.tsv \
             --tab_table \
             --quiet \
