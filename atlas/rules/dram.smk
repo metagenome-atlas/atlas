@@ -38,7 +38,7 @@ rule DRAM_set_db_loc:
     input:
         get_dram_config,
     output:
-        touch(f"{DBDIR}/Dram/dram_config_imported"),
+        touch(f"{DBDIR}/dram_config_imported"),
     threads: 1
     conda:
         "../envs/dram.yaml"
