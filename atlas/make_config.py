@@ -272,7 +272,7 @@ def make_config(
             yaml.dump(conf, f)
         logger.info(
             "Configuration file written to %s\n"
-            "You may want to edit it using any text editor." % config
+            "        You may want to edit it using any text editor." % config
         )
 
 

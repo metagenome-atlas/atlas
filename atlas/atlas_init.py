@@ -1,20 +1,5 @@
 import os, sys
 from .color_logger import logger
-
-# logger = logging.getLogger(__file__)
-# from .color_logger import ColorFormatter
-#
-# # creat console logging
-# consoleHandler = logging.StreamHandler()
-# consoleHandler.setLevel(logging.INFO)
-# consoleHandler.setFormatter(ColorFormatter("%(levelname)s: %(message)s"))
-# logger.addHandler(consoleHandler)
-#
-#
-
-
-
-
 import multiprocessing
 import tempfile
 from snakemake import utils
@@ -26,7 +11,7 @@ import click
 
 from .make_config import make_config, validate_config
 from .create_sample_table import get_samples_from_fastq,simplify_sample_names
-from .sample_table import validate_sample_table, load_sample_table
+from .sample_table import validate_sample_table, load_sample_table,ADDITIONAL_SAMPLEFILE_HEADERS
 
 # default globals
 ADAPTERS = "adapters.fa"
