@@ -6,12 +6,19 @@ import multiprocessing
 import subprocess
 import click
 
-from atlas import __version__
+
 from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
 from .atlas_init import run_init, run_init_sra
 
+# get version
 
+def get_version():
+    try:
+        import pkg_resources
+        return pkg_resources.require("metagenome-atlas")[0].version
+    except :
+        return "Error in finding version"
 
 
 
@@ -19,7 +26,7 @@ from .atlas_init import run_init, run_init_sra
 ##
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option(__version__)
+@click.version_option(get_version())
 @click.pass_context
 def cli(obj):
     """ATLAS - workflows for assembly, annotation, and genomic binning of
@@ -104,6 +111,8 @@ def run_workflow(
 
     For more details, see: https://metagenome-atlas.readthedocs.io
     """
+
+    logger.info(f"Atlas version: {get_version()}")
 
     if config_file is None:
         config_file = os.path.join(working_dir, "config.yaml")

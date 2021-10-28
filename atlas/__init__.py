@@ -1,5 +1,3 @@
-__version__ = "2.8.0"
-
 import os,sys
 sys.path.append(os.path.join(os.path.dirname(__file__),"workflow","scripts"))
 
