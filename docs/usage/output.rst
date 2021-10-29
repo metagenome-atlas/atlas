@@ -131,8 +131,8 @@ The ``genes`` option produces predicted genes and translated protein sequences w
 
 
 
-Taxonomic adnnotation
-``````````````````````
+**Taxonomic adnnotation**
+
 
 A taxonomy for the genomes is proposed by the Genome [Taxonomy database](https://gtdb.ecogenomic.org/) (GTDB).
 The results can be found in ``genomes/taxonomy``.
@@ -141,8 +141,8 @@ The genomes are placed in a phylogenetic tree separately for bacteria and archae
 In addition a tree for bacteria and archaea can be generated based on the checkm markers.
 All trees are properly rooted using the midpoint. The files can be found in ``genomes/tree``
 
-Functional annotation
-``````````````````````
+**Functional annotation**
+
 Sicne version 2.8, We use [**DRAM**](https://github.com/shafferm/DRAM) to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
 
 The Functional annotations for each genome can be found in ``genomes/annotations/dram/``

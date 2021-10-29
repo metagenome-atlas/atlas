@@ -238,8 +238,8 @@ We recommend you keep the default name ``cluster``. The profile was tested on ``
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
 
-Specify queues and accounts
-```````````````````````````
+**Specify queues and accounts**
+
 
 If you have different **queues/partitions** on your cluster system you should tell atlas about them so it can *automatically choose the best queue*. Adaot the template for the queues.tsv::
 
@@ -315,5 +315,5 @@ For instance the ``--profile`` used for cluster execution. Other handy snakemake
 
  ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
 
- 
+
 For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.
