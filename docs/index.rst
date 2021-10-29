@@ -10,12 +10,9 @@
     :target: https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd
 
 
-.. |logo| image:: ../resources/images/ATLAS_image.png
+.. |logo| image:: ../resources/images/atlas_image.png
   :alt: Metagenome-atlas logo
 
-
-.. |scheme| image:: ../resources/images/ATLAS_list.png
-  :alt: Atlas is a workflow for assembly and binning of metagenomic reads
 
 
 
