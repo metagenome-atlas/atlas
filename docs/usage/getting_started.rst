@@ -101,10 +101,13 @@ Let's apply atlas on your data or on our `example data`_::
 
   atlas init --db-dir databases path/to/fastq_files
 
-This command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
+This command parses the folder for fastq files (extension ``.fastq(.gz)`` or ``.fq(.gz)`` , gzipped or not). fastq files can be arranged in subfolders, in which case the subfolder name will be used as a sample name. If you have paired-end reads the files are usually distinguishable by ``_R1/_R2`` or simple ``_1/_2`` in the file names. Atlas searches for these patterns and lists the paired-end files for each sample.
 
-Have a look at them with a normal text editor and check if the samples names are inferred correctly.
-Samples should be alphanumeric names and cam be dash delimited. Underscores should be fine too.
+The command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
+
+Have a look at them with a normal text editor and check if the samples names are inferred correctly. The sample names are used for the naming of contigs, genes, and genomes. Therefore, the sample names should consist only form digits and letters and start with a letter (Even though one ``-`` is allowed). Atlas tries to simplify the file name to obtain unique sample names, if it doesn't succeed it simply puts S1, S2, ... as sample names.
+
+
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 The ``BinGroup`` parameter is used during the genomic binning.
@@ -193,7 +196,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     --profile TEXT          snakemake profile e.g. for cluster execution.
     -n, --dryrun            Test execution.  [default: False]
     -h, --help              Show this message and exit.
-    
+
 
 Execue Atlas
 ************
