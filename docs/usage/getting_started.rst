@@ -122,6 +122,7 @@ You should also check the ``config.yaml`` file, especially:
 
 - You may want to add ad :ref:`host genomes <contaminants>` to be removed.
 - You may want to change the resources configuration, depending on the system you run atlas on.
+
 Details about the parameters can be found in the section :ref:`Configuration`
 
 Keep in mind that all databases are installed in the directory specified with ``--db-dir`` so choose it wisely.
@@ -201,7 +202,6 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
 Execue Atlas
 ************
 
-.. _`snakemake profile`: https://github.com/metagenome-atlas/clusterprofile
 
 .. _cluster:
 
@@ -238,8 +238,8 @@ We recommend you keep the default name ``cluster``. The profile was tested on ``
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
 
-Specify queues and accounts
-```````````````````````````
+**Specify queues and accounts**
+
 
 If you have different **queues/partitions** on your cluster system you should tell atlas about them so it can *automatically choose the best queue*. Adaot the template for the queues.tsv::
 
@@ -280,6 +280,7 @@ The atlas argument ``--jobs`` now becomes the number of jobs simultaneously subm
 
 
 .. _local:
+
 Single machine execution
 ========================
 
@@ -315,5 +316,5 @@ For instance the ``--profile`` used for cluster execution. Other handy snakemake
 
  ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
 
- 
+
 For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.

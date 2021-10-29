@@ -1,3 +1,6 @@
+.. |scheme| image:: ../resources/images/atlas_list.png
+  :alt: Atlas is a workflow for assembly and binning of metagenomic reads
+
 
 
 Expected output
@@ -8,6 +11,7 @@ Expected output
 
 There are two main workflows implemented in atlas. A. *Genomes* and B. *Genecatalog*. The first aims in producing metagenome assembled genomes (MAGs) where as the later produces a gene catalog. The steps of Quality control and and
 
+.. note:: Have a look at the example output at `<https://github.com/metagenome-atlas/Tutorial/Example>`_ .
 
 Quality control
 ===============
@@ -86,9 +90,9 @@ which shows the attribution of contigs to bins. For the final_binner it produces
 
 See an `example <../_static/bin_report.html>`_ as a summary of the quality of all bins.
 
-In version 2.8 the new binners *vamb* and *SemiBin* were added. First experience show that they outperform the default binner (metabat, maxbin + DASTool). They use a new approach of co-binning which uses the co-abundance from different samples. For more information see the detailed explanation [here p14](https://silask.github.io/post/phd-thesis/Thesis_Silas_Kieser.pdf)
+.. seealso:: In version 2.8 the new binners *vamb* and *SemiBin* were added. First experience show that they outperform the default binner (metabat, maxbin + DASTool). They use a new approach of co-binning which uses the co-abundance from different samples. For more information see the detailed explanation [here p14](https://silask.github.io/post/phd-thesis/Thesis_Silas_Kieser.pdf)
 
-Keep also in mind that maxbin, DASTool, and SemiBin are biased for prokaryotes. If you want to try to bin (small) Eukaryotes use metabat or vamb. More information about Eukaryotes see https://github.com/metagenome-atlas/atlas/discussions/427.
+.. note:: Keep also in mind that maxbin, DASTool, and SemiBin are biased for prokaryotes. If you want to try to bin (small) Eukaryotes use metabat or vamb. More information about Eukaryotes see https://github.com/metagenome-atlas/atlas/discussions/427.
 
 
 Genomes
@@ -111,8 +115,7 @@ The quantification of the genomes can be found in:
   - ``genomes/counts/median_coverage_genomes.tsv``
   - ``genomes/counts/raw_counts_genomes.tsv``
 
-
-See in `Atlas example <https://github.com/metagenome-atlas/Tutorial>`_ how to analyze these abundances.
+.. seealso:: See in `Atlas example <https://github.com/metagenome-atlas/Tutorial>`_ how to analyze these abundances.
 
 Annotations
 -----------
@@ -131,21 +134,33 @@ The ``genes`` option produces predicted genes and translated protein sequences w
 
 
 
-Taxonomic adnnotation
-``````````````````````
+**Taxonomic adnnotation**
 
-A taxonomy for the genomes is proposed by the Genome [Taxonomy database](https://gtdb.ecogenomic.org/) (GTDB).
+
+A taxonomy for the genomes is proposed by the Genome `Taxonomy database <https://gtdb.ecogenomic.org/>`_ (GTDB).
 The results can be found in ``genomes/taxonomy``.
 The genomes are placed in a phylogenetic tree separately for bacteria and archaea using the GTDB markers.
 
 In addition a tree for bacteria and archaea can be generated based on the checkm markers.
 All trees are properly rooted using the midpoint. The files can be found in ``genomes/tree``
 
-Functional annotation
-``````````````````````
-Sicne version 2.8, We use [**DRAM**](https://github.com/shafferm/DRAM) to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
+**Functional annotation**
+
+Sicne version 2.8, We use `**DRAM** <https://github.com/shafferm/DRAM>`_ to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
 
 The Functional annotations for each genome can be found in ``genomes/annotations/dram/``
+
+and are contain the following files:
+
+ - ``kegg_modules.tsv`` Table of all Kegg modules
+ - ``annotations.tsv`` Table of all annotations
+ - ``distil/metabolism_summary.xlsx`` Excel of the summary of all annotations
+
+ The tool alos produces a nice report in `distil/product.html`_.
+
+.. _distil/product.html: ../_static/dram_product.html
+
+
 
 Gene Catalog
 ===============
