@@ -1,4 +1,4 @@
-.. |scheme| image:: ../resources/images/atlas_list.png
+.. |scheme| image:: ../../resources/images/atlas_list.png
   :alt: Atlas is a workflow for assembly and binning of metagenomic reads
 
 
