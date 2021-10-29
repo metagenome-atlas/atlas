@@ -1,8 +1,40 @@
 #!/usr/bin/env python3
 
+import os, sys
+import logging, traceback
+
+logging.basicConfig(
+    filename=snakemake.log[0],
+    level=logging.INFO,
+    format="%(asctime)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logging.captureWarnings(True)
+
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logging.error(
+        "".join(
+            [
+                "Uncaught exception: ",
+                *traceback.format_exception(exc_type, exc_value, exc_traceback),
+            ]
+        )
+    )
+
+
+# Install exception handler
+sys.excepthook = handle_exception
+
+#### Begining of scripts
+
 # python 3.5 without f strings
 
-import argparse
 import os, shutil, sys
 import uuid
 import itertools
@@ -58,23 +90,11 @@ def predict_genes_genomes(input_dir, out_dir, log, threads):
 
 
 if __name__ == "__main__":
-    try:
-        log = open(snakemake.log[0], "w")
-        sys.stderr = log
-        sys.stdout = log
 
-        predict_genes_genomes(
-            snakemake.input.dir,
-            snakemake.output[0],
-            snakemake.log[0],
-            int(snakemake.threads),
-        )
 
-    except NameError:
-        p = argparse.ArgumentParser()
-        p.add_argument("--input-dir", required=True)
-        p.add_argument("--out-dir", required=True)
-        p.add_argument("--log", required=True)
-        p.add_argument("--threads", required=False, default=1, type=int)
-        args = vars(p.parse_args())
-        predict_genes_genomes(**args)
+    predict_genes_genomes(
+        snakemake.input.dir,
+        snakemake.output[0],
+        snakemake.log[0],
+        int(snakemake.threads),
+    )

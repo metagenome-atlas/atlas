@@ -1,35 +1,32 @@
-import logging
+import os,sys
+from .color_logger import logger
+
 import multiprocessing
-import os
-import sys
+
 import subprocess
 import click
 
-from atlas import __version__
-from atlas.conf import make_config, load_configfile
-from atlas.conf import validate_config, run_init, run_init_sra
+
+from snakemake.io import load_configfile
+from .make_config import make_config, validate_config
+from .atlas_init import run_init, run_init_sra
+
+# get version
+
+def get_version():
+    try:
+        import pkg_resources
+        return pkg_resources.require("metagenome-atlas")[0].version
+    except :
+        return "Error in finding version"
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M",
-    format="[%(asctime)s %(levelname)s] %(message)s",
-)
 
 
-def log_exception(msg):
-    logging.critical(msg)
-    logging.info(
-        "Documentation is available at: https://metagenome-atlas.readthedocs.io"
-    )
-    logging.info(
-        "Issues can be raised at: https://github.com/metagenome-atlas/atlas/issues"
-    )
-    sys.exit(1)
-
+##
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option(__version__)
+@click.version_option(get_version())
 @click.pass_context
 def cli(obj):
     """ATLAS - workflows for assembly, annotation, and genomic binning of
@@ -45,7 +42,7 @@ cli.add_command(run_init)
 # cli.add_command(run_init_sra)
 
 
-def get_snakefile(file="Snakefile"):
+def get_snakefile(file="workflow/Snakefile"):
     sf = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
     if not os.path.exists(sf):
         sys.exit("Unable to locate the Snakemake workflow file; tried %s" % sf)
@@ -115,23 +112,25 @@ def run_workflow(
     For more details, see: https://metagenome-atlas.readthedocs.io
     """
 
+    logger.info(f"Atlas version: {get_version()}")
+
     if config_file is None:
         config_file = os.path.join(working_dir, "config.yaml")
 
     if not os.path.exists(config_file):
-        logging.critical(
+        logger.critical(
             f"config-file not found: {config_file}\n" "generate one with 'atlas init'"
         )
-        sys.exit(1)
+        exit(1)
 
     sample_file = os.path.join(working_dir, "samples.tsv")
 
     if not os.path.exists(sample_file):
-        logging.critical(
+        logger.critical(
             f"sample.tsv not found in the working directory. "
             "Generate one with 'atlas init'"
         )
-        sys.exit(1)
+        exit(1)
 
     validate_config(config_file, workflow)
 
@@ -158,12 +157,12 @@ def run_workflow(
         target_rule=workflow if workflow != "None" else "",
         conda_prefix="--conda-prefix " + os.path.join(db_dir, "conda_envs"),
     )
-    logging.info("Executing: %s" % cmd)
+    logger.debug("Executing: %s" % cmd)
     try:
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError as e:
         # removes the traceback
-        logging.critical(e)
+        logger.critical(e)
         exit(1)
 
 
@@ -202,19 +201,19 @@ def run_download(db_dir, jobs, snakemake_args):
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
-        snakefile=get_snakefile("rules/download.smk"),
+        snakefile=get_snakefile("workflow/rules/download.smk"),
         jobs=jobs,
         db_dir=db_dir,
         conda_prefix=os.path.join(db_dir, "conda_envs"),
         add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
         args=" ".join(snakemake_args),
     )
-    logging.info("Executing: %s" % cmd)
+    logger.debug("Executing: " + cmd)
     try:
         subprocess.check_call(cmd, shell=True)
     except subprocess.CalledProcessError as e:
         # removes the traceback
-        logging.critical(e)
+        logger.critical(e)
         exit(1)
 
 

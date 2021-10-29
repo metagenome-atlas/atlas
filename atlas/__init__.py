@@ -1,6 +1,7 @@
-__version__ = "2.8.0"
+import os,sys
+sys.path.append(os.path.join(os.path.dirname(__file__),"workflow","scripts"))
 
-from .scripts import utils
+import utils
 
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 BLAST6 = [

@@ -12,11 +12,11 @@ sys.path.append(
 )
 import utils
 
-from conf import update_config
+from atlas.make_config import update_config
 
 config = update_config(config)
-from default_values import *  # LOAD HARDCODED values and EGGNOG_HEADER
-from conf import load_sample_table
+from atlas.default_values import *  # LOAD HARDCODED values and EGGNOG_HEADER
+from atlas.sample_table import load_sample_table
 
 sampleTable = load_sample_table()
 
