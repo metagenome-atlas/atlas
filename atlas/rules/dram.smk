@@ -53,7 +53,7 @@ def path_to_genome(wildcards):
 
 rule DRAM_annotate:
     input:
-        fasta=path_to_genome,
+        fasta="genomes/genomes/{genome}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag=rules.DRAM_set_db_loc.output,
