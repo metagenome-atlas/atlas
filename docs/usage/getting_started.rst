@@ -56,7 +56,7 @@ Alternatively you can install metagenome Atlas directly form GitHub. This allows
 
     git clone https://github.com/metagenome-atlas/atlas.git
     cd atlas
-    
+
     # optional change to different branch
     # git checkout branchname
 
@@ -99,7 +99,7 @@ Start a new project
 
 Let's apply atlas on your data or on our `example data`_::
 
-  atlas init --db-dir databases path/to/fastq
+  atlas init --db-dir databases path/to/fastq_files
 
 This command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
 
@@ -126,29 +126,31 @@ Keep in mind that all databases are installed in the directory specified with ``
 
 ::
 
-  Usage: atlas init [OPTIONS] PATH_TO_FASTQ
+    Usage: atlas init [OPTIONS] PATH_TO_FASTQ
 
-    Write the file CONFIG and complete the sample names and paths for all
-    FASTQ files in PATH.
+      Write the file CONFIG and complete the sample names and paths for all
+      FASTQ files in PATH.
 
-    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
-    the file name with the file name minus extension as the sample ID.
+      PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+      the file name with the file name minus extension as the sample ID.
 
-  Options:
-    -d, --db-dir PATH               location to store databases (need ~50GB)
-                                    [default: /Users/silas/Documents/GitHub/atla
-                                    s/databases]
-    -w, --working-dir PATH          location to run atlas
-    --assembler [megahit|spades]    assembler  [default: spades]
-    --data-type [metagenome|metatranscriptome]
-                                    sample data type  [default: metagenome]
-    --interleaved-fastq             fastq files are paired-end in one files
-                                    (interleaved)
-    --threads INTEGER               number of threads to use per multi-threaded
-                                    job
-    --skip-qc                       Skip QC, if reads are already pre-processed
-    -h, --help                      Show this message and exit.
+    Options:
+      -d, --db-dir PATH               location to store databases (need ~50GB)
+                                      [default: /Users/silas/Documents/GitHub/atla
+                                      s/databases]
 
+      -w, --working-dir PATH          location to run atlas
+      --assembler [megahit|spades]    assembler  [default: spades]
+      --data-type [metagenome|metatranscriptome]
+                                      sample data type  [default: metagenome]
+      --interleaved-fastq             fastq files are paired-end in one files
+                                      (interleaved)
+
+      --threads INTEGER               number of threads to use per multi-threaded
+                                      job
+
+      --skip-qc                       Skip QC, if reads are already pre-processed
+      -h, --help                      Show this message and exit.
 
 
 Run atlas
@@ -168,8 +170,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
 
 ::
 
-  Usage: atlas run [OPTIONS]
-                   [[qc|assembly|binning|genomes|genecatalog|None|all]]
+  Usage: atlas run [OPTIONS] [qc|assembly|binning|genomes|genecatalog|None|all]
                    [SNAKEMAKE_ARGS]...
 
     Runs the ATLAS pipline
@@ -187,12 +188,12 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     -w, --working-dir PATH  location to run atlas.
     -c, --config-file PATH  config-file generated with 'atlas init'
     -j, --jobs INTEGER      use at most this many jobs in parallel (see cluster
-                            submission for mor details).  [default: 8]
+                            submission for mor details).
+
     --profile TEXT          snakemake profile e.g. for cluster execution.
     -n, --dryrun            Test execution.  [default: False]
     -h, --help              Show this message and exit.
-
-
+    
 
 Execue Atlas
 ************
