@@ -1,0 +1,8 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "Metagenome-Atlas"
+authors = [{name = "Silas Kieser", email = "silas.kieser@gmail.com"}]
+dynamic = ["version", "description"]
