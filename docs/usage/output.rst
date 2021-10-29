@@ -12,6 +12,8 @@ Expected output
 There are two main workflows implemented in atlas. A. *Genomes* and B. *Genecatalog*. The first aims in producing metagenome assembled genomes (MAGs) where as the later produces a gene catalog. The steps of Quality control and and
 
 
+Have a look at the example output at `<https://github.com/metagenome-atlas/Tutorial/Example>`_ .
+
 Quality control
 ===============
 
@@ -137,7 +139,7 @@ The ``genes`` option produces predicted genes and translated protein sequences w
 **Taxonomic adnnotation**
 
 
-A taxonomy for the genomes is proposed by the Genome [Taxonomy database](https://gtdb.ecogenomic.org/) (GTDB).
+A taxonomy for the genomes is proposed by the Genome `Taxonomy database <https://gtdb.ecogenomic.org/>`_ (GTDB).
 The results can be found in ``genomes/taxonomy``.
 The genomes are placed in a phylogenetic tree separately for bacteria and archaea using the GTDB markers.
 
@@ -146,9 +148,21 @@ All trees are properly rooted using the midpoint. The files can be found in ``ge
 
 **Functional annotation**
 
-Sicne version 2.8, We use [**DRAM**](https://github.com/shafferm/DRAM) to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
+Sicne version 2.8, We use `**DRAM** <https://github.com/shafferm/DRAM>`_ to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
 
 The Functional annotations for each genome can be found in ``genomes/annotations/dram/``
+
+and are contain the following files:
+
+ - ``kegg_modules.tsv`` Table of all Kegg modules
+ - ``annotations.tsv`` Table of all annotations
+ - ``distil/metabolism_summary.xlsx`` Excel of the summary of all annotations
+
+ The tool alos produces a nice report in `distil/product.html`_.
+
+.. _distil/product.html: ../_static/dram_product.html
+
+
 
 Gene Catalog
 ===============
