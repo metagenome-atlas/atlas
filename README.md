@@ -9,7 +9,7 @@
 
 Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It handles all steps from QC, Assembly, Binning, to Annotation.
 
-![scheme of workflow](resources/images/ATLAS_list.png?raw=true)
+![scheme of workflow](resources/images/atlas_list.png?raw=true)
 
 You can start using atlas with three commands:
 ```
