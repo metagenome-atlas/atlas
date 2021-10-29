@@ -1,7 +1,7 @@
 .. |scheme| image:: ../../resources/images/atlas_list.png
   :alt: Atlas is a workflow for assembly and binning of metagenomic reads
 
-
+.. _thesis: https://github.com/TheSnakePit/mamba
 
 Expected output
 ***************
@@ -90,7 +90,7 @@ which shows the attribution of contigs to bins. For the final_binner it produces
 
 See an `example <../_static/bin_report.html>`_ as a summary of the quality of all bins.
 
-.. seealso:: In version 2.8 the new binners *vamb* and *SemiBin* were added. First experience show that they outperform the default binner (metabat, maxbin + DASTool). They use a new approach of co-binning which uses the co-abundance from different samples. For more information see the `detailed explanation <https://silask.github.io/post/phd-thesis/Thesis_Silas_Kieser.pdf> on page 14`_
+.. seealso:: In version 2.8 the new binners *vamb* and *SemiBin* were added. First experience show that they outperform the default binner (metabat, maxbin + DASTool). They use a new approach of co-binning which uses the co-abundance from different samples. For more information see the `detailed explanation here <https://silask.github.io/post/phd-thesis/Thesis\_Silas\_Kieser.pdf>`_ on page 14
 
 .. note:: Keep also in mind that maxbin, DASTool, and SemiBin are biased for prokaryotes. If you want to try to bin (small) Eukaryotes use metabat or vamb. More information about Eukaryotes see `the discussion here <https://github.com/metagenome-atlas/atlas/discussions/427>`_.
 
@@ -146,7 +146,7 @@ All trees are properly rooted using the midpoint. The files can be found in ``ge
 
 **Functional annotation**
 
-Sicne version 2.8, We use `**DRAM** <https://github.com/shafferm/DRAM>`_ to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
+Sicne version 2.8, We use `DRAM <https://github.com/shafferm/DRAM>`_ to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
 
 The Functional annotations for each genome can be found in ``genomes/annotations/dram/``
 
