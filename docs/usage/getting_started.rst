@@ -19,7 +19,9 @@ For real metagenomic data atlas should be run on a _linux_ sytem, with enough me
 
 
 
-You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.::
+You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+
+.. code-block:: bash
 
     conda config --add channels defaults
     conda config --add channels bioconda
@@ -40,7 +42,9 @@ From now on you can replace ``conda install`` with ``mamba install`` and see how
 Install metagenome-atlas
 ------------------------
 
-We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv``::
+We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv``
+
+.. code-block:: bash
 
     mamba create -y -n atlasenv metagenome-atlas
     source activate atlasenv
@@ -51,8 +55,8 @@ Install metagenome-atlas from GitHub
 ------------------------------------
 
 Alternatively you can install metagenome Atlas directly form GitHub. This allows you to access versions that are not yet in the conda release, e.g. versions that are still in development.
-::
 
+.. code-block:: bash
 
     git clone https://github.com/metagenome-atlas/atlas.git
     cd atlas
@@ -84,7 +88,9 @@ which can take a certain amount of time and especially disk space (>100Gb).
 
 The database dir of the test run should be the same as for the later atlas executions.
 
-The example data can be downloaded as following::
+The example data can be downloaded as following
+
+.. code-block:: bash
 
   wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
   tar -xzf test_reads.tar.gz
@@ -114,7 +120,9 @@ The ``BinGroup`` parameter is used during the genomic binning.
 In short: all samples in which you expect the same strain to
 be found should belong to the same group,
 e.g. all metagenome samples from mice in the same cage or location.
-If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
+
+
+.. note:: If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
 
 
 You should also check the ``config.yaml`` file, especially:
@@ -128,7 +136,7 @@ Details about the parameters can be found in the section :ref:`Configuration`
 Keep in mind that all databases are installed in the directory specified with ``--db-dir`` so choose it wisely.
 
 
-::
+.. code-block:: text
 
     Usage: atlas init [OPTIONS] PATH_TO_FASTQ
 
@@ -172,7 +180,7 @@ Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for ot
 We recommend to use atlas on a :ref:`cluster` system, which can be set up in a view more commands.
 
 
-::
+.. code-block:: text
 
   Usage: atlas run [OPTIONS] [qc|assembly|binning|genomes|genecatalog|None|all]
                    [SNAKEMAKE_ARGS]...
