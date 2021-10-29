@@ -83,3 +83,29 @@ MAJORITY_THRESHOLD = 0.51
 MIN_BITSCORE = 0
 MIN_LENGTH = 20
 MAX_HITS = 100
+
+
+
+EGGNOG_HEADER = [
+    "Query",
+    "Seed",
+    "Seed_evalue",
+    "Seed_Score",
+    "eggNOG",
+    "max_annot_lvl",
+    "COG_cat",
+    "Description",
+    "Name",
+    "GO_terms",
+    "EC",
+    "KO",
+    "KEGG_Pathway",
+    "KEGG_Module",
+    "KEGG_Reaction",
+    "KEGG_rclass",
+    "BRITE",
+    "KEGG_TC",
+    "CAZy",
+    "BiGG_Reaction",
+    "PFAMs",
+]

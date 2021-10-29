@@ -10,30 +10,6 @@ from snakemake.io import load_configfile
 from snakemake.utils import update_config as snakemake_update_config
 from .default_values import *
 
-EGGNOG_HEADER = [
-    "Query",
-    "Seed",
-    "Seed_evalue",
-    "Seed_Score",
-    "eggNOG",
-    "max_annot_lvl",
-    "COG_cat",
-    "Description",
-    "Name",
-    "GO_terms",
-    "EC",
-    "KO",
-    "KEGG_Pathway",
-    "KEGG_Module",
-    "KEGG_Reaction",
-    "KEGG_rclass",
-    "BRITE",
-    "KEGG_TC",
-    "CAZy",
-    "BiGG_Reaction",
-    "PFAMs",
-]
-
 
 def make_default_config():
     """generates a dict with all the default values, if they exist"""
