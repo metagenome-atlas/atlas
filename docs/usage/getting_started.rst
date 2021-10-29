@@ -161,7 +161,7 @@ Run atlas
 
 ::
 
-  atlas run all
+  atlas run genomes
 
 
 ``atlas run`` need to know the working directory with a ``samples.tsv`` inside it.
@@ -238,28 +238,25 @@ We recommend you keep the default name ``cluster``. The profile was tested on ``
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
 
-If you need to specify **queues or accounts** you can do this for all rules or for specific rules in the ``~/.config/snakemake/cluster/cluster_config.yaml``. In addition, using this file you can overwrite the resources defined  in the config file.
+Specify queues and accounts
+```````````````````````````
+
+If you have different **queues/partitions** on your cluster system you should tell atlas about them so it can *automatically choose the best queue*. Adaot the template for the queues.tsv::
+
+  cp ~/.config/snakemake/cluster/queues.tsv.example ~/.config/snakemake/cluster/queues.tsv
+
+Now enter the information about the queues/partitions on your particular system.
+
+
+If you need to specify **accounts** or other options for one or all rules you can do this for all rules or for specific rules in the ``~/.config/snakemake/cluster/cluster_config.yaml``. In addition, using this file you can overwrite the resources defined  in the config file.
 
 Example for ``cluster_config.yaml`` with queues defined::
 
 
   __default__:
   # default parameter for all rules
-    queue: normal
+    account: project_1345
     nodes: 1
-
-
-  # The following rules in atlas need need more time/memory.
-  # If you need to submit them to different queues you can configure this as outlined.
-
-  run_megahit:
-    queue: bigmem
-  run_spades:
-    queue: bigmem
-
-  This rules can take longer
-  run_checkm_lineage_wf:
-    queue: long
 
 
 
@@ -294,8 +291,9 @@ For local execution the ``--jobs`` command line arguments defines the number of 
 
 For example on a machine with 16 processors and 250GB memory you might want to run::
 
-  atlas run all --resources mem=245 --jobs 16
+  atlas run all --resources mem=245 java_mem=208  --jobs 16
 
+Select the java_mem at 0.85 for the memory maximum.
 The whole pipeline can take more than a day. If for any reason the pipeline stops you can just rerun the same command after having inspected the error.
 
 
@@ -317,4 +315,5 @@ For instance the ``--profile`` used for cluster execution. Other handy snakemake
 
  ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
 
+ 
 For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.
