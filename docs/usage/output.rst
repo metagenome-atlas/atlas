@@ -11,8 +11,7 @@ Expected output
 
 There are two main workflows implemented in atlas. A. *Genomes* and B. *Genecatalog*. The first aims in producing metagenome assembled genomes (MAGs) where as the later produces a gene catalog. The steps of Quality control and and
 
-
-Have a look at the example output at `<https://github.com/metagenome-atlas/Tutorial/Example>`_ .
+.. note:: Have a look at the example output at `<https://github.com/metagenome-atlas/Tutorial/Example>`_ .
 
 Quality control
 ===============
@@ -91,9 +90,9 @@ which shows the attribution of contigs to bins. For the final_binner it produces
 
 See an `example <../_static/bin_report.html>`_ as a summary of the quality of all bins.
 
-In version 2.8 the new binners *vamb* and *SemiBin* were added. First experience show that they outperform the default binner (metabat, maxbin + DASTool). They use a new approach of co-binning which uses the co-abundance from different samples. For more information see the detailed explanation [here p14](https://silask.github.io/post/phd-thesis/Thesis_Silas_Kieser.pdf)
+.. seealso:: In version 2.8 the new binners *vamb* and *SemiBin* were added. First experience show that they outperform the default binner (metabat, maxbin + DASTool). They use a new approach of co-binning which uses the co-abundance from different samples. For more information see the detailed explanation [here p14](https://silask.github.io/post/phd-thesis/Thesis_Silas_Kieser.pdf)
 
-Keep also in mind that maxbin, DASTool, and SemiBin are biased for prokaryotes. If you want to try to bin (small) Eukaryotes use metabat or vamb. More information about Eukaryotes see https://github.com/metagenome-atlas/atlas/discussions/427.
+.. note:: Keep also in mind that maxbin, DASTool, and SemiBin are biased for prokaryotes. If you want to try to bin (small) Eukaryotes use metabat or vamb. More information about Eukaryotes see https://github.com/metagenome-atlas/atlas/discussions/427.
 
 
 Genomes
@@ -116,8 +115,7 @@ The quantification of the genomes can be found in:
   - ``genomes/counts/median_coverage_genomes.tsv``
   - ``genomes/counts/raw_counts_genomes.tsv``
 
-
-See in `Atlas example <https://github.com/metagenome-atlas/Tutorial>`_ how to analyze these abundances.
+.. seealso:: See in `Atlas example <https://github.com/metagenome-atlas/Tutorial>`_ how to analyze these abundances.
 
 Annotations
 -----------
