@@ -39,7 +39,7 @@ rule semibin_predict_taxonomy:
     params:
         output_dir="Cobinning/SemiBin/{sample}",
         name=lambda wc, output: os.path.basename(output[0]).replace(".txt", ""),
-        tmp_dir= config['tmpdir']
+        tmp_dir=config["tmpdir"],
     shadow:
         "minimal"
     shell:
@@ -158,7 +158,10 @@ rule run_semibin:
         " {params.extra} "
         " 2> {log}"
 
-localrules: parse_semibin_output
+
+localrules:
+    parse_semibin_output,
+
 
 rule parse_semibin_output:
     input:

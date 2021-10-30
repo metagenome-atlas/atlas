@@ -164,7 +164,6 @@ checkpoint rename_genomes:
         "rename_genomes.py"
 
 
-
 def get_genomes_(wildcards):
 
     genome_dir = checkpoints.rename_genomes.get().output.dir
@@ -191,6 +190,7 @@ rule run_all_checkm_lineage_wf:
         "genomes/checkm/storage/tree/concatenated.fasta",
     params:
         output_dir=lambda wc, output: os.path.dirname(output[0]),
+        tmpdir=config["tmpdir"],
     conda:
         "%s/checkm.yaml" % CONDAENV
     threads: config.get("threads", 1)
@@ -205,6 +205,7 @@ rule run_all_checkm_lineage_wf:
         """
         rm -r {params.output_dir}
         checkm lineage_wf \
+            --tmpdir {params.tmpdir} \
             --file {params.output_dir}/completeness.tsv \
             --tab_table \
             --quiet \

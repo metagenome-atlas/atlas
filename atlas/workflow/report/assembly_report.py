@@ -65,11 +65,11 @@ def make_plots(combined_stats):
     # create plots store in div
     div = {}
 
-    fig = px.strip(df, y="Percent_Assembled_Reads", **PLOT_PARAMS)
+    fig = px.strip(df, y="Percent_Assembled_Reads",hover_name="Sample", **PLOT_PARAMS)
     fig.update_yaxes(range=[0, 100])
     div["Percent_Assembled_Reads"] = fig.to_html(**HTML_PARAMS)
 
-    fig = px.strip(df, y="N_Predicted_Genes", **PLOT_PARAMS)
+    fig = px.strip(df, y="N_Predicted_Genes", hover_name="Sample",**PLOT_PARAMS)
     div["N_Predicted_Genes"] = fig.to_html(**HTML_PARAMS)
 
     fig = px.scatter(df, y="L50", x="N50", hover_name="Sample", **PLOT_PARAMS)
