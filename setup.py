@@ -24,6 +24,7 @@ setup(
     license=__license__,
     author=__author__,
     author_email=__email__,
+    zip_safe=False,
     description="ATLAS - workflows for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
