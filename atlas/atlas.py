@@ -11,14 +11,9 @@ from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
 from .atlas_init import run_init, run_init_sra
 
-# get version
+from ._version import get_versions
 
-def get_version():
-    try:
-        import pkg_resources
-        return pkg_resources.require("metagenome-atlas")[0].version
-    except :
-        return "Error in finding version"
+__version__ = get_versions()["version"]
 
 
 
@@ -26,7 +21,7 @@ def get_version():
 ##
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.version_option(get_version())
+@click.version_option(__version__)
 @click.pass_context
 def cli(obj):
     """ATLAS - workflows for assembly, annotation, and genomic binning of

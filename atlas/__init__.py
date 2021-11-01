@@ -3,6 +3,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__),"workflow","scripts"))
 
 import utils
 
+
+
+
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 BLAST6 = [
     "qseqid",
