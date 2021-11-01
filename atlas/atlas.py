@@ -107,7 +107,7 @@ def run_workflow(
     For more details, see: https://metagenome-atlas.readthedocs.io
     """
 
-    logger.info(f"Atlas version: {get_version()}")
+    logger.info(f"Atlas version: {__version__}")
 
     if config_file is None:
         config_file = os.path.join(working_dir, "config.yaml")
