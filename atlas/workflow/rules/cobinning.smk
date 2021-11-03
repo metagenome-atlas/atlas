@@ -62,85 +62,51 @@ rule combine_contigs:
                         fout.write(line)
 
 
-rule minimap_index:
+rule bwa_mem2_index:
     input:
-        contigs=rules.combine_contigs.output,
+        rules.combine_contigs.output
     output:
-        mmi=temp("Cobinning/combined_contigs.mmi"),
-    params:
-        index_size="12G",
+        temp(multiext("Cobinning/combined_contigs",
+                      ".0123",
+                    ".amb",
+                    ".ann",
+                    ".bwt.2bit.64",
+                    ".pac"
+                    ))
     resources:
-        mem=config["mem"],  # limited num of fatnodes (>200g)
-    threads: 3
-    log:
-        "logs/cobinning/vamb/index.log",
-    benchmark:
-        "logs/benchmarks/cobinning/mminimap_index.tsv"
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        "minimap2 -I {params.index_size} -t {threads} -d {output} {input} 2> {log}"
-
-
-rule samtools_dict:
-    input:
-        contigs=rules.combine_contigs.output,
-    output:
-        dict="Cobinning/combined_contigs.dict",
-    resources:
-        mem=config["simplejob_mem"],
-        ttime=config["runtime"]["simplejob"],
+        mem=config["mem"],
     threads: 1
     log:
-        "logs/cobinning/samtools_dict.log",
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        "samtools dict {input} | cut -f1-3 > {output} 2> {log}"
+        "logs/cobinning/bwa_mem2/index.log"
+    params:
+        prefix="Cobinning/combined_contigs"
+    wrapper:
+        "0.79.0/bio/bwa-mem2/index"
 
 
-rule minimap:
+rule bwa_mem2_mem:
     input:
-        fq=lambda wildcards: input_paired_only(
-            get_quality_controlled_reads(wildcards)
-        ),
-        mmi="Cobinning/combined_contigs.mmi",
-        dict="Cobinning/combined_contigs.dict",
+        reads=lambda wildcards: input_paired_only(
+            get_quality_controlled_reads(wildcards),
+        index= rules.bwa_mem2_index.output
     output:
-        bam=temp("Cobinning/mapping/{sample}.unsorted.bam"),
+        temp("Cobinning/mapping/{sample}.bam")
+    log:
+        "logs/bwa_mem2/{sample}.log"
+    params:
+        index= rules.bwa_mem2_index.params.prefix,
+        extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate", # Can be 'coordinate' (default) or 'queryname'.
+        sort_extra=""            # Extra args for samtools/picard.
     threads: config["threads"]
     resources:
         mem=config["mem"],
-    log:
-        "logs/cobinning/mapping/{sample}.minimap.log",
-    benchmark:
-        "logs/benchmarks/cobinning/mminimap/{sample}.tsv"
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        """minimap2 -t {threads} -ax sr {input.mmi} {input.fq} | grep -v "^@" | cat {input.dict} - | samtools view -F 3584 -b - > {output.bam} 2>{log}"""
+    wrapper:
+        "0.79.0/bio/bwa-mem2/mem"
 
 
-ruleorder: sort_bam > minimap > convert_sam_to_bam
-
-
-rule sort_bam:
-    input:
-        "Cobinning/mapping/{sample}.unsorted.bam",
-    output:
-        "Cobinning/mapping/{sample}.sorted.bam",
-    params:
-        prefix="Cobinning/mapping/tmp.{sample}",
-    threads: 2
-    resources:
-        mem=config["simplejob_mem"],
-        time=int(config["runtime"]["simplejob"]),
-    log:
-        "logs/cobinning/mapping/{sample}.sortbam.log",
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        "samtools sort {input} -T {params.prefix} --threads {threads} -m 3G -o {output} 2>{log}"
+ruleorder: bwa_mem2_mem> convert_sam_to_bam
 
 
 rule summarize_bam_contig_depths:
