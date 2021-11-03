@@ -25,17 +25,16 @@ def validate_sample_table(sampleTable):
         )
         exit(1)
 
-
     if sampleTable.index.str.match("^\d").any():
         logger.warning(
             f"Sample names shouldn't start with a digit. This can lead to incompatibilities.\n {list(sampleTable.index)}"
         )
 
-    if sampleTable.index.str.contains('_').any():
+    if sampleTable.index.str.contains("_").any():
         logger.warning(
             f"Sample names shouldn't contain underscores. This can lead to incompatibilities. \n {list(sampleTable.index)}"
         )
-    if sampleTable.index.str.count('-').max()>1:
+    if sampleTable.index.str.count("-").max() > 1:
         logger.warning(
             f"Sample names shouldn't have more than one hypon '-'. This can lead to incompatibilities.\n {list(sampleTable.index)}"
         )

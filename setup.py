@@ -1,7 +1,7 @@
 import io
 from os.path import dirname, join
 from setuptools import setup
-import versioneer # script in directory
+import versioneer  # script in directory
 
 __author__ = "Joe Brown, Silas Kieser"
 __copyright__ = "Copyright 2021, Silas Kieser"

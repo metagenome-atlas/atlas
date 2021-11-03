@@ -64,22 +64,25 @@ rule combine_contigs:
 
 rule bwa_mem2_index:
     input:
-        rules.combine_contigs.output
+        rules.combine_contigs.output,
     output:
-        temp(multiext("Cobinning/combined_contigs",
-                      ".0123",
-                    ".amb",
-                    ".ann",
-                    ".bwt.2bit.64",
-                    ".pac"
-                    ))
+        temp(
+            multiext(
+                "Cobinning/combined_contigs",
+                ".0123",
+                ".amb",
+                ".ann",
+                ".bwt.2bit.64",
+                ".pac",
+            )
+        ),
     resources:
         mem=config["mem"],
     threads: 1
     log:
-        "logs/cobinning/bwa_mem2/index.log"
+        "logs/cobinning/bwa_mem2/index.log",
     params:
-        prefix="Cobinning/combined_contigs"
+        prefix="Cobinning/combined_contigs",
     wrapper:
         "0.79.0/bio/bwa-mem2/index"
 
@@ -87,18 +90,19 @@ rule bwa_mem2_index:
 rule bwa_mem2_mem:
     input:
         reads=lambda wildcards: input_paired_only(
-            get_quality_controlled_reads(wildcards),
-        index= rules.bwa_mem2_index.output
+            get_quality_controlled_reads(wildcards)
+        ),
+        index=rules.bwa_mem2_index.output,
     output:
-        temp("Cobinning/mapping/{sample}.bam")
+        temp("Cobinning/mapping/{sample}.bam"),
     log:
-        "logs/bwa_mem2/{sample}.log"
+        "logs/bwa_mem2/{sample}.log",
     params:
-        index= rules.bwa_mem2_index.params.prefix,
+        index=rules.bwa_mem2_index.params.prefix,
         extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
-        sort="samtools",             # Can be 'none', 'samtools' or 'picard'.
-        sort_order="coordinate", # Can be 'coordinate' (default) or 'queryname'.
-        sort_extra=""            # Extra args for samtools/picard.
+        sort="samtools",  # Can be 'none', 'samtools' or 'picard'.
+        sort_order="coordinate",  # Can be 'coordinate' (default) or 'queryname'.
+        sort_extra="",  # Extra args for samtools/picard.
     threads: config["threads"]
     resources:
         mem=config["mem"],
@@ -106,12 +110,12 @@ rule bwa_mem2_mem:
         "0.79.0/bio/bwa-mem2/mem"
 
 
-ruleorder: bwa_mem2_mem> convert_sam_to_bam
+ruleorder: bwa_mem2_mem > convert_sam_to_bam
 
 
 rule summarize_bam_contig_depths:
     input:
-        bam=expand(rules.sort_bam.output, sample=SAMPLES),
+        bam=expand(rules.bwa_mem2_mem.output, sample=SAMPLES),
     output:
         "Cobinning/vamb/coverage.jgi.tsv",
     log:

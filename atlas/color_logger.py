@@ -1,8 +1,5 @@
-
 import os, sys
 import logging, traceback
-
-
 
 
 grey = "\x1b[38;21m"
@@ -12,18 +9,21 @@ red = "\x1b[31;21m"
 bold_red = "\x1b[31;1m"
 reset = "\x1b[0m"
 
-prefix= "[Atlas] "
+prefix = "[Atlas] "
+
 
 class ColorFormatter(logging.Formatter):
-
-    def __init__(self,format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"):
+    def __init__(
+        self,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)",
+    ):
 
         self.FORMATS = {
             logging.DEBUG: prefix + grey + format + reset,
             logging.INFO: prefix + green + format + reset,
             logging.WARNING: prefix + yellow + format + reset,
             logging.ERROR: prefix + red + format + reset,
-            logging.CRITICAL: prefix +  red + format + reset
+            logging.CRITICAL: prefix + red + format + reset,
         }
 
     def format(self, record):
@@ -33,7 +33,7 @@ class ColorFormatter(logging.Formatter):
 
 
 #
-logging_format= "%(levelname)s: %(message)s"
+logging_format = "%(levelname)s: %(message)s"
 # datefmt="%Y-%m-%d %H:%M"
 #
 #
@@ -52,8 +52,6 @@ consoleHandler.setLevel(logging.INFO)
 consoleHandler.setFormatter(ColorFormatter(logging_format))
 
 
-
-
 #
 
 ## Define logging
@@ -61,19 +59,12 @@ logging.basicConfig(
     level=logging.DEBUG,
     datefmt="%Y-%m-%d %H:%M",
     format=logging_format,
-    handlers=[ consoleHandler
-    ]
+    handlers=[consoleHandler],
 )
 logging.captureWarnings(True)
 
 
 # create logging for atlas
-
-
-
-
-
-
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -97,4 +88,4 @@ sys.excepthook = handle_exception
 # root logger
 logger = logging.getLogger()
 
-#logger= logging
+# logger= logging

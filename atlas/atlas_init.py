@@ -10,17 +10,18 @@ from collections import defaultdict
 import click
 
 from .make_config import make_config, validate_config
-from .create_sample_table import get_samples_from_fastq,simplify_sample_names
-from .sample_table import validate_sample_table, load_sample_table,ADDITIONAL_SAMPLEFILE_HEADERS
+from .create_sample_table import get_samples_from_fastq, simplify_sample_names
+from .sample_table import (
+    validate_sample_table,
+    load_sample_table,
+    ADDITIONAL_SAMPLEFILE_HEADERS,
+)
 
 # default globals
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
 SRA_READ_PATH = "SRAreads"
-
-
-
 
 
 def prepare_sample_table_for_atlas(
@@ -34,8 +35,6 @@ def prepare_sample_table_for_atlas(
             path_to_fastq (str): fastq/fasta data directory
     """
 
-
-
     if os.path.exists(outfile):
         logger.error(
             f"Output file {outfile} already exists I don't dare to overwrite it."
@@ -48,18 +47,18 @@ def prepare_sample_table_for_atlas(
 
     # Test if paired end
     if "R2" in columns:
-        fractions=["R1","R2"]
+        fractions = ["R1", "R2"]
     else:
-        sample_table.rename(columns = {"R1":"se"}, inplace=True)
-        fractions=["se"]
+        sample_table.rename(columns={"R1": "se"}, inplace=True)
+        fractions = ["se"]
 
     # Add prefix to fractions depending if qc or not
     if reads_are_QC:
-        prefix= "Reads_QC_"
+        prefix = "Reads_QC_"
     else:
-        prefix= "Reads_raw_"
+        prefix = "Reads_raw_"
 
-    sample_table.rename(columns = {f:f"{prefix}{f}" for f in fractions},inplace=True)
+    sample_table.rename(columns={f: f"{prefix}{f}" for f in fractions}, inplace=True)
 
     # Add BinGroup and additional empty headers
     Headers = ADDITIONAL_SAMPLEFILE_HEADERS
@@ -70,14 +69,7 @@ def prepare_sample_table_for_atlas(
 
     validate_sample_table(sample_table)
 
-
-
-
     sample_table.to_csv(outfile, sep="\t")
-
-
-
-
 
 
 @click.command(

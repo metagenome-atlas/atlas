@@ -56,7 +56,7 @@ rule semibin_predict_taxonomy:
 rule semibin_generate_data_multi:
     input:
         fasta=rules.combine_contigs.output,
-        bams=expand(rules.sort_bam.output, sample=SAMPLES),
+        bams=expand(rules.bwa_mem2_mem.output, sample=SAMPLES),
     output:
         expand(
             "Cobinning/SemiBin/samples/{sample}/{files}",
@@ -90,7 +90,7 @@ rule semibin_train:
     input:
         "{sample}/{sample}_contigs.fasta",
         fasta=rules.filter_contigs.output,
-        bams=expand(rules.sort_bam.output, sample=SAMPLES),
+        bams=expand(rules.bwa_mem2_mem.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
         data_split="Cobinning/SemiBin/samples/{sample}/data_split.csv",
         cannot_link=rules.semibin_predict_taxonomy.output[0],
@@ -127,7 +127,7 @@ rule run_semibin:
     input:
         "{sample}/{sample}_contigs.fasta",
         fasta=rules.filter_contigs.output,
-        bams=expand(rules.sort_bam.output, sample=SAMPLES),
+        bams=expand(rules.bwa_mem2_mem.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
         model=rules.semibin_train.output[0],
     output:
