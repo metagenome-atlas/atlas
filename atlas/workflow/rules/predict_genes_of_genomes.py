@@ -91,7 +91,6 @@ def predict_genes_genomes(input_dir, out_dir, log, threads):
 
 if __name__ == "__main__":
 
-
     predict_genes_genomes(
         snakemake.input.dir,
         snakemake.output[0],

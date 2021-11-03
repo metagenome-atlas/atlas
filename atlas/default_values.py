@@ -85,7 +85,6 @@ MIN_LENGTH = 20
 MAX_HITS = 100
 
 
-
 EGGNOG_HEADER = [
     "Query",
     "Seed",
