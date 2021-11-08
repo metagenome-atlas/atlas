@@ -11,10 +11,7 @@ from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
 from .atlas_init import run_init, run_init_sra
 
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
-
+from .__init__ import __version__
 
 ##
 

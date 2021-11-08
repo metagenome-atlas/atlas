@@ -1,1 +1,2 @@
 recursive-include atlas *
+include versioneer.py
