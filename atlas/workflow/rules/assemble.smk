@@ -313,7 +313,7 @@ if config.get("assembler", "megahit") == "megahit":
             inputs=lambda wc, input: megahit_input_parsing(input),
             preset=assembly_params["megahit"][config["megahit_preset"]],
         conda:
-            "%s/assembly.yaml" % CONDAENV
+            "../envs/megahit.yaml"
         threads: config["assembly_threads"]
         resources:
             mem=config["assembly_memory"],
@@ -439,7 +439,7 @@ else:
         log:
             "{sample}/logs/assembly/spades.log",
         conda:
-            "%s/assembly.yaml" % CONDAENV
+            "../envs/spades.yaml"
         threads: config["assembly_threads"]
         resources:
             mem=config["assembly_memory"],
