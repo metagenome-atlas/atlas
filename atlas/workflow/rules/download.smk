@@ -25,6 +25,8 @@ CAT_DIR = os.path.join(DBDIR, "CAT")
 CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
 EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V5")
 GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V06")
+GUNCDIR = os.path.join(DBDIR, "gunc_database")
+BUSCODIR = os.path.join(DBDIR, "busco_lineages")
 CONDAENV = "../envs"
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
@@ -192,6 +194,37 @@ rule download_gtdb:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "mkdir $GTDBTK_DATA_PATH ;"
         "download-db.sh ;"
+
+
+rule download_gunc:
+    output:
+        os.path.join(GUNCDIR, f"{gunc_database}"),
+    conda:
+        "../envs/gunc.yaml",
+    threads: 1
+    resources:
+        time=int(config.get("runtime", {"default": 5})['default']),
+        mem_mb=config.get("mem"),
+    log:
+        "logs/gunc_database.log",
+    shell:
+        "gunc download_db {resources.tmpdir} -db {wildcards.gunc_database} &> {log} ;"
+        "mv {resources.tmpdir}/gunc_db_{wildcards.gunc_database}*.dmnd {output} 2>> {log}"
+
+
+rule download_busco:
+    output:
+        directory(BUSCODIR)
+    conda:
+        "../envs/busco.yaml",
+    threads: 1
+    resources:
+        time=int(config.get("runtime", {"default": 5})['default']),
+        mem_mb=config.get("mem"),
+    log:
+        "logs/busco_lineages.log",
+    shell:
+        "busco -q --download_path {output} --download prokaryota &> {log}"
 
 
 onsuccess:
