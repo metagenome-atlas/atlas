@@ -3,4 +3,4 @@ channels:
 - bioconda
 - defaults
 dependencies:
-- gunc
+- gunc=1.0
