@@ -10,12 +10,13 @@ rule run_gunc:
         db = rules.download_gunc.output[0].format(**config),
         fasta_dir = bin_quality_input_folder,
     output:
-        "{sample}/binning/{binner}/gunc/gunc_output.tsv",
+        "{sample}/binning/{binner}/bin_quality/gunc.tsv",
     params:
-        tmpdir = f"{config['tmpdir']}/gunc",
+        tmpdir = lambda wc: f"{config['tmpdir']}/gunc/{wc.sample}",
     conda:
         "%s/gunc.yaml" % CONDAENV
-    threads: config.get("threads", 1),
+    threads:
+        config.get("threads", 1),
     log:
         "{sample}/logs/binning/{binner}/gunc.log",
     benchmark:
@@ -24,11 +25,13 @@ rule run_gunc:
         time=int(config.get("runtime", {"default": 5})['default']),
         mem_mb=config.get("mem"),
     shell:
-        "mkdir -p {params.tmpdir}/ "
-        "&& gunc run --threads {threads} --db_file {input.db} --input_dir {input.fasta_dir}/ "
-        "--file_suffix .fasta "
-        "--out_dir {params.tmpdir} &> {log} "
-        "&& mv {params.tmpdir}/*.tsv {output}"
+        " mkdir -p {params.tmpdir}/ 2> {log} "
+        " ; "
+        " gunc run --threads {threads} --db_file {input.db} --input_dir {input.fasta_dir}/ "
+        " --file_suffix .fasta "
+        " --out_dir {params.tmpdir} &>> {log} "
+        " ; "
+        " mv {params.tmpdir}/*.tsv {output} 2>> {log}"
 
 
 ##### BUSCO  #########
@@ -37,11 +40,10 @@ rule run_busco:
     input:
         fasta_dir = bin_quality_input_folder,
     output:
-        "{sample}/binning/{binner}/busco/busco_output.tsv",
+        "{sample}/binning/{binner}/bin_quality/busco.tsv",
     params:
-        tmpdir = f"{config['tmpdir']}/busco",
-        DBDIR = os.path.realpath(config["database_dir"]),
-        busco_download = os.path.join(DBDIR, "busco_lineages"),
+        tmpdir = lambda wc: f"{config['tmpdir']}/busco/{wc.sample}",
+        busco_download = os.path.join(config["database_dir"], "busco_lineages"),
     conda:
         "%s/busco.yaml" % CONDAENV
     threads: config.get("threads", 8),
@@ -50,13 +52,14 @@ rule run_busco:
     benchmark:
         "logs/benchmarks/busco/{sample}_{binner}.tsv",
     resources:
-        time=int(config.get("runtime", {"default": 5})['default']),
-        mem_mb=config.get("mem"),
+        time=int(config["runtime"]['default']),
+        mem_mb=config["mem"],
     shell:
-        "busco -i {input.fasta_dir} --auto-lineage-prok -m genome "
-        "-o {params.tmpdir} --download_path {params.busco_download} -c {threads}
-        "--offline &> {log} ;"
-        "mv {params.tmpdir}/batch_summary.txt {output}"
+        " busco -i {input.fasta_dir} --auto-lineage-prok -m genome "
+        " -o {params.tmpdir} --download_path {params.busco_download} -c {threads} "
+        " --offline &> {log}
+        " ; "
+        " mv {params.tmpdir}/batch_summary.txt {output} "
 
 
 ##### checkM  #########
