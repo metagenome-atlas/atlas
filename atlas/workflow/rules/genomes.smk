@@ -59,44 +59,6 @@ rule get_quality_for_dRep_from_checkm:
         D.iloc[:, :3].to_csv(output[0])
 
 
-rule merge_checkm:
-    input:
-        completeness=expand(
-            "{sample}/binning/{binner}/checkm/completeness.tsv",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-        taxonomy=expand(
-            "{sample}/binning/{binner}/checkm/taxonomy.tsv",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-        markers=expand(
-            "{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        checkm="genomes/checkm/checkm_all_bins.tsv",
-        markers="genomes/checkm/all_bins_markers.fasta",
-    run:
-        import pandas as pd
-        import shutil
-
-        D = []
-
-        for i in range(len(SAMPLES)):
-            df = pd.read_csv(input.completeness[i], index_col=0, sep="\t")
-            df = df.join(pd.read_csv(input.taxonomy[i], index_col=0, sep="\t"))
-            D.append(df)
-
-        D = pd.concat(D, axis=0)
-        D.to_csv(output.checkm, sep="\t")
-
-        with open(output.markers, "wb") as fout:
-            for fasta in input.markers:
-                shutil.copyfileobj(open(fasta, "rb"), fout)
-
 
 rule dereplication:
     input:
@@ -180,40 +142,6 @@ def get_genomes_(wildcards):
 
     return genomes
 
-
-rule run_all_checkm_lineage_wf:
-    input:
-        touched_output="logs/checkm_init.txt",
-        dir="genomes/genomes",
-    output:
-        "genomes/checkm/completeness.tsv",
-        "genomes/checkm/storage/tree/concatenated.fasta",
-    params:
-        output_dir=lambda wc, output: os.path.dirname(output[0]),
-        tmpdir=config["tmpdir"],
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    threads: config.get("threads", 1)
-    resources:
-        time=config["runtime"]["long"],
-        mem=config["large_mem"],
-    log:
-        "logs/genomes/checkm.log",
-    benchmark:
-        "logs/benchmarks/checkm_lineage_wf/all_genomes.tsv"
-    shell:
-        """
-        rm -r {params.output_dir}
-        checkm lineage_wf \
-            --tmpdir {params.tmpdir} \
-            --file {params.output_dir}/completeness.tsv \
-            --tab_table \
-            --quiet \
-            --extension fasta \
-            --threads {threads} \
-            {input.dir} \
-            {params.output_dir} &> {log}
-        """
 
 
 ### Quantification

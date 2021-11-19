@@ -263,9 +263,6 @@ def get_genome_annotations():
 
     annotation_file_names = {
         "cat_taxonomy": "genomes/taxonomy/taxonomy.tsv",
-        "ssu": "genomes/SSU/ssu_summary.tsv",
-        "checkm_taxonomy": "genomes/checkm/taxonomy.tsv",
-        "checkm_tree": "genomes/tree/checkm.nwk",
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
         "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
         "genes": "genomes/annotations/genes/predicted",

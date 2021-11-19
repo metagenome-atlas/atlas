@@ -201,8 +201,7 @@ annotations:
   - genes
   - kegg_modules
   - dram
-#  - checkm_taxonomy
-#  - checkm_tree
+
 
 ########################
 # Gene catalog
