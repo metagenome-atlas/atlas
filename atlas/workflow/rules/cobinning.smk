@@ -77,7 +77,7 @@ rule bwa_mem2_index:
             )
         ),
     resources:
-        mem=config["mem"],
+        mem=config["large_mem"],
     threads: 1
     log:
         "logs/cobinning/bwa_mem2/index.log",
