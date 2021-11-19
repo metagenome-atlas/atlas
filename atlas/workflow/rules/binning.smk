@@ -340,42 +340,6 @@ rule get_bins:
 
 
 localrules:
-    build_bin_report,
-    combine_bin_stats,
-
-
-rule combine_bin_stats:
-    input:
-        completeness_files=expand(
-            "{sample}/binning/{{binner}}/checkm/completeness.tsv", sample=SAMPLES
-        ),
-        taxonomy_files=expand(
-            "{sample}/binning/{{binner}}/checkm/taxonomy.tsv", sample=SAMPLES
-        ),
-    output:
-        bin_table="reports/genomic_bins_{binner}.tsv",
-    params:
-        samples=SAMPLES,
-    log:
-        "logs/binning/combine_stats_{binner}.log",
-    script:
-        "../scripts/combine_bin_stats.py"
-
-
-rule build_bin_report:
-    input:
-        bin_table="reports/genomic_bins_{binner}.tsv",
-    output:
-        report="reports/bin_report_{binner}.html",
-    conda:
-        "%s/report.yaml" % CONDAENV
-    log:
-        "logs/binning/report_{binner}.log",
-    script:
-        "../report/bin_report.py"
-
-
-localrules:
     get_unique_bin_ids,
 
 
@@ -428,6 +392,7 @@ rule run_das_tool:
         " --debug "
         " --score_threshold {params.score_threshold} &> {log} "
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
+
 
 
 #
