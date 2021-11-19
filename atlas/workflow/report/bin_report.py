@@ -50,7 +50,23 @@ def make_plots(bin_table):
     # Prepare data
     df = pd.read_table(bin_table)
     df.index = df["Bin Id"]
-    df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
+
+
+
+    if snakemake.config["bin_quality_asesser"].lower()=="busco":
+
+        logging.waring("No taxonomic information available, use busco lineage")
+
+        lineage_name="lineage"
+
+    elif snakemake.config["bin_quality_asesser"].lower()=="checkm":
+
+        df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
+
+        lineage_name="phylum"
+    else:
+        raise Exception(f"bin_quality_asesser in the config file not understood")
+
 
     df["Quality Score"] = df.eval("Completeness - 5* Contamination")
 
@@ -63,7 +79,7 @@ def make_plots(bin_table):
         data_frame=df,
         y="Completeness",
         x="Contamination",
-        color="phylum",
+        color=lineage_name,
         size="Genome size (Mbp)",
         hover_data=["genus"],
         hover_name="Bin Id",
@@ -77,7 +93,7 @@ def make_plots(bin_table):
         data_frame=df,
         y="Quality Score",
         x="Sample",
-        color="phylum",
+        color=lineage_name,
         hover_data=["genus"],
         hover_name="Bin Id",
     )
@@ -88,7 +104,7 @@ def make_plots(bin_table):
     fig = px.strip(
         data_frame=df,
         y="Quality Score",
-        x="phylum",
+        x=lineage_name,
         hover_data=["genus"],
         hover_name="Bin Id",
     )
