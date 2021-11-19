@@ -262,7 +262,6 @@ rule genecatalog:
 def get_genome_annotations():
 
     annotation_file_names = {
-        "cat_taxonomy": "genomes/taxonomy/taxonomy.tsv",
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
         "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
         "genes": "genomes/annotations/genes/predicted",
@@ -273,7 +272,7 @@ def get_genome_annotations():
     annotations_requested = config["annotations"]
 
     try:
-        annotations_files = ["genomes/checkm/completeness.tsv"] + [
+        annotations_files = ["genomes/genome_quality.tsv"] + [
             annotation_file_names[an] for an in annotations_requested
         ]
 

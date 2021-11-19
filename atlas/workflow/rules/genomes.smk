@@ -1,3 +1,8 @@
+
+
+
+
+
 ## dRep
 localrules:
     get_all_bins,
@@ -109,11 +114,13 @@ localrules:
 checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
+        genome_quality = f"reports/genomic_bins_{config['final_binner']}.tsv"
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes="genomes/clustering/old2newID.tsv",
         mapfile_bins="genomes/clustering/allbins2genome.tsv",
+        genome_quality = "genomes/genome_quality.tsv"
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
@@ -393,3 +400,21 @@ rule all_prodigal:
         get_all_genes,
     output:
         touch("genomes/annotations/genes/predicted"),
+
+
+### get genome bin_quality
+
+
+
+# temporaty solution to make compatible with previous steps
+# if old checkm file exist simply copy this one and do not rerun eerithing.
+localrules: copy_old_checkm_genome_quality
+ruleorder: copy_old_checkm_genome_quality > rename_genomes
+
+rule copy_old_checkm_genome_quality:
+    input:
+        "genomes/checkm/completeness.tsv"
+    output:
+        "genomes/genome_quality.tsv"
+    shell:
+        "cp {input} {output}"
