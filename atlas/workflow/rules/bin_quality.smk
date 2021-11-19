@@ -57,7 +57,7 @@ rule run_busco:
     shell:
         " busco -i {input.fasta_dir} --auto-lineage-prok -m genome "
         " -o {params.tmpdir} --download_path {params.busco_download} -c {threads} "
-        " &> {log} "
+        " --offline &> {log}
         " ; "
         " mv {params.tmpdir}/batch_summary.txt {output} 2>> {log}"
 
