@@ -39,11 +39,11 @@ rule run_gunc:
 rule run_busco:
     input:
         fasta_dir = bin_quality_input_folder,
+        db= BUSCODIR
     output:
         "{sample}/binning/{binner}/bin_quality/busco.tsv",
     params:
         tmpdir = lambda wc: f"{config['tmpdir']}/busco/{wc.sample}_{wc.binner}",
-        busco_download = os.path.join(config["database_dir"], "busco_lineages"),
     conda:
         "../envs/busco.yaml"
     threads: config["threads"]
@@ -56,7 +56,7 @@ rule run_busco:
         mem_mb=config["mem"],
     shell:
         " busco -i {input.fasta_dir} --auto-lineage-prok -m genome "
-        " -o {params.tmpdir} --download_path {params.busco_download} -c {threads} "
+        " -o {params.tmpdir} --download_path {input.db} -c {threads} "
         " --offline &> {log}
         " ; "
         " mv {params.tmpdir}/batch_summary.txt {output} 2>> {log}"
