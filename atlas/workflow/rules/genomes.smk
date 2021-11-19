@@ -56,9 +56,9 @@ rule get_quality_for_dRep_from_checkm:
         D.index = D.index.astype(str) + ".fasta"
         D.index.name = "genome"
         D.columns = D.columns.str.lower()
-        D.iloc[:, :3].to_csv(output[0])
+        D.iloc[:, ['completeness','contamination']].to_csv(output[0])
 
-
+#
 
 rule dereplication:
     input:
@@ -77,9 +77,7 @@ rule dereplication:
         ANI=config["genome_dereplication"]["ANI"],
         completeness_weight=config["genome_dereplication"]["score"]["completeness"],
         contamination_weight=config["genome_dereplication"]["score"]["contamination"],
-        strain_heterogeneity_weight=config["genome_dereplication"]["score"][
-            "completeness"
-        ],
+        strain_heterogeneity_weight= 0,
         #not in table
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
