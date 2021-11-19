@@ -1,7 +1,7 @@
-
 from glob import glob
 
 BINNING_CONTIGS = "{sample}/{sample}_contigs.fasta"
+
 
 include: "bin_quality.smk"
 
@@ -338,7 +338,6 @@ rule get_bins:
         "get_fasta_of_bins.py"
 
 
-
 localrules:
     get_unique_bin_ids,
 
@@ -392,7 +391,6 @@ rule run_das_tool:
         " --debug "
         " --score_threshold {params.score_threshold} &> {log} "
         " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
-
 
 
 #

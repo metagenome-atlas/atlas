@@ -99,7 +99,6 @@ def get_mapfile_bins(mapfile_bins, dereplication, old2new_name):
     Genome_map.index = Genome_map.index.str.replace(".fasta", "")
     Genome_map = Genome_map.str.replace(".fasta", "")
 
-
     Genome_map = Genome_map.map(old2new_name)
 
     Genome_map.sort_values(inplace=True)
@@ -107,17 +106,19 @@ def get_mapfile_bins(mapfile_bins, dereplication, old2new_name):
 
     Genome_map.to_csv(mapfile_bins, sep="\t", header=True)
 
-def rename_quality(quality_in,quality_out,old2new_name):
 
-    Q= p.dread_csv(quality_in, index_col=0,sep='\t')
+def rename_quality(quality_in, quality_out, old2new_name):
 
-    Q= Q.loc[old2new_name.index].rename(index=old2new_name)
+    Q = p.dread_csv(quality_in, index_col=0, sep="\t")
 
-    Q.to_csv(quality_out,sep='\t')
+    Q = Q.loc[old2new_name.index].rename(index=old2new_name)
+
+    Q.to_csv(quality_out, sep="\t")
+
 
 if __name__ == "__main__":
 
-    old2new_name= rename_genomes(
+    old2new_name = rename_genomes(
         input_folder=snakemake.input.genomes,
         output_dir=snakemake.output.dir,
         mapfile_genomes=snakemake.output.mapfile_genomes,
@@ -131,6 +132,8 @@ if __name__ == "__main__":
         old2new_name=old2new_name,
     )
 
-    rename_quality(quality_in= snakemake.input.genome_quality,
-                   quality_out= snakemake.output.genome_quality,
-                   old2new_name=old2new_name)
+    rename_quality(
+        quality_in=snakemake.input.genome_quality,
+        quality_out=snakemake.output.genome_quality,
+        old2new_name=old2new_name,
+    )

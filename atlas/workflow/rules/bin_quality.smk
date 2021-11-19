@@ -14,20 +14,23 @@ rule run_gunc:
     params:
         tmpdir = lambda wc: f"{config['tmpdir']}/gunc/{wc.sample}",
     conda:
-        "%s/gunc.yaml" % CONDAENV
+        "../envs/gunc.yaml"
     threads:
-        config.get("threads", 1),
+        config["threads"]
     log:
         "{sample}/logs/binning/{binner}/gunc.log",
     benchmark:
         "logs/benchmarks/gunc/{sample}_{binner}.tsv",
     resources:
-        time=int(config.get("runtime", {"default": 5})['default']),
-        mem_mb=config.get("mem"),
+        time=int(config["runtime"]['default']),
+        mem_mb=config["mem"],
     shell:
         " mkdir -p {params.tmpdir}/ 2> {log} "
         " ; "
-        " gunc run --threads {threads} --db_file {input.db} --input_dir {input.fasta_dir}/ "
+        " gunc run "
+        " --threads {threads} "
+        " --db_file {input.db} "
+        " --input_dir {input.fasta_dir} "
         " --file_suffix .fasta "
         " --out_dir {params.tmpdir} &>> {log} "
         " ; "
@@ -46,7 +49,8 @@ rule run_busco:
         tmpdir = lambda wc: f"{config['tmpdir']}/busco/{wc.sample}_{wc.binner}",
     conda:
         "../envs/busco.yaml"
-    threads: config["threads"]
+    threads:
+        config["threads"]
     log:
         "{sample}/logs/binning/{binner}/busco.log",
     benchmark:
@@ -55,9 +59,13 @@ rule run_busco:
         time=int(config["runtime"]['default']),
         mem_mb=config["mem"],
     shell:
-        " busco -i {input.fasta_dir} --auto-lineage-prok -m genome "
-        " -o {params.tmpdir} --download_path {input.db} -c {threads} "
-        " --offline &> {log}
+        " busco -i {input.fasta_dir} "
+        " --auto-lineage-prok "
+        " -m genome "
+        " -o {params.tmpdir} "
+        " --download_path {input.db} "
+        " -c {threads} "
+        " --offline &> {log} "
         " ; "
         " mv {params.tmpdir}/batch_summary.txt {output} 2>> {log}"
 
@@ -129,7 +137,7 @@ elif config['bin_quality_asesser'].lower() == 'busco':
     rule combine_bin_stats:
         input:
             completeness_files=expand(
-                "{sample}/binning/{{binner}}/busco/.tsv", sample=SAMPLES
+                "{sample}/binning/{{binner}}/bin_quality/busco.tsv", sample=SAMPLES
             ),
         output:
             bin_table="reports/genomic_bins_{binner}.tsv",

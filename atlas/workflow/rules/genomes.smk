@@ -1,8 +1,3 @@
-
-
-
-
-
 ## dRep
 localrules:
     get_all_bins,
@@ -61,9 +56,11 @@ rule get_quality_for_dRep_from_checkm:
         D.index = D.index.astype(str) + ".fasta"
         D.index.name = "genome"
         D.columns = D.columns.str.lower()
-        D.iloc[:, ['completeness','contamination']].to_csv(output[0])
+        D.iloc[:, ["completeness", "contamination"]].to_csv(output[0])
+
 
 #
+
 
 rule dereplication:
     input:
@@ -82,7 +79,7 @@ rule dereplication:
         ANI=config["genome_dereplication"]["ANI"],
         completeness_weight=config["genome_dereplication"]["score"]["completeness"],
         contamination_weight=config["genome_dereplication"]["score"]["contamination"],
-        strain_heterogeneity_weight= 0,
+        strain_heterogeneity_weight=0,
         #not in table
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
@@ -114,13 +111,13 @@ localrules:
 checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
-        genome_quality = f"reports/genomic_bins_{config['final_binner']}.tsv"
+        genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_genomes="genomes/clustering/old2newID.tsv",
         mapfile_bins="genomes/clustering/allbins2genome.tsv",
-        genome_quality = "genomes/genome_quality.tsv"
+        genome_quality="genomes/genome_quality.tsv",
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
@@ -146,7 +143,6 @@ def get_genomes_(wildcards):
         exit(1)
 
     return genomes
-
 
 
 ### Quantification
@@ -405,16 +401,19 @@ rule all_prodigal:
 ### get genome bin_quality
 
 
-
 # temporaty solution to make compatible with previous steps
 # if old checkm file exist simply copy this one and do not rerun eerithing.
-localrules: copy_old_checkm_genome_quality
+localrules:
+    copy_old_checkm_genome_quality,
+
+
 ruleorder: copy_old_checkm_genome_quality > rename_genomes
+
 
 rule copy_old_checkm_genome_quality:
     input:
-        "genomes/checkm/completeness.tsv"
+        "genomes/checkm/completeness.tsv",
     output:
-        "genomes/genome_quality.tsv"
+        "genomes/genome_quality.tsv",
     shell:
         "cp {input} {output}"

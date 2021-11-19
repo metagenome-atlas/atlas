@@ -200,12 +200,12 @@ rule download_gunc:
     output:
         os.path.join(GUNCDIR, "{gunc_database}"),
     conda:
-        "../envs/gunc.yaml",
+        "../envs/gunc.yaml"
     threads: 1
     resources:
-        time=int(config.get("runtime", {"default": 5})['default']),
-        mem_mb=config.get("simplejob_mem",1)*1000,
-        tmpdir = config.get("tmpdir",".") # you can store the file in the main working folder if you want
+        time=int(config.get("runtime", {"default": 5})["default"]),
+        mem_mb=config.get("simplejob_mem", 1) * 1000,
+        tmpdir=config.get("tmpdir", "."),  # you can store the file in the main working folder if you want
     log:
         "logs/downloads/gunc_download_{gunc_database}.log",
     shell:
@@ -215,13 +215,13 @@ rule download_gunc:
 
 rule download_busco:
     output:
-        directory(BUSCODIR)
+        directory(BUSCODIR),
     conda:
-        "../envs/busco.yaml",
+        "../envs/busco.yaml"
     threads: 1
     resources:
-        time=int(config.get("runtime", {"default": 5})['default']),
-        mem_mb=config.get("simplejob_mem",1)*1000,
+        time=int(config.get("runtime", {"default": 5})["default"]),
+        mem_mb=config.get("simplejob_mem", 1) * 1000,
     log:
         "logs/busco_lineages.log",
     shell:
