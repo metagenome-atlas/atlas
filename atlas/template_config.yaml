@@ -174,6 +174,8 @@ DASTool:
   search_engine: 'diamond'
   score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
 
+bin_quality_asesser: busco          #[ checkm, busco]
+
 genome_dereplication:
   ANI: 0.975                        ## Genome dreplication threshold
   overlap: 0.6
