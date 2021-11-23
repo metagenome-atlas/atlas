@@ -364,7 +364,7 @@ else:
         ASSEMBLY_FRACTIONS = deepcopy(MULTIFILE_FRACTIONS)
 
         if config["spades_preset"] == "meta":
-            logging.error(
+            logger.error(
                 "Metaspades cannot handle single end libraries. Use another assembler or specify 'spades_preset': normal"
             )
             exit(1)
