@@ -282,7 +282,7 @@ def make_default_config():
     config["cat_range"] = 5
     config["cat_fraction"] = 0.3
 
-    config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simple_job": 1}
+    config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simplejob": 1}
 
     # config["diamond_run_mode"] = "fast"
     # config["diamond_top_seqs"] = DIAMOND_TOP_SEQS

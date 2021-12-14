@@ -71,7 +71,7 @@ rule minimap_index:
         index_size="12G",
     resources:
         mem=config["mem"],  # limited num of fatnodes (>200g)
-    threads: 1
+    threads: 3
     log:
         "logs/cobinning/vamb/index.log",
     benchmark:
@@ -79,7 +79,7 @@ rule minimap_index:
     conda:
         "../envs/minimap.yaml"
     shell:
-        "minimap2 -I {params.index_size} -d {output} {input} 2> {log}"
+        "minimap2 -I {params.index_size} -t {threads} -d {output} {input} 2> {log}"
 
 
 rule samtools_dict:
@@ -89,6 +89,7 @@ rule samtools_dict:
         dict="Cobinning/combined_contigs.dict",
     resources:
         mem=config["simplejob_mem"],
+        ttime=config["runtime"]["simplejob"],
     threads: 1
     log:
         "logs/cobinning/samtools_dict.log",
@@ -133,7 +134,7 @@ rule sort_bam:
     threads: 2
     resources:
         mem=config["simplejob_mem"],
-        time=int(config["runtime"]["simple_job"]),
+        time=int(config["runtime"]["simplejob"]),
     log:
         "logs/cobinning/mapping/{sample}.sortbam.log",
     conda:

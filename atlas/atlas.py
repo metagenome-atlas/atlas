@@ -41,7 +41,7 @@ def cli(obj):
 
 cli.add_command(run_init)
 
-## TODO: add sra init to CLI
+
 cli.add_command(run_init_sra)
 
 
@@ -216,6 +216,7 @@ def run_download(db_dir, jobs, snakemake_args):
         # removes the traceback
         logging.critical(e)
         exit(1)
+
 
 if __name__ == "__main__":
     cli()

@@ -170,8 +170,8 @@ rule DRAM_destill:
         outdir=directory("annotations/dram/distil"),
     threads: 1
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["default"],
+        mem=config["simplejob_mem"],
+        ttime=config["runtime"]["simplejob"],
     conda:
         "../envs/dram.yaml"
     log:

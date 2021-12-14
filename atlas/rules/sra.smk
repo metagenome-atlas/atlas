@@ -19,7 +19,7 @@ rule prefetch:
     threads: 1
     resources:
         mem=1,
-        time=int(config["runtime"]["simple_job"]),
+        time=int(config["runtime"]["simplejob"]),
         internet_connection=1,
     conda:
         "%s/sra.yaml" % CONDAENV
@@ -51,7 +51,7 @@ rule extract_run:
         "log/benchmarks/SRAdownload/fasterqdump/{sra_run}.tsv"
     threads: config["simplejob_threads"]
     resources:
-        time=int(config["runtime"]["simple_job"]),
+        time=int(config["runtime"]["simplejob"]),
         mem=1,  #default 100Mb
     conda:
         "%s/sra.yaml" % CONDAENV

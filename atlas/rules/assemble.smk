@@ -449,6 +449,9 @@ else:
             mem=config["assembly_memory"],
             time=config["runtime"]["assembly"],
         shell:
+            # remove pipeline_state file to create all output files again
+            " rm -f {params.p[outdir]}/pipeline_state/stage_*_copy_files 2> {log} ; "
+            " "
             "spades.py "
             " --threads {threads} "
             " --memory {resources.mem} "
@@ -459,7 +462,7 @@ else:
             " {params.p[inputs]} "
             " {params.p[longreads]} "
             " {params.p[skip_error_correction]} "
-            " > {log} 2>&1 "
+            " >> {log} 2>&1 "
 
     localrules:
         rename_spades_output,
@@ -483,6 +486,10 @@ rule rename_contigs:
         "{sample}/assembly/{sample}_prefilter_contigs.fasta",
     conda:
         "%s/required_packages.yaml" % CONDAENV
+    threads: config.get("simplejob_threads", 1)
+    resources:
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["simplejob"],
     shell:
         """rename.sh in={input} out={output} ow=t prefix={wildcards.sample}"""
 
@@ -497,6 +504,7 @@ rule calculate_contigs_stats:
     threads: 1
     resources:
         mem=1,
+        time=config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 > {output}"
 
@@ -631,8 +639,8 @@ if config["filter_contigs"]:
             "%s/required_packages.yaml" % CONDAENV
         threads: 1
         resources:
-            mem=config["mem"],
-            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+            mem=config["simplejob_mem"],
+            java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         shell:
             """filterbycoverage.sh in={input.fasta} \
             cov={input.covstats} \
@@ -849,6 +857,9 @@ rule predict_genes:
     benchmark:
         "logs/benchmarks/prodigal/{sample}.txt"
     threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        time=1,
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \

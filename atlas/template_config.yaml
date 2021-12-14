@@ -200,6 +200,8 @@ annotations:
   - gtdb_tree
   - gtdb_taxonomy
   - genes
+  - kegg_modules
+  - dram
 #  - checkm_taxonomy
 #  - checkm_tree
 

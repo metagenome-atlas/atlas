@@ -116,6 +116,9 @@ rule root_tree:
     conda:
         "%s/tree.yaml" % CONDAENV
     threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        ttime=config["runtime"]["simplejob"],
     log:
         "logs/genomes/tree/root_tree_{msa}.log",
     script:

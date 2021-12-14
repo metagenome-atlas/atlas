@@ -395,9 +395,7 @@ def run_init(
 #     help="Your reads are single end",
 # )
 def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
-    """Write the file CONFIG and complete the sample.tsv
-
-    """
+    """Write the file CONFIG and complete the sample.tsv"""
 
     if not os.path.exists(working_dir):
         os.makedirs(working_dir)
