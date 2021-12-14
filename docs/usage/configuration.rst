@@ -5,6 +5,7 @@ Configure Atlas
 ***************
 
 .. _contaminants:
+
 Remove reads from Host
 ======================
 
@@ -46,5 +47,5 @@ Detailed configuration
 .. toctree::
     :maxdepth: 1
 
-    qc
-    assembly
+    ../advanced/qc
+    ../advanced/assembly

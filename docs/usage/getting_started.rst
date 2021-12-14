@@ -19,7 +19,9 @@ For real metagenomic data atlas should be run on a _linux_ sytem, with enough me
 
 
 
-You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.::
+You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+
+.. code-block:: bash
 
     conda config --add channels defaults
     conda config --add channels bioconda
@@ -40,7 +42,9 @@ From now on you can replace ``conda install`` with ``mamba install`` and see how
 Install metagenome-atlas
 ------------------------
 
-We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv``::
+We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv``
+
+.. code-block:: bash
 
     mamba create -y -n atlasenv metagenome-atlas
     source activate atlasenv
@@ -51,12 +55,12 @@ Install metagenome-atlas from GitHub
 ------------------------------------
 
 Alternatively you can install metagenome Atlas directly form GitHub. This allows you to access versions that are not yet in the conda release, e.g. versions that are still in development.
-::
 
+.. code-block:: bash
 
     git clone https://github.com/metagenome-atlas/atlas.git
     cd atlas
-    
+
     # optional change to different branch
     # git checkout branchname
 
@@ -84,7 +88,9 @@ which can take a certain amount of time and especially disk space (>100Gb).
 
 The database dir of the test run should be the same as for the later atlas executions.
 
-The example data can be downloaded as following::
+The example data can be downloaded as following
+
+.. code-block:: bash
 
   wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
   tar -xzf test_reads.tar.gz
@@ -99,19 +105,24 @@ Start a new project
 
 Let's apply atlas on your data or on our `example data`_::
 
-  atlas init --db-dir databases path/to/fastq
+  atlas init --db-dir databases path/to/fastq_files
 
-This command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
+This command parses the folder for fastq files (extension ``.fastq(.gz)`` or ``.fq(.gz)`` , gzipped or not). fastq files can be arranged in subfolders, in which case the subfolder name will be used as a sample name. If you have paired-end reads the files are usually distinguishable by ``_R1/_R2`` or simple ``_1/_2`` in the file names. Atlas searches for these patterns and lists the paired-end files for each sample.
 
-Have a look at them with a normal text editor and check if the samples names are inferred correctly.
-Samples should be alphanumeric names and cam be dash delimited. Underscores should be fine too.
+The command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
+
+Have a look at them with a normal text editor and check if the samples names are inferred correctly. The sample names are used for the naming of contigs, genes, and genomes. Therefore, the sample names should consist only form digits and letters and start with a letter (Even though one ``-`` is allowed). Atlas tries to simplify the file name to obtain unique sample names, if it doesn't succeed it simply puts S1, S2, ... as sample names.
+
+
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 The ``BinGroup`` parameter is used during the genomic binning.
 In short: all samples in which you expect the same strain to
 be found should belong to the same group,
 e.g. all metagenome samples from mice in the same cage or location.
-If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
+
+
+.. note:: If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
 
 
 You should also check the ``config.yaml`` file, especially:
@@ -119,36 +130,39 @@ You should also check the ``config.yaml`` file, especially:
 
 - You may want to add ad :ref:`host genomes <contaminants>` to be removed.
 - You may want to change the resources configuration, depending on the system you run atlas on.
+
 Details about the parameters can be found in the section :ref:`Configuration`
 
 Keep in mind that all databases are installed in the directory specified with ``--db-dir`` so choose it wisely.
 
 
-::
+.. code-block:: text
 
-  Usage: atlas init [OPTIONS] PATH_TO_FASTQ
+    Usage: atlas init [OPTIONS] PATH_TO_FASTQ
 
-    Write the file CONFIG and complete the sample names and paths for all
-    FASTQ files in PATH.
+      Write the file CONFIG and complete the sample names and paths for all
+      FASTQ files in PATH.
 
-    PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
-    the file name with the file name minus extension as the sample ID.
+      PATH is traversed recursively and adds any file with '.fastq' or '.fq' in
+      the file name with the file name minus extension as the sample ID.
 
-  Options:
-    -d, --db-dir PATH               location to store databases (need ~50GB)
-                                    [default: /Users/silas/Documents/GitHub/atla
-                                    s/databases]
-    -w, --working-dir PATH          location to run atlas
-    --assembler [megahit|spades]    assembler  [default: spades]
-    --data-type [metagenome|metatranscriptome]
-                                    sample data type  [default: metagenome]
-    --interleaved-fastq             fastq files are paired-end in one files
-                                    (interleaved)
-    --threads INTEGER               number of threads to use per multi-threaded
-                                    job
-    --skip-qc                       Skip QC, if reads are already pre-processed
-    -h, --help                      Show this message and exit.
+    Options:
+      -d, --db-dir PATH               location to store databases (need ~50GB)
+                                      [default: /Users/silas/Documents/GitHub/atla
+                                      s/databases]
 
+      -w, --working-dir PATH          location to run atlas
+      --assembler [megahit|spades]    assembler  [default: spades]
+      --data-type [metagenome|metatranscriptome]
+                                      sample data type  [default: metagenome]
+      --interleaved-fastq             fastq files are paired-end in one files
+                                      (interleaved)
+
+      --threads INTEGER               number of threads to use per multi-threaded
+                                      job
+
+      --skip-qc                       Skip QC, if reads are already pre-processed
+      -h, --help                      Show this message and exit.
 
 
 Run atlas
@@ -156,7 +170,7 @@ Run atlas
 
 ::
 
-  atlas run all
+  atlas run genomes
 
 
 ``atlas run`` need to know the working directory with a ``samples.tsv`` inside it.
@@ -166,10 +180,9 @@ Take note of the ``--dryrun`` parameter, see the section :ref:`snakemake` for ot
 We recommend to use atlas on a :ref:`cluster` system, which can be set up in a view more commands.
 
 
-::
+.. code-block:: text
 
-  Usage: atlas run [OPTIONS]
-                   [[qc|assembly|binning|genomes|genecatalog|None|all]]
+  Usage: atlas run [OPTIONS] [qc|assembly|binning|genomes|genecatalog|None|all]
                    [SNAKEMAKE_ARGS]...
 
     Runs the ATLAS pipline
@@ -187,17 +200,16 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     -w, --working-dir PATH  location to run atlas.
     -c, --config-file PATH  config-file generated with 'atlas init'
     -j, --jobs INTEGER      use at most this many jobs in parallel (see cluster
-                            submission for mor details).  [default: 8]
+                            submission for mor details).
+
     --profile TEXT          snakemake profile e.g. for cluster execution.
     -n, --dryrun            Test execution.  [default: False]
     -h, --help              Show this message and exit.
 
 
-
 Execue Atlas
 ************
 
-.. _`snakemake profile`: https://github.com/metagenome-atlas/clusterprofile
 
 .. _cluster:
 
@@ -234,28 +246,25 @@ We recommend you keep the default name ``cluster``. The profile was tested on ``
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
 
-If you need to specify **queues or accounts** you can do this for all rules or for specific rules in the ``~/.config/snakemake/cluster/cluster_config.yaml``. In addition, using this file you can overwrite the resources defined  in the config file.
+**Specify queues and accounts**
+
+
+If you have different **queues/partitions** on your cluster system you should tell atlas about them so it can *automatically choose the best queue*. Adaot the template for the queues.tsv::
+
+  cp ~/.config/snakemake/cluster/queues.tsv.example ~/.config/snakemake/cluster/queues.tsv
+
+Now enter the information about the queues/partitions on your particular system.
+
+
+If you need to specify **accounts** or other options for one or all rules you can do this for all rules or for specific rules in the ``~/.config/snakemake/cluster/cluster_config.yaml``. In addition, using this file you can overwrite the resources defined  in the config file.
 
 Example for ``cluster_config.yaml`` with queues defined::
 
 
   __default__:
   # default parameter for all rules
-    queue: normal
+    account: project_1345
     nodes: 1
-
-
-  # The following rules in atlas need need more time/memory.
-  # If you need to submit them to different queues you can configure this as outlined.
-
-  run_megahit:
-    queue: bigmem
-  run_spades:
-    queue: bigmem
-
-  This rules can take longer
-  run_checkm_lineage_wf:
-    queue: long
 
 
 
@@ -279,6 +288,7 @@ The atlas argument ``--jobs`` now becomes the number of jobs simultaneously subm
 
 
 .. _local:
+
 Single machine execution
 ========================
 
@@ -290,8 +300,9 @@ For local execution the ``--jobs`` command line arguments defines the number of 
 
 For example on a machine with 16 processors and 250GB memory you might want to run::
 
-  atlas run all --resources mem=245 --jobs 16
+  atlas run all --resources mem=245 java_mem=208  --jobs 16
 
+Select the java_mem at 0.85 for the memory maximum.
 The whole pipeline can take more than a day. If for any reason the pipeline stops you can just rerun the same command after having inspected the error.
 
 
@@ -312,5 +323,6 @@ Atlas builds on snakemake. We designed the command line interface in a way that 
 For instance the ``--profile`` used for cluster execution. Other handy snakemake command line arguments include.
 
  ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
+
 
 For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.

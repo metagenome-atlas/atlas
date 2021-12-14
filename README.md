@@ -9,7 +9,7 @@
 
 Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It handles all steps from QC, Assembly, Binning, to Annotation.
 
-![scheme of workflow](resources/images/ATLAS_scheme.png?raw=true)
+![scheme of workflow](resources/images/atlas_list.png?raw=true)
 
 You can start using atlas with three commands:
 ```
@@ -40,7 +40,7 @@ https://metagenome-atlas.readthedocs.io/
 
 Here are some ideas I work or want to work on when I have time. If you want to contribute or have some ideas let me know via a feature request issue.
 
-- Optimized MAG recovery (e.g. [Spacegraphcats](https://github.com/spacegraphcats/spacegraphcats)) 
+- Optimized MAG recovery (e.g. [Spacegraphcats](https://github.com/spacegraphcats/spacegraphcats))
 - Integration of viruses/plasmid that live for now as [extensions](https://github.com/metagenome-atlas/virome_atlas)
 - Add statistics and visualisations as in [atlas_analyze](https://github.com/metagenome-atlas/atlas_analyze)
 - Implementation of most rules as snakemake wrapper

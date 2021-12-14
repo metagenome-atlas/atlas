@@ -9,14 +9,17 @@
 .. image:: https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow
     :target: https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd
 
-.. |scheme| image:: ../resources/images/ATLAS_scheme.png
-  :alt: Atlas is a workflow for assembly and binning of metagenomic reads
+
+.. |logo| image:: ../resources/images/atlas_image.png
+  :alt: Metagenome-atlas logo
+
 
 
 
 Metagenome-Atlas
 ****************
 
+|logo|
 
 Metagenome-Atlas is a easy-to-use metagenomic pipeline based on `snakemake <https://snakemake.github.io/>`_.
 It handles all steps from QC, Assembly, Binning, to Annotation.
@@ -27,7 +30,6 @@ You can start using atlas with three commands::
       atlas init --db-dir databases path/to/fastq/files
       atlas run
 
-|scheme|
 
 
 .. _publication:

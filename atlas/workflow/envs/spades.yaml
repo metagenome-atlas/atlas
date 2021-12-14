@@ -1,0 +1,7 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - python=3.8 # spades doesn't support yet py 3.10 https://github.com/ablab/spades/issues/863
+    - spades=3

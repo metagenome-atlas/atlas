@@ -1,0 +1,7 @@
+channels:
+    - conda-forge
+    - bioconda
+    - pytorch
+    - defaults
+dependencies:
+  - vamb>=3.0
