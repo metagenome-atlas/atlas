@@ -567,6 +567,7 @@ rule get_unique_bin_ids:
         "cp {input} {output}"
 
 
+localrules: run_das_tool
 rule run_das_tool:
     input:
         cluster_attribution=expand(
