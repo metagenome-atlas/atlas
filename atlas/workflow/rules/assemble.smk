@@ -497,6 +497,7 @@ rule rename_contigs:
         " minscaf={params.minlength} &> {log} "
 
 
+localrules: calculate_contigs_stats
 rule calculate_contigs_stats:
     input:
         "{sample}/assembly/{sample}_{assembly_step}_contigs.fasta",
