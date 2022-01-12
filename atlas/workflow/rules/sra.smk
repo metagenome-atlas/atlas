@@ -13,9 +13,9 @@ rule prefetch:
     params:
         outdir="SRAreads",  #lambda wc,output: os.path.dirname(output[0])
     log:
-        "log/SRAdownload/{sra_run}.log",
+        "logs/SRAdownload/{sra_run}.log",
     benchmark:
-        "log/benchmarks/SRAdownload/prefetch/{sra_run}.tsv"
+        "logs/benchmarks/SRAdownload/prefetch/{sra_run}.tsv"
     threads: 1
     resources:
         mem=1,
@@ -46,9 +46,9 @@ rule extract_run:
         sra_file="SRAreads/{sra_run}/{sra_run}.sra",
         tmpdir=TMPDIR,
     log:
-        "log/SRAdownload/{sra_run}.log",
+        "logs/SRAdownload/{sra_run}.log",
     benchmark:
-        "log/benchmarks/SRAdownload/fasterqdump/{sra_run}.tsv"
+        "logs/benchmarks/SRAdownload/fasterqdump/{sra_run}.tsv"
     threads: config["simplejob_threads"]
     resources:
         time=int(config["runtime"]["simplejob"]),
