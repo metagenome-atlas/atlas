@@ -137,6 +137,7 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
+
      - store_artifacts:
          path: .test/Test_assembly/logs
          destination: assembly_logs
@@ -169,6 +170,7 @@ jobs:
           command: |
               source activate ./atlasenv
               .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+              
       - store_test_results:
           path: example_data/binning/reports
       - store_artifacts:
