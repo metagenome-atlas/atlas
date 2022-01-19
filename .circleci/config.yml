@@ -128,10 +128,15 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
+        name: limit memory java_mem
+        command: |
+            sed -i "/^mem=.*/mem=3" config.yaml 
+            echo "simplejob_mem=3/n" >> config.yaml
+      - run:
           name: test assembly
           command: |
             source activate ./atlasenv
-            .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 --config mem=$MEM 
+            .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
             
           # --omit-from build_qc_report build_assembly_report
       - store_artifacts:
@@ -155,7 +160,7 @@ jobs:
           command: |
             source activate ./atlasenv
             WD='.test/Test_assembly'
-            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 --config mem=$MEM
+            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
   binning:
     <<: *defaults
     environment:

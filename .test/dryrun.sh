@@ -19,24 +19,28 @@ atlas download --db-dir $databaseDir -n
 atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
 
 
-# for w in qc assembly genomes genecatalog ; do
-#
-#   echo "
-#         Dryrun Workflow $w
-#       "
-#
-#   atlas run $w -w $WD --dryrun $@
-#
-# done
-#
+
+
+echo "Dryrun all"
 atlas run all -w $WD --dryrun $@
+
+for binner in SemiBin vamb DasTool metabat ; do
+
+  echo "
+        Dryrun Binner $binner
+      "
+
+  atlas run genomes -w $WD --config final_binner=$binner --dryrun $@
+
+done
+
+
 #
 
-# # skip QC
+echo "Dryrun with skip QC and megahit"
 #
-# WD=${WD}/noQC
-# rm -fr $WD
-# atlas init --db-dir $databaseDir --threads 3 --skip-qc -w $WD --assembler megahit $reads_dir
-#
-#
-# atlas run all -w $WD --dryrun $@
+WD=${WD}/noQC
+rm -fr $WD
+atlas init --db-dir $databaseDir --threads 3 --skip-qc -w $WD --assembler megahit $reads_dir
+
+atlas run all -w $WD --dryrun $@
