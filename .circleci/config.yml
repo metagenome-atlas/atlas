@@ -214,14 +214,14 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
-      - get_example_data
+      # - get_example_data
       # - getenvs:
       #     requires:
       #       - build_and_dryrun
-      - assembly:
-          requires:
-            - build_and_dryrun
-            - get_example_data
+      # - assembly:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
       # - binning:
       #     requires:
       #       - build_and_dryrun
