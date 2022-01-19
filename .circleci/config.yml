@@ -5,7 +5,7 @@ defaults: &defaults
     DATABASE_DIR: databases
 
 
-version: 2
+version: 2.1
 
 jobs:
   build:
@@ -21,22 +21,22 @@ jobs:
       - run:
           name: Setup conda
           command: |
-           conda config --add channels bioconda
-           conda config --add channels conda-forge
-           conda config --set always_yes true
-           conda install -y mamba
+            conda config --add channels bioconda
+            conda config --add channels conda-forge
+            conda config --set always_yes true
+            conda install -y mamba
       - restore_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}
       - run:
           name: install dependencies
           command:  |
-              if [ -d "./atlasenv" ]; then
-                echo "atlasenv exist already";
-                source activate ./atlasenv
-                conda list
-              else
-                mamba env create -p ./atlasenv --file atlasenv.yml
-              fi
+            if [ -d "./atlasenv" ]; then
+              echo "atlasenv exist already";
+              source activate ./atlasenv
+              conda list
+            else
+              mamba env create -p ./atlasenv --file atlasenv.yml
+            fi
       - save_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}
           paths:
@@ -81,13 +81,13 @@ jobs:
       - run:
           name: Init
           command: |
-              source activate ./atlasenv
-              atlas init --db-dir $DATABASE_DIR --threads 1 -w .test/Getenvs .test/reads/empty
+            source activate ./atlasenv
+            atlas init --db-dir $DATABASE_DIR --threads 1 -w .test/Getenvs .test/reads/empty
       - run:
           name: install environements
           command: |
-              source activate ./atlasenv
-              atlas run all -w .test/Getenvs --conda-create-envs-only --cores all
+            source activate ./atlasenv
+            atlas run all -w .test/Getenvs --conda-create-envs-only --cores all
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
@@ -135,22 +135,21 @@ jobs:
       - run:
           name: test assembly
           command: |
-              source activate ./atlasenv
-              .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
-
-     - store_artifacts:
-         path: .test/Test_assembly/logs
-         destination: assembly_logs
-     - store_artifacts:
-         path: .test/Test_assembly/Streptococcus/logs
-         destination: assembly_sample_logs
+            source activate ./atlasenv
+            .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
+      - store_artifacts:
+          path: .test/Test_assembly/logs
+          destination: assembly_logs
+      - store_artifacts:
+          path: .test/Test_assembly/Streptococcus/logs
+          destination: assembly_sample_logs
 
       - run:
           name: run genecatalog
           command: |
-              source activate ./atlasenv
-              WD='.test/Test_assembly'
-              atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+            source activate ./atlasenv
+            WD='.test/Test_assembly'
+            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
   binning:
     <<: *defaults
     environment:
@@ -168,9 +167,9 @@ jobs:
       - run:
           name: test binning
           command: |
-              source activate ./atlasenv
-              .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
-              
+            source activate ./atlasenv
+            .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+
       - store_test_results:
           path: example_data/binning/reports
       - store_artifacts:
