@@ -128,11 +128,6 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
-        name: limit memory java_mem
-        command: |
-            sed -i "/^mem=.*/mem=3" config.yaml 
-            echo "simplejob_mem=3/n" >> config.yaml
-      - run:
           name: test assembly
           command: |
             source activate ./atlasenv
