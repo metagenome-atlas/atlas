@@ -71,6 +71,7 @@ rule DRAM_annotate:
         " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
         " --threads {threads} "
+        " --min_contig_size {config.minimum_contig_length} "
         " {params.extra} "
         " --verbose &> {log}"
         #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
