@@ -24,7 +24,7 @@ atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
 echo "Dryrun all"
 atlas run all -w $WD --dryrun $@
 
-for binner in SemiBin vamb DasTool metabat ; do
+for binner in SemiBin vamb DASTool ; do
 
   echo "
         Dryrun Binner $binner
