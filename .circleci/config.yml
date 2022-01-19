@@ -8,7 +8,7 @@ defaults: &defaults
 version: 2.1
 
 jobs:
-  build:
+  build_and_dryrun:
     <<: *defaults
     resource_class: small
     environment:
@@ -118,7 +118,7 @@ jobs:
           paths:
             - example_data
 
-  assembly_and_genecatalog:
+  assembly:
     <<: *defaults
     environment:
       N_THREADS: 2
@@ -127,16 +127,13 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
-      - run: tar -cf conda_envs.tar atlas/envs
-      - restore_cache:
-          keys:
-            - conda-environements-{{ checksum "conda_envs.tar"  }}
-            - conda-environements-
       - run:
           name: test assembly
           command: |
             source activate ./atlasenv
-            .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from build_qc_report build_assembly_report
+            .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 --config mem=$MEM 
+            
+          # --omit-from build_qc_report build_assembly_report
       - store_artifacts:
           path: .test/Test_assembly/logs
           destination: assembly_logs
@@ -144,12 +141,21 @@ jobs:
           path: .test/Test_assembly/Streptococcus/logs
           destination: assembly_sample_logs
 
+  genecatalog:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
       - run:
           name: run genecatalog
           command: |
             source activate ./atlasenv
             WD='.test/Test_assembly'
-            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 --config mem=$MEM
   binning:
     <<: *defaults
     environment:
@@ -207,16 +213,16 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - build
+      - build_and_dryrun
       - get_example_data
-      - getenvs:
+      # - getenvs:
+      #     requires:
+      #       - build_and_dryrun
+      - assembly:
           requires:
-            - build
-      - assembly_and_genecatalog:
-          requires:
-            - build
+            - build_and_dryrun
             - get_example_data
-      - binning:
-          requires:
-            - build
-            - get_example_data
+      # - binning:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
