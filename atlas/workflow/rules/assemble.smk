@@ -866,8 +866,9 @@ rule predict_genes:
     shell:
         """
         prodigal -i {input} -o {output.sco} -d {output.fna} \
-            -a {output.faa} -p meta -f sco -m 2> {log}
+            -a {output.faa} -p meta -f sco -m -g auto 2> {log}
             # -m break at NN
+            # -g auto: try genetic code 11 and 4
         """
 
 
