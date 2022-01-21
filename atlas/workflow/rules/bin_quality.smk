@@ -62,13 +62,15 @@ rule run_busco:
         " busco -i {input.fasta_dir} "
         " --auto-lineage-prok "
         " -m genome "
-        " -o {params.tmpdir} "
+        " --out_path {params.tmpdir} "
+        " -o output "
         " --download_path {input.db} "
         " -c {threads} "
         " --offline &> {log} "
         " ; "
-        " mv {params.tmpdir}/batch_summary.txt {output} 2>> {log}"
+        " mv {params.tmpdir}/output/batch_summary.txt {output} 2>> {log}"
 
+# fetch also output/logs/busco.log
 
 ##### checkM  #########
 rule run_checkm:
