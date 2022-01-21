@@ -852,7 +852,7 @@ rule predict_genes:
     output:
         fna="{sample}/annotation/predicted_genes/{sample}.fna",
         faa="{sample}/annotation/predicted_genes/{sample}.faa",
-        gff="{sample}/annotation/predicted_genes/{sample}.gff",
+        sco=temp("{sample}/annotation/predicted_genes/{sample}.scores"),
     conda:
         "%s/prodigal.yaml" % CONDAENV
     log:
@@ -862,12 +862,15 @@ rule predict_genes:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time=config["runtime"]["simplejob"],
+        time=config["runtime"]["default"],
     shell:
         """
-        prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> {log}
+        prodigal -i {input} -o {output.sco} -d {output.fna} \
+            -a {output.faa} -p meta -f sco -m 2> {log}
+            # -m break at NN
         """
+
+
 
 
 localrules:
