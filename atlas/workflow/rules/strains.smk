@@ -1,5 +1,4 @@
 
-
 rule instrain_profile:
     input:
         sam="genomes/alignments/{sample}.sam",
@@ -18,14 +17,16 @@ rule instrain_profile:
     benchmark:
         "logs/benchmarks/strains/profile/{sample}.tsv"
     shell:
+        " cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
+        " ; "
         "inStrain profile "
         " {input.sam} {input.genomes} "
         " -o {output} "
         " -p {threads} "
-        " -g {input.genes} "
+        " -g {resources.tmpdir}/all_genome_genes.fna "
         " -s {input.scaffold_to_genome} "
         " --database_mode "
-        " {params.extra} &> {log}"
+        " {params.extra} &>> {log}"
 
 
 rule instrain_compare:
