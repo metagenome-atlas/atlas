@@ -46,13 +46,23 @@ rule instrain_compare:
         "logs/benchmarks/strains/compare.tsv"
     shell:
         "inStrain compare "
-        " {input.profiles} "
+        " --input {input.profiles} "
         " -o {output} "
         " -p {threads} "
         " -s {input.scaffold_to_genome} "
         " --database_mode "
         " {params.extra} &> {log}"
 
+# usage: inStrain compare -i [INPUT [INPUT ...]] [-o OUTPUT] [-p PROCESSES] [-d]
+#                         [-h] [--version] [-s [STB [STB ...]]] [-c MIN_COV]
+#                         [-f MIN_FREQ] [-fdr FDR] [--database_mode]
+#                         [--breadth BREADTH] [-sc SCAFFOLDS] [--genome GENOME]
+#                         [--store_coverage_overlap]
+#                         [--store_mismatch_locations]
+#                         [--include_self_comparisons] [--skip_plot_generation]
+#                         [--group_length GROUP_LENGTH] [--force_compress]
+#                         [-ani ANI_THRESHOLD] [-cov COVERAGE_TRESHOLD]
+#                         [--clusterAlg {ward,single,complete,average,weighted,median,centroid}]
 
 rule strains:
     input:
