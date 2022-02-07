@@ -14,9 +14,9 @@ rule dram_download:
         mem=config["mem"],
         time=config["runtime"]["default"],
     log:
-        "log/dram/download_dram.log",
+        "logs/dram/download_dram.log",
     benchmark:
-        "log/benchmarks/dram/download_dram.tsv"
+        "logs/benchmarks/dram/download_dram.tsv"
     conda:
         "../envs/dram.yaml"
     shell:
@@ -63,9 +63,9 @@ rule DRAM_annotate:
     params:
         extra=config.get("dram_extra", ""),
     log:
-        "log/dram/run_dram/{genome}.log",
+        "logs/dram/run_dram/{genome}.log",
     benchmark:
-        "log/benchmarks/dram/run_dram/{genome}.tsv"
+        "logs/benchmarks/dram/run_dram/{genome}.tsv"
     shell:
         " DRAM.py annotate "
         " --input_fasta {input.fasta}"
@@ -135,7 +135,7 @@ rule DRAM_destill:
     conda:
         "../envs/dram.yaml"
     log:
-        "log/dram/distil.log",
+        "logs/dram/distil.log",
     shell:
         " DRAM.py distill "
         " --input_file {input[0]}"
@@ -157,7 +157,7 @@ rule get_all_modules:
     conda:
         "../envs/dram.yaml"
     log:
-        "log/dram/get_all_modules.log",
+        "logs/dram/get_all_modules.log",
     script:
         "../scripts/DRAM_get_all_modules.py"
 
