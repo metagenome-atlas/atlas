@@ -62,6 +62,7 @@ rule DRAM_annotate:
         "../envs/dram.yaml"
     params:
         extra=config.get("dram_extra", ""),
+        min_contig_size=config.get("minimum_contig_length", "1000")
     log:
         "logs/dram/run_dram/{genome}.log",
     benchmark:
@@ -71,7 +72,7 @@ rule DRAM_annotate:
         " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
         " --threads {threads} "
-        " --min_contig_size {config.minimum_contig_length} "
+        " --min_contig_size {params.min_contig_size} "
         " {params.extra} "
         " --verbose &> {log}"
         #" --gtdb_taxonomy {input.gtdb_dir}/{params.gtdb_file} "
