@@ -163,13 +163,11 @@ def make_default_config():
         score=dict(
             completeness=1,
             contamination=5,
-            strain_heterogeneity=0,  # not in table
             N50=0.5,
             length=0,
         ),
         ANI=0.95,
         overlap=0.6,
-        sketch_size=5000,
         opt_parameters="",
     )
 

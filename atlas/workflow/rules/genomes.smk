@@ -112,30 +112,35 @@ rule dereplication:
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
+        filter= " --noQualityFiltering " if config['genome_dereplication']['filter']['noFilter'] else "",
+        filter_length= config['genome_dereplication']['filter']['length'],
+        filter_completeness= config['genome_dereplication']['filter']['completeness'],
+        filter_contamination= config['genome_dereplication']['filter']['contamination'],
         ANI=config["genome_dereplication"]["ANI"],
+        overlap= config["genome_dereplication"]["overlap"],
         completeness_weight=config["genome_dereplication"]["score"]["completeness"],
         contamination_weight=config["genome_dereplication"]["score"]["contamination"],
-        strain_heterogeneity_weight=config["genome_dereplication"]["score"][
-            "completeness"
-        ],
+
         #not in table
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
         work_directory=lambda wc, output: os.path.dirname(output[0]),
-        sketch_size=config["genome_dereplication"]["sketch_size"],
     shell:
         " rm -rf {params.work_directory} ;"
         " dRep dereplicate "
         " --genomes {input[0]}/*.fasta "
         " --genomeInfo {input.quality} "
+        " {params.filter} "
+        " --length {params.filter_length} "
+        " --completeness {params.filter_completeness} "
+        " --contamination {params.filter_contamination} "
         " --S_ani {params.ANI} "
+        " --cov_thresh {params.overlap} "
         " --completeness_weight {params.completeness_weight} "
         " --contamination_weight {params.contamination_weight} "
-        " --strain_heterogeneity_weight {params.strain_heterogeneity_weight} "
         " --N50_weight {params.N50_weight} "
         " --size_weight {params.size_weight} "
-        " --MASH_sketch {params.sketch_size} "
         " --processors {threads} "
         " {params.opt_parameters} "
         " {params.work_directory} "
