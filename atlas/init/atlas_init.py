@@ -1,5 +1,5 @@
 import os, sys
-from .color_logger import logger
+from ..color_logger import logger
 import multiprocessing
 import tempfile
 from snakemake import utils
@@ -9,9 +9,9 @@ import numpy as np
 from collections import defaultdict
 import click
 
-from .make_config import make_config, validate_config
+from ..make_config import make_config, validate_config
 from .create_sample_table import get_samples_from_fastq, simplify_sample_names
-from .sample_table import (
+from ..sample_table import (
     validate_sample_table,
     load_sample_table,
     ADDITIONAL_SAMPLEFILE_HEADERS,
@@ -190,17 +190,9 @@ def run_init(
 #     help="Your reads are single end",
 # )
 def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
-    """Write the file CONFIG and complete the sample.tsv"""
 
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
-    config = os.path.join(working_dir, "config.yaml")
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
     sample_file = os.path.join(working_dir, "samples.tsv")
 
-    make_config(db_dir, config=config)
-    sample_table = pd.DataFrame(index=identifiers)
 
     if single_end:
         sample_table["R1"] = sample_table.index.map(
