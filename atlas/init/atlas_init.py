@@ -190,9 +190,49 @@ def run_init(
 #     help="Your reads are single end",
 # )
 def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
+    """"""
+
+    from get_SRA_runinfo import get_runtable_from_ids
+    from parse_sra import filter_runinfo, validate_runinfo_table
+
+    # create working dir and db_dir
+    os.makedirs(working_dir, exist_ok=True)
+    os.makedirs(db_dir, exist_ok=True)
+
+    # create config file 
+    make_config(db_dir, config=os.path.join(working_dir, "config.yaml"))
+    
+    # Create runinfo table in folder for SRA reads
+    runinfo_file= "SRAreads/Runtable_original.tsv"
+    os.makedirs("SRAreads", exist_ok=True)
+    get_runtable_from_ids(identifiers, runinfo_file)
+
+
+    # Parse runtable 
+    RunTable= pd.read_csv(runinfo_file, sep='\t', index_col=0)
+
+    validate_runinfo_table(RunTable)
+
+    RunTable_filtered= filter_runinfo(RunTable)
+
+    RunTable_filtered.to_csv( runinfo_file.replace('original.tsv','filtered.tsv') , sep= '\t')
+
+
+    if RunTable.shape[0] != RunTable.BioSample.unique().shape[0] :
+
+        logger.debug("I will automatically merge runs from the same biosample.")
+
+
+    # create sample table
+
+
+
+
+
 
     sample_file = os.path.join(working_dir, "samples.tsv")
 
+    # sample_table = pd.DataFrame(index=identifiers)
 
     if single_end:
         sample_table["R1"] = sample_table.index.map(
