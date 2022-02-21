@@ -31,9 +31,11 @@ wheels/
 *.manifest
 *.spec
 .test/*
-!.test/dryrun.sh
-!.test/test_assembly.sh
-!.test/test_binning.sh
+test/*
+!test/dryrun.sh
+!test/test_assembly.sh
+!test/test_binning.sh
+!test/test_sra.py
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
