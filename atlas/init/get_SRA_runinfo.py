@@ -229,7 +229,14 @@ def get_runtable_from_ids(identifiers, output_file="SRA_runtable.tsv", overwrite
   
     with open(output_file, "w") as outInfoFile:
         identifierCount = 0
-        for identifier in tqdm(identifiers):
+
+        # don't show progress bar if only one elelment
+        if len(identifiers) > 1:
+            identifier_with_progressbar = tqdm(identifiers)
+        else:
+            identifier_with_progressbar = identifiers
+
+        for identifier in identifier_with_progressbar:
             try:
                 tab = SRAUtils.getInfoFromSRAIdentifier(identifier)
                 # write header

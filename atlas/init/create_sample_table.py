@@ -100,7 +100,7 @@ def parse_file(full_path, sample_dict, sample_name=None):
 
             logger.error(
                 f"Did't find '{split_character}1' or  "
-                f"'{split_character}2' in fastq {sample_id} : {full_path}"
+                f"'{split_character}2' in fastq {sample_name} : {full_path}"
                 "Ignore file."
             )
 

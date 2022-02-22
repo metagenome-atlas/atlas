@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 import click
+from pathlib2 import Path
 
 from ..make_config import make_config, validate_config
 from .create_sample_table import get_samples_from_fastq, simplify_sample_names
@@ -21,7 +22,7 @@ from ..sample_table import (
 ADAPTERS = "adapters.fa"
 RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
-SRA_READ_PATH = "SRAreads"
+
 
 
 def prepare_sample_table_for_atlas(
@@ -71,6 +72,7 @@ def prepare_sample_table_for_atlas(
 
     sample_table.to_csv(outfile, sep="\t")
 
+###### Atlas init command ######
 
 @click.command(
     "init",
@@ -83,7 +85,7 @@ def prepare_sample_table_for_atlas(
     default=os.path.join(os.path.realpath("."), "databases"),
     type=click.Path(dir_okay=True, writable=True, resolve_path=True),
     show_default=True,
-    help="location to store databases (need ~50GB)",
+    help="location to store databases (need ~150GB)",
 )
 @click.option(
     "-w",
@@ -140,28 +142,27 @@ def run_init(
     the file name with the file name minus extension as the sample ID.
     """
 
-    if not os.path.exists(working_dir):
-        os.makedirs(working_dir)
-    config = os.path.join(working_dir, "config.yaml")
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
-    sample_file = os.path.join(working_dir, "samples.tsv")
+    # create working dir and db_dir
+    os.makedirs(working_dir, exist_ok=True)
+    os.makedirs(db_dir, exist_ok=True)
 
-    make_config(db_dir, threads, assembler, data_type, interleaved_fastq, config)
+    make_config(db_dir, threads, assembler, data_type, interleaved_fastq, os.path.join(working_dir, "config.yaml"))
     sample_table = get_samples_from_fastq(path_to_fastq)
+
     prepare_sample_table_for_atlas(
-        sample_table, reads_are_QC=skip_qc, outfile=sample_file
+        sample_table, reads_are_QC=skip_qc, outfile=os.path.join(working_dir, "samples.tsv")
     )
 
+########### Public init download data from SRA ##############
 
 @click.command(
     "init-public",
     short_help="Prepare atlas run from public data from SRA",
     help="prepare configuration file and sample table for atlas run"
     "based on public data from SRA\n"
-    "Supply a set of SRA run ids to the command:"
-    "SRR4305427 ERR1190946\n\n"
-    "Reads are automatically downloaded but not stored on your machine. Beware that sometimes multiple runs go into one sample.",
+    "Supply a set of SRA run ids to the command, e.g.:"
+    "ERR1190946 PRJEB20796\n\n"
+    "Reads are automatically downloaded and only temporarily stored on your machine.",
 )
 @click.argument("identifiers", nargs=-1)
 @click.option(
@@ -170,7 +171,7 @@ def run_init(
     default=os.path.join(os.path.realpath("."), "databases"),
     type=click.Path(dir_okay=True, writable=True, resolve_path=True),
     show_default=True,
-    help="location to store databases (need ~50GB)",
+    help="location to store atlas databases (need ~150GB)",
 )
 @click.option(
     "-w",
@@ -184,68 +185,103 @@ def run_init(
     is_flag=True,
     help="Skip QC, if reads are already pre-processed",
 )
-# @click.option(
-#     "--single-end",
-#     is_flag=True,
-#     help="Your reads are single end",
-# )
-def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, single_end=False):
+@click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite previously downloaded Runinfo",
+)
+@click.option(
+    "--ignore-paired",
+    is_flag=True,
+    help="Ignore the paired end reads from your SRA samples",
+)
+def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=False,overwrite=False):
     """"""
 
-    from get_SRA_runinfo import get_runtable_from_ids
-    from parse_sra import filter_runinfo, validate_runinfo_table
+    from .get_SRA_runinfo import get_runtable_from_ids
+    from .parse_sra import filter_runinfo, load_and_validate_runinfo_table, validate_merging_runinfo
 
     # create working dir and db_dir
-    os.makedirs(working_dir, exist_ok=True)
+    working_dir = Path(working_dir)
+    working_dir.mkdir(exist_ok=True)
+
     os.makedirs(db_dir, exist_ok=True)
 
+    SRA_subfolder = working_dir / "SRA"
+    SRA_subfolder.mkdir(exist_ok=True)
+
     # create config file 
-    make_config(db_dir, config=os.path.join(working_dir, "config.yaml"))
+    make_config(db_dir, config= str(working_dir/ "config.yaml"))
     
-    # Create runinfo table in folder for SRA reads
-    runinfo_file= "SRAreads/Runtable_original.tsv"
-    os.makedirs("SRAreads", exist_ok=True)
-    get_runtable_from_ids(identifiers, runinfo_file)
+
+    runinfo_file = SRA_subfolder / "Runtable.tsv"
+
+    if os.path.exists(runinfo_file) and (not overwrite):
+
+        logger.info(f"Found Filtered runinfo file {runinfo_file}, load this instead of downloading from SRA\n"
+                    f"Use --overwrite to overwrite this file"
+                    )
+                    
+    else:
+
+        # Create runinfo table in folder for SRA reads
+        runinfo_file_original= SRA_subfolder/ "Runtable_original.tsv"
+        
+        get_runtable_from_ids(identifiers, runinfo_file_original)
 
 
-    # Parse runtable 
-    RunTable= pd.read_csv(runinfo_file, sep='\t', index_col=0)
 
-    validate_runinfo_table(RunTable)
+        # Parse runtable 
+        RunTable = load_and_validate_runinfo_table(runinfo_file_original)
 
-    RunTable_filtered= filter_runinfo(RunTable)
+        # Filter runtable
+        RunTable_filtered= filter_runinfo(RunTable,ignore_paired=ignore_paired)
 
-    RunTable_filtered.to_csv( runinfo_file.replace('original.tsv','filtered.tsv') , sep= '\t')
+        # save filtered runtable
+        logger.info(f"Write filtered runinfo to {runinfo_file}")
+        RunTable_filtered.to_csv( runinfo_file , sep= '\t')
 
 
-    if RunTable.shape[0] != RunTable.BioSample.unique().shape[0] :
+    # validate if can be merged
+    RunTable = validate_merging_runinfo(runinfo_file)
 
-        logger.debug("I will automatically merge runs from the same biosample.")
+    # create sample table
+    Samples= RunTable.BioSample.unique()
+    
+    if (RunTable.LibraryLayout=='PAIRED').all():
+        paired =True
+    elif (RunTable.LibraryLayout=='SINGLE').all():
+        paired = False
+    else:
+        
+        logger.error(f"Your library layout is not consistent, please check your runtable {runinfo_file}")
+        exit(1)
 
+    
+    
 
     # create sample table
 
+    sample_table = pd.DataFrame(index=Samples)
 
+    SRA_READ_PATH = SRA_subfolder.relative_to(working_dir) / "Samples"
 
-
-
-
-    sample_file = os.path.join(working_dir, "samples.tsv")
-
-    # sample_table = pd.DataFrame(index=identifiers)
-
-    if single_end:
+    if not paired:
         sample_table["R1"] = sample_table.index.map(
-            lambda s: os.path.join(SRA_READ_PATH, f"{s}.fastq.gz")
+            lambda s: str(SRA_READ_PATH/ f"{s}.fastq.gz")
         )
     else:
 
         sample_table["R1"] = sample_table.index.map(
-            lambda s: os.path.join(SRA_READ_PATH, f"{s}_1.fastq.gz")
+            lambda s: str(SRA_READ_PATH/ f"{s}_1.fastq.gz")
         )
         sample_table["R2"] = sample_table.index.map(
-            lambda s: os.path.join(SRA_READ_PATH, f"{s}_2.fastq.gz")
+            lambda s: str(SRA_READ_PATH/ f"{s}_2.fastq.gz")
         )
-        prepare_sample_table_for_atlas(
-            sample_table, reads_are_QC=skip_qc, outfile=sample_file
-        )
+
+
+    prepare_sample_table_for_atlas(
+        sample_table, reads_are_QC=skip_qc, outfile=str(working_dir/ "samples.tsv")
+    )
+
+
