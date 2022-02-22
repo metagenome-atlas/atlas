@@ -85,7 +85,7 @@ def get_runs_for_biosample(wildcards):
 
         from atlas.init.parse_sra import load_and_validate_runinfo_table
 
-        RunTable = load_and_validate_runinfo_table("Runinfo.tsv")
+        RunTable = load_and_validate_runinfo_table("RunInfo.tsv")
 
     run_ids = RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
 
