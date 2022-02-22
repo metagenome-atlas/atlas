@@ -6,9 +6,9 @@ atlas --version
 atlas run --help
 
 
-databaseDir=".test/databases"
-WD='.test/Dryrun'
-reads_dir='.test/reads/empty'
+databaseDir="test/databases"
+WD='test/Dryrun'
+reads_dir='test/reads/empty'
 
 rm -fr $WD
 
