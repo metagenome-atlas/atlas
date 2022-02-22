@@ -28,4 +28,4 @@ set -e
 echo "drop illumina samples"
 sed -i.bak '/ILLUMINA/d' $WD/SRA/Runtable.tsv
 
-
+atlas init-public SRP002423 -w $WD

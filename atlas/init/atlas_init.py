@@ -224,6 +224,8 @@ def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=
                     
     else:
 
+        logger.info(f"Downloading runinfo from SRA")
+
         # Create runinfo table in folder for SRA reads
         runinfo_file_original= SRA_subfolder/ "Runtable_original.tsv"
         
@@ -283,5 +285,8 @@ def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=
     prepare_sample_table_for_atlas(
         sample_table, reads_are_QC=skip_qc, outfile=str(working_dir/ "samples.tsv")
     )
+
+
+    logger.info(f"Prepared sample table with {sample_table.shape[0]} samples")
 
 

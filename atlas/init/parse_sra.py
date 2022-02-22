@@ -127,15 +127,11 @@ def validate_merging_runinfo(path):
         if not all(df.Platform == df.Platform.iloc[0]):
             problematic_samples.append(sample)
 
-    if len(problematic_samples)>0:
 
-        if len(problematic_samples)>5:
-            problematic_samples= problematic_samples[:3] + ["..."]
-
+    if len(problematic_samples) > 0:
         logger.error(f"You attemt to merge runs from the same sample. "
-                    f"But for some samples the runs are sequenced with different platforms and should't be merged.\n" 
-                    f"Please resolve the the abiguity in the table {path} and rerun the command.\n"
-                    f"The following samples have different platforms: {problematic_samples}\n"
+                     f"But for {len(problematic_samples)} samples the runs are sequenced with different platforms and should't be merged.\n" 
+                     f"Please resolve the the abiguity in the table {path} and rerun the command.\n"
                     )
 
         exit(1)
@@ -149,15 +145,16 @@ def validate_merging_runinfo(path):
             if not all(df[key] == df[key].iloc[0]):
                 problematic_samples.append(sample)
 
-        if len(problematic_samples)>0:
-
+        if len(problematic_samples) > 0:
             if len(problematic_samples)>5:
-                problematic_samples= problematic_samples[:3] + ["..."]
+                problematic_samples_list = " ".join(problematic_samples[:3]+["..."])
+            else:
+                problematic_samples_list= " ".join(problematic_samples)
 
-            logger.warn(f"You attemt to merge runs from the same sample, which have different {key}\n"
-                        f"I will merge them anyway, but you can chek the table {path} and rerun the command.\n"
-                        f"The following samples have different {key}: {problematic_samples}\n"
-                        )
+                logger.warn("You attemt to merge runs from the same sample. "
+                            f"But for {len(problematic_samples)} samples the runs have different {key}: {problematic_samples_list}\n"
+                            f"You can modify the table {path} and rerun the command.\n"
+                            )
 
     logger.info("I will automatically merge runs from the same biosample.")
 
