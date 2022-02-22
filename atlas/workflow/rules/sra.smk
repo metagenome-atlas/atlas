@@ -5,15 +5,17 @@ wildcard_constraints:
 localrules:
     prefetch,
 
-SRA_SUBDIR_RUN= "SRA/Runs"
+
+SRA_SUBDIR_RUN = "SRA/Runs"
 SRA_read_fractions = ["_1", "_2"] if PAIRED_END else [""]
+
 
 rule prefetch:
     output:
-        sra=temp(touch( SRA_SUBDIR_RUN + "{sra_run}/{sra_run}_downloaded")),
+        sra=temp(touch(SRA_SUBDIR_RUN + "{sra_run}/{sra_run}_downloaded")),
         # not givins sra file as output allows for continue from the same download
     params:
-        outdir=SRA_SUBDIR_RUN+"/{sra_run}",  #lambda wc,output: os.path.dirname(output[0])
+        outdir=SRA_SUBDIR_RUN + "/{sra_run}",  #lambda wc,output: os.path.dirname(output[0])
     log:
         "logs/SRAdownload/prefetch/{sra_run}.log",
     benchmark:
@@ -42,11 +44,13 @@ rule extract_run:
     input:
         flag=rules.prefetch.output,
     output:
-        expand(SRA_SUBDIR_RUN + "/{{sra_run}}/{{sra_run}}{fraction}.fastq.gz", 
-        fraction= SRA_read_fractions),
+        expand(
+            SRA_SUBDIR_RUN + "/{{sra_run}}/{{sra_run}}{fraction}.fastq.gz",
+            fraction=SRA_read_fractions,
+        ),
     params:
-        outdir= os.path.abspath("SRA_SUBDIR_RUN/{sra_run}"),
-        sra_file= SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}.sra",
+        outdir=os.path.abspath("SRA_SUBDIR_RUN/{sra_run}"),
+        sra_file=SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}.sra",
     log:
         "logs/SRAdownload/extract/{sra_run}.log",
     benchmark:
@@ -71,8 +75,8 @@ rule extract_run:
         " rm -f {params.sra_file} 2>> {log} "
 
 
-
 RunTable = None
+
 
 def get_runs_for_biosample(wildcards):
 
@@ -80,35 +84,37 @@ def get_runs_for_biosample(wildcards):
     if RunTable is None:
 
         from atlas.init.parse_sra import load_and_validate_runinfo_table
+
         RunTable = load_and_validate_runinfo_table("Runinfo.tsv")
 
-    run_ids= RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
+    run_ids = RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
 
-
-    return  expand(SRA_SUBDIR_RUN   +"/{sra_run}/{sra_run}{fraction}.fastq.gz", 
-        fraction= SRA_read_fractions,
-        sra_run= run_ids)
-
+    return expand(
+        SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}{fraction}.fastq.gz",
+        fraction=SRA_read_fractions,
+        sra_run=run_ids,
+    )
 
 
 rule merge_runs_to_sample:
     input:
-        get_runs_for_biosample
+        get_runs_for_biosample,
     output:
-        expand("SRA/Samples/{{sample}}/{{sample}}{fraction}.fastq.gz", 
-        fraction= SRA_read_fractions
+        expand(
+            "SRA/Samples/{{sample}}/{{sample}}{fraction}.fastq.gz",
+            fraction=SRA_read_fractions,
         ),
     log:
         "logs/SRAdownload/merge/{sample}.log",
-    threads:
-        1
+    threads: 1
     shell:
         "cat {input} > {output} 2> {log}"
 
 
 rule download_sra:
     input:
-        expand("SRA/Samples/{sample}/{sample}{fraction}.fastq.gz", 
-        fraction=SRA_read_fractions,
-        sample=SAMPLES),
-        
+        expand(
+            "SRA/Samples/{sample}/{sample}{fraction}.fastq.gz",
+            fraction=SRA_read_fractions,
+            sample=SAMPLES,
+        ),
