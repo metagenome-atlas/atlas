@@ -176,7 +176,7 @@ def run_init(
     "ERR1190946 PRJEB20796\n\n"
     "Reads are automatically downloaded and only temporarily stored on your machine.",
 )
-@click.argument("identifiers", nargs=-1)
+@click.argument("identifiers", nargs=-1, type=str)
 @click.option(
     "-d",
     "--db-dir",

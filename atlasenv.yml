@@ -16,4 +16,4 @@ dependencies:
   - biopython=1.74
   - cookiecutter
   - xmltodict
-  - pythlib2
+  - pathlib2
