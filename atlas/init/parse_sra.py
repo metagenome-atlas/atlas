@@ -104,9 +104,12 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
 
     # Final 
+    if RunTable.shape[0] >0:
+        logger.info(f"Selected {RunTable.shape[0]} runs from {RunTable.BioSample.unique().shape[0]} samples")
 
-    logger.info(f"Selected {RunTable.shape[0]} runs from {RunTable.BioSample.unique().shape[0]} samples")
-
+    else:
+        logger.critical("No runs left after filtering. Abort.")
+        exit(1)
 
     return RunTable
 

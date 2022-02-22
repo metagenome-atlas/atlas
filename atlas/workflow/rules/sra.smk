@@ -106,7 +106,7 @@ rule merge_runs_to_sample:
         "cat {input} > {output} 2> {log}"
 
 
-rule download_all_reads:
+rule download_sra:
     input:
         expand("SRA/Samples/{sample}/{sample}{fraction}.fastq.gz", 
         fraction=SRA_read_fractions,

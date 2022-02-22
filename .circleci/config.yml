@@ -61,6 +61,12 @@ jobs:
               source activate ./atlasenv
               test/dryrun.sh
 
+      - run:
+          name: Test sra download
+          command: |
+              source activate ./atlasenv
+              test/test_sra.sh --dryrun
+
       - persist_to_workspace:
           root: /root/project/
           paths:

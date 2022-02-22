@@ -25,6 +25,10 @@ wheels/
 .installed.cfg
 *.egg
 .snakemake/
+
+# atlas specific
+databases
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -93,6 +97,8 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
 
 # on mac
 .DS_Store

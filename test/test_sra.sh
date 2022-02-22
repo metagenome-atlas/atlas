@@ -50,3 +50,26 @@ atlas init-public SRP002423 -w $WD
 
 
 atlas run qc -w $WD --dry-run $@
+
+
+
+## smal data
+
+
+echo "Download reads from small dataset for real test"
+
+WD=$Test_dir/"Small"
+
+echo "gives error as library is selected with PCR"
+set +e
+atlas init-public SAMEA9831203 SAMEA9831204 -w $WD
+set -e
+
+echo "use this data anyway"
+cp $WD/SRA/RunInfo_original.tsv $WD/RunInfo.tsv
+
+atlas init-public Anything -w $WD 
+
+echo "Run Atlas"
+
+atlas run None download_sra -w $WD $@
