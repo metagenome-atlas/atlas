@@ -210,11 +210,9 @@ def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=
     SRA_subfolder = working_dir / "SRA"
     SRA_subfolder.mkdir(exist_ok=True)
 
-    # create config file 
-    make_config(db_dir, config= str(working_dir/ "config.yaml"))
-    
+ 
 
-    runinfo_file = SRA_subfolder / "Runtable.tsv"
+    runinfo_file = working_dir / "RunInfo.tsv"
 
     if os.path.exists(runinfo_file) and (not overwrite):
 
@@ -227,7 +225,7 @@ def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=
         logger.info(f"Downloading runinfo from SRA")
 
         # Create runinfo table in folder for SRA reads
-        runinfo_file_original= SRA_subfolder/ "Runtable_original.tsv"
+        runinfo_file_original= SRA_subfolder/ "RunInfo_original.tsv"
         
         get_runtable_from_ids(identifiers, runinfo_file_original)
 
@@ -260,9 +258,20 @@ def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=
         exit(1)
 
     
-    
+
+    sample_table_file = working_dir/ "samples.tsv"
+    # delete samples.tsv if it exists and overwrite is set
+    if sample_table_file.exists():
+        if overwrite:
+            sample_table_file.unlink()
+        else:
+            logger.info(f"{sample_table_file} already exists, I dare not to overwrite it. "
+                        f"Use --overwrite to overwrite this file"
+                        )
+            exit(1)    
 
     # create sample table
+
 
     sample_table = pd.DataFrame(index=Samples)
 
@@ -270,23 +279,33 @@ def run_init_sra(identifiers, db_dir, working_dir, skip_qc=False, ignore_paired=
 
     if not paired:
         sample_table["R1"] = sample_table.index.map(
-            lambda s: str(SRA_READ_PATH/ f"{s}.fastq.gz")
+            lambda s: str(SRA_READ_PATH/ f"{s}/{s}.fastq.gz")
         )
     else:
 
         sample_table["R1"] = sample_table.index.map(
-            lambda s: str(SRA_READ_PATH/ f"{s}_1.fastq.gz")
+            lambda s: str(SRA_READ_PATH/ f"{s}/{s}_1.fastq.gz")
         )
         sample_table["R2"] = sample_table.index.map(
-            lambda s: str(SRA_READ_PATH/ f"{s}_2.fastq.gz")
+            lambda s: str(SRA_READ_PATH/ f"{s}/{s}_2.fastq.gz")
         )
 
 
     prepare_sample_table_for_atlas(
-        sample_table, reads_are_QC=skip_qc, outfile=str(working_dir/ "samples.tsv")
+        sample_table, reads_are_QC=skip_qc, outfile=str(sample_table_file)
     )
 
 
     logger.info(f"Prepared sample table with {sample_table.shape[0]} samples")
+
+
+    if not paired:
+        logger.info("Set assembler to megahit as spades cannot handle single-end reads")
+        assembler="megahit"
+    else:   
+        assembler = "spades"
+    # create config file 
+    make_config(db_dir, config= str(working_dir/ "config.yaml"),assembler=assembler)
+    
 
 

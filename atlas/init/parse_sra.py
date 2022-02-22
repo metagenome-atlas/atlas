@@ -29,7 +29,7 @@ def load_and_validate_runinfo_table(path):
 
 
     if not all(RunTable.index.str[1:2]=="R"):
-        logger.error("Expect runs as index to start with 'R'")
+        logger.error("Expect runs as index, e.g. [E,S,D]RR000")
         format_error= True
 
     if not RunTable.BioSample.str.startswith('SAM').all():
@@ -50,6 +50,7 @@ def load_and_validate_runinfo_table(path):
 
 def filter_runinfo(RunTable, ignore_paired=False):
 
+    logger.info(f"Start with {RunTable.shape[0]} runs from {RunTable.BioSample.unique().shape[0]} samples")
 
     # Filter out reads that are not metagenomics
 

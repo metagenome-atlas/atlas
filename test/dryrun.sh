@@ -10,6 +10,18 @@ databaseDir="test/databases"
 WD='test/Dryrun'
 reads_dir='test/reads/empty'
 
+
+# touch reads dir
+mkdir -p $reads_dir
+for sample in Sample1 Sample2 ; 
+  do
+  for fraction in R1 R2;
+    do
+    touch $reads_dir/${sample}_${fraction}.fastq.gz
+  done
+done
+
+
 rm -fr $WD
 
 
