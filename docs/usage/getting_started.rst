@@ -199,6 +199,28 @@ The downloaded reads, are directly processed, in order to let a low memory footp
 
   atlas run None download_sra
 
+Example: Downloading reads from the human microbiome project2
+`````````````````````````````````````````````````````````````
+::
+
+  atlas init-public --working-dir HMP2 PRJNA398089
+
+Gives the output::
+  
+  [Atlas] INFO: Downloading runinfo from SRA
+  [Atlas] INFO: Start with 2979 runs from 2979 samples
+  [Atlas] INFO: Runs have the folowing values for LibrarySource: METAGENOMIC, METATRANSCRIPTOMIC
+          Select only runs LibrarySource == METAGENOMIC, Filtered out 762 runs
+  [Atlas] INFO: Runs have the folowing values for LibrarySelection: PCR, RT-PCR, RANDOM
+          Select only runs LibrarySelection == RANDOM, Filtered out 879 runs
+  [Atlas] INFO: Selected 1338 runs from 1338 samples
+  [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.tsv
+  [Atlas] INFO: Prepared sample table with 1338 samples
+  [Atlas] INFO: Configuration file written to HMP2/config.yaml
+          You may want to edit it using any text editor.
+
+
+
 
 
 Run atlas
