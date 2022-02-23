@@ -61,12 +61,6 @@ jobs:
               source activate ./atlasenv
               test/dryrun.sh
 
-      - run:
-          name: Test sra download
-          command: |
-              source activate ./atlasenv
-              test/test_sra.sh --dryrun
-
       - persist_to_workspace:
           root: /root/project/
           paths:
@@ -108,6 +102,24 @@ jobs:
           root: /root/project/
           paths:
             - databases
+
+
+  sra_init:
+    <<: *defaults
+    environment:
+      N_THREADS: 1
+      MEM: 2
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: Test sra download
+          command: |
+              source activate ./atlasenv
+              test/test_sra.sh --dryrun
+
+
 
 
   get_example_data:
@@ -220,6 +232,9 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
+      - sra_init:
+          requires:
+            - build_and_dryrun
       # - get_example_data
       # - getenvs:
       #     requires:
