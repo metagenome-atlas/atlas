@@ -70,7 +70,7 @@ rule extract_run:
         " --outdir {params.outdir} "
         " --tmpdir {resources.tmpdir} "
         " --skip-technical --split-3 "
-        " -s {params.sra_file} &> {log} "
+        " -s {params.sra_file} &>> {log} "
         " ; "
         " rm -f {params.sra_file} 2>> {log} "
 
