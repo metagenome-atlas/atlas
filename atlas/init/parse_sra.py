@@ -64,15 +64,16 @@ def filter_runinfo(RunTable, ignore_paired=False):
     for key in ["LibrarySource", "LibrarySelection"]:
 
         Nruns_before = RunTable.shape[0]
+        All_values= RunTable[key].unique()
         RunTable = RunTable.loc[RunTable[key] == Expected_library_values[key]]
 
         Difference = Nruns_before - RunTable.shape[0]
 
         if Difference > 0:
 
-            logger.info(
-                f"Select only runs {key} == {Expected_library_values[key]},"
-                f" Filtered out {Difference} runs"
+            logger.info(f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
+                f"Select only runs {key} == {Expected_library_values[key]}, "
+                f"Filtered out {Difference} runs"
             )
 
     # Handle single end reads if mixed
