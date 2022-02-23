@@ -12,10 +12,10 @@ SRA_read_fractions = ["_1", "_2"] if PAIRED_END else [""]
 
 rule prefetch:
     output:
-        sra=temp(touch(SRA_SUBDIR_RUN + "{sra_run}/{sra_run}_downloaded")),
+        sra=temp(touch(SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}_downloaded")),
         # not givins sra file as output allows for continue from the same download
     params:
-        outdir=SRA_SUBDIR_RUN + "/{sra_run}",  #lambda wc,output: os.path.dirname(output[0])
+        outdir=SRA_SUBDIR_RUN # prefetch creates file in subfolder with run name automatically
     log:
         "logs/SRAdownload/prefetch/{sra_run}.log",
     benchmark:
@@ -39,7 +39,6 @@ rule prefetch:
         " ; "
         " vdb-validate {params.outdir}/{wildcards.sra_run}/{wildcards.sra_run}.sra &>> {log} "
 
-
 rule extract_run:
     input:
         flag=rules.prefetch.output,
@@ -49,7 +48,7 @@ rule extract_run:
             fraction=SRA_read_fractions,
         ),
     params:
-        outdir=os.path.abspath("SRA_SUBDIR_RUN/{sra_run}"),
+        outdir=os.path.abspath(SRA_SUBDIR_RUN +"/{sra_run}"),
         sra_file=SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}.sra",
     log:
         "logs/SRAdownload/extract/{sra_run}.log",
@@ -89,26 +88,30 @@ def get_runs_for_biosample(wildcards):
 
     run_ids = RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
 
-    return expand(
+    return { fraction: expand(
         SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}{fraction}.fastq.gz",
-        fraction=SRA_read_fractions,
+        fraction=fraction,
         sra_run=run_ids,
-    )
+        )
+        for fraction in SRA_read_fractions
+        }
 
 
 rule merge_runs_to_sample:
     input:
-        get_runs_for_biosample,
+        unpack(get_runs_for_biosample),
     output:
         expand(
             "SRA/Samples/{{sample}}/{{sample}}{fraction}.fastq.gz",
             fraction=SRA_read_fractions,
         ),
-    log:
-        "logs/SRAdownload/merge/{sample}.log",
     threads: 1
-    shell:
-        "cat {input} > {output} 2> {log}"
+    run:
+        for i,fraction in enumerate(SRA_read_fractions):
+            from utils import io
+            io.cat_files(input[fraction],output[i] )
+
+
 
 
 rule download_sra:
