@@ -43,10 +43,10 @@ rule extract_run:
     input:
         flag=rules.prefetch.output,
     output:
-        expand(
+        temp(expand(
             SRA_SUBDIR_RUN + "/{{sra_run}}/{{sra_run}}{fraction}.fastq.gz",
             fraction=SRA_read_fractions,
-        ),
+        )),
     params:
         outdir=os.path.abspath(SRA_SUBDIR_RUN +"/{sra_run}"),
         sra_file=SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}.sra",
