@@ -154,6 +154,9 @@ localrules:
     rename_genomes,
 
 
+
+
+
 checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
@@ -169,7 +172,7 @@ checkpoint rename_genomes:
     log:
         "logs/genomes/rename_genomes.log",
     script:
-        "rename_genomes.py"
+        "../scripts/rename_genomes.py"
 
    
 
@@ -224,6 +227,35 @@ def get_all_genomes(wildcards):
 
     return genomes
 
+rule get_contig2genomes:
+    input:
+        genome_dir
+    output:
+        "genomes/clustering/contig2genome.tsv"
+    run:
+        from glob import glob
+        fasta_files= glob(input[0]+'/*.f*')
+
+        with open(output[0],'w') as out_contigs :
+            for fasta in fasta_files:
+
+                bin_name,ext= os.path.splitext(os.path.split(fasta)[-1])
+                # if gz remove also fasta extension
+                if ext == '.gz':
+                    bin_name = os.path.splitext(bin_name)[0]
+
+                # write names of contigs in mapping file
+                with open(fasta) as f :
+                    for line in f:
+                        if line[0]==">":
+                            header=line[1:].strip().split()[0]
+                            out_contigs.write(f"{header}\t{bin_name}\n")
+    
+
+
+# alternative way to get to contigs2genomes for quantification with external genomes
+
+ruleorder: get_contig2genomes > rename_genomes
 
 rule run_all_checkm_lineage_wf:
     input:
