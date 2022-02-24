@@ -42,6 +42,7 @@ test/*
 !test/test_assembly.sh
 !test/test_binning.sh
 !test/test_sra.sh
+!test/test_external_genomes.sh
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
