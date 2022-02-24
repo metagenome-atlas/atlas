@@ -3,7 +3,7 @@ rule instrain_profile:
     input:
         sam="genomes/alignments/{sample}.sam",
         genomes="genomes/all_contigs.fasta",
-        genes=lambda wc: get_all_genes(wc, extension=".fna"),
+        # genes=lambda wc: get_all_genes(wc, extension=".fna"),
         scaffold_to_genome="genomes/clustering/contig2genome.tsv",
     output:
         directory("strains/intermediate_files/{sample}"),
@@ -17,13 +17,13 @@ rule instrain_profile:
     benchmark:
         "logs/benchmarks/strains/profile/{sample}.tsv"
     shell:
-        " cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
+        #" cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
         " ; "
         "inStrain profile "
         " {input.sam} {input.genomes} "
         " -o {output} "
         " -p {threads} "
-        " -g {resources.tmpdir}/all_genome_genes.fna "
+        #" -g {resources.tmpdir}/all_genome_genes.fna "
         " -s {input.scaffold_to_genome} "
         " --database_mode "
         " {params.extra} &>> {log}"
