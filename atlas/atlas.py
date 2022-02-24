@@ -42,7 +42,7 @@ def handle_max_mem(max_mem):
     
     # specify max_mem_string including java mem and max mem
 
-    return f" --resources mem={floor(max_mem)} java_mem={floor(0.85* max_mem)} "
+    return f" --resources mem={floor(max_mem)} mem_mb={floor(max_mem*1024)} java_mem={floor(0.85* max_mem)} "
 
 
 
