@@ -15,3 +15,4 @@ dependencies:
   - ruamel.yaml=0.17
   - biopython=1.74
   - cookiecutter
+  - psutil

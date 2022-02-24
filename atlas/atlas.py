@@ -1,8 +1,9 @@
+from email.policy import default
 import os, sys
 from .color_logger import logger
 
 import multiprocessing
-
+import psutil
 import subprocess
 import click
 
@@ -14,6 +15,18 @@ from .atlas_init import run_init, run_init_sra
 from .__init__ import __version__
 
 ##
+
+
+def handle_max_mem(max_mem):
+    "Specify maximum virtual memory to use by atlas."
+    "For numbers >1 its the memory in GB. "
+    "For numbers <1 it's the fraction of available memory."
+
+    if max_mem < 0:
+        # calulate max  system meory in GB (float!)
+        max_system_memory = psutil.virtual_memory().total / (1024 ** 3)
+
+        max_mem = max_mem * max_system_memory
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -77,6 +90,12 @@ def get_snakefile(file="workflow/Snakefile"):
     help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(
+    "--max-mem",
+    type=float,
+    default= 0.95
+    help= handle_max_mem.__doc__,
+)
+@click.option(
     "--profile",
     default=None,
     help="snakemake profile e.g. for cluster execution.",
@@ -91,7 +110,7 @@ def get_snakefile(file="workflow/Snakefile"):
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_workflow(
-    workflow, working_dir, config_file, jobs, profile, dryrun, snakemake_args
+    workflow, working_dir, config_file, jobs, max_mem,profile, dryrun, snakemake_args
 ):
     """Runs the ATLAS pipline
 
@@ -156,6 +175,8 @@ def run_workflow(
         logger.critical(e)
         exit(1)
 
+
+################### Download function #################
 
 # Download
 @cli.command(
