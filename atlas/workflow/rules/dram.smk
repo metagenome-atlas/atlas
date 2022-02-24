@@ -62,7 +62,7 @@ rule DRAM_annotate:
         "../envs/dram.yaml"
     params:
         extra=config.get("dram_extra", ""),
-        min_contig_size=config.get("minimum_contig_length", "1000")
+        min_contig_size=config.get("minimum_contig_length", "1000"),
     log:
         "logs/dram/run_dram/{genome}.log",
     benchmark:

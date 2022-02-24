@@ -7,7 +7,6 @@ import subprocess
 import click
 
 
-
 from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
 from .init.atlas_init import run_init, run_init_sra
@@ -22,12 +21,12 @@ def handle_max_mem(max_mem, profile):
     "For numbers >1 its the memory in GB. "
     "For numbers <1 it's the fraction of available memory."
 
-
-
     if profile is not None:
 
         if max_mem is not None:
-            logger.info("Memory requirements are handled by the profile, I ignore max-mem argument.")
+            logger.info(
+                "Memory requirements are handled by the profile, I ignore max-mem argument."
+            )
         # memory is handled via the profile, user should know what he is doing
         return ""
     else:
@@ -42,20 +41,18 @@ def handle_max_mem(max_mem, profile):
         if max_mem > 0:
 
             if max_mem > max_system_memory:
-                logger.critical(f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB")
+                logger.critical(
+                    f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB"
+                )
                 sys.exit(1)
-
 
         else:
 
             max_mem = max_mem * max_system_memory
 
-        
         # specify max_mem_string including java mem and max mem
 
         return f" --resources mem={floor(max_mem)} mem_mb={floor(max_mem*1024)} java_mem={floor(0.85* max_mem)} "
-
-
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -116,14 +113,14 @@ def get_snakefile(file="workflow/Snakefile"):
     "--jobs",
     type=int,
     default=multiprocessing.cpu_count(),
-    show_default= True,
+    show_default=True,
     help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(
     "--max-mem",
     type=float,
-    default= None,
-    help= handle_max_mem.__doc__,
+    default=None,
+    help=handle_max_mem.__doc__,
 )
 @click.option(
     "--profile",
@@ -140,7 +137,7 @@ def get_snakefile(file="workflow/Snakefile"):
 )
 @click.argument("snakemake_args", nargs=-1, type=click.UNPROCESSED)
 def run_workflow(
-    workflow, working_dir, config_file, jobs, max_mem,profile, dryrun, snakemake_args
+    workflow, working_dir, config_file, jobs, max_mem, profile, dryrun, snakemake_args
 ):
     """Runs the ATLAS pipline
 
@@ -178,8 +175,6 @@ def run_workflow(
 
     db_dir = conf["database_dir"]
 
-    
-
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
         "{jobs} --rerun-incomplete "
@@ -199,7 +194,7 @@ def run_workflow(
         args=" ".join(snakemake_args),
         target_rule=workflow if workflow != "None" else "",
         conda_prefix="--conda-prefix " + os.path.join(db_dir, "conda_envs"),
-        max_mem_string = handle_max_mem(max_mem, profile)
+        max_mem_string=handle_max_mem(max_mem, profile),
     )
     logger.debug("Executing: %s" % cmd)
     try:

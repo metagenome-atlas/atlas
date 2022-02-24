@@ -217,8 +217,10 @@ def run_init_sra(
 ):
     """"""
 
-    if len(identifiers)==0:
-        click.echo("No SRA identifiers supplied, exiting. Use --help for more information.")
+    if len(identifiers) == 0:
+        click.echo(
+            "No SRA identifiers supplied, exiting. Use --help for more information."
+        )
         sys.exit(1)
 
     from .get_SRA_runinfo import get_runtable_from_ids
