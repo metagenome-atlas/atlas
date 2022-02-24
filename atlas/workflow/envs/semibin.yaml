@@ -3,4 +3,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - semibin=0.3
+  - python>=3.8
+  - semibin=0.5
