@@ -1,0 +1,40 @@
+<html>
+    <head>
+
+        <title>{binner} Metagenome-Atlas - Bin Report</title>
+
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+        <style type="text/css">
+            {css_content}
+        </style>
+
+    </head>
+    <body>
+
+
+    <div class="container" id="notebook-container">
+
+        <h1>Bin Report for Binner {binner}</h1>
+
+        <p>Genome completeness and contamination, and taxonomy were estimated unsing CheckM.</p>
+        <p>Bins might represent the same species assembled from different samples. During the De-replication step only the gneome with the highest quality will be selected as representative for the species/cluster.</p>
+        <p>For all the information see the table '{div[input_file]}'</p>
+
+
+            {div[2D]}
+
+
+        <h2>Quality score by Sample and phylum<h/2>
+
+          {div[QualityScore]}
+
+          {div[bySample]}
+
+          {div[byPhylum]}
+
+
+            </div>
+    </body>
+</html>

@@ -1,8 +1,0 @@
-name: concoct
-channels:
-    - conda-forge
-    - bioconda
-    - defaults
-dependencies:
-    - concoct=0.4.0=gsl1.16_0
-    - scikit-learn<=0.17.1

@@ -1,6 +1,9 @@
-__version__ = "2.3.2"
+import os, sys
 
-from .scripts import utils
+sys.path.append(os.path.join(os.path.dirname(__file__), "workflow", "scripts"))
+
+import utils
+
 
 TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 BLAST6 = [
@@ -17,3 +20,7 @@ BLAST6 = [
     "evalue",
     "bitscore",
 ]
+
+from . import _version
+
+__version__ = _version.get_versions()["version"]

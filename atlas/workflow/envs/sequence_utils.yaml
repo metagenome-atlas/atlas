@@ -1,0 +1,8 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - biopython=1.74
+    - pandas=1.2
+    - matplotlib-base

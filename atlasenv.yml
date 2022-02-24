@@ -3,11 +3,17 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python=3.6
-  - snakemake=5.9.1
-  - pandas
-  - bbmap=37.78
+  - python=3.8
+  - mamba
+  - bbmap=38
+  - snakemake-minimal=6.7
+  - pygments
+  - networkx
+  - graphviz
+  - pandas=1.2
   - click=7
-  - ruamel.yaml=0.15.99 # needs to be explicit
-  - biopython
+  - ruamel.yaml=0.17
+  - biopython=1.74
   - cookiecutter
+  - xmltodict
+  - pathlib2

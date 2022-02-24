@@ -1,7 +1,0 @@
-channels:
-    - conda-forge
-    - bioconda
-    - defaults
-dependencies:
-    - megahit=1.1.2
-    - spades=3.13.1

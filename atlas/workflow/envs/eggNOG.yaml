@@ -1,0 +1,8 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - eggnog-mapper =2.1
+    - diamond = 2.0.6
+    - wget # to download_eggnog_data on macOS

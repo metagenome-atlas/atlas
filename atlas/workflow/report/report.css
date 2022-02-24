@@ -1,0 +1,42 @@
+/* Overrides of notebook CSS for static HTML export */
+body {
+  overflow: visible;
+  font-size: 14pt;
+  padding: 8px;
+  margin:0 100;
+  background:whitesmoke;
+}
+
+h1 {
+    text-align: center
+}
+
+p {
+  font-size: 14pt;
+}
+
+.float-container {
+    padding: 2px;
+    height:100%;
+    width:100%;
+}
+
+.float-child {
+    width: 50%;
+    float: left;
+    padding: 2px;
+}
+
+@media not print {
+  #notebook-container {
+    padding: 15px;
+    background-color: #fff;
+    min-height: 0;
+    -webkit-box-shadow: 0px 0px 12px 1px rgba(87, 87, 87, 0.2);
+    box-shadow: 0px 0px 12px 1px rgba(87, 87, 87, 0.2);
+  }
+}
+@media print {
+  #notebook-container {
+    width: 100%;
+  }
