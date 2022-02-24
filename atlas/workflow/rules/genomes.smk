@@ -154,9 +154,6 @@ localrules:
     rename_genomes,
 
 
-
-
-
 checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
@@ -174,13 +171,12 @@ checkpoint rename_genomes:
     script:
         "../scripts/rename_genomes.py"
 
-   
 
 def get_genome_dir():
 
     if ("genome_dir" in config) and (config["genome_dir"] is not None):
 
-        genome_dir= config["genome_dir"]
+        genome_dir = config["genome_dir"]
         assert os.path.exists(genome_dir), f"{genome_dir} Doesn't exists"
 
         logger.info(f"Set genomes from {genome_dir}.")
@@ -189,15 +185,12 @@ def get_genome_dir():
         genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
         if len(genomes) == 0:
-            logger.critical(
-                f"No genomes found with fasta extension in {genome_dir} "
-            )
+            logger.critical(f"No genomes found with fasta extension in {genome_dir} ")
             exit(1)
 
     else:
-        genome_dir="genomes/genomes"
-    
-    
+        genome_dir = "genomes/genomes"
+
     return genome_dir
 
 
@@ -210,57 +203,58 @@ def get_all_genomes(wildcards):
 
     if genome_dir == "genomes/genomes":
         checkpoints.rename_genomes.get()
-    
-    
+
     # check if genomes are present
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
         logger.critical(
             f"No genomes found with fasta extension in {genome_dir} "
-             "You don't have any Metagenome assembled genomes with sufficient quality. "
-             "You may want to change the assembly, binning or filtering parameters. "
-             "Or focus on the genecatalog workflow only."
- 
+            "You don't have any Metagenome assembled genomes with sufficient quality. "
+            "You may want to change the assembly, binning or filtering parameters. "
+            "Or focus on the genecatalog workflow only."
         )
         exit(1)
 
     return genomes
 
+
 rule get_contig2genomes:
     input:
-        genome_dir
+        genome_dir,
     output:
-        "genomes/clustering/contig2genome.tsv"
+        "genomes/clustering/contig2genome.tsv",
     run:
         from glob import glob
-        fasta_files= glob(input[0]+'/*.f*')
 
-        with open(output[0],'w') as out_contigs :
+        fasta_files = glob(input[0] + "/*.f*")
+
+        with open(output[0], "w") as out_contigs:
             for fasta in fasta_files:
 
-                bin_name,ext= os.path.splitext(os.path.split(fasta)[-1])
+                bin_name, ext = os.path.splitext(os.path.split(fasta)[-1])
                 # if gz remove also fasta extension
-                if ext == '.gz':
+                if ext == ".gz":
                     bin_name = os.path.splitext(bin_name)[0]
 
                 # write names of contigs in mapping file
-                with open(fasta) as f :
+                with open(fasta) as f:
                     for line in f:
-                        if line[0]==">":
-                            header=line[1:].strip().split()[0]
+                        if line[0] == ">":
+                            header = line[1:].strip().split()[0]
                             out_contigs.write(f"{header}\t{bin_name}\n")
-    
 
 
 # alternative way to get to contigs2genomes for quantification with external genomes
 
+
 ruleorder: get_contig2genomes > rename_genomes
+
 
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir= genome_dir,
+        dir=genome_dir,
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
@@ -297,7 +291,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        genome_dir
+        genome_dir,
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta"),
@@ -506,7 +500,7 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        os.path.join(genome_dir ,"{genome}.fasta"),
+        os.path.join(genome_dir, "{genome}.fasta"),
     output:
         fna="genomes/annotations/genes/{genome}.fna",
         faa="genomes/annotations/genes/{genome}.faa",

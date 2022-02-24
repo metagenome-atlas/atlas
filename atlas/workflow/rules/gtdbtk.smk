@@ -3,7 +3,7 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        dir= genome_dir,
+        dir=genome_dir,
         flag=rules.download_gtdb.output,
     output:
         directory(f"{gtdb_dir}/identify"),
