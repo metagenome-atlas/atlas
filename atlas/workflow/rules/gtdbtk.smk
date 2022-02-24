@@ -3,7 +3,7 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        dir="genomes/genomes",
+        dir= genome_dir,
         flag=rules.download_gtdb.output,
     output:
         directory(f"{gtdb_dir}/identify"),
@@ -45,7 +45,7 @@ checkpoint align:
 rule classify:
     input:
         rules.align.output,
-        genome_dir="genomes/genomes",
+        genome_dir=genome_dir,
     output:
         directory(f"{gtdb_dir}/classify"),
     threads: config["threads"]  #pplacer needs much memory for not many threads

@@ -163,18 +163,54 @@ checkpoint rename_genomes:
     script:
         "rename_genomes.py"
 
+   
 
-def get_genomes_(wildcards):
+def get_genome_dir():
 
-    genome_dir = checkpoints.rename_genomes.get().output.dir
+    if ("genome_dir" in config) and (config["genome_dir"] is not None):
+
+        genome_dir= config["genome_dir"]
+        assert os.path.exists(genome_dir), f"{genome_dir} Doesn't exists"
+
+        logger.info(f"Set genomes from {genome_dir}.")
+
+        # check if genomes are present
+        genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
+
+        if len(genomes) == 0:
+            logger.critical(
+                f"No genomes found with fasta extension in {genome_dir} "
+            )
+            exit(1)
+
+    else:
+        genome_dir="genomes/genomes"
+    
+    
+    return genome_dir
+
+
+genome_dir = get_genome_dir()
+
+
+def get_all_genomes(wildcards):
+
+    global genome_dir
+
+    if genome_dir == "genomes/genomes":
+        checkpoints.rename_genomes.get()
+    
+    
+    # check if genomes are present
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
         logger.critical(
-            "No genomes found after dereplication. "
-            "You don't have any Metagenome assembled genomes with sufficient quality. "
-            "You may want to change the assembly, binning or filtering parameters. "
-            "Or focus on the genecatalog workflow only."
+            f"No genomes found with fasta extension in {genome_dir} "
+             "You don't have any Metagenome assembled genomes with sufficient quality. "
+             "You may want to change the assembly, binning or filtering parameters. "
+             "Or focus on the genecatalog workflow only."
+ 
         )
         exit(1)
 
@@ -184,7 +220,7 @@ def get_genomes_(wildcards):
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir="genomes/genomes",
+        dir= genome_dir,
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
@@ -221,7 +257,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        "genomes/genomes",
+        genome_dir
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta"),
@@ -413,7 +449,7 @@ rule combine_bined_coverages_MAGs:
 
 # rule predict_genes_genomes:
 #     input:
-#         dir="genomes/genomes"
+#         dir= genomes_dir
 #     output:
 #         directory("genomes/annotations/genes")
 #     conda:
@@ -430,11 +466,11 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        "genomes/genomes/{genome}.fasta",
+        os.path.join(genome_dir ,"{genome}.fasta"),
     output:
         fna="genomes/annotations/genes/{genome}.fna",
         faa="genomes/annotations/genes/{genome}.faa",
-        gff="genomes/annotations/genes/{genome}.gff",
+        gff=temp("genomes/annotations/genes/{genome}.gff"),
     conda:
         "%s/prodigal.yaml" % CONDAENV
     log:
@@ -453,7 +489,7 @@ rule predict_genes_genomes:
 def get_all_genes(wildcards, extension=".faa"):
     return expand(
         "genomes/annotations/genes/{genome}{extension}",
-        genome=get_genomes_(wildcards),
+        genome=get_all_genomes(wildcards),
         extension=extension,
     )
 

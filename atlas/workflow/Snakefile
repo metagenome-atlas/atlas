@@ -302,6 +302,11 @@ rule genomes:
     output:
         temp(touch("finished_genomes")),
 
+rule quantify_genomes:
+    input:
+        "genomes/counts/median_coverage_genomes.tsv",
+        "genomes/counts/raw_counts_genomes.tsv",
+        rules.strains.input,
 
 rule binning:
     input:
