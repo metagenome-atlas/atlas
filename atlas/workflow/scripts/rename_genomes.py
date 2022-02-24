@@ -1,4 +1,4 @@
-import os, shutil, sys
+import os, sys
 import argparse
 from snakemake.io import glob_wildcards
 
