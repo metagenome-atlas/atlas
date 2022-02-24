@@ -11,7 +11,7 @@ atlas --version
 
 samplenames="Mycoplasma Streptococcus"
 databaseDir="databases"
-WD='.test/Test_assembly'
+WD='test/Test_assembly'
 reads_dir="example_data/reads/stub"
 
 
@@ -26,7 +26,7 @@ atlas run assembly -w $WD $@
 
 echo "copy qc reads and assemble"
 
-WD2='.test/Test_assembly_skipQC'
+WD2='test/Test_assembly_skipQC'
 reads_dir=$WD2/"reads"
 
 rm -f $WD2/samples.tsv
@@ -40,7 +40,7 @@ atlas run -w $WD2 assembly  $@
 
 echo "start from interleaved QC reads"
 
-WD3='.test/Test_assembly_interleved'
+WD3='test/Test_assembly_interleved'
 reads_dir=$WD3/"reads"
 
 rm -f $WD3/samples.tsv

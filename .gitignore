@@ -25,6 +25,10 @@ wheels/
 .installed.cfg
 *.egg
 .snakemake/
+
+# atlas specific
+databases
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -33,9 +37,11 @@ wheels/
 databases
 test/*
 .test/*
-!.test/dryrun.sh
-!.test/test_assembly.sh
-!.test/test_binning.sh
+test/*
+!test/dryrun.sh
+!test/test_assembly.sh
+!test/test_binning.sh
+!test/test_sra.sh
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -93,6 +99,8 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
 
 # on mac
 .DS_Store

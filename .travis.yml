@@ -34,5 +34,5 @@ install:
   - atlas --version
 script:
   - N_THREADS=2 ; MEM=7
-  - .test/dryrun.sh
-  - .test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+  - test/dryrun.sh
+  - test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
