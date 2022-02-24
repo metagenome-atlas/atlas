@@ -10,7 +10,7 @@ import click
 
 from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
-from .atlas_init import run_init, run_init_sra
+from .init.atlas_init import run_init, run_init_sra
 
 from .__init__ import __version__
 
@@ -42,8 +42,8 @@ def cli(obj):
 
 cli.add_command(run_init)
 
-## TODO: add sra init to CLI
-# cli.add_command(run_init_sra)
+
+cli.add_command(run_init_sra)
 
 
 def get_snakefile(file="workflow/Snakefile"):

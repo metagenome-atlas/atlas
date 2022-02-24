@@ -14,7 +14,7 @@ jobs:
     environment:
       N_THREADS: 1
       MEM: 2
-      WORKING_DIR: .test/Dryrun
+      WORKING_DIR: test/Dryrun
     steps:
       - checkout
       - run: pwd
@@ -59,7 +59,7 @@ jobs:
           name: Dryrun
           command: |
               source activate ./atlasenv
-              .test/dryrun.sh
+              test/dryrun.sh
 
       - persist_to_workspace:
           root: /root/project/
@@ -82,12 +82,12 @@ jobs:
           name: Init
           command: |
             source activate ./atlasenv
-            atlas init --db-dir $DATABASE_DIR --threads 1 -w .test/Getenvs .test/reads/empty
+            atlas init --db-dir $DATABASE_DIR --threads 1 -w test/Getenvs test/reads/empty
       - run:
           name: install environements
           command: |
             source activate ./atlasenv
-            atlas run all -w .test/Getenvs --conda-create-envs-only --cores all
+            atlas run all -w test/Getenvs --conda-create-envs-only --cores all
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
@@ -96,12 +96,30 @@ jobs:
       #     name: download checkm data
       #     command: |
       #         source activate ./atlasenv
-      #         atlas run None -w .test/Getenvs logs/checkm_init.txt
+      #         atlas run None -w test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/
           paths:
             - databases
+
+
+  sra_init:
+    <<: *defaults
+    environment:
+      N_THREADS: 1
+      MEM: 2
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: Test sra download
+          command: |
+              source activate ./atlasenv
+              test/test_sra.sh --dryrun
+
+
 
 
   get_example_data:
@@ -131,14 +149,14 @@ jobs:
           name: test assembly
           command: |
             source activate ./atlasenv
-            .test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
+            test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
             
           # --omit-from build_qc_report build_assembly_report
       - store_artifacts:
-          path: .test/Test_assembly/logs
+          path: test/Test_assembly/logs
           destination: assembly_logs
       - store_artifacts:
-          path: .test/Test_assembly/Streptococcus/logs
+          path: test/Test_assembly/Streptococcus/logs
           destination: assembly_sample_logs
 
   genecatalog:
@@ -154,7 +172,7 @@ jobs:
           name: run genecatalog
           command: |
             source activate ./atlasenv
-            WD='.test/Test_assembly'
+            WD='test/Test_assembly'
             atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
   binning:
     <<: *defaults
@@ -174,7 +192,7 @@ jobs:
           name: test binning
           command: |
             source activate ./atlasenv
-            .test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+            test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
 
       - store_test_results:
           path: example_data/binning/reports
@@ -214,6 +232,9 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
+      - sra_init:
+          requires:
+            - build_and_dryrun
       # - get_example_data
       # - getenvs:
       #     requires:

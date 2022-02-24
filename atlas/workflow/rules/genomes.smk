@@ -112,15 +112,18 @@ rule dereplication:
     conda:
         "%s/dRep.yaml" % CONDAENV
     params:
-        filter= " --noQualityFiltering " if config['genome_dereplication']['filter']['noFilter'] else "",
-        filter_length= config['genome_dereplication']['filter']['length'],
-        filter_completeness= config['genome_dereplication']['filter']['completeness'],
-        filter_contamination= config['genome_dereplication']['filter']['contamination'],
+        filter=(
+            " --noQualityFiltering "
+            if config["genome_dereplication"]["filter"]["noFilter"]
+            else ""
+        ),
+        filter_length=config["genome_dereplication"]["filter"]["length"],
+        filter_completeness=config["genome_dereplication"]["filter"]["completeness"],
+        filter_contamination=config["genome_dereplication"]["filter"]["contamination"],
         ANI=config["genome_dereplication"]["ANI"],
-        overlap= config["genome_dereplication"]["overlap"],
+        overlap=config["genome_dereplication"]["overlap"],
         completeness_weight=config["genome_dereplication"]["score"]["completeness"],
         contamination_weight=config["genome_dereplication"]["score"]["contamination"],
-
         #not in table
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
