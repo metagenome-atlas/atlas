@@ -56,3 +56,7 @@ rm -fr $WD
 atlas init --db-dir $databaseDir --threads 3 --skip-qc -w $WD --assembler megahit $reads_dir
 
 atlas run all -w $WD --dryrun $@
+
+
+echo "local execution"
+  atlas run qc -w $WD --dryrun --jobs 3 --max-mem 2 $@
