@@ -6,8 +6,7 @@ import multiprocessing
 import subprocess
 import click
 
-import psutil
-from math import floor
+
 
 from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
@@ -18,31 +17,43 @@ from .__init__ import __version__
 ##
 
 
-def handle_max_mem(max_mem):
+def handle_max_mem(max_mem, profile):
     "Specify maximum virtual memory to use by atlas."
     "For numbers >1 its the memory in GB. "
     "For numbers <1 it's the fraction of available memory."
 
 
-    # calulate max  system meory in GB (float!)
-    max_system_memory = psutil.virtual_memory().total / (1024 ** 3)
 
+    if profile is not None:
 
-    if max_mem > 0:
-
-        if max_mem > max_system_memory:
-            logger.critical(f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB")
-            sys.exit(1)
-
-
+        if max_mem is not None:
+            logger.info("Memory requirements are handled by the profile, I ignore max-mem argument.")
+        # memory is handled via the profile, user should know what he is doing
+        return ""
     else:
+        import psutil
+        from math import floor
 
-        max_mem = max_mem * max_system_memory
+        # calulate max  system meory in GB (float!)
+        max_system_memory = psutil.virtual_memory().total / (1024 ** 3)
 
-    
-    # specify max_mem_string including java mem and max mem
+        if max_mem is None:
+            max_mem = 0.95
+        if max_mem > 0:
 
-    return f" --resources mem={floor(max_mem)} mem_mb={floor(max_mem*1024)} java_mem={floor(0.85* max_mem)} "
+            if max_mem > max_system_memory:
+                logger.critical(f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB")
+                sys.exit(1)
+
+
+        else:
+
+            max_mem = max_mem * max_system_memory
+
+        
+        # specify max_mem_string including java mem and max mem
+
+        return f" --resources mem={floor(max_mem)} mem_mb={floor(max_mem*1024)} java_mem={floor(0.85* max_mem)} "
 
 
 
@@ -111,8 +122,7 @@ def get_snakefile(file="workflow/Snakefile"):
 @click.option(
     "--max-mem",
     type=float,
-    default= 0.95,
-    show_default= True,
+    default= None,
     help= handle_max_mem.__doc__,
 )
 @click.option(
@@ -189,7 +199,7 @@ def run_workflow(
         args=" ".join(snakemake_args),
         target_rule=workflow if workflow != "None" else "",
         conda_prefix="--conda-prefix " + os.path.join(db_dir, "conda_envs"),
-        max_mem_string = handle_max_mem(max_mem)
+        max_mem_string = handle_max_mem(max_mem, profile)
     )
     logger.debug("Executing: %s" % cmd)
     try:

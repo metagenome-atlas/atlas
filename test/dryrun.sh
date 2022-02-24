@@ -2,6 +2,9 @@
 set -euo pipefail
 
 
+NThreads=2
+MaxMem=3
+
 atlas --version
 atlas run --help
 
@@ -11,7 +14,7 @@ WD='test/Dryrun'
 reads_dir='test/reads/empty'
 
 
-# touch reads dir
+echo "touch reads dir"
 mkdir -p $reads_dir
 for sample in Sample1 Sample2 ; 
   do
@@ -24,17 +27,17 @@ done
 
 rm -fr $WD
 
-
+echo "Atlas download"
 atlas download --db-dir $databaseDir -n
 
-
-atlas init --db-dir $databaseDir --threads 3 -w $WD $reads_dir
+echo "Init"
+atlas init --db-dir $databaseDir --threads=$NThreads -w $WD $reads_dir
 
 
 
 
 echo "Dryrun all"
-atlas run all -w $WD --dryrun $@
+atlas run all -w $WD --max-mem $MaxMem --jobs $NThreads --dryrun $@
 
 for binner in SemiBin vamb DASTool ; do
 
@@ -49,14 +52,24 @@ done
 
 #
 
-echo "Dryrun with skip QC and megahit"
+echo "
+      Dryrun with skip QC and megahit
+    "
 #
 WD=${WD}/noQC
 rm -fr $WD
-atlas init --db-dir $databaseDir --threads 3 --skip-qc -w $WD --assembler megahit $reads_dir
+atlas init --db-dir $databaseDir --threads=$NThreads --skip-qc -w $WD --assembler megahit $reads_dir
 
 atlas run all -w $WD --dryrun $@
 
 
-echo "local execution"
-  atlas run qc -w $WD --dryrun --jobs 3 --max-mem 2 $@
+echo
+
+echo "
+      execution with profile
+    "
+
+  mkdir -p $WD/local
+  printf 'cores: 1\n' > $WD/local/config.yaml
+
+  atlas run qc -w $WD --dryrun --max-mem $MaxMem --jobs $NThreads --profile $WD/local $@ 

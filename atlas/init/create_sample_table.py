@@ -153,9 +153,12 @@ def get_samples_from_fastq(path, fraction_split_character=split_character):
 
     # list files and subfolder of fastq folder
 
-    print(path)
+    try:
+        _, subfolders, files = next(os.walk(path))
+    except StopIteration:
 
-    _, subfolders, files = next(os.walk(path))
+        logger.error(f"Folder {path} seems to conain no files or subfolders.")
+        exit(1)
 
     abs_path = os.path.abspath(path)
 
