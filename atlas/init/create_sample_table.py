@@ -100,7 +100,7 @@ def parse_file(full_path, sample_dict, sample_name=None):
 
             logger.error(
                 f"Did't find '{split_character}1' or  "
-                f"'{split_character}2' in fastq {sample_id} : {full_path}"
+                f"'{split_character}2' in fastq {sample_name} : {full_path}"
                 "Ignore file."
             )
 
@@ -152,6 +152,8 @@ def get_samples_from_fastq(path, fraction_split_character=split_character):
     sample_dict = defaultdict(dict)
 
     # list files and subfolder of fastq folder
+
+    print(path)
 
     _, subfolders, files = next(os.walk(path))
 
