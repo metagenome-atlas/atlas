@@ -331,11 +331,9 @@ Now, you can run atlas on a cluster with::
     atlas run <options> --profile cluster
 
 
-As the whole pipeline can take several days, I usually run this command in a screen on the head node, even when system administrators don't normally like that. On the head node atlas only schedules the jobs and combines tables, so it doesn't use many resources. You can also submit the atlas command as a long lasting job.
+As the whole pipeline can take several days, I usually run atlas itself on a cluster in a long running queue. 
 
  .. The mapping between  resources and cluster are defined in the ``~/.config/snakemake/cluster/key_mapping.yaml``.
-
-
 
 
 If a job fails, you will find the "external jobid" in the error message.
@@ -350,18 +348,11 @@ The atlas argument ``--jobs`` now becomes the number of jobs simultaneously subm
 Single machine execution
 ========================
 
-If you cannot use the  :ref:`automatic scheduling <cluster>` you can still try to use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
+If you dont want to use the  :ref:`automatic scheduling <cluster>` you can use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
 
-In theory you don't need to adapt the parameters in the config file. However you should tell atlas how many threads and how much memory (GB) you have available on our system so Atlas can take this into account.
+Atlas detects how many CPUs and how much memory is available on your system and it will shedulle as many jobs in paralell as possible.  If you have less resources available than specified in the config file. The jobs are downscaled.
 
-For local execution the ``--jobs`` command line arguments defines the number of threads used in total. Set it to the number of processors available on your machine.  If you have less core available than specified in the config file. The jobs are downscaled. If you have more Atlas tries to start multiple jobs, to optimally use the cores on you machine. The same applies for the memory.
-
-For example on a machine with 16 processors and 250GB memory you might want to run::
-
-  atlas run all --resources mem=245 java_mem=208  --jobs 16
-
-Select the java_mem at 0.85 for the memory maximum.
-The whole pipeline can take more than a day. If for any reason the pipeline stops you can just rerun the same command after having inspected the error.
+By default atlas will use all cpus and 95% of all the available memory. If you are not happy with that, or you need to specify an exact ammount of memory/ cpus you can use the comand line arguments ``--jobs`` and ``--max-mem`` to do so. 
 
 
 Cloud execution

@@ -3,10 +3,11 @@ import os, sys
 from .color_logger import logger
 
 import multiprocessing
-import psutil
 import subprocess
 import click
 
+import psutil
+from math import floor
 
 from snakemake.io import load_configfile
 from .make_config import make_config, validate_config
@@ -22,11 +23,28 @@ def handle_max_mem(max_mem):
     "For numbers >1 its the memory in GB. "
     "For numbers <1 it's the fraction of available memory."
 
-    if max_mem < 0:
-        # calulate max  system meory in GB (float!)
-        max_system_memory = psutil.virtual_memory().total / (1024 ** 3)
+
+    # calulate max  system meory in GB (float!)
+    max_system_memory = psutil.virtual_memory().total / (1024 ** 3)
+
+
+    if max_mem > 0:
+
+        if max_mem > max_system_memory:
+            logger.critical(f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB")
+            sys.exit(1)
+
+
+    else:
 
         max_mem = max_mem * max_system_memory
+
+    
+    # specify max_mem_string including java mem and max mem
+
+    return f" --resources mem={floor(max_mem)} java_mem={floor(0.85* max_mem)} "
+
+
 
 
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -87,12 +105,14 @@ def get_snakefile(file="workflow/Snakefile"):
     "--jobs",
     type=int,
     default=multiprocessing.cpu_count(),
+    show_default= True,
     help="use at most this many jobs in parallel (see cluster submission for mor details).",
 )
 @click.option(
     "--max-mem",
     type=float,
-    default= 0.95
+    default= 0.95,
+    show_default= True,
     help= handle_max_mem.__doc__,
 )
 @click.option(
@@ -148,11 +168,14 @@ def run_workflow(
 
     db_dir = conf["database_dir"]
 
+    
+
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "
+        " {max_mem_string} "
         " --scheduler greedy "
         " {target_rule} "
         " {args} "
@@ -166,6 +189,7 @@ def run_workflow(
         args=" ".join(snakemake_args),
         target_rule=workflow if workflow != "None" else "",
         conda_prefix="--conda-prefix " + os.path.join(db_dir, "conda_envs"),
+        max_mem_string = handle_max_mem(max_mem)
     )
     logger.debug("Executing: %s" % cmd)
     try:
