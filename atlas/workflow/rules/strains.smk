@@ -16,9 +16,12 @@ rule instrain_profile:
         "../envs/instrain.yaml"
     benchmark:
         "logs/benchmarks/strains/profile/{sample}.tsv"
+    resources:
+        mem=config["mem"],
+        time=config["runtime"]["long"],
     shell:
         #" cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
-        " ; "
+        #" ; "
         "inStrain profile "
         " {input.sam} {input.genomes} "
         " -o {output} "
@@ -44,6 +47,9 @@ rule instrain_compare:
         "../envs/instrain.yaml"
     benchmark:
         "logs/benchmarks/strains/compare.tsv"
+    resources:
+        mem=config["mem"],
+        time=config["runtime"]["long"],
     shell:
         "inStrain compare "
         " --input {input.profiles} "
