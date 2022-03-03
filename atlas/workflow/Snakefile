@@ -298,7 +298,6 @@ rule genomes:
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
         * get_genome_annotations(),
-        rules.strains.input,
         "finished_binning",
     output:
         temp(touch("finished_genomes")),
@@ -308,7 +307,7 @@ rule quantify_genomes:
     input:
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
-        rules.strains.input,
+
 
 
 rule binning:
