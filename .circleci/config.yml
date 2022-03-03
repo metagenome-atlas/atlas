@@ -120,6 +120,22 @@ jobs:
               test/test_sra.sh --dryrun
 
 
+  genome_quantify:
+    <<: *defaults
+    environment:
+      N_THREADS: 1
+      MEM: 2
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: Test genome quantification
+          command: |
+              source activate ./atlasenv
+              test/test_external_genomes.sh
+
+
 
 
   get_example_data:
@@ -235,6 +251,10 @@ workflows:
       - sra_init:
           requires:
             - build_and_dryrun
+      - genome_quantify:
+          requires:
+            - build_and_dryrun
+            
       # - get_example_data
       # - getenvs:
       #     requires:

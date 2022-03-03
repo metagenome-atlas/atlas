@@ -34,12 +34,15 @@ databases
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+databases
+test/*
 .test/*
 test/*
 !test/dryrun.sh
 !test/test_assembly.sh
 !test/test_binning.sh
 !test/test_sra.sh
+!test/test_external_genomes.sh
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

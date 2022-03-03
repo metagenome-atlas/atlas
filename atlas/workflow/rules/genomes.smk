@@ -169,17 +169,47 @@ checkpoint rename_genomes:
     log:
         "logs/genomes/rename_genomes.log",
     script:
-        "rename_genomes.py"
+        "../scripts/rename_genomes.py"
 
 
-def get_genomes_(wildcards):
+def get_genome_dir():
 
-    genome_dir = checkpoints.rename_genomes.get().output.dir
+    if ("genome_dir" in config) and (config["genome_dir"] is not None):
+
+        genome_dir = config["genome_dir"]
+        assert os.path.exists(genome_dir), f"{genome_dir} Doesn't exists"
+
+        logger.info(f"Set genomes from {genome_dir}.")
+
+        # check if genomes are present
+        genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
+
+        if len(genomes) == 0:
+            logger.critical(f"No genomes found with fasta extension in {genome_dir} ")
+            exit(1)
+
+    else:
+        genome_dir = "genomes/genomes"
+
+    return genome_dir
+
+
+genome_dir = get_genome_dir()
+
+
+def get_all_genomes(wildcards):
+
+    global genome_dir
+
+    if genome_dir == "genomes/genomes":
+        checkpoints.rename_genomes.get()
+
+    # check if genomes are present
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
         logger.critical(
-            "No genomes found after dereplication. "
+            f"No genomes found with fasta extension in {genome_dir} "
             "You don't have any Metagenome assembled genomes with sufficient quality. "
             "You may want to change the assembly, binning or filtering parameters. "
             "Or focus on the genecatalog workflow only."
@@ -189,10 +219,42 @@ def get_genomes_(wildcards):
     return genomes
 
 
+rule get_contig2genomes:
+    input:
+        genome_dir,
+    output:
+        "genomes/clustering/contig2genome.tsv",
+    run:
+        from glob import glob
+
+        fasta_files = glob(input[0] + "/*.f*")
+
+        with open(output[0], "w") as out_contigs:
+            for fasta in fasta_files:
+
+                bin_name, ext = os.path.splitext(os.path.split(fasta)[-1])
+                # if gz remove also fasta extension
+                if ext == ".gz":
+                    bin_name = os.path.splitext(bin_name)[0]
+
+                # write names of contigs in mapping file
+                with open(fasta) as f:
+                    for line in f:
+                        if line[0] == ">":
+                            header = line[1:].strip().split()[0]
+                            out_contigs.write(f"{header}\t{bin_name}\n")
+
+
+# alternative way to get to contigs2genomes for quantification with external genomes
+
+
+ruleorder: get_contig2genomes > rename_genomes
+
+
 rule run_all_checkm_lineage_wf:
     input:
         touched_output="logs/checkm_init.txt",
-        dir="genomes/genomes",
+        dir=genome_dir,
     output:
         "genomes/checkm/completeness.tsv",
         "genomes/checkm/storage/tree/concatenated.fasta",
@@ -229,7 +291,7 @@ rule run_all_checkm_lineage_wf:
 
 rule build_db_genomes:
     input:
-        "genomes/genomes",
+        genome_dir,
     output:
         index="ref/genome/3/summary.txt",
         fasta=temp("genomes/all_contigs.fasta"),
@@ -421,7 +483,7 @@ rule combine_bined_coverages_MAGs:
 
 # rule predict_genes_genomes:
 #     input:
-#         dir="genomes/genomes"
+#         dir= genomes_dir
 #     output:
 #         directory("genomes/annotations/genes")
 #     conda:
@@ -438,11 +500,11 @@ rule combine_bined_coverages_MAGs:
 
 rule predict_genes_genomes:
     input:
-        "genomes/genomes/{genome}.fasta",
+        os.path.join(genome_dir, "{genome}.fasta"),
     output:
         fna="genomes/annotations/genes/{genome}.fna",
         faa="genomes/annotations/genes/{genome}.faa",
-        gff="genomes/annotations/genes/{genome}.gff",
+        gff=temp("genomes/annotations/genes/{genome}.gff"),
     conda:
         "%s/prodigal.yaml" % CONDAENV
     log:
@@ -461,7 +523,7 @@ rule predict_genes_genomes:
 def get_all_genes(wildcards, extension=".faa"):
     return expand(
         "genomes/annotations/genes/{genome}{extension}",
-        genome=get_genomes_(wildcards),
+        genome=get_all_genomes(wildcards),
         extension=extension,
     )
 
