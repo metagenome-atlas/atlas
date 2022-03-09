@@ -372,8 +372,8 @@ rule pileup_MAGs:
     input:
         sam="genomes/alignments/{sample}.sam",
     output:
-        basecov=temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
-        covhist=temp("genomes/alignments/{sample}_coverage_histogram.txt"),
+        # §basecov=temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
+        # covhist=temp("genomes/alignments/{sample}_coverage_histogram.txt"),
         covstats=temp("genomes/alignments/{sample}_coverage.txt"),
         bincov=temp("genomes/alignments/{sample}_coverage_binned.txt"),
     log:
@@ -389,25 +389,21 @@ rule pileup_MAGs:
         threads={threads} \
         -Xmx{resources.java_mem}G \
         covstats={output.covstats} \
-        hist={output.covhist} \
-        basecov={output.basecov}\
         concise=t \
         bincov={output.bincov} 2> {log}"""
 
-
-localrules:
-    combine_coverages_MAGs,
-    combine_bined_coverages_MAGs,
 
 
 rule combine_coverages_MAGs:
     input:
         covstats=expand("genomes/alignments/{sample}_coverage.txt", sample=SAMPLES),
-        cluster_attribution="genomes/clustering/contig2genome.tsv",
+        contig2genome="genomes/clustering/contig2genome.tsv",
     output:
         "genomes/counts/median_contig_coverage.tsv",
         "genomes/counts/raw_counts_contigs.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
+    threads:
+        1
     run:
         import pandas as pd
         from utils.parsers_bbmap import combine_coverages
@@ -419,11 +415,11 @@ rule combine_coverages_MAGs:
         Counts_contigs.to_csv(output[1], sep="\t")
 
 
-        cluster_attribution = pd.read_csv(
-            input.cluster_attribution, header=None, index_col=0, squeeze=True, sep="\t"
+        contig2genome = pd.read_csv(
+            input.contig2genome, header=None, index_col=0, squeeze=True, sep="\t"
         )
 
-        Counts_genome = Counts_contigs.groupby(cluster_attribution, axis=1).sum().T
+        Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
         Counts_genome.index.name = "Sample"
         Counts_genome.to_csv(output[2], sep="\t")
 
@@ -433,26 +429,33 @@ rule combine_bined_coverages_MAGs:
         binned_coverage_files=expand(
             "genomes/alignments/{sample}_coverage_binned.txt", sample=SAMPLES
         ),
-        cluster_attribution="genomes/clustering/contig2genome.tsv",
+        contig2genome="genomes/clustering/contig2genome.tsv",
     params:
         samples=SAMPLES,
     output:
         binned_cov="genomes/counts/binned_coverage.tsv.gz",
         median_abund="genomes/counts/median_coverage_genomes.tsv",
+    threads:
+        1
     run:
         import pandas as pd
         import os
 
 
         def read_coverage_binned(covarage_binned_file):
-            return pd.read_csv(
+            return 
+            
+            binned_coverage= pd.read_csv(
                 covarage_binned_file,
                 sep="\t",
                 skiprows=2,
                 index_col=[0, 2],
                 usecols=[0, 1, 2],
-                squeeze=True,
             )
+            binned_coverage.index.names = ["Contig", "Position"]
+            binned_coverage.columns = ["Coverage"]
+
+            return binned_coverage.Coverage
 
 
         binCov = {}
@@ -466,13 +469,13 @@ rule combine_bined_coverages_MAGs:
         binCov.index.names = ["Contig", "Position"]
         binCov.to_csv(output.binned_cov, sep="\t", compression="gzip")
 
-        cluster_attribution = pd.read_csv(
-            input.cluster_attribution, header=None, index_col=0, squeeze=True, sep="\t"
-        )
+        contig2genome = pd.read_csv(
+            input.contig2genome, header=None, index_col=0, sep="\t"
+        ).iloc[:,0]
 
         Median_abund = (
             binCov.groupby(
-                cluster_attribution.loc[binCov.index.get_level_values(0)].values
+                contig2genome.loc[binCov.index.get_level_values(0)].values
             )
             .median()
             .T
