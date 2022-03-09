@@ -393,10 +393,6 @@ rule pileup_MAGs:
         bincov={output.bincov} 2> {log}"""
 
 
-localrules:
-    combine_coverages_MAGs,
-    combine_bined_coverages_MAGs,
-
 
 rule combine_coverages_MAGs:
     input:
@@ -406,6 +402,8 @@ rule combine_coverages_MAGs:
         "genomes/counts/median_contig_coverage.tsv",
         "genomes/counts/raw_counts_contigs.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
+    threads:
+        1
     run:
         import pandas as pd
         from utils.parsers_bbmap import combine_coverages
@@ -437,6 +435,8 @@ rule combine_bined_coverages_MAGs:
     output:
         binned_cov="genomes/counts/binned_coverage.tsv.gz",
         median_abund="genomes/counts/median_coverage_genomes.tsv",
+    threads:
+        1
     run:
         import pandas as pd
         import os
