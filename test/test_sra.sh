@@ -12,7 +12,7 @@ echo "Download reads from our library"
 
 WD=$Test_dir/"Mouse"
 
-atlas init-public PRJEB20796 -w $WD --overwrite
+atlas init-public PRJEB20796 -w $WD
 
 echo "Run Atlas"
 
@@ -23,6 +23,8 @@ echo "Download reads from HMP"
 WD=$Test_dir/"HMP"
 
 # this fails as HMP have samples sequenced with different platforms
+
+echo "(expect errors)"
 set +e
 atlas init-public SRP002423 -w $WD
 
@@ -42,12 +44,11 @@ sed -i.bak '/ILLUMINA/d' $WD/RunInfo.tsv
 # yaml.dump(config, open(config_file, 'w'))
 # END
 
- 
 
+echo "create sample table"
+atlas init-public continue -w $WD
 
 echo "Run Atlas"
-atlas init-public SRP002423 -w $WD
-
 
 atlas run qc -w $WD --dry-run $@
 
@@ -60,16 +61,10 @@ echo "Download reads from small dataset for real test"
 
 WD=$Test_dir/"Small"
 
-echo "gives error as library is selected with PCR"
-set +e
+echo "gives warning as library is selected with PCR"
+
 atlas init-public SAMEA9831203 SAMEA9831204 -w $WD
-set -e
-
-echo "use this data anyway"
-cp $WD/SRA/RunInfo_original.tsv $WD/RunInfo.tsv
-
-atlas init-public Anything -w $WD 
 
 echo "Run Atlas"
 
-atlas run None download_sra -w $WD $@
+atlas run None download_sra -w $WD $@ 
