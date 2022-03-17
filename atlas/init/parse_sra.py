@@ -61,7 +61,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
     # Filter out reads that are not metagenomics
 
-    for key in ["LibrarySource", "LibrarySelection"]:
+    for key in ["LibrarySource"]:
 
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
@@ -76,6 +76,19 @@ def filter_runinfo(RunTable, ignore_paired=False):
                 f"Select only runs {key} == {Expected_library_values[key]}, "
                 f"Filtered out {Difference} runs"
             )
+
+    for key in ["LibrarySelection", "LibraryStrategy"]:
+
+        Nruns_before = RunTable.shape[0]
+        All_values = RunTable[key].unique()
+        if any (RunTable.loc[RunTable[key] != Expected_library_values[key]]):
+
+
+            logger.warning(
+                f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
+                f"Usually I expect {key} == {Expected_library_values[key]} "
+            )
+
 
     # Handle single end reads if mixed
 
