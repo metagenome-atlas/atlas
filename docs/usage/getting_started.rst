@@ -171,24 +171,22 @@ Start a new project with public data
 
 Since v2.9 atlas has possibility to start a new project from public data stored in the short read archive (SRA).
 
-You can run `atlas init-public SRA_IDs ` and specify any ids, like bioprojects, or other SRA ids. 
-
-
+You can run `atlas init-public SRA_IDs` and specify any ids, like bioprojects, or other SRA ids. 
 
 Atlas does the folowing steps:
 
-1. Search SRA for the corresponding sequences (Runs) and save them in the file `SRA/RunInfo_original.tsv`. 
-    For example if you specify a Bioproject, it fetches the information for all runs of this project. 
-2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in `RunInfo.tsv`
-3. Sometimes the same Sample is sequenced on different laines, which will result into multipe runs from the same sample. Atlas will **merge** runs from the same biosample.
-4. Prepare a sample table and a config.yaml similar to the `atlas init` command.
+  1. Search SRA for the corresponding sequences (Runs) and save them in the file `SRA/RunInfo_original.tsv`. 
+      For example if you specify a Bioproject, it fetches the information for all runs of this project. 
+  2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in `RunInfo.tsv`
+  3. Sometimes the same Sample is sequenced on different laines, which will result into multipe runs from the same sample. Atlas will **merge** runs from the same biosample.
+  4. Prepare a sample table and a config.yaml similar to the `atlas init` command.
 
 
-If you are not happy with the filtering atlas performs, you can go back to the `SRA/RunInfo_original.tsv` and modify the `RunInfo.tsv`. 
-If you then rerun `atlas init-public` it will continue from your modified RunInfo and do step 3. & 4. above. 
+If you are not happy with the filtering atlas performs, you can go back to the `SRA/RunInfo_original.tsv` and create a new `RunInfo.tsv`. 
+If you then rerun `atlas init-public continue` it will continue from your modified RunInfo and do step 3. & 4. above. 
 
 
-Limitations: For now atlas, cannot handle a mixture of paaired and single end reads, so we focus primarily on the paired end. 
+Limitations: For now atlas, cannot handle a mixture of paired and single end reads, so we focus primarily on the paired end. 
 If you have longreads for your project, you would need to specify them yourself in the sample.tsv.
 
 During the run, the reads are downloaded from SRA in the likely most efficient way using prefetch and parallel, fastq.gz generation. 
