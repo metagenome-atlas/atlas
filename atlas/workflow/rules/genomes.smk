@@ -397,36 +397,6 @@ rule pileup_MAGs:
 rule combine_coverages_MAGs:
     input:
         covstats=expand("genomes/alignments/{sample}_coverage.txt", sample=SAMPLES),
-        contig2genome="genomes/clustering/contig2genome.tsv",
-    output:
-        "genomes/counts/median_contig_coverage.tsv",
-        "genomes/counts/raw_counts_contigs.tsv",
-        "genomes/counts/raw_counts_genomes.tsv",
-    threads:
-        1
-    run:
-        import pandas as pd
-        from utils.parsers_bbmap import combine_coverages
-
-
-        combined_cov, Counts_contigs = combine_coverages(input.covstats, SAMPLES)
-
-        combined_cov.to_csv(output[0], sep="\t")
-        Counts_contigs.to_csv(output[1], sep="\t")
-
-
-        contig2genome = pd.read_csv(
-            input.contig2genome, header=None, index_col=0, squeeze=True, sep="\t"
-        )
-
-        Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
-        Counts_genome.index.name = "Sample"
-        Counts_genome.to_csv(output[2], sep="\t")
-
-
-rule combine_coverages_MAGs:
-    input:
-        covstats=expand("genomes/alignments/{sample}_coverage.txt", sample=SAMPLES),
         binned_coverage_files=expand(
             "genomes/alignments/{sample}_coverage_binned.txt", sample=SAMPLES
         ),
