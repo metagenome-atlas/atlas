@@ -31,15 +31,24 @@ def parse_comments(file, comment="#", sep="\t", expect_one_value=True):
     return Parsed
 
 
+
+
 def read_coverage_binned(covarage_binned_file):
-    return pd.read_csv(
+
+    binned_coverage= pd.read_csv(
         covarage_binned_file,
         sep="\t",
         skiprows=2,
         index_col=[0, 2],
         usecols=[0, 1, 2],
-        squeeze=True,
     )
+    binned_coverage.index.names = ["Contig", "Position"]
+    binned_coverage.columns = ["Coverage"]
+
+    return binned_coverage.Coverage
+
+
+
 
 
 def combine_coverages(coverage_files, sample_names, coverage_measure="Median_fold"):
