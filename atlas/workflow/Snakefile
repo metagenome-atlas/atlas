@@ -309,7 +309,6 @@ rule quantify_genomes:
         "genomes/counts/raw_counts_genomes.tsv",
 
 
-
 rule binning:
     input:
         expand(

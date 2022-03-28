@@ -242,17 +242,16 @@ def run_init_sra(
     runinfo_file = working_dir / "RunInfo.tsv"
 
     if os.path.exists(runinfo_file) & (not overwrite):
-        
+
         if not ((len(identifiers) == 1) & (identifiers[0].lower() == "continue")):
 
             logger.error(
-            f"Found Filtered runinfo file {runinfo_file}"
-            "If you want me to continue with this one use 'continue' instead of identifiers. "
-            "Alternatively use --overwrite to overwrite the files"
+                f"Found Filtered runinfo file {runinfo_file}"
+                "If you want me to continue with this one use 'continue' instead of identifiers. "
+                "Alternatively use --overwrite to overwrite the files"
             )
             sys.exit(1)
 
-    
     else:
         logger.info(f"Downloading runinfo from SRA")
 

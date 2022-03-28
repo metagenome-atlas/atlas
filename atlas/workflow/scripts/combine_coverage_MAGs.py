@@ -1,4 +1,3 @@
-
 import os, sys
 import logging, traceback
 
@@ -29,8 +28,6 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 sys.excepthook = handle_exception
 
 
-
-
 import pandas as pd
 import os
 from utils.parsers_bbmap import read_coverage_binned, combine_coverages
@@ -38,13 +35,14 @@ from utils.parsers_bbmap import read_coverage_binned, combine_coverages
 
 contig2genome = pd.read_csv(
     snakemake.input.contig2genome, header=None, index_col=0, sep="\t"
-).iloc[:,0]
+).iloc[:, 0]
 
 
 # sum counts
 
-combined_cov, Counts_contigs = combine_coverages(snakemake.input.covstats, snakemake.params.samples)
-
+combined_cov, Counts_contigs = combine_coverages(
+    snakemake.input.covstats, snakemake.params.samples
+)
 
 
 Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
@@ -68,9 +66,7 @@ binCov.to_csv(snakemake.output.binned_cov, sep="\t", compression="gzip")
 # Median coverage
 
 Median_abund = (
-    binCov.groupby(
-        contig2genome.loc[binCov.index.get_level_values(0)].values
-    )
+    binCov.groupby(contig2genome.loc[binCov.index.get_level_values(0)].values)
     .median()
     .T
 )

@@ -81,14 +81,12 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
-        if any (RunTable.loc[RunTable[key] != Expected_library_values[key]]):
-
+        if any(RunTable.loc[RunTable[key] != Expected_library_values[key]]):
 
             logger.warning(
                 f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
                 f"Usually I expect {key} == {Expected_library_values[key]} "
             )
-
 
     # Handle single end reads if mixed
 
