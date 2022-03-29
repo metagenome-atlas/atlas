@@ -393,7 +393,6 @@ rule pileup_MAGs:
         bincov={output.bincov} 2> {log}"""
 
 
-
 rule combine_coverages_MAGs:
     input:
         covstats=expand("genomes/alignments/{sample}_coverage.txt", sample=SAMPLES),
@@ -404,16 +403,14 @@ rule combine_coverages_MAGs:
     params:
         samples=SAMPLES,
     output:
-        counts = "genomes/counts/raw_counts_genomes.tsv",
+        counts="genomes/counts/raw_counts_genomes.tsv",
         binned_cov="genomes/counts/binned_coverage.tsv.gz",
         median_abund="genomes/counts/median_coverage_genomes.tsv",
     log:
         "logs/genomes/counts/combine_coverages_MAGs.log",
-    threads:
-        1
+    threads: 1
     script:
         "../scripts/combine_coverage_MAGs.py"
-
 
 
 # rule predict_genes_genomes:

@@ -11,6 +11,7 @@ mkdir -p $Test_dir
 echo "Download reads from our library"
 
 WD=$Test_dir/"Mouse"
+echo "WD="$WD
 
 atlas init-public PRJEB20796 -w $WD
 
@@ -21,6 +22,7 @@ atlas run qc -w $WD --dry-run $@
 
 echo "Download reads from HMP"
 WD=$Test_dir/"HMP"
+echo "WD="$WD
 
 # this fails as HMP have samples sequenced with different platforms
 
@@ -52,7 +54,16 @@ echo "Run Atlas"
 
 atlas run qc -w $WD --dry-run $@
 
+## single end
 
+echo "Now with a single end sample"
+
+WD=$Test_dir/"SingleEnd"
+echo "WD="$WD
+
+atlas init-public SAMEA104416160  -w $WD
+
+atlas run None download_sra -w $WD --dry-run
 
 ## smal data
 
@@ -60,6 +71,7 @@ atlas run qc -w $WD --dry-run $@
 echo "Download reads from small dataset for real test"
 
 WD=$Test_dir/"Small"
+echo "WD="$WD
 
 echo "gives warning as library is selected with PCR"
 
