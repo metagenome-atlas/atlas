@@ -63,7 +63,7 @@ echo "WD="$WD
 
 atlas init-public SAMEA104416160  -w $WD
 
-atlas run None download_sra -w $WD --dry-run
+atlas run None download_sra -w $WD $@
 
 ## smal data
 
