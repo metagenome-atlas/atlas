@@ -4,4 +4,4 @@ channels:
     - ruby-lang
     - defaults
 dependencies:
-    - das_tool=1.1
+    - das_tool=1.1.4

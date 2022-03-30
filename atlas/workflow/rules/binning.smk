@@ -600,13 +600,13 @@ rule run_das_tool:
         " --contigs {input.contigs} "
         " --search_engine diamond "
         " --proteins {input.proteins} "
-        " --write_bin_evals 1 "
+        " --write_bin_evals "
         " --megabin_penalty {params.megabin_penalty}"
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "
         " --debug "
         " --score_threshold {params.score_threshold} &> {log} "
-        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
+        " ; mv {params.output_prefix}_DASTool_contig2bin.tsv {output.cluster_attribution} &>> {log}"
 
 
 #
