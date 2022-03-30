@@ -6,7 +6,7 @@ dependencies:
   - python >=3.8, < 3.11
   - mamba
   - bbmap = 38
-  - snakemake-minimal = 6.15
+  - snakemake-minimal = 7.3
   - pygments
   - networkx
   - graphviz
