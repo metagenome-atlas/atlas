@@ -575,12 +575,10 @@ rule run_das_tool:
         contigs=BINNING_CONTIGS,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
-        "{sample}/binning/DASTool/{sample}_DASTool_summary.txt",
-        expand(
-            "{{sample}}/binning/DASTool/{{sample}}_{binner}.eval",
-            binner=config["binner"],
-        ),
+        "{sample}/binning/DASTool/{sample}_DASTool_summary.tsv",
+        "{sample}/binning/DASTool/{sample}_allBins.eval",
         cluster_attribution="{sample}/binning/DASTool/cluster_attribution.tsv",
+
     threads: config["threads"]
     log:
         "{sample}/logs/binning/DASTool.log",
