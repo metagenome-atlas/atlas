@@ -105,13 +105,13 @@ def get_runs_for_biosample(wildcards):
         else:
             key = fraction
 
-        ReadFiles[key]= expand(
+        ReadFiles[key] = expand(
             SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}{fraction}.fastq.gz",
             fraction=fraction,
             sra_run=run_ids,
         )
 
-        return ReadFiles
+    return ReadFiles
 
 
 rule merge_runs_to_sample:
@@ -131,7 +131,6 @@ rule merge_runs_to_sample:
             if fraction == "":
                 fraction = "se"
             io.cat_files(input[fraction], output[i])
-
 
 
 rule download_sra:
