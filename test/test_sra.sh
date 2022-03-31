@@ -26,11 +26,13 @@ echo "WD="$WD
 
 # this fails as HMP have samples sequenced with different platforms
 
-echo "(expect errors)"
+
 set +e
 atlas init-public SRP002423 -w $WD
 
 set -e
+echo "(expected errors)"
+
 
 echo "drop illumina samples"
 sed -i.bak '/ILLUMINA/d' $WD/RunInfo.tsv
