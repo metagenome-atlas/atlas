@@ -101,7 +101,7 @@ rule initialize_qc:
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         """
         reformat.sh {params.inputs} \
