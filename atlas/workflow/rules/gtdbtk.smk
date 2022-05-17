@@ -3,8 +3,9 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        dir=genome_dir,
+        dir="genomes/annotations/genes",
         flag=rules.download_gtdb.output,
+        genes_flag= "genomes/annotations/genes/predicted"
     output:
         directory(f"{gtdb_dir}/identify"),
     threads: config["threads"]
@@ -15,10 +16,12 @@ rule identify:
         f"{gtdb_dir}/gtdbtk.log",
     params:
         outdir=gtdb_dir,
-        extension="fasta",
+        extension="faa",
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
-        "gtdbtk identify --genome_dir {input.dir} --out_dir {params.outdir} "
+        "gtdbtk identify "
+        "--genes --genome_dir {input.dir} "
+        " --out_dir {params.outdir} "
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
@@ -50,7 +53,7 @@ rule classify:
         directory(f"{gtdb_dir}/classify"),
     threads: config["threads"]  #pplacer needs much memory for not many threads
     resources:
-        mem = max( config["mem"], 55), # 55 is recommended by the authors,
+        mem=config["large_mem"],
         time=config["runtime"]["long"],
     conda:
         "../envs/gtdbtk.yaml"
@@ -64,6 +67,7 @@ rule classify:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
         "gtdbtk classify --genome_dir {input.genome_dir} --align_dir {params.outdir} "
         "--out_dir {params.outdir} "
+        " --tmpdir {resources.tmpdir} "
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
