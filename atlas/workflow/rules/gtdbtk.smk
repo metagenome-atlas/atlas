@@ -3,7 +3,6 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        dir="genomes/annotations/genes",
         flag=rules.download_gtdb.output,
         genes_flag= "genomes/annotations/genes/predicted"
     output:
@@ -17,10 +16,11 @@ rule identify:
     params:
         outdir=gtdb_dir,
         extension="faa",
+        gene_dir = lambda wc, input: os.path.dirname(input.genes_flag)
     shell:
         "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
         "gtdbtk identify "
-        "--genes --genome_dir {input.dir} "
+        "--genes --genome_dir {params.gene_dir} "
         " --out_dir {params.outdir} "
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
