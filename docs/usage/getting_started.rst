@@ -370,9 +370,10 @@ Useful command line options
 
 Atlas builds on snakemake. We designed the command line interface in a way that additional snakemake arguments can be added to an atlas run call.
 
-For instance the ``--profile`` used for cluster execution. Other handy snakemake command line arguments include.
+For instance the ``--profile`` used for cluster execution. Other handy snakemake command line arguments include:
 
- ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
+ ``--keep-going``, which allows atlas in the case of a failed job to continue with independent steps.
 
+ ``--report``, which allows atlas to generate a user-friendly run report (e.g., by specifying ``--report report.html``). This report includes the steps used in the analysis workflow and the versions of software tools used at each step. See discussions `#523 <https://github.com/metagenome-atlas/atlas/discussions/523>`_ and `#514 <https://github.com/metagenome-atlas/atlas/discussions/514))>`_.
 
 For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.
