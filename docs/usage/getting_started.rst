@@ -351,7 +351,7 @@ Single machine execution
 
 If you dont want to use the  :ref:`automatic scheduling <cluster>` you can use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
 
-Atlas detects how many CPUs and how much memory is available on your system and it will shedulle as many jobs in paralell as possible.  If you have less resources available than specified in the config file. The jobs are downscaled.
+Atlas detects how many CPUs and how much memory is available on your system and it will schedule as many jobs in paralell as possible.  If you have less resources available than specified in the config file, the jobs are downscaled.
 
 By default atlas will use all cpus and 95% of all the available memory. If you are not happy with that, or you need to specify an exact ammount of memory/ cpus you can use the comand line arguments ``--jobs`` and ``--max-mem`` to do so. 
 
@@ -359,7 +359,7 @@ By default atlas will use all cpus and 95% of all the available memory. If you a
 Cloud execution
 ===============
 
-Atlas, like any other snakemake pipeline can  also easily be submitted to cloud systems. I suggest looking at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake comand line argument can just be appended to the atlas command.
+Atlas, like any other snakemake pipeline can  also easily be submitted to cloud systems. I suggest looking at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake command line argument can just be appended to the atlas command.
 
 
 
