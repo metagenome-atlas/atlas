@@ -283,7 +283,7 @@ rule pileup_Genecatalog:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         basecov=temp("Genecatalog/alignments/{sample}_base_coverage.txt.gz"),
     params:
-        pileup_secondary="t",  # a read maay map to different genes
+        pileup_secondary="t",  # a read may map to different genes
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
@@ -318,14 +318,20 @@ rule combine_gene_coverages:
     run:
         import pandas as pd
         import os
+        from utils.parsers_bbmap import read_pileup_coverage
+
+
+
+        # read first file
+
 
         combined_cov = {}
         combined_N_reads = {}
         for cov_file in input:
 
             sample = os.path.split(cov_file)[-1].split("_")[0]
-            data = pd.read_csv(cov_file, index_col=0, sep="\t")
-            data.loc[data.Median_fold < 0, "Median_fold"] = 0
+            data = read_pileup_coverage(cov_file)
+            
             combined_cov[sample] = data.Median_fold
             combined_N_reads[sample] = data.Plus_reads + data.Minus_reads
 

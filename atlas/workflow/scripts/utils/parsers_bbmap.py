@@ -46,6 +46,25 @@ def read_coverage_binned(covarage_binned_file):
     return binned_coverage.Coverage
 
 
+def read_pileup_coverage(pileup_file, coverage_measure="Median_fold"):
+    """
+    Parse output of pileup.sh
+    #ID             Avg_fold        Length  Ref_GC  Covered_percent Covered_bases   Plus_reads      Minus_reads     Read_GC Median_fold     Std_Dev
+    sample1_0       126.9594        80077   0.2537  100.0000        80077           46301           46301           0.2569  128             29.59
+    sample1_1       124.7803        63666   0.2644  100.0000        63666           36186           36186           0.2678  128             20.08
+    sample1_2       125.6420        62268   0.2576  100.0000        62268           35642           35642           0.2614  128             19.89
+    sample1_3       126.0232        54480   0.2664  100.0000        54480           31283           31283           0.2686  128             17.25
+        
+    """
+
+    data = pd.read_csv(pileup_file, index_col=0, sep="\t", usecols=['#ID',coverage_measure,"Plus_reads","Minus_reads"])
+    data.index.names = ["Contig"]
+    data.loc[data[coverage_measure] < 0, coverage_measure] = 0
+
+    return data
+
+
+
 def combine_coverages(coverage_files, sample_names, coverage_measure="Median_fold"):
     """
     Combines the coverage files from different samples
@@ -66,9 +85,9 @@ def combine_coverages(coverage_files, sample_names, coverage_measure="Median_fol
     for i in range(len(coverage_files)):
 
         sample = sample_names[i]
-        data = pd.read_csv(coverage_files[i], index_col=0, sep="\t")
 
-        data.loc[data[coverage_measure] < 0, coverage_measure] = 0
+        data= read_pileup_coverage(coverage_files[i], coverage_measure=coverage_measure)
+
         combined_cov[sample] = data[coverage_measure]
         combined_N_reads[sample] = data.Plus_reads + data.Minus_reads
 
