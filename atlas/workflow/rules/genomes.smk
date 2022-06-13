@@ -185,7 +185,7 @@ def get_genome_dir():
         genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
         if len(genomes) == 0:
-            logger.critical(f"No genomes found with fasta extension in {genome_dir} ")
+            logger.error(f"No genomes found with fasta extension in {genome_dir} ")
             exit(1)
 
     else:
