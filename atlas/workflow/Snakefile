@@ -254,7 +254,7 @@ rule genecatalog:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/clustering/orf2gene.tsv.gz",
-        "Genecatalog/counts/median_coverage.tsv.gz",
+        "Genecatalog/counts/median_coverage.parquet",
         # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
         "Genecatalog/annotations/eggNog.tsv.gz",
     output:

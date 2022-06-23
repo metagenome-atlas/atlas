@@ -312,31 +312,48 @@ rule combine_gene_coverages:
         covstats=expand(
             "Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES
         ),
+        representatives="Genecatalog/representatives_of_clusters.fasta",
     output:
-        "Genecatalog/counts/median_coverage.tsv.gz",
-        "Genecatalog/counts/Nmapped_reads.tsv.gz",
+        "Genecatalog/counts/median_coverage.parquet",
+        "Genecatalog/counts/Nmapped_reads.parquet",
     run:
         import pandas as pd
         import os
         from utils.parsers_bbmap import read_pileup_coverage
 
+        # TODO: to script and include pyarrow in env
+
+        # get gene names
+        gene_names= []
+        with open(input.representatives,"r") as fasta:
+
+            for line in fasta:
+                if line[0]=='>':
+                    header= line[1:].split(' ',maxsplit=1)[0]
+                    gene_names.append(header)
 
 
-        # read first file
+        print("create sparse output matrixes")
+        
+        combined_cov= pd.DataFrame(index=gene_names,collums=SAMPLES,data=0,dtype= pd.SparseDtype(int, fill_value=0))
+        combined_N_reads = pd.DataFrame(index=gene_names,collums=SAMPLES,data=0,dtype= pd.SparseDtype(int, fill_value=0))
 
 
-        combined_cov = {}
-        combined_N_reads = {}
+
         for cov_file in input:
 
             sample = os.path.split(cov_file)[-1].split("_")[0]
+
+            print(f"read file for sample {sample}")
             data = read_pileup_coverage(cov_file)
             
-            combined_cov[sample] = data.Median_fold
-            combined_N_reads[sample] = data.Plus_reads + data.Minus_reads
+            combined_cov[sample] = data.Median_fold.astype(pd.SparseDtype(int, fill_value=0))
+            combined_N_reads[sample] = (data.Plus_reads + data.Minus_reads ).astype(pd.SparseDtype(int, fill_value=0))
 
-        pd.DataFrame(combined_cov).to_csv(output[0], sep="\t", compression="gzip")
-        pd.DataFrame(combined_N_reads).to_csv(output[1], sep="\t", compression="gzip")
+            del data
+
+        combined_cov.to_parquet(output[0])
+        combined_N_reads.to_parquet(output[1])
 
 
 ###########
