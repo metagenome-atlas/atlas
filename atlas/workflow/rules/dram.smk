@@ -54,7 +54,7 @@ rule DRAM_annotate:
         flag=rules.DRAM_set_db_loc.output,
     output:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
-    threads: config["threads"]
+    threads: config["simplejob_threads"]
     resources:
         mem=config["simplejob_mem"],
         time=config["runtime"]["default"],
