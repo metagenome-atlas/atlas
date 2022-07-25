@@ -60,6 +60,9 @@ def read_pileup_coverage(pileup_file, coverage_measure="Median_fold"):
     data = pd.read_csv(pileup_file, index_col=0, sep="\t", usecols=['#ID',coverage_measure,"Plus_reads","Minus_reads"])
     data.index.names = ["Contig"]
     data.loc[data[coverage_measure] < 0, coverage_measure] = 0
+    data.eval("Reads = Plus_reads + Minus_reads")
+    data.drop(["Plus_reads","Minus_reads"], axis=1, inplace=True)
+    
 
     return data
 
@@ -89,7 +92,7 @@ def combine_coverages(coverage_files, sample_names, coverage_measure="Median_fol
         data= read_pileup_coverage(coverage_files[i], coverage_measure=coverage_measure)
 
         combined_cov[sample] = data[coverage_measure]
-        combined_N_reads[sample] = data.Plus_reads + data.Minus_reads
+        combined_N_reads[sample] = data.Reads
 
     combined_cov = pd.DataFrame(combined_cov).T
     combined_N_reads = pd.DataFrame(combined_N_reads).T
