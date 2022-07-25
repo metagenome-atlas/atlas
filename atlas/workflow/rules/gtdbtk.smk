@@ -18,7 +18,7 @@ rule identify:
         extension="faa",
         gene_dir = lambda wc, input: os.path.dirname(input.genes_flag)
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
+        "export GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
         "gtdbtk identify "
         "--genes --genome_dir {params.gene_dir} "
         " --out_dir {params.outdir} "
@@ -40,7 +40,7 @@ checkpoint align:
     params:
         outdir=gtdb_dir,
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
+        "export GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "gtdbtk align --identify_dir {params.outdir} --out_dir {params.outdir} "
         "--cpus {threads} &> {log[0]}"
 
@@ -64,7 +64,7 @@ rule classify:
         outdir=gtdb_dir,
         extension="fasta",
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
+        "export GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
         "gtdbtk classify --genome_dir {input.genome_dir} --align_dir {params.outdir} "
         "--out_dir {params.outdir} "
         " --tmpdir {resources.tmpdir} "
