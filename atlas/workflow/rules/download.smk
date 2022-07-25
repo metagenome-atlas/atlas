@@ -190,7 +190,6 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "download-db.sh &> {log};"
 
 
