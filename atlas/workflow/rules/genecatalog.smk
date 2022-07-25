@@ -321,8 +321,6 @@ rule combine_gene_coverages:
         import os
         from utils.parsers_bbmap import read_pileup_coverage
 
-        # TODO: to script and include pyarrow in env
-
         # get gene names
         gene_names= []
         with open(input.representatives,"r") as fasta:
