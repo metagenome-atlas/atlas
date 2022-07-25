@@ -58,7 +58,7 @@ def io_params_for_tadpole(io, key="in"):
     elif N == 3:
         flag = f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
     else:
-        logger.critical(
+        logger.error(
             (
                 "File input/output expectation is one of: "
                 "1 file = single-end/ interleaved paired-end "

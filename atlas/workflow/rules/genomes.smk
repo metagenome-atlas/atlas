@@ -185,7 +185,7 @@ def get_genome_dir():
         genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
         if len(genomes) == 0:
-            logger.critical(f"No genomes found with fasta extension in {genome_dir} ")
+            logger.error(f"No genomes found with fasta extension in {genome_dir} ")
             exit(1)
 
     else:
@@ -208,7 +208,7 @@ def get_all_genomes(wildcards):
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
-        logger.critical(
+        logger.error(
             f"No genomes found with fasta extension in {genome_dir} "
             "You don't have any Metagenome assembled genomes with sufficient quality. "
             "You may want to change the assembly, binning or filtering parameters. "
