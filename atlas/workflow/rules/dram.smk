@@ -104,8 +104,7 @@ rule concat_annotations:
         time=config["runtime"]["default"],
     #     mem = config['mem']
     run:
-        from utils import io
-        
+        # from utils import io
         for i, annotation_file in enumerate(DRAM_ANNOTATON_FILES):
 
             input_files = [
@@ -116,12 +115,11 @@ rule concat_annotations:
             if not i == 0:
                 input_files = [f for f in input_files if os.path.exists(f)]
 
-            io.pandas_concat(
-                input_files ,
-                output[i],
-                axis=0
-                )
+            shell(f"head -n1 {input_files[0]} > {output[i]} ")
+            for f in input_files:
+                shell(f"tail -n+2 {f} >> {output[i]}")
 
+        # io.pandas_concat(input_files, output[i],sep='\t',index_col=0, axis=0)
 
 
 
