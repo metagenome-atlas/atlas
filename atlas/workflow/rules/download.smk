@@ -166,19 +166,6 @@ rule initialize_checkm:
         "checkm data setRoot {params.database_dir} &> {log} "
 
 
-rule download_cat_db:
-    output:
-        touch(CAT_flag_downloaded),
-    params:
-        db_folder=CAT_DIR,
-    resources:
-        mem=config.get("large_mem", 250),
-    threads: config.get("large_threads", 16)
-    conda:
-        "%s/cat.yaml" % CONDAENV
-    shell:
-        " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
-
 
 localrules: download_gtdb
 
