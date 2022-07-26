@@ -3,7 +3,11 @@
 
 # Change log
 
+## [2.10](https://github.com/metagenome-atlas/atlas/compare/v2.9.1...v2.10.0) 
 
+### Features
+* GTDB version 207
+* Low memory taxonomic annotation
 
 
 ## [2.9](https://github.com/metagenome-atlas/atlas/compare/v2.8.2...v2.9.0) 

@@ -3,8 +3,8 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        dir=genome_dir,
         flag=rules.download_gtdb.output,
+        genes_flag= "genomes/annotations/genes/predicted"
     output:
         directory(f"{gtdb_dir}/identify"),
     threads: config["threads"]
@@ -15,10 +15,12 @@ rule identify:
         f"{gtdb_dir}/gtdbtk.log",
     params:
         outdir=gtdb_dir,
-        extension="fasta",
+        extension="faa",
+        gene_dir = lambda wc, input: os.path.abspath(os.path.dirname(input.genes_flag))
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
-        "gtdbtk identify --genome_dir {input.dir} --out_dir {params.outdir} "
+        "gtdbtk identify "
+        "--genes --genome_dir {params.gene_dir} "
+        " --out_dir {params.outdir} "
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
@@ -37,7 +39,6 @@ checkpoint align:
     params:
         outdir=gtdb_dir,
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
         "gtdbtk align --identify_dir {params.outdir} --out_dir {params.outdir} "
         "--cpus {threads} &> {log[0]}"
 
@@ -61,9 +62,9 @@ rule classify:
         outdir=gtdb_dir,
         extension="fasta",
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ; "
         "gtdbtk classify --genome_dir {input.genome_dir} --align_dir {params.outdir} "
         "--out_dir {params.outdir} "
+        " --tmpdir {resources.tmpdir} "
         "--extension {params.extension} "
         "--cpus {threads} &> {log[0]}"
 
