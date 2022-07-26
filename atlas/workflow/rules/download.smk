@@ -165,17 +165,23 @@ rule initialize_checkm:
     shell:
         "checkm data setRoot {params.database_dir} &> {log} "
 
-
-
 localrules: download_gtdb
-
-from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
-
-HTTP = HTTPRemoteProvider()
-
 rule download_gtdb:
+    output:
+        temp(f"{GTDBTK_DATA_PATH}/gtdb_data.tar.gz")
+    conda:
+        "../envs/gtdbtk.yaml"
+    threads: 1
+    resources:
+        time=int(config.get("runtime", {"long": 10})["long"]),
+    log:
+        "logs/download/gtdbtk.log",
+    shell:
+        ' wget {GTDB_DATA_URL} -O {output} &> {log} '
+
+rule extract_gtdb:
     input:
-        HTTP.remote(GTDB_DATA_URL)
+        rules.download_gtdb.output
     output:
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     conda:
@@ -186,7 +192,7 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        " tar -xzf {input} -c {GTDBTK_DATA_PATH} --strip 1 2> {log} "
+        ' tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log} '
         ' echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}'
         " conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
 
