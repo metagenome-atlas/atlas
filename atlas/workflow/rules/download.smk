@@ -5,6 +5,7 @@ import os
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
 
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release207/207.0/auxillary_files/gtdbtk_r207_v2_data.tar.gz"
 
 def md5(fname):
     # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
@@ -179,7 +180,13 @@ rule download_cat_db:
         " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
 
 
+from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
+
+HTTP = HTTPRemoteProvider()
+
 rule download_gtdb:
+    input:
+        HTTP.remote(GTDB_DATA_URL)
     output:
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     conda:
@@ -190,7 +197,9 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        "download-db.sh &> {log};"
+        " tar -xzf {input} -c {GTDBTK_DATA_PATH} --strip 1 2> {log} "
+        ' echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}'
+        " conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
 
 
 onsuccess:
