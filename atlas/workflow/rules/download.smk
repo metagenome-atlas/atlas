@@ -180,6 +180,8 @@ rule download_cat_db:
         " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
 
 
+localrules: download_gtdb
+
 from snakemake.remote.HTTP import RemoteProvider as HTTPRemoteProvider
 
 HTTP = HTTPRemoteProvider()
