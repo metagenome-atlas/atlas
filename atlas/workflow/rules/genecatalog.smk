@@ -39,14 +39,16 @@ if config["genecatalog"]["source"] == "contigs":
     rule concat_genes:
         input:
             faa=expand(
-                "{sample}/annotation/predicted_genes/{sample}.filtered.faa", sample=SAMPLES
+                "{sample}/annotation/predicted_genes/{sample}.filtered.faa",
+                sample=SAMPLES,
             ),
             fna=expand(
-                "{sample}/annotation/predicted_genes/{sample}.filtered.fna", sample=SAMPLES
+                "{sample}/annotation/predicted_genes/{sample}.filtered.fna",
+                sample=SAMPLES,
             ),
         output:
-            faa=temp("Genecatalog/predicted_genes.faa"),
-            fna=temp("Genecatalog/predicted_genes.fna"),
+            faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
+            fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
         run:
             from utils.io import cat_files
 
@@ -65,16 +67,13 @@ else:
             faa=lambda wc: get_all_genes(wc, ".filtered.faa"),
             fna=lambda wc: get_all_genes(wc, ".filtered.fna"),
         output:
-            faa=temp("Genecatalog/predicted_genes.faa"),
-            fna=temp("Genecatalog/predicted_genes.fna"),
+            faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
+            fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
         run:
             from utils.io import cat_files
 
             cat_files(input.faa, output.faa)
             cat_files(input.fna, output.fna)
-
-
-
 
 
 if (config["genecatalog"]["clustermethod"] == "linclust") or (
@@ -312,9 +311,7 @@ localrules:
 
 rule combine_gene_coverages:
     input:
-        covstats=expand(
-            "Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES
-        ),
+        covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
         representatives="Genecatalog/representatives_of_clusters.fasta",
     output:
         "Genecatalog/counts/median_coverage.parquet",
@@ -325,18 +322,27 @@ rule combine_gene_coverages:
         from utils.parsers_bbmap import read_pileup_coverage
 
         # get gene names
-        gene_names= []
-        with open(input.representatives,"r") as fasta:
+        gene_names = []
+        with open(input.representatives, "r") as fasta:
 
             for line in fasta:
-                if line[0]=='>':
-                    header= line[1:].split(' ',maxsplit=1)[0]
+                if line[0] == ">":
+                    header = line[1:].split(" ", maxsplit=1)[0]
                     gene_names.append(header)
 
-        
-        combined_cov= pd.DataFrame(index=gene_names,columns=SAMPLES,data=0,dtype= pd.SparseDtype(int, fill_value=0))
-        combined_N_reads = pd.DataFrame(index=gene_names,columns=SAMPLES,data=0,dtype= pd.SparseDtype(float, fill_value=0))
 
+        combined_cov = pd.DataFrame(
+            index=gene_names,
+            columns=SAMPLES,
+            data=0,
+            dtype=pd.SparseDtype(int, fill_value=0),
+        )
+        combined_N_reads = pd.DataFrame(
+            index=gene_names,
+            columns=SAMPLES,
+            data=0,
+            dtype=pd.SparseDtype(float, fill_value=0),
+        )
 
 
         for cov_file in input:
@@ -345,9 +351,13 @@ rule combine_gene_coverages:
 
             print(f"read file for sample {sample}")
             data = read_pileup_coverage(cov_file, coverage_measure="Avg_fold")
-            
-            combined_cov[sample] = data.Avg_fold.astype(pd.SparseDtype(int, fill_value=0))
-            combined_N_reads[sample] = data.Reads.astype(pd.SparseDtype(int, fill_value=0))
+
+            combined_cov[sample] = data.Avg_fold.astype(
+                pd.SparseDtype(int, fill_value=0)
+            )
+            combined_N_reads[sample] = data.Reads.astype(
+                pd.SparseDtype(int, fill_value=0)
+            )
 
             del data
 
@@ -555,9 +565,8 @@ rule gene2genome:
         old2newID="genomes/clustering/old2newID.tsv",
         orf2gene="Genecatalog/clustering/orf2gene.tsv.gz",
     params:
-        remaned_contigs=config["rename_mags_contigs"] & (
-            config["genecatalog"]["source"] == "contigs"
-        ),
+        remaned_contigs=config["rename_mags_contigs"]
+        & (config["genecatalog"]["source"] == "contigs"),
     output:
         "genomes/annotations/gene2genome.tsv.gz",
     run:
