@@ -344,6 +344,8 @@ rule combine_gene_coverages:
             dtype=pd.SparseDtype(float, fill_value=0),
         )
 
+        combined_cov.index.name ="Gene"
+        combined_N_reads.index.name ="Gene"
 
         for cov_file in input:
 
@@ -361,8 +363,8 @@ rule combine_gene_coverages:
 
             del data
 
-        combined_cov.to_parquet(output[0])
-        combined_N_reads.to_parquet(output[1])
+        combined_cov.reset_index().to_parquet(output[0])
+        combined_N_reads.reset_index().to_parquet(output[1])
 
 
 ###########
