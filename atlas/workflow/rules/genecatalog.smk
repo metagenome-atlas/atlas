@@ -330,8 +330,6 @@ rule combine_gene_coverages:
                     header= line[1:].split(' ',maxsplit=1)[0]
                     gene_names.append(header)
 
-
-        print("create sparse output matrixes")
         
         combined_cov= pd.DataFrame(index=gene_names,columns=SAMPLES,data=0,dtype= pd.SparseDtype(int, fill_value=0))
         combined_N_reads = pd.DataFrame(index=gene_names,columns=SAMPLES,data=0,dtype= pd.SparseDtype(float, fill_value=0))
@@ -345,7 +343,7 @@ rule combine_gene_coverages:
             print(f"read file for sample {sample}")
             data = read_pileup_coverage(cov_file, coverage_measure="Avg_fold")
             
-            combined_cov[sample] = data.Median_fold.astype(pd.SparseDtype(int, fill_value=0))
+            combined_cov[sample] = data.Avg_fold.astype(pd.SparseDtype(int, fill_value=0))
             combined_N_reads[sample] = data.Reads.astype(pd.SparseDtype(int, fill_value=0))
 
             del data
