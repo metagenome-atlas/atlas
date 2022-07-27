@@ -1,6 +1,36 @@
 import os
 
 
+localrules:
+    filter_genes,
+
+
+rule filter_genes:
+    input:
+        fna="{gene_file}.fna",
+        faa="{gene_file}.faa",
+    output:
+        fna=temp("{gene_file}.filtered.fna"),
+        faa=temp("{gene_file}.filtered.faa"),
+    threads: 1
+    params:
+        min_length=config["genecatalog"]["minlength_nt"],
+    run:
+        from Bio import SeqIO
+
+        faa = SeqIO.parse(input.faa, "fasta")
+        fna = SeqIO.parse(input.fna, "fasta")
+
+        with open(output.faa, "w") as out_faa, open(output.fna, "w") as out_fna:
+
+            for gene in fna:
+                protein = next(faa)
+
+                if len(gene) >= params.min_length:
+                    SeqIO.write(gene, out_fna, "fasta")
+                    SeqIO.write(protein, out_faa, "fasta")
+
+
 if config["genecatalog"]["source"] == "contigs":
 
     localrules:
@@ -9,14 +39,14 @@ if config["genecatalog"]["source"] == "contigs":
     rule concat_genes:
         input:
             faa=expand(
-                "{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES
+                "{sample}/annotation/predicted_genes/{sample}.filtered.faa", sample=SAMPLES
             ),
             fna=expand(
-                "{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES
+                "{sample}/annotation/predicted_genes/{sample}.filtered.fna", sample=SAMPLES
             ),
         output:
-            faa=temp("Genecatalog/all_genes_unfiltered.faa"),
-            fna=temp("Genecatalog/all_genes_unfiltered.fna"),
+            faa=temp("Genecatalog/predicted_genes.faa"),
+            fna=temp("Genecatalog/predicted_genes.fna"),
         run:
             from utils.io import cat_files
 
@@ -32,11 +62,11 @@ else:
     rule concat_genes:
         input:
             "genomes/annotations/orf2genome.tsv",
-            faa=lambda wc: get_all_genes(wc, ".faa"),
-            fna=lambda wc: get_all_genes(wc, ".fna"),
+            faa=lambda wc: get_all_genes(wc, ".filtered.faa"),
+            fna=lambda wc: get_all_genes(wc, ".filtered.fna"),
         output:
-            faa=temp("Genecatalog/all_genes_unfiltered.faa"),
-            fna=temp("Genecatalog/all_genes_unfiltered.fna"),
+            faa=temp("Genecatalog/predicted_genes.faa"),
+            fna=temp("Genecatalog/predicted_genes.fna"),
         run:
             from utils.io import cat_files
 
@@ -44,34 +74,7 @@ else:
             cat_files(input.fna, output.fna)
 
 
-localrules:
-    filter_genes,
 
-
-rule filter_genes:
-    input:
-        fna="Genecatalog/all_genes_unfiltered.fna",
-        faa="Genecatalog/all_genes_unfiltered.faa",
-    output:
-        fna="Genecatalog/all_genes/predicted_genes.fna",
-        faa="Genecatalog/all_genes/predicted_genes.faa",
-    threads: 1
-    params:
-        min_length=config["genecatalog"]["minlength"],
-    run:
-        from Bio import SeqIO
-
-        faa = SeqIO.parse(input.faa, "fasta")
-        fna = SeqIO.parse(input.fna, "fasta")
-
-        with open(output.faa, "w") as out_faa, open(output.fna, "w") as out_fna:
-
-            for gene in fna:
-                protein = next(faa)
-
-                if len(gene) >= params.min_length:
-                    SeqIO.write(gene, out_fna, "fasta")
-                    SeqIO.write(protein, out_faa, "fasta")
 
 
 if (config["genecatalog"]["clustermethod"] == "linclust") or (
