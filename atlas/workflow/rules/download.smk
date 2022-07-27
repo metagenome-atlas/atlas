@@ -5,6 +5,7 @@ import os
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
 
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release207/207.0/auxillary_files/gtdbtk_r207_v2_data.tar.gz"
 
 def md5(fname):
     # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
@@ -24,7 +25,7 @@ CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR = os.path.join(DBDIR, "CAT")
 CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
 EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V5")
-GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V06")
+GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V07")
 CONDAENV = "../envs"
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
@@ -164,22 +165,23 @@ rule initialize_checkm:
     shell:
         "checkm data setRoot {params.database_dir} &> {log} "
 
-
-rule download_cat_db:
-    output:
-        touch(CAT_flag_downloaded),
-    params:
-        db_folder=CAT_DIR,
-    resources:
-        mem=config.get("large_mem", 250),
-    threads: config.get("large_threads", 16)
-    conda:
-        "%s/cat.yaml" % CONDAENV
-    shell:
-        " CAT prepare -d {params.db_folder} -t {params.db_folder} --existing --nproc {threads}"
-
-
+localrules: download_gtdb
 rule download_gtdb:
+    output:
+        temp(f"{GTDBTK_DATA_PATH}/gtdb_data.tar.gz")
+    conda:
+        "../envs/gtdbtk.yaml"
+    threads: 1
+    resources:
+        time=int(config.get("runtime", {"long": 10})["long"]),
+    log:
+        "logs/download/gtdbtk.log",
+    shell:
+        ' wget {GTDB_DATA_URL} -O {output} &> {log} '
+
+rule extract_gtdb:
+    input:
+        rules.download_gtdb.output
     output:
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     conda:
@@ -190,8 +192,9 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        "GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} ;  "
-        "download-db.sh &> {log};"
+        ' tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log} '
+        ' echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}'
+        " conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
 
 
 onsuccess:

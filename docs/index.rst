@@ -50,3 +50,4 @@ Publication
     usage/getting_started
     usage/output
     usage/configuration
+    usage/changelog
