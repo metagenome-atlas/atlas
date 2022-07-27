@@ -347,7 +347,7 @@ rule combine_gene_coverages:
         combined_cov.index.name ="Gene"
         combined_N_reads.index.name ="Gene"
 
-        for cov_file in input:
+        for cov_file in input.covstats:
 
             sample = os.path.split(cov_file)[-1].split("_")[0]
 
