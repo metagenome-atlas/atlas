@@ -359,8 +359,9 @@ rule combine_gene_coverages:
 
             del data
 
-        combined_cov.to_numeric().reset_index().to_parquet(output[0])
-        combined_N_reads.to_numeric().reset_index().to_parquet(output[1])
+        pd.to_numeric(combined_cov).reset_index().to_parquet(output[0])
+        del combined_cov
+        pd.to_numeric(combined_N_reads).reset_index().to_parquet(output[1])
 
 
 ###########
