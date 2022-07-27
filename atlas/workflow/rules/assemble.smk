@@ -477,6 +477,7 @@ else:
 # standardizes header labels within contig FASTAs
 
 
+
 rule rename_contigs:
     input:
         "{sample}/assembly/{sample}_raw_contigs.fasta",
@@ -656,6 +657,7 @@ if config["filter_contigs"]:
             trim={params.trim} \
             -Xmx{resources.java_mem}G 2> {log}"""
 # HACK: this makes two copies of the same file
+
 
 
 else:  # no filter

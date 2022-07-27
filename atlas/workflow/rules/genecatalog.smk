@@ -312,56 +312,67 @@ localrules:
 rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
-        representatives="Genecatalog/representatives_of_clusters.fasta",
     output:
         "Genecatalog/counts/median_coverage.parquet",
         "Genecatalog/counts/Nmapped_reads.parquet",
     run:
         import pandas as pd
-        import os
+        import gc, os
         from utils.parsers_bbmap import read_pileup_coverage
 
+        # prepare output tables
+        combined_cov = pd.DataFrame(
+            dtype=int,
+        )
+        combined_N_reads = pd.DataFrame(
+            dtype=float,
+        )
 
 
         for cov_file in input.covstats:
 
             sample = os.path.split(cov_file)[-1].split("_")[0]
 
-            #print(f"read file for sample {sample}")
-
-            data = read_pileup_coverage(cov_file, coverage_measure="Avg_fold")
-            data.sort_index(inplace=True)
+            # print(f"read file for sample {sample}")
 
             if cov_file == input.covstats[0]:
+                other_columns = ["Length"]
+            else:
+                other_columns = []
 
-                # prepare output tables
-                combined_cov = pd.DataFrame(
-                    index=gene_names,
-                    columns=SAMPLES,
-                    data=0,
-                    dtype=int,
-                )
-                combined_N_reads = pd.DataFrame(
-                    index=gene_names,
-                    columns=SAMPLES,
-                    data=0,
-                    dtype=float,
-                )
+            data = read_pileup_coverage(
+                cov_file, coverage_measure="Avg_fold", other_columns=other_columns
+            )
+            # reduce size of numerical data
+            data = pd.to_numeric(data)
 
-                combined_cov.index.name ="Gene"
-                combined_N_reads.index.name ="Gene"
+            # genes are not sorted
+            data.sort_index(inplace=True)
 
-
-
+            # add gene length to dataframe of counts
+            if cov_file == input.covstats[0]:
+                combined_N_reads["Length"] = data.Length
 
             combined_cov[sample] = data.Avg_fold
             combined_N_reads[sample] = data.Reads
 
+            # delete interminate data and releace mem
             del data
+            gc.collect()
 
-        pd.to_numeric(combined_cov).reset_index().to_parquet(output[0])
+
+        # give index nice name
+        combined_cov.index.name = "GeneNr"
+        combined_N_reads.index.name = "GeneNr"
+
+        # Store as parquet
+        # add index so that it can be read in R
+        combined_N_reads.reset_index().to_parquet(output[1])
+        del combined_N_reads
+        gc.collect()
+
+        combined_cov.reset_index().to_parquet(output[0])
         del combined_cov
-        pd.to_numeric(combined_N_reads).reset_index().to_parquet(output[1])
 
 
 ###########
