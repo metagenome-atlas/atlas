@@ -112,7 +112,7 @@ def make_default_config():
     config["genecatalog"] = {
         "source": "genomes",
         "clustermethod": "linclust",
-        "minlength_nt": 100,
+        "minlength_nt": 270,
         "minid": 0.9,
         "coverage": 0.9,
         "extra": "",
