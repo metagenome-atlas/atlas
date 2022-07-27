@@ -333,8 +333,8 @@ rule combine_gene_coverages:
 
         print("create sparse output matrixes")
         
-        combined_cov= pd.DataFrame(index=gene_names,collums=SAMPLES,data=0,dtype= pd.SparseDtype(int, fill_value=0))
-        combined_N_reads = pd.DataFrame(index=gene_names,collums=SAMPLES,data=0,dtype= pd.SparseDtype(float, fill_value=0))
+        combined_cov= pd.DataFrame(index=gene_names,columns=SAMPLES,data=0,dtype= pd.SparseDtype(int, fill_value=0))
+        combined_N_reads = pd.DataFrame(index=gene_names,columns=SAMPLES,data=0,dtype= pd.SparseDtype(float, fill_value=0))
 
 
 

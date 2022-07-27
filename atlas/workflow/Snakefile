@@ -134,7 +134,7 @@ if (len(colum_headers_raw) == 0) and (len(colum_headers_QC) == 0):
 
     raise IOError(
         "Either raw reas or QC reads need to be in the sample table. "
-        "I din't find any collums with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
+        "I din't find any columnns with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
     )
 
 
