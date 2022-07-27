@@ -65,7 +65,7 @@ def read_pileup_coverage(pileup_file, coverage_measure="Median_fold"):
     )
     data.index.names = ["Contig"]
     data.loc[data[coverage_measure] < 0, coverage_measure] = 0
-    data.eval("Reads = Plus_reads + Minus_reads")
+    data.eval("Reads = Plus_reads + Minus_reads", inplace=True)
     data.drop(["Plus_reads", "Minus_reads"], axis=1, inplace=True)
 
     return data
