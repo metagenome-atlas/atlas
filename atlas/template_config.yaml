@@ -207,6 +207,9 @@ annotations:
 #  - checkm_taxonomy
 #  - checkm_tree
 
+gene_annotations:
+  - eggNOG
+
 ########################
 # Gene catalog
 #######################

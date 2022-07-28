@@ -328,7 +328,7 @@ rule get_bins:
     output:
         directory("{sample}/binning/{binner}/bins"),
     conda:
-        "%s/sequence_utils.yaml" % CONDAENV
+        "../envs/sequence_utils.yaml"
     log:
         "{sample}/logs/binning/get_bins_{binner}.log",
     script:
