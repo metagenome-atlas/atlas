@@ -12,7 +12,7 @@ rule filter_genes:
     output:
         fna=temp("{gene_file}.filtered.fna"),
         faa=temp("{gene_file}.filtered.faa"),
-        faa=temp("{gene_file}.short.faa"),
+        short=temp("{gene_file}.short.faa"),
     conda:
         "../envs/fasta.yaml"
     threads: 1
