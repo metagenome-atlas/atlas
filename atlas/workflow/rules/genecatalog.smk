@@ -343,18 +343,16 @@ rule combine_gene_coverages:
             data = read_pileup_coverage(
                 cov_file, coverage_measure="Avg_fold", other_columns=other_columns
             )
-            # reduce size of numerical data
-            data = pd.to_numeric(data)
 
             # genes are not sorted
             data.sort_index(inplace=True)
 
             # add gene length to dataframe of counts
             if cov_file == input.covstats[0]:
-                combined_N_reads["Length"] = data.Length
+                combined_N_reads["Length"] = pd.to_numeric( data.Length )
 
-            combined_cov[sample] = data.Avg_fold
-            combined_N_reads[sample] = data.Reads
+            combined_cov[sample] = pd.to_numeric( data.Avg_fold )
+            combined_N_reads[sample] = pd.to_numeric( data.Reads )
 
             # delete interminate data and releace mem
             del data
