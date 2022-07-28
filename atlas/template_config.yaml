@@ -214,7 +214,7 @@ genecatalog:
   source: contigs               # [contigs, genomes] Predict genes from all contigs or only from the representative genomes
   clustermethod: linclust       # [cd-hit-est or mmseqs or linclust] see mmseqs for more details
   minlength_nt: 270             # min length 
-  minid: 0.95                   # min id for gene clustering for the main gene catalog used for annotation
+  minid: 0.90                   # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
   extra: ""
   SubsetSize: 500000
