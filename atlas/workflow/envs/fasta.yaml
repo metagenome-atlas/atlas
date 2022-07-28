@@ -1,0 +1,7 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - pyfastx=0.8
+    - pandas=1.2

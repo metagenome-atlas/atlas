@@ -12,23 +12,15 @@ rule filter_genes:
     output:
         fna=temp("{gene_file}.filtered.fna"),
         faa=temp("{gene_file}.filtered.faa"),
+        faa=temp("{gene_file}.short.faa"),
+    conda:
+        "../envs/fasta.yaml"
     threads: 1
     params:
-        min_length=config["genecatalog"]["minlength_nt"],
-    run:
-        from Bio import SeqIO
+        minlength_nt=config["genecatalog"]["minlength_nt"],
+    script:
+        "../scripts/filter_genes.py"
 
-        faa = SeqIO.parse(input.faa, "fasta")
-        fna = SeqIO.parse(input.fna, "fasta")
-
-        with open(output.faa, "w") as out_faa, open(output.fna, "w") as out_fna:
-
-            for gene in fna:
-                protein = next(faa)
-
-                if len(gene) >= params.min_length:
-                    SeqIO.write(gene, out_fna, "fasta")
-                    SeqIO.write(protein, out_faa, "fasta")
 
 
 if config["genecatalog"]["source"] == "contigs":
@@ -46,14 +38,20 @@ if config["genecatalog"]["source"] == "contigs":
                 "{sample}/annotation/predicted_genes/{sample}.filtered.fna",
                 sample=SAMPLES,
             ),
+            short=expand(
+                "{sample}/annotation/predicted_genes/{sample}.short.faa",
+                sample=SAMPLES,
+            ),
         output:
             faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
             fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
+            short=temp("Genecatalog/all_genes/short_genes.faa"),
         run:
             from utils.io import cat_files
 
             cat_files(input.faa, output.faa)
             cat_files(input.fna, output.fna)
+            cat_files(input.short, output.short)
 
 
 else:
@@ -66,14 +64,17 @@ else:
             "genomes/annotations/orf2genome.tsv",
             faa=lambda wc: get_all_genes(wc, ".filtered.faa"),
             fna=lambda wc: get_all_genes(wc, ".filtered.fna"),
+            short=lambda wc: get_all_genes(wc, ".short.faa"),
         output:
             faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
             fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
+            short=temp("Genecatalog/all_genes/short_genes.faa"),
         run:
             from utils.io import cat_files
 
             cat_files(input.faa, output.faa)
             cat_files(input.fna, output.fna)
+            cat_files(input.short, output.short)
 
 
 if (config["genecatalog"]["clustermethod"] == "linclust") or (
