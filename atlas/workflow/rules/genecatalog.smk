@@ -1,9 +1,6 @@
 import os
 
 
-localrules:
-    filter_genes,
-
 
 rule filter_genes:
     input:
@@ -16,6 +13,8 @@ rule filter_genes:
     conda:
         "../envs/fasta.yaml"
     threads: 1
+    log:
+        "logs/Genecatalog/filter_genes/{gene_file}.log"
     params:
         minlength_nt=config["genecatalog"]["minlength_nt"],
     script:
