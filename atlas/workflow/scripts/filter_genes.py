@@ -35,24 +35,25 @@ sys.excepthook = handle_exception
 import pyfastx
 
 
-faa_iterator =  pyfastx.Fasta(snakemake.input.faa, build_index=False)
-fna_iterator =  pyfastx.Fasta(snakemake.input.fna, build_index=False)
+faa_iterator =  pyfastx.Fastx(snakemake.input.faa, format="fasta")
+fna_iterator =  pyfastx.Fastx(snakemake.input.fna, format="fasta")
 
 
 
 with open(snakemake.output.faa, "w") as out_faa, open(snakemake.output.fna, "w") as out_fna, open(snakemake.output.short, "w") as out_short:
 
-    for gene in fna_iterator:
+    for name, seq, comment in fna_iterator:
         protein = next(faa_iterator)
 
         # include gene and corresponding protein if gene passes length threshold
         # or annotation contains prodigal info that it's complete
-        if (len(gene) >= snakemake.params.minlength_nt ) or ("partial=00" in gene.description):
+        if (len(seq) >= snakemake.params.minlength_nt ) or ("partial=00" in comment):
 
-            out_faa.write(protein.raw)
-            out_fna.write(gene.raw)
+            out_fna.write(f">{name} {comment}\n{seq}\n")
+            out_faa.write(">{0} {2}\n{1}\n".format(*protein))
+
 
         else:
 
-            out_short.write(protein.raw)
+            out_short.write(">{0} {2}\n{1}\n".format(*protein))
 
