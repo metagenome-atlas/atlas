@@ -1,7 +1,6 @@
 import os
 
 
-
 rule filter_genes:
     input:
         fna="{gene_file}.fna",
@@ -14,12 +13,11 @@ rule filter_genes:
         "../envs/fasta.yaml"
     threads: 1
     log:
-        "logs/Genecatalog/filter_genes/{gene_file}.log"
+        "logs/Genecatalog/filter_genes/{gene_file}.log",
     params:
         minlength_nt=config["genecatalog"]["minlength_nt"],
     script:
         "../scripts/filter_genes.py"
-
 
 
 if config["genecatalog"]["source"] == "contigs":
@@ -144,23 +142,20 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
             """
 
-
-
     rule generate_orf_info:
         input:
             cluster_attribution="Genecatalog/orf2gene_oldnames.tsv",
         output:
             cluster_attribution="Genecatalog/clustering/orf_info.parquet",
-            rep2genenr = "Genecatalog/clustering/representative2genenr.tsv"
-        threads:
-            1
+            rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
+        threads: 1
         log:
             "logs/Genecatalog/clustering/generate_orf_info.log",
         script:
             "../scripts/generate_orf_info.py"
-
-
 # cluster genes with cd-hit-est
+
+
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
@@ -186,15 +181,14 @@ rule rename_gene_catalog:
     output:
         fna="Genecatalog/gene_catalog.fna",
         faa="Genecatalog/gene_catalog.faa",
-        fna_index= temp("Genecatalog/all_genes/predicted_genes.fna.fxi"),
-        faa_index = temp("Genecatalog/all_genes/predicted_genes.faa.fxi")
+        fna_index=temp("Genecatalog/all_genes/predicted_genes.fna.fxi"),
+        faa_index=temp("Genecatalog/all_genes/predicted_genes.faa.fxi"),
     log:
         "logs/Genecatalog/clustering/rename_gene_catalog.log",
     conda:
         "../envs/fasta.yaml"
     script:
         "../scripts/rename_genecatalog.py"
-
 
 
 rule align_reads_to_Genecatalog:
@@ -314,10 +308,12 @@ rule combine_gene_coverages:
 
             # add gene length to dataframe of counts
             if cov_file == input.covstats[0]:
-                combined_N_reads["Length"] = pd.to_numeric( data.Length ,downcast='unsigned')
+                combined_N_reads["Length"] = pd.to_numeric(
+                    data.Length, downcast="unsigned"
+                )
 
-            combined_cov[sample] = pd.to_numeric( data.Avg_fold ,downcast='float')
-            combined_N_reads[sample] = pd.to_numeric( data.Reads ,downcast='unsigned')
+            combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
+            combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="unsigned")
 
             # delete interminate data and releace mem
             del data
@@ -570,23 +566,24 @@ rule gene2genome:
 
         # load orf_info
         orf_info = pd.read_parquet(input.orf_info)
-        
-        
+
+
         # recreate Contig name `Sample_ContigNr` and Gene names `Gene0004`
         orf_info["Contig"] = orf_info.Sample + "_" + orf_info.ContigNr.astype(str)
         orf_info["Gene"] = gene_scripts.geneNr_to_string(orf_info.GeneNr)
-        
+
         # Join genomes on contig
         orf_info = orf_info.join(contigs2genome, on="Contig")
 
         # remove genes not on genomes
         orf_info = orf_info.dropna(axis=0)
 
-        
 
         # count genes per genome in a matrix
-        gene2genome = pd.to_numeric(orf_info.groupby(["Gene", "MAG"]).size(),downcast="unsigned").unstack(fill_value=0)
-        
+        gene2genome = pd.to_numeric(
+            orf_info.groupby(["Gene", "MAG"]).size(), downcast="unsigned"
+        ).unstack(fill_value=0)
+
         # save as parquet
         gene2genome.reset_index().to_parquet(output[0])
 

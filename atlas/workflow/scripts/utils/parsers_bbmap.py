@@ -46,7 +46,7 @@ def read_coverage_binned(covarage_binned_file):
     return binned_coverage.Coverage
 
 
-def read_pileup_coverage(pileup_file, coverage_measure="Median_fold",other_columns=[]):
+def read_pileup_coverage(pileup_file, coverage_measure="Median_fold", other_columns=[]):
     """
     Parse output of pileup.sh
     #ID             Avg_fold        Length  Ref_GC  Covered_percent Covered_bases   Plus_reads      Minus_reads     Read_GC Median_fold     Std_Dev
@@ -61,7 +61,8 @@ def read_pileup_coverage(pileup_file, coverage_measure="Median_fold",other_colum
         pileup_file,
         index_col=0,
         sep="\t",
-        usecols=["#ID", coverage_measure, "Plus_reads", "Minus_reads"]+list(other_columns),
+        usecols=["#ID", coverage_measure, "Plus_reads", "Minus_reads"]
+        + list(other_columns),
     )
     data.index.names = ["Contig"]
     data.loc[data[coverage_measure] < 0, coverage_measure] = 0

@@ -94,16 +94,13 @@ rule parse_clstr_files:
             write_cd_hit_clusters(Clusters, fout)
 
 
-
-
 rule generate_orf_info:
     input:
         cluster_attribution="Genecatalog/orf2gene_oldnames.tsv",
     output:
         cluster_attribution="Genecatalog/clustering/orf_info.parquet",
-        rep2genenr = "Genecatalog/clustering/representative2genenr.tsv"
-    threads:
-        1
+        rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
+    threads: 1
     run:
         import pandas as pd
         import numpy as np
@@ -116,27 +113,25 @@ rule generate_orf_info:
         # rename gene repr to Gene0000XX
 
         # split orf names in sample, contig_nr, and orf_nr
-        orf_info = gene_scripts.split_orf_to_index(orf2gene.ORF )
+        orf_info = gene_scripts.split_orf_to_index(orf2gene.ORF)
 
         # rename representative
 
         representative_names = orf2gene.Representative.unique()
 
-        map_names = pd.Series(index=representative_names,
-                            data= np.arange(1,
-                            len( representative_names)+1, 
-                            dtype= np.uint 
-                            )
-                            )
-        
+        map_names = pd.Series(
+            index=representative_names,
+            data=np.arange(1, len(representative_names) + 1, dtype=np.uint),
+        )
+
 
         orf_info["GeneNr"] = orf2gene.Representative.map(map_names)
-        
 
-        orf_info.to_parquet( output.cluster_attribution )
+
+        orf_info.to_parquet(output.cluster_attribution)
 
 
         # Save name of representatives
-        map_names.index.name="Representative"
+        map_names.index.name = "Representative"
         map_names.name = "GeneNr"
-        map_names.to_csv(output.rep2genenr,sep='\t')
+        map_names.to_csv(output.rep2genenr, sep="\t")

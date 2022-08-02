@@ -42,17 +42,17 @@ map_genenr = pd.read_csv(snakemake.input.rep2genenr, index_col=0, sep="\t").sque
 
 
 # from gene Nr to gene name
-rep2gene = geneNr_to_string( map_genenr )
+rep2gene = geneNr_to_string(map_genenr)
 
 logging.info(f"Collect and rename representative genes according to {rep2gene.head()}")
 
-assert rep2gene.shape[0]>0
+assert rep2gene.shape[0] > 0
 
-faa_parser = pyfastx.Fasta(snakemake.input.faa,build_index=True)
-fna_parser = pyfastx.Fasta(snakemake.input.fna,build_index=True)
+faa_parser = pyfastx.Fasta(snakemake.input.faa, build_index=True)
+fna_parser = pyfastx.Fasta(snakemake.input.fna, build_index=True)
 
 with open(snakemake.output.fna, "w") as fna, open(snakemake.output.faa, "w") as faa:
-    for orf,gene_name in rep2gene.iteritems():
+    for orf, gene_name in rep2gene.iteritems():
 
         faa.write(f">{gene_name} {orf}\n{faa_parser[orf].seq}\n")
         faa.write(f">{gene_name} {orf}\n{fna_parser[orf].seq}\n")

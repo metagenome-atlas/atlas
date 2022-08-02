@@ -8,18 +8,20 @@ from pathlib2 import Path
 
 from snakemake.utils import logger, min_version
 
-workflow_folder= os.path.dirname(os.path.abspath(workflow.snakefile))
+workflow_folder = os.path.dirname(os.path.abspath(workflow.snakefile))
 
-sys.path.append( os.path.join(workflow_folder, "scripts"))
+sys.path.append(os.path.join(workflow_folder, "scripts"))
 import utils
 
 
 # add default config
 # comand line adds user config
-configfile: os.path.join(workflow_folder,"config","default_config.yaml")
+configfile: os.path.join(workflow_folder, "config", "default_config.yaml")
+
 
 # add defualt values from python (TODO: replace this)
 from atlas.make_config import update_config as atlas_update_config
+
 config = atlas_update_config(config)
 from atlas.default_values import *  # LOAD HARDCODED values and EGGNOG_HEADER
 from atlas.sample_table import load_sample_table
@@ -254,21 +256,20 @@ rule all:
         "genomes/annotations/gene2genome.parquet",
 
 
-
 def get_gene_catalog_input():
 
-
-
     annotation_file_names = {
-
-        "eggNOG":  "Genecatalog/annotations/eggNog.tsv.gz",
-        "single_copy": expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
+        "eggNOG": "Genecatalog/annotations/eggNog.tsv.gz",
+        "single_copy": expand(
+            "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
+            domain=["bacteria", "archaea"],
+        ),
     }
 
-    annotations_requested = config.get("gene_annotations",[])
+    annotations_requested = config.get("gene_annotations", [])
 
     try:
-        annotations_files = [ "Genecatalog/counts/median_coverage.parquet"] + [
+        annotations_files = ["Genecatalog/counts/median_coverage.parquet"] + [
             annotation_file_names[key] for key in annotations_requested
         ]
 
@@ -281,16 +282,13 @@ def get_gene_catalog_input():
     return annotations_files
 
 
-
 rule genecatalog:
     input:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/clustering/orf_info.parquet",
-        get_gene_catalog_input()
-       
+        get_gene_catalog_input(),
         # ,
-       
     output:
         temp(touch("finished_genecatalog")),
 
