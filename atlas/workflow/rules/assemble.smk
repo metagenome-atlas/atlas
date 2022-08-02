@@ -52,7 +52,7 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
         threads: config.get("simplejob_threads", 1)
         resources:
             mem=config["simplejob_mem"],
-            java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+            java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         shell:
             """
             reformat.sh {params.inputs} \
@@ -96,6 +96,8 @@ else:
             ), "Input and ouput files have not same number, can not create symlinks for all."
             for i in range(len(input)):
                 os.symlink(os.path.abspath(input[i]), output[i])
+
+
 
 
 #
@@ -313,7 +315,7 @@ if config.get("assembler", "megahit") == "megahit":
             inputs=lambda wc, input: megahit_input_parsing(input),
             preset=assembly_params["megahit"][config["megahit_preset"]],
         conda:
-            "%s/assembly.yaml" % CONDAENV
+            "../envs/megahit.yaml"
         threads: config["assembly_threads"]
         resources:
             mem=config["assembly_memory"],
@@ -364,7 +366,7 @@ else:
         ASSEMBLY_FRACTIONS = deepcopy(MULTIFILE_FRACTIONS)
 
         if config["spades_preset"] == "meta":
-            logging.error(
+            logger.error(
                 "Metaspades cannot handle single end libraries. Use another assembler or specify 'spades_preset': normal"
             )
             exit(1)
@@ -439,7 +441,7 @@ else:
         log:
             "{sample}/logs/assembly/spades.log",
         conda:
-            "%s/assembly.yaml" % CONDAENV
+            "../envs/spades.yaml"
         threads: config["assembly_threads"]
         resources:
             mem=config["assembly_memory"],
@@ -466,15 +468,16 @@ else:
     rule rename_spades_output:
         input:
             "{{sample}}/assembly/{sequences}.fasta".format(
-                sequences="scaffolds" if config["spades_use_scaffolds"] else "contigs"
+            sequences="scaffolds" if config["spades_use_scaffolds"] else "contigs"
             ),
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
-
-
 # standardizes header labels within contig FASTAs
+
+
+
 rule rename_contigs:
     input:
         "{sample}/assembly/{sample}_raw_contigs.fasta",
@@ -545,9 +548,7 @@ if config["filter_contigs"]:
             sam=temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam"),
         params:
             input=lambda wc, input: input_params_for_bbwrap(input.reads),
-            maxsites=config.get(
-                "maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES
-            ),
+            maxsites=config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
             max_distance_between_pairs=config.get(
                 "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
             ),
@@ -655,9 +656,10 @@ if config["filter_contigs"]:
             minl={params.minl} \
             trim={params.trim} \
             -Xmx{resources.java_mem}G 2> {log}"""
-
-
 # HACK: this makes two copies of the same file
+
+
+
 else:  # no filter
 
     localrules:
@@ -704,7 +706,9 @@ rule align_reads_to_final_contigs:
             "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
         ),
         paired_only=(
-            "t" if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else "f"
+            "t"
+            if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY)
+            else "f"
         ),
         ambiguous="all" if CONTIG_COUNT_MULTI_MAPPED_READS else "best",
         min_id=config.get("contig_min_id", CONTIG_MIN_ID),

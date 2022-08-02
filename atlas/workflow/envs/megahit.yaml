@@ -3,5 +3,4 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - pandas=1.2
-    - plotly=5.3
+    - megahit=1.2

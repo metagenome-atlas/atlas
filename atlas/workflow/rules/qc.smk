@@ -101,7 +101,7 @@ rule initialize_qc:
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        java_mem=int(int(config["simplejob_mem"] * JAVA_MEM_FRACTION)),
+        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         """
         reformat.sh {params.inputs} \
@@ -158,20 +158,20 @@ rule get_read_stats:
             tmp_file = os.path.join(subfolder, "read_stats.tmp")
             shell(
                 """
-        mkdir -p {subfolder} 2> {log}
+                                mkdir -p {subfolder} 2> {log}
 
-        reformat.sh {params_in} \
-        bhist={subfolder}/base_hist.txt \
-        qhist={subfolder}/quality_by_pos.txt \
-        lhist={subfolder}/readlength.txt \
-        gchist={subfolder}/gc_hist.txt \
-        gcbins=auto \
-        bqhist={subfolder}/boxplot_quality.txt \
-        threads={threads} \
-        overwrite=true \
-        -Xmx{mem}G \
-        2> >(tee -a {log} {tmp_file} )
-        """        .format(
+                                reformat.sh {params_in} \
+                                bhist={subfolder}/base_hist.txt \
+                                qhist={subfolder}/quality_by_pos.txt \
+                                lhist={subfolder}/readlength.txt \
+                                gchist={subfolder}/gc_hist.txt \
+                                gcbins=auto \
+                                bqhist={subfolder}/boxplot_quality.txt \
+                                threads={threads} \
+                                overwrite=true \
+                                -Xmx{mem}G \
+                                2> >(tee -a {log} {tmp_file} )
+                                """.format(
                     subfolder=subfolder,
                     params_in=params_in,
                     log=log,
@@ -246,7 +246,7 @@ rule get_read_stats:
                     + [str(v) for v in values]
                     + [timestamp]
                 )
-                + "\n"
+        + "\n"
             )
 
         shutil.make_archive(params.folder, "zip", params.folder)
@@ -333,8 +333,8 @@ if not SKIP_QC:
         params:
             ref=(
                 "ref=%s" % config.get("preprocess_adapters")
-                if config.get("preprocess_adapters")
-                else ""
+            if config.get("preprocess_adapters")
+            else ""
             ),
             mink=(
                 ""
@@ -372,7 +372,8 @@ if not SKIP_QC:
             qtrim=config.get("qtrim", QTRIM),
             error_correction_pe=(
                 "t"
-                if PAIRED_END and config.get("error_correction_overlapping_pairs", True)
+                if PAIRED_END
+                and config.get("error_correction_overlapping_pairs", True)
                 else "f"
             ),
             minlength=config.get(
@@ -488,9 +489,7 @@ if not SKIP_QC:
                 ),
                 maxindel=config.get("contaminant_max_indel", CONTAMINANT_MAX_INDEL),
                 minratio=config.get("contaminant_min_ratio", CONTAMINANT_MIN_RATIO),
-                minhits=config.get(
-                    "contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS
-                ),
+                minhits=config.get("contaminant_minimum_hits", CONTAMINANT_MINIMUM_HITS),
                 ambiguous=config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
                 k=config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
                 paired="true" if PAIRED_END else "false",
@@ -567,6 +566,8 @@ if not SKIP_QC:
                 [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
             ] = output
             sample_table.to_csv(params.sample_table, sep="\t")
+
+
 
 
 #### STATS
@@ -664,6 +665,8 @@ rule combine_read_length_stats:
         stats.to_csv(output[0], sep="\t")
 
 
+
+
 # rule combine_cardinality:
 #     input:
 #         expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
@@ -714,6 +717,8 @@ if PAIRED_END:
                 stats[sample] = data
 
             stats.T.to_csv(output[0], sep="\t")
+
+
 
 
 localrules:

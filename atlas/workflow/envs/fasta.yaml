@@ -3,5 +3,6 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - megahit=1.2
-    - spades=3
+    - pyfastx=0.8
+    - pandas=1.2
+    - pyarrow

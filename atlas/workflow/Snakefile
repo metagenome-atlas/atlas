@@ -4,17 +4,25 @@ import sys
 import tempfile
 import pandas as pd
 import numpy as np
+from pathlib2 import Path
 
 from snakemake.utils import logger, min_version
 
-sys.path.append(
-    os.path.join(os.path.dirname(os.path.abspath(workflow.snakefile)), "scripts")
-)
+workflow_folder = os.path.dirname(os.path.abspath(workflow.snakefile))
+
+sys.path.append(os.path.join(workflow_folder, "scripts"))
 import utils
 
-from atlas.make_config import update_config
 
-config = update_config(config)
+# add default config
+# comand line adds user config
+configfile: os.path.join(workflow_folder, "config", "default_config.yaml")
+
+
+# add defualt values from python (TODO: replace this)
+from atlas.make_config import update_config as atlas_update_config
+
+config = atlas_update_config(config)
 from atlas.default_values import *  # LOAD HARDCODED values and EGGNOG_HEADER
 from atlas.sample_table import load_sample_table
 
@@ -57,7 +65,7 @@ def io_params_for_tadpole(io, key="in"):
     elif N == 3:
         flag = f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
     else:
-        logger.critical(
+        logger.error(
             (
                 "File input/output expectation is one of: "
                 "1 file = single-end/ interleaved paired-end "
@@ -133,7 +141,7 @@ if (len(colum_headers_raw) == 0) and (len(colum_headers_QC) == 0):
 
     raise IOError(
         "Either raw reas or QC reads need to be in the sample table. "
-        "I din't find any collums with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
+        "I din't find any columnns with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
     )
 
 
@@ -224,6 +232,7 @@ include: "rules/sra.smk"
 include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
 include: "rules/dram.smk"
+include: "rules/strains.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
@@ -244,17 +253,42 @@ rule all:
         "finished_binning",
         "finished_genomes",
         "finished_genecatalog",
-        "genomes/annotations/gene2genome.tsv.gz",
+        "genomes/annotations/gene2genome.parquet",
+
+
+def get_gene_catalog_input():
+
+    annotation_file_names = {
+        "eggNOG": "Genecatalog/annotations/eggNog.tsv.gz",
+        "single_copy": expand(
+            "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
+            domain=["bacteria", "archaea"],
+        ),
+    }
+
+    annotations_requested = config.get("gene_annotations", [])
+
+    try:
+        annotations_files = ["Genecatalog/counts/median_coverage.parquet"] + [
+            annotation_file_names[key] for key in annotations_requested
+        ]
+
+    except Exception as e:
+
+        raise IOError(
+            "Error in gene_annotations requested, check config file 'gene_annotations' "
+        ) from e
+
+    return annotations_files
 
 
 rule genecatalog:
     input:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
-        "Genecatalog/clustering/orf2gene.tsv.gz",
-        "Genecatalog/counts/median_coverage.tsv.gz",
-        # expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea']),
-        "Genecatalog/annotations/eggNog.tsv.gz",
+        "Genecatalog/clustering/orf_info.parquet",
+        get_gene_catalog_input(),
+        # ,
     output:
         temp(touch("finished_genecatalog")),
 
@@ -291,10 +325,16 @@ rule genomes:
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
-        * get_genome_annotations(),
+        *get_genome_annotations(),
         "finished_binning",
     output:
         temp(touch("finished_genomes")),
+
+
+rule quantify_genomes:
+    input:
+        "genomes/counts/median_coverage_genomes.tsv",
+        "genomes/counts/raw_counts_genomes.tsv",
 
 
 rule binning:

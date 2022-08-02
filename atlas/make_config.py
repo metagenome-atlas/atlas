@@ -113,7 +113,7 @@ def make_default_config():
     config["genecatalog"] = {
         "source": "genomes",
         "clustermethod": "linclust",
-        "minlength": 100,
+        "minlength_nt": 270,
         "minid": 0.9,
         "coverage": 0.9,
         "extra": "",
@@ -155,7 +155,7 @@ def make_default_config():
 
     config["cobining_min_contig_length"] = 2000
     config["cobining_min_bin_size"] = 200 * 1000
-    config["semibin_options"] = " --recluster --max-node 1 --max-edges 200 "
+    config["semibin_options"] = "  --max-node 1 --max-edges 200 "
     config["cobinning_separator"] = ":"
 
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
@@ -166,13 +166,11 @@ def make_default_config():
         score=dict(
             completeness=1,
             contamination=5,
-            strain_heterogeneity=0,  # not in table
             N50=0.5,
             length=0,
         ),
         ANI=0.95,
         overlap=0.6,
-        sketch_size=5000,
         opt_parameters="",
     )
 

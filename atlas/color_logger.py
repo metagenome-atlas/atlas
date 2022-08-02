@@ -1,6 +1,8 @@
 import os, sys
 import logging, traceback
 
+# root logger
+logger = logging.getLogger()
 
 grey = "\x1b[38;21m"
 green = "\x1b[32;21m"
