@@ -186,6 +186,8 @@ rule rename_gene_catalog:
     output:
         fna="Genecatalog/gene_catalog.fna",
         faa="Genecatalog/gene_catalog.faa",
+        fna_index= temp("Genecatalog/all_genes/predicted_genes.fna.fxi"),
+        faa_index = temp("Genecatalog/all_genes/predicted_genes.faa.fxi")
     log:
         "logs/Genecatalog/clustering/rename_gene_catalog.log",
     conda:
