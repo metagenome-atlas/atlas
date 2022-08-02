@@ -123,7 +123,7 @@ rule generate_orf_info:
         representative_names = orf2gene.Representative.unique()
 
         map_names = pd.Series(index=representative_names,
-                            data= np.arrange(1,
+                            data= np.arange(1,
                             len( representative_names)+1, 
                             dtype= np.uint 
                             )

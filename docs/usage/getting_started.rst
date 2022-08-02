@@ -111,7 +111,7 @@ Let's apply atlas on your data or on our `example data`_::
 
   atlas init --db-dir databases path/to/fastq_files
 
-This command parses the folder for fastq files (extension ``.fastq(.gz)`` or ``.fq(.gz)`` , gzipped or not). fastq files can be arranged in subfolders, in which case the subfolder name will be used as a sample name. If you have paired-end reads the files are usually distinguishable by ``_R1/_R2`` or simple ``_1/_2`` in the file names. Atlas searches for these patterns and lists the paired-end files for each sample.
+This command parses the folder for fastq files (extension ``.fastq(.gz)`` or ``.fq(.gz)`` , gzipped or not). fastq files can be aranged in subfolders, in which case the subfolder name will be used as a sample name. If you have paired-end reads the files are usually distinguishable by ``_R1/_R2`` or simple ``_1/_2`` in the file names. Atlas searches for these patterns and lists the paired-end files for each sample.
 
 The command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
 
