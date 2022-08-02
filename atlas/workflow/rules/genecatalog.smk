@@ -349,10 +349,10 @@ rule combine_gene_coverages:
 
             # add gene length to dataframe of counts
             if cov_file == input.covstats[0]:
-                combined_N_reads["Length"] = pd.to_numeric( data.Length )
+                combined_N_reads["Length"] = pd.to_numeric( data.Length ,downcast='unsigned')
 
-            combined_cov[sample] = pd.to_numeric( data.Avg_fold )
-            combined_N_reads[sample] = pd.to_numeric( data.Reads )
+            combined_cov[sample] = pd.to_numeric( data.Avg_fold ,downcast='float')
+            combined_N_reads[sample] = pd.to_numeric( data.Reads ,downcast='unsigned')
 
             # delete interminate data and releace mem
             del data
