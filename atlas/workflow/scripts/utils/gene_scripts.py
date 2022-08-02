@@ -6,7 +6,7 @@ import numpy as np
 def split_orf_to_index(orf_names):
   """Split the typical prodigal orf name `Sample_contigNr_OrfNR` into three column dataset and conversts the numbers to the smallest unsigned number. 
   """
-  result=  pd.Series(orf_series).str.rsplit("_",n=2,expand=True).rename(columns={0:"Sample",1:"ContigNr",2:"OrfNr"})
+  result=  pd.Series(orf_names).str.rsplit("_",n=2,expand=True).rename(columns={0:"Sample",1:"ContigNr",2:"OrfNr"})
   result = result.apply(pd.to_numeric,errors="ignore",downcast='unsigned')
 
   are_numeric= result.dtypes.map(lambda x: np.issubdtype(x,np.number))

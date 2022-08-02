@@ -154,44 +154,10 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             rep2genenr = "Genecatalog/clustering/representative2genenr.tsv"
         threads:
             1
-        run:
-            import pandas as pd
-            import numpy as np
-
-            from utils import gene_scripts
-
-            # CLuterID    GeneID    empty third column
-            orf2gene = pd.read_csv(
-                input.cluster_attribution, header=None, sep="\t",usecols=[0,1]
-            )
-
-            orf2gene.columns = ["ORF","Representative"]
-
-            # split orf names in sample, contig_nr, and orf_nr
-            orf_info = gene_scripts.split_orf_to_index(orf2gene.ORF )
-
-            # rename representative
-
-            representative_names = orf2gene.Representative.unique()
-
-            map_names = pd.Series(index=representative_names,
-                                data= np.arrange(1,
-                                len( representative_names)+1, 
-                                dtype= np.uint 
-                                )
-                                )
-            
-
-            orf_info["GeneNr"] = orf2gene.Representative.map(map_names)
-            
-
-            orf_info.to_parquet( output.cluster_attribution )
-
-
-            # Save name of representatives
-            map_names.index.name="Representative"
-            map_names.name = "GeneNr"
-            map_names.to_csv(output.rep2genenr,sep='\t')
+        log:
+            "logs/Genecatalog/clustering/generate_orf_info.log",
+        script:
+            "../scripts/generate_orf_info.py"
 
 
 # cluster genes with cd-hit-est
@@ -220,6 +186,8 @@ rule rename_gene_catalog:
     output:
         fna="Genecatalog/gene_catalog.fna",
         faa="Genecatalog/gene_catalog.faa",
+    log:
+        "logs/Genecatalog/clustering/rename_gene_catalog.log",
     conda:
         "../envs/fasta.yaml"
     script:

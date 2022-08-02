@@ -47,7 +47,7 @@ faa_parser = pyfastx.Fasta(snakemake.input.faa,build_index=True)
 fna_parser = pyfastx.Fasta(snakemake.input.fna,build_index=True)
 
 with open(snakemake.output.fna, "w") as fna, open(snakemake.output.faa, "w") as faa:
-    for orf,gene_name in rep2gene.itteritem():
+    for orf,gene_name in rep2gene.iteritems():
         
         faa.write(f">{gene_name} {orf}\n{faa_parser[orf].seq}\n")
         faa.write(f">{gene_name} {orf}\n{fna_parser[orf].seq}\n")
