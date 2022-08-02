@@ -328,7 +328,9 @@ rule align_reads_to_MAGs:
             "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
         ),
         paired_only=(
-            "t" if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else "f"
+            "t"
+            if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY)
+            else "f"
         ),
         ambiguous="all" if CONTIG_COUNT_MULTI_MAPPED_READS else "best",
         min_id=config.get("contig_min_id", CONTIG_MIN_ID),

@@ -328,7 +328,7 @@ rule get_bins:
     output:
         directory("{sample}/binning/{binner}/bins"),
     conda:
-        "%s/sequence_utils.yaml" % CONDAENV
+        "../envs/sequence_utils.yaml"
     log:
         "{sample}/logs/binning/get_bins_{binner}.log",
     script:
@@ -570,7 +570,8 @@ rule get_unique_bin_ids:
 rule run_das_tool:
     input:
         cluster_attribution=expand(
-            "{{sample}}/binning/DASTool/{binner}.scaffolds2bin", binner=config["binner"]
+            "{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
+            binner=config["binner"],
         ),
         contigs=BINNING_CONTIGS,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
@@ -578,7 +579,6 @@ rule run_das_tool:
         "{sample}/binning/DASTool/{sample}_DASTool_summary.tsv",
         "{sample}/binning/DASTool/{sample}_allBins.eval",
         cluster_attribution="{sample}/binning/DASTool/cluster_attribution.tsv",
-
     threads: config["threads"]
     log:
         "{sample}/logs/binning/DASTool.log",

@@ -7,6 +7,7 @@ EGGNOG_VERSION = "5"
 
 GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release207/207.0/auxillary_files/gtdbtk_r207_v2_data.tar.gz"
 
+
 def md5(fname):
     # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
     hash_md5 = hashlib.md5()
@@ -165,10 +166,14 @@ rule initialize_checkm:
     shell:
         "checkm data setRoot {params.database_dir} &> {log} "
 
-localrules: download_gtdb
+
+localrules:
+    download_gtdb,
+
+
 rule download_gtdb:
     output:
-        temp(f"{GTDBTK_DATA_PATH}/gtdb_data.tar.gz")
+        temp(f"{GTDBTK_DATA_PATH}/gtdb_data.tar.gz"),
     conda:
         "../envs/gtdbtk.yaml"
     threads: 1
@@ -177,11 +182,12 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        ' wget {GTDB_DATA_URL} -O {output} &> {log} '
+        " wget {GTDB_DATA_URL} -O {output} &> {log} "
+
 
 rule extract_gtdb:
     input:
-        rules.download_gtdb.output
+        rules.download_gtdb.output,
     output:
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     conda:

@@ -11,9 +11,8 @@ dependencies:
   - networkx
   - graphviz
   - pandas >=1.2, <1.5
+  - pyarrow # for parquet reading
   - click >=7
   - ruamel.yaml >=0.17
-  - biopython >= 1.74
   - cookiecutter
-  - xmltodict
   - pathlib2
