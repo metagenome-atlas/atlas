@@ -144,36 +144,54 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
             """
 
-    localrules:
-        rename_protein_catalog,
 
-    rule rename_protein_catalog:
+
+    rule generate_orf_info:
         input:
             cluster_attribution="Genecatalog/orf2gene_oldnames.tsv",
         output:
-            cluster_attribution="Genecatalog/clustering/orf2gene.tsv.gz",
+            cluster_attribution="Genecatalog/clustering/orf_info.parquet",
+            rep2genenr = "Genecatalog/clustering/representative2genenr.tsv"
+        threads:
+            1
         run:
             import pandas as pd
+            import numpy as np
+
+            from utils import gene_scripts
 
             # CLuterID    GeneID    empty third column
             orf2gene = pd.read_csv(
-                input.cluster_attribution, index_col=1, header=None, sep="\t"
+                input.cluster_attribution, header=None, sep="\t",usecols=[0,1]
             )
 
-            protein_clusters_old_names = orf2gene[0].unique()
+            orf2gene.columns = ["ORF","Representative"]
 
-            map_names = dict(
-                zip(
-                    protein_clusters_old_names,
-                    utils.gen_names_for_range(len(protein_clusters_old_names), "Gene"),
-                )
-            )
+            # split orf names in sample, contig_nr, and orf_nr
+            orf_info = gene_scripts.split_orf_to_index(orf2gene.ORF )
 
-            orf2gene["Gene"] = orf2gene[0].map(map_names)
-            orf2gene.index.name = "ORF"
-            orf2gene["Gene"].to_csv(
-                output.cluster_attribution, sep="\t", header=True, compression="gzip"
-            )
+            # rename representative
+
+            representative_names = orf2gene.Representative.unique()
+
+            map_names = pd.Series(index=representative_names,
+                                data= np.arrange(1,
+                                len( representative_names)+1, 
+                                dtype= np.uint 
+                                )
+                                )
+            
+
+            orf_info["GeneNr"] = orf2gene.Representative.map(map_names)
+            
+
+            orf_info.to_parquet( output.cluster_attribution )
+
+
+            # Save name of representatives
+            map_names.index.name="Representative"
+            map_names.name = "GeneNr"
+            map_names.to_csv(output.rep2genenr,sep='\t')
 
 
 # cluster genes with cd-hit-est
@@ -198,38 +216,15 @@ rule rename_gene_catalog:
     input:
         fna="Genecatalog/all_genes/predicted_genes.fna",
         faa="Genecatalog/all_genes/predicted_genes.faa",
-        orf2gene="Genecatalog/clustering/orf2gene.tsv.gz",
-        representatives="Genecatalog/representatives_of_clusters.fasta",
+        rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
     output:
         fna="Genecatalog/gene_catalog.fna",
         faa="Genecatalog/gene_catalog.faa",
-    run:
-        import pandas as pd
-        from Bio import SeqIO
+    conda:
+        "../envs/fasta.yaml"
+    script:
+        "../scripts/rename_genecatalog.py"
 
-        representatives = []
-        with open(input.representatives) as fasta:
-            for line in fasta:
-                if line[0] == ">":
-                    representatives.append(line[1:].split()[0])
-
-        map_names = pd.read_csv(input.orf2gene, index_col=0, sep="\t").loc[
-            representatives, "Gene"
-        ]
-
-        # rename fna
-        faa_parser = SeqIO.parse(input.faa, "fasta")
-        fna_parser = SeqIO.parse(input.fna, "fasta")
-
-        with open(output.fna, "w") as fna, open(output.faa, "w") as faa:
-            for gene in fna_parser:
-                protein = next(faa_parser)
-                if gene.name in map_names.index:
-                    gene.id = map_names[gene.name]
-                    protein.id = map_names[protein.name]
-
-                    SeqIO.write(gene, fna, "fasta")
-                    SeqIO.write(protein, faa, "fasta")
 
 
 rule align_reads_to_Genecatalog:
@@ -571,16 +566,19 @@ rule gene2genome:
         contigs2bins="genomes/clustering/all_contigs2bins.tsv.gz",
         contigs2mags="genomes/clustering/contig2genome.tsv",
         old2newID="genomes/clustering/old2newID.tsv",
-        orf2gene="Genecatalog/clustering/orf2gene.tsv.gz",
+        orf_info="Genecatalog/clustering/orf_info.parquet",
     params:
-        remaned_contigs=config["rename_mags_contigs"]
+        renamed_contigs=config["rename_mags_contigs"]
         & (config["genecatalog"]["source"] == "contigs"),
     output:
-        "genomes/annotations/gene2genome.tsv.gz",
+        "genomes/annotations/gene2genome.parquet",
     run:
         import pandas as pd
+        from utils import gene_scripts
 
-        if params.remaned_contigs:
+        # if MAGs are renamed I need to obtain the old contig names
+        # otherwise not
+        if params.renamed_contigs:
 
             contigs2bins = pd.read_csv(
                 input.contigs2bins, index_col=0, squeeze=False, sep="\t", header=None
@@ -600,19 +598,27 @@ rule gene2genome:
             )
             contigs2genome.columns = ["MAG"]
 
+        # load orf_info
+        orf_info = pd.read_parquet(input.orf_info)
+        
+        
+        # recreate Contig name `Sample_ContigNr` and Gene names `Gene0004`
+        orf_info["Contig"] = orf_info.Sample + "_" + orf_info.ContigNr.astype(str)
+        orf_info["Gene"] = gene_scripts.geneNr_to_string(orf_info.GeneNr)
+        
+        # Join genomes on contig
+        orf_info = orf_info.join(contigs2genome, on="Contig")
 
-        orf2gene = pd.read_csv(
-            input.orf2gene, index_col=0, squeeze=False, sep="\t", header=0
-        )
+        # remove genes not on genomes
+        orf_info = orf_info.dropna(axis=0)
 
-        orf2gene["Contig"] = orf2gene.index.map(lambda s: "_".join(s.split("_")[:-1]))
-        orf2gene = orf2gene.join(contigs2genome, on="Contig")
-        orf2gene = orf2gene.dropna(axis=0)
+        
 
-        gene2genome = orf2gene.groupby(["Gene", "MAG"]).size()
-        gene2genome.name = "Ncopies"
-
-        gene2genome.to_csv(output[0], sep="\t", header=True, compression="gzip")
+        # count genes per genome in a matrix
+        gene2genome = pd.to_numeric(orf_info.groupby(["Gene", "MAG"]).size(),downcast="unsigned").unstack(fill_value=0)
+        
+        # save as parquet
+        gene2genome.reset_index().to_parquet(output[0])
 
 
 # after combination need to add eggNOG headerself.

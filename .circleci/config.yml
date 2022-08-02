@@ -189,7 +189,7 @@ jobs:
           command: |
             source activate ./atlasenv
             WD='test/Test_assembly'
-            atlas run None "Genecatalog/clustering/orf2gene.tsv.gz" -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
+            atlas run None "Genecatalog/clustering/orf_info.parquet" -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
   binning:
     <<: *defaults
     environment:

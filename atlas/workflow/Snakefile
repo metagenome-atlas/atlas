@@ -251,7 +251,7 @@ rule all:
         "finished_binning",
         "finished_genomes",
         "finished_genecatalog",
-        "genomes/annotations/gene2genome.tsv.gz",
+        "genomes/annotations/gene2genome.parquet",
 
 
 
@@ -286,7 +286,7 @@ rule genecatalog:
     input:
         "Genecatalog/gene_catalog.fna",
         "Genecatalog/gene_catalog.faa",
-        "Genecatalog/clustering/orf2gene.tsv.gz",
+        "Genecatalog/clustering/orf_info.parquet",
         get_gene_catalog_input()
        
         # ,

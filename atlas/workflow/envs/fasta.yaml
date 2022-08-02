@@ -5,3 +5,4 @@ channels:
 dependencies:
     - pyfastx=0.8
     - pandas=1.2
+    - pyarrow
