@@ -121,5 +121,7 @@ Set behavior on ambiguously-mapped reads (with multiple top-scoring mapping loca
 
     contaminant_ambiguous: best
 
+For host decontamination we suggest the following genomes, where contaminants and low complexity regions were masked.
 
-For human reads we recommend to download the genome [here](), where contaminants and low complexity regions were masked.
+Many thanks to Brian Bushnell for providing the genomes of [human](https://drive.google.com/file/d/0B3llHR93L14wd0pSSnFULUlhcUk/edit?resourcekey=0-PsIKmg2q4EvTGWGOUjsKGQ),[mouse](https://drive.google.com/file/d/0B3llHR93L14wYmJYNm9EbkhMVHM/view?resourcekey=0-jSsdejBncqPu4eiFfJvf1w), 
+[dog](https://drive.google.com/file/d/0B3llHR93L14wTHdWRG55c2hPUXM/view?resourcekey=0-nJ2WQzTQYrTizK0pllVRZg), and [cat](https://drive.google.com/file/d/0B3llHR93L14wOXJhWXRlZjBpVUU/view?resourcekey=0-xxh33oYWp5FGBpRzobD_uw). [Source](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/37175-introducing-removehuman-human-contaminant-removal?p=286481#post286481)
