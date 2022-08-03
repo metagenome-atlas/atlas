@@ -67,14 +67,12 @@ rule bbsplit:
         "logs/genomes/bbsplit/{sample}.log"
     benchmark:
         "logs/benchmark/genomes/bbsplit/{sample}.txt"
-    conda:
-        "../envs/required_packages.yaml"
     threads:
         config["threads"]
     resources:
         mem_mb = 1000 * config["mem"],
         java_mem = int(config["mem"] * JAVA_MEM_FRACTION),
-        time_min= config["runtime"]["default"] * 60
+        time_min= config["runtime"]["default"] * 60,
         time= config["runtime"]["default"]
     run:
 
