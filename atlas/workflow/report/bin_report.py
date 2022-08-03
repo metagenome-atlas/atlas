@@ -49,39 +49,51 @@ def make_plots(bin_table):
 
     # Prepare data
     df = pd.read_table(bin_table)
-    df.index = df["Bin Id"]
+    
 
 
 
     if snakemake.config["bin_quality_asesser"].lower()=="busco":
 
-        logging.waring("No taxonomic information available, use busco lineage")
+        df["Bin id"] = df["Input_file"].str.replace(".fasta","")
+        
+        
 
-        lineage_name="lineage"
+        logging.waring("No taxonomic information available, use busco Dataset")
+
+        lineage_name="Dataset"
+        hover_data =None
+        size_name = None
 
     elif snakemake.config["bin_quality_asesser"].lower()=="checkm":
+        
+
+        df["Quality_Score"] = df.eval("Completeness - 5* Contamination")
 
         df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
 
         lineage_name="phylum"
+        size_name = "Genome size (Mbp)"
+        hover_data=["genus"]
     else:
         raise Exception(f"bin_quality_asesser in the config file not understood")
 
-
-    df["Quality Score"] = df.eval("Completeness - 5* Contamination")
+    
+    df.index = df["Bin Id"]
+    
 
     div[
         "QualityScore"
     ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
-
+        
     # 2D plot
     fig = px.scatter(
         data_frame=df,
         y="Completeness",
         x="Contamination",
         color=lineage_name,
-        size="Genome size (Mbp)",
-        hover_data=["genus"],
+        size= size_name,
+        hover_data=hover_data,
         hover_name="Bin Id",
     )
     fig.update_yaxes(range=(50, 102))
@@ -91,10 +103,10 @@ def make_plots(bin_table):
     ## By sample
     fig = px.strip(
         data_frame=df,
-        y="Quality Score",
+        y="Quality_Score",
         x="Sample",
         color=lineage_name,
-        hover_data=["genus"],
+        hover_data=hover_data,
         hover_name="Bin Id",
     )
     fig.update_yaxes(range=(50, 102))
@@ -105,7 +117,7 @@ def make_plots(bin_table):
         data_frame=df,
         y="Quality Score",
         x=lineage_name,
-        hover_data=["genus"],
+        hover_data=hover_data,
         hover_name="Bin Id",
     )
     fig.update_yaxes(range=(50, 102))
