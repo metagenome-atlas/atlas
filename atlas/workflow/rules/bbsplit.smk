@@ -25,7 +25,7 @@ rule bbsplit_index:
     output:
         index= directory("genomes/bbsplit_ref/ref"),
     threads:
-        config.get("threads", 6)
+        config["threads"]
     resources:
         mem_mb = config["mem"] * 1000,
         java_mem = int(config["mem"] * JAVA_MEM_FRACTION),
@@ -48,7 +48,7 @@ rule bbsplit_index:
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule bbsplit:
     input:
-        reads= lambda wildcards: get_quality_controlled_reads_(wildcards,['R1','R2']),
+        reads= lambda wildcards: get_quality_controlled_reads(wildcards),
         refdir = rules.bbsplit_index.output.index,
     output:
         sam=temp("genomes/alignments/sam/{sample}.sam"),
@@ -59,8 +59,8 @@ rule bbsplit:
     params:
         ambiguous="all" ,
         ambiguous2 = "best",
-        minid = config.get('contig_min_id', CONTIG_MIN_ID),
-        #unmapped=lambda wc, output: io_params_for_tadpole(output.unmapped, "outu"),
+        minid = config['contig_min_id'],
+        # unmapped=lambda wc, output: io_params_for_tadpole(output.unmapped, "outu"),
     shadow:
         "shallow"        
     log:
@@ -72,8 +72,8 @@ rule bbsplit:
     threads:
         config["threads"]
     resources:
-        mem_mb = 1000 * config.get("java_mem", JAVA_MEM),
-        java_mem = int(config.get("java_mem", JAVA_MEM) * JAVA_MEM_FRACTION),
+        mem_mb = 1000 * config["mem"],
+        java_mem = int(config["mem"] * JAVA_MEM_FRACTION),
         time_min= config["runtime"]["default"] * 60
         time= config["runtime"]["default"]
     run:

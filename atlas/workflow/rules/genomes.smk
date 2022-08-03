@@ -286,11 +286,6 @@ rule run_all_checkm_lineage_wf:
         """
 
 
-### Quantification
-
-include: "bbsplit.smk"
-
-
 # rule predict_genes_genomes:
 #     input:
 #         dir= genomes_dir

@@ -106,7 +106,6 @@ def combine_coverages(coverage_files, sample_names, coverage_measure="Median_fol
     return combined_cov, combined_N_reads
 
 
-
 def read_bbsplit_bincov(bbsplit_bincov_file):
     """
     #Mean   1.545
@@ -116,25 +115,25 @@ def read_bbsplit_bincov(bbsplit_bincov_file):
     MAG20067$ERR675668_24   0.00    2000    1000
 
     """
-    binCov= pd.read_csv(covarage_binned_file,sep='\t',
-                        skiprows=2,
-                        index_col=[0,2], #Ref$Contig and Position
-                        usecols=[0,1,2],
-                        )
+    binCov = pd.read_csv(
+        covarage_binned_file,
+        sep="\t",
+        skiprows=2,
+        index_col=[0, 2],  # Ref$Contig and Position
+        usecols=[0, 1, 2],
+    )
 
     binCov = pd.to_numeric(binCov.squeeze(), downcast="integer")
-    
-    # split first index `genome$contig` in two 
-    index= pd.Series(binCov.index.levels[0],index=binCov.index.levels[0] )
-    splitted= index.str.split('$',expand=True)
-    splitted.columns=['Genome','Contig']
-    new_index= splitted.loc[binCov.index.get_level_values(0)]
-    new_index['Position']= binCov.index.get_level_values(1).values
-    binCov.index=pd.MultiIndex.from_frame(new_index)
+
+    # split first index `genome$contig` in two
+    index = pd.Series(binCov.index.levels[0], index=binCov.index.levels[0])
+    splitted = index.str.split("$", expand=True)
+    splitted.columns = ["Genome", "Contig"]
+    new_index = splitted.loc[binCov.index.get_level_values(0)]
+    new_index["Position"] = binCov.index.get_level_values(1).values
+    binCov.index = pd.MultiIndex.from_frame(new_index)
 
     return binCov
-
-    
 
 
 def parse_bbmap_log_file(log_file):

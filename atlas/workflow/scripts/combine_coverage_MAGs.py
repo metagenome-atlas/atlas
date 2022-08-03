@@ -52,7 +52,7 @@ binCov.reset_index().to_parquet(snakemake.output.binned_cov)
 
 # Median coverage
 logging.info("Calculate median coverage")
-Median_abund= binCov.groupby(level=0).median().T
+Median_abund = binCov.groupby(level=0).median().T
 del binCov
 Median_abund.reset_index().to_parquet(snakemake.output.median_abund)
 
