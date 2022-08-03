@@ -156,6 +156,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 # cluster genes with cd-hit-est
 
 
+
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
@@ -274,64 +275,10 @@ rule combine_gene_coverages:
     output:
         "Genecatalog/counts/median_coverage.parquet",
         "Genecatalog/counts/Nmapped_reads.parquet",
-    run:
-        import pandas as pd
-        import gc, os
-        from utils.parsers_bbmap import read_pileup_coverage
-
-        # prepare output tables
-        combined_cov = pd.DataFrame(
-            dtype=int,
-        )
-        combined_N_reads = pd.DataFrame(
-            dtype=float,
-        )
-
-
-        for cov_file in input.covstats:
-
-            sample = os.path.split(cov_file)[-1].split("_")[0]
-
-            # print(f"read file for sample {sample}")
-
-            if cov_file == input.covstats[0]:
-                other_columns = ["Length"]
-            else:
-                other_columns = []
-
-            data = read_pileup_coverage(
-                cov_file, coverage_measure="Avg_fold", other_columns=other_columns
-            )
-
-            # genes are not sorted
-            data.sort_index(inplace=True)
-
-            # add gene length to dataframe of counts
-            if cov_file == input.covstats[0]:
-                combined_N_reads["Length"] = pd.to_numeric(
-                    data.Length, downcast="unsigned"
-                )
-
-            combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
-            combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="unsigned")
-
-            # delete interminate data and releace mem
-            del data
-            gc.collect()
-
-
-        # give index nice name
-        combined_cov.index.name = "GeneNr"
-        combined_N_reads.index.name = "GeneNr"
-
-        # Store as parquet
-        # add index so that it can be read in R
-        combined_N_reads.reset_index().to_parquet(output[1])
-        del combined_N_reads
-        gc.collect()
-
-        combined_cov.reset_index().to_parquet(output[0])
-        del combined_cov
+    log:
+        "logs/Genecatalog/counts/combine_gene_coverages.log",
+    script:
+        "../scripts/combine_gene_coverages.py"
 
 
 ###########
@@ -489,10 +436,12 @@ checkpoint gene_subsets:
         directory("Genecatalog/subsets/genes"),
     params:
         subset_size=config["genecatalog"]["SubsetSize"],
-    run:
-        from utils import fasta
-
-        fasta.split(input[0], params.subset_size, output[0], simplify_headers=True)
+    conda:
+        "../envs/sequence_utils.yaml"
+    log:
+        "logs/Genecatalog/clustering/split_genecatalog.log",
+    script:
+        "../scripts/split_genecatalog.py"
 
 
 def combine_genecatalog_annotations_input(wildcards):
@@ -538,54 +487,10 @@ rule gene2genome:
         & (config["genecatalog"]["source"] == "contigs"),
     output:
         "genomes/annotations/gene2genome.parquet",
-    run:
-        import pandas as pd
-        from utils import gene_scripts
-
-        # if MAGs are renamed I need to obtain the old contig names
-        # otherwise not
-        if params.renamed_contigs:
-
-            contigs2bins = pd.read_csv(
-                input.contigs2bins, index_col=0, squeeze=False, sep="\t", header=None
-            )
-
-            contigs2bins.columns = ["Bin"]
-            old2newID = pd.read_csv(
-                input.old2newID, index_col=0, squeeze=True, sep="\t"
-            )
-
-            contigs2genome = (
-                contigs2bins.join(old2newID, on="Bin").dropna().drop("Bin", axis=1)
-            )
-        else:
-            contigs2genome = pd.read_csv(
-                input.contigs2mags, index_col=0, squeeze=False, sep="\t", header=None
-            )
-            contigs2genome.columns = ["MAG"]
-
-        # load orf_info
-        orf_info = pd.read_parquet(input.orf_info)
-
-
-        # recreate Contig name `Sample_ContigNr` and Gene names `Gene0004`
-        orf_info["Contig"] = orf_info.Sample + "_" + orf_info.ContigNr.astype(str)
-        orf_info["Gene"] = gene_scripts.geneNr_to_string(orf_info.GeneNr)
-
-        # Join genomes on contig
-        orf_info = orf_info.join(contigs2genome, on="Contig")
-
-        # remove genes not on genomes
-        orf_info = orf_info.dropna(axis=0)
-
-
-        # count genes per genome in a matrix
-        gene2genome = pd.to_numeric(
-            orf_info.groupby(["Gene", "MAG"]).size(), downcast="unsigned"
-        ).unstack(fill_value=0)
-
-        # save as parquet
-        gene2genome.reset_index().to_parquet(output[0])
+    log:
+        "logs/genomes/annotations/gene2genome.log",
+    script:
+        "../scripts/gene2genome.py"
 
 
 # after combination need to add eggNOG headerself.
