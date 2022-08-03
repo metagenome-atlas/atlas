@@ -56,7 +56,7 @@ rule get_quality_for_dRep_from_checkm:
         D.index = D.index.astype(str) + ".fasta"
         D.index.name = "genome"
         D.columns = D.columns.str.lower()
-        D.iloc[:, ["completeness", "contamination"]].to_csv(output[0])
+        D.loc[:, ["completeness", "contamination"]].to_csv(output[0])
 
 
 #

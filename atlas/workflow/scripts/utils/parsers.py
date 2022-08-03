@@ -41,4 +41,8 @@ def read_busco_output(completness_table,
             inplace=True,
         )
 
+    # remove extension from filename
+    df.index = df.index.str.replace(".fasta","",regex=False)
+    df.index.name= "Bin Id"
+
     return df
