@@ -156,6 +156,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 # cluster genes with cd-hit-est
 
 
+
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
@@ -278,7 +279,6 @@ rule combine_gene_coverages:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     script:
         "../scripts/combine_gene_coverages.py"
-
 
 
 ###########
@@ -437,7 +437,7 @@ checkpoint gene_subsets:
     params:
         subset_size=config["genecatalog"]["SubsetSize"],
     conda:
-        "../envs/sequence_utils.yaml",
+        "../envs/sequence_utils.yaml"
     log:
         "logs/Genecatalog/clustering/split_genecatalog.log",
     script:
@@ -490,8 +490,7 @@ rule gene2genome:
     log:
         "logs/genomes/annotations/gene2genome.log",
     script:
-        "../scripts/gene2genome.py",
-
+        "../scripts/gene2genome.py"
 
 
 # after combination need to add eggNOG headerself.

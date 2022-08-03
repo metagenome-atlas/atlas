@@ -63,9 +63,7 @@ for cov_file in snakemake.input.covstats:
 
     # add gene length to dataframe of counts
     if cov_file == snakemake.input.covstats[0]:
-        combined_N_reads["Length"] = pd.to_numeric(
-            data.Length, downcast="unsigned"
-        )
+        combined_N_reads["Length"] = pd.to_numeric(data.Length, downcast="unsigned")
 
     combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
     combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="unsigned")

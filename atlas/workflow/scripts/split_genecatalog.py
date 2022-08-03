@@ -35,4 +35,9 @@ sys.excepthook = handle_exception
 
 from utils import fasta
 
-fasta.split(snakemake.input[0], snakemake.params.subset_size, snakemake.output[0], simplify_headers=True)
+fasta.split(
+    snakemake.input[0],
+    snakemake.params.subset_size,
+    snakemake.output[0],
+    simplify_headers=True,
+)

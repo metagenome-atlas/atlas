@@ -44,7 +44,9 @@ map_genenr = pd.read_csv(snakemake.input.rep2genenr, index_col=0, sep="\t").sque
 # from gene Nr to gene name
 rep2gene = geneNr_to_string(map_genenr)
 
-logging.info(f"Collect and rename representative genes according to:\n {rep2gene.head()}")
+logging.info(
+    f"Collect and rename representative genes according to:\n {rep2gene.head()}"
+)
 
 assert rep2gene.shape[0] > 0
 

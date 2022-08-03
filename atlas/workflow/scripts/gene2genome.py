@@ -46,9 +46,7 @@ if snakemake.params.renamed_contigs:
         snakemake.input.old2newID, index_col=0, squeeze=True, sep="\t"
     )
 
-    contigs2genome = (
-        contigs2bins.join(old2newID, on="Bin").dropna().drop("Bin", axis=1)
-    )
+    contigs2genome = contigs2bins.join(old2newID, on="Bin").dropna().drop("Bin", axis=1)
 else:
     contigs2genome = pd.read_csv(
         snakemake.input.contigs2mags, index_col=0, squeeze=False, sep="\t", header=None
