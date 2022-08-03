@@ -185,7 +185,7 @@ def get_genome_dir():
         genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
         if len(genomes) == 0:
-            logger.critical(f"No genomes found with fasta extension in {genome_dir} ")
+            logger.error(f"No genomes found with fasta extension in {genome_dir} ")
             exit(1)
 
     else:
@@ -208,7 +208,7 @@ def get_all_genomes(wildcards):
     genomes = glob_wildcards(os.path.join(genome_dir, "{genome}.fasta")).genome
 
     if len(genomes) == 0:
-        logger.critical(
+        logger.error(
             f"No genomes found with fasta extension in {genome_dir} "
             "You don't have any Metagenome assembled genomes with sufficient quality. "
             "You may want to change the assembly, binning or filtering parameters. "
@@ -328,7 +328,9 @@ rule align_reads_to_MAGs:
             "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
         ),
         paired_only=(
-            "t" if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY) else "f"
+            "t"
+            if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY)
+            else "f"
         ),
         ambiguous="all" if CONTIG_COUNT_MULTI_MAPPED_READS else "best",
         min_id=config.get("contig_min_id", CONTIG_MIN_ID),
@@ -393,39 +395,9 @@ rule pileup_MAGs:
         bincov={output.bincov} 2> {log}"""
 
 
-
 rule combine_coverages_MAGs:
     input:
         covstats=expand("genomes/alignments/{sample}_coverage.txt", sample=SAMPLES),
-        contig2genome="genomes/clustering/contig2genome.tsv",
-    output:
-        "genomes/counts/median_contig_coverage.tsv",
-        "genomes/counts/raw_counts_contigs.tsv",
-        "genomes/counts/raw_counts_genomes.tsv",
-    threads:
-        1
-    run:
-        import pandas as pd
-        from utils.parsers_bbmap import combine_coverages
-
-
-        combined_cov, Counts_contigs = combine_coverages(input.covstats, SAMPLES)
-
-        combined_cov.to_csv(output[0], sep="\t")
-        Counts_contigs.to_csv(output[1], sep="\t")
-
-
-        contig2genome = pd.read_csv(
-            input.contig2genome, header=None, index_col=0, squeeze=True, sep="\t"
-        )
-
-        Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
-        Counts_genome.index.name = "Sample"
-        Counts_genome.to_csv(output[2], sep="\t")
-
-
-rule combine_bined_coverages_MAGs:
-    input:
         binned_coverage_files=expand(
             "genomes/alignments/{sample}_coverage_binned.txt", sample=SAMPLES
         ),
@@ -433,55 +405,14 @@ rule combine_bined_coverages_MAGs:
     params:
         samples=SAMPLES,
     output:
+        counts="genomes/counts/raw_counts_genomes.tsv",
         binned_cov="genomes/counts/binned_coverage.tsv.gz",
         median_abund="genomes/counts/median_coverage_genomes.tsv",
-    threads:
-        1
-    run:
-        import pandas as pd
-        import os
-
-
-        def read_coverage_binned(covarage_binned_file):
-            return 
-            
-            binned_coverage= pd.read_csv(
-                covarage_binned_file,
-                sep="\t",
-                skiprows=2,
-                index_col=[0, 2],
-                usecols=[0, 1, 2],
-            )
-            binned_coverage.index.names = ["Contig", "Position"]
-            binned_coverage.columns = ["Coverage"]
-
-            return binned_coverage.Coverage
-
-
-        binCov = {}
-        for i, cov_file in enumerate(input.binned_coverage_files):
-
-            sample = params.samples[i]
-
-            binCov[sample] = read_coverage_binned(cov_file)
-
-        binCov = pd.DataFrame(binCov)
-        binCov.index.names = ["Contig", "Position"]
-        binCov.to_csv(output.binned_cov, sep="\t", compression="gzip")
-
-        contig2genome = pd.read_csv(
-            input.contig2genome, header=None, index_col=0, sep="\t"
-        ).iloc[:,0]
-
-        Median_abund = (
-            binCov.groupby(
-                contig2genome.loc[binCov.index.get_level_values(0)].values
-            )
-            .median()
-            .T
-        )
-
-        Median_abund.to_csv(output.median_abund, sep="\t")
+    log:
+        "logs/genomes/counts/combine_coverages_MAGs.log",
+    threads: 1
+    script:
+        "../scripts/combine_coverage_MAGs.py"
 
 
 # rule predict_genes_genomes:

@@ -1,6 +1,25 @@
 import os
 
 
+rule filter_genes:
+    input:
+        fna="{gene_file}.fna",
+        faa="{gene_file}.faa",
+    output:
+        fna=temp("{gene_file}.filtered.fna"),
+        faa=temp("{gene_file}.filtered.faa"),
+        short=temp("{gene_file}.short.faa"),
+    conda:
+        "../envs/fasta.yaml"
+    threads: 1
+    log:
+        "logs/Genecatalog/filter_genes/{gene_file}.log",
+    params:
+        minlength_nt=config["genecatalog"]["minlength_nt"],
+    script:
+        "../scripts/filter_genes.py"
+
+
 if config["genecatalog"]["source"] == "contigs":
 
     localrules:
@@ -9,19 +28,27 @@ if config["genecatalog"]["source"] == "contigs":
     rule concat_genes:
         input:
             faa=expand(
-                "{sample}/annotation/predicted_genes/{sample}.faa", sample=SAMPLES
+                "{sample}/annotation/predicted_genes/{sample}.filtered.faa",
+                sample=SAMPLES,
             ),
             fna=expand(
-                "{sample}/annotation/predicted_genes/{sample}.fna", sample=SAMPLES
+                "{sample}/annotation/predicted_genes/{sample}.filtered.fna",
+                sample=SAMPLES,
+            ),
+            short=expand(
+                "{sample}/annotation/predicted_genes/{sample}.short.faa",
+                sample=SAMPLES,
             ),
         output:
-            faa=temp("Genecatalog/all_genes_unfiltered.faa"),
-            fna=temp("Genecatalog/all_genes_unfiltered.fna"),
+            faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
+            fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
+            short=temp("Genecatalog/all_genes/short_genes.faa"),
         run:
             from utils.io import cat_files
 
             cat_files(input.faa, output.faa)
             cat_files(input.fna, output.fna)
+            cat_files(input.short, output.short)
 
 
 else:
@@ -32,46 +59,19 @@ else:
     rule concat_genes:
         input:
             "genomes/annotations/orf2genome.tsv",
-            faa=lambda wc: get_all_genes(wc, ".faa"),
-            fna=lambda wc: get_all_genes(wc, ".fna"),
+            faa=lambda wc: get_all_genes(wc, ".filtered.faa"),
+            fna=lambda wc: get_all_genes(wc, ".filtered.fna"),
+            short=lambda wc: get_all_genes(wc, ".short.faa"),
         output:
-            faa=temp("Genecatalog/all_genes_unfiltered.faa"),
-            fna=temp("Genecatalog/all_genes_unfiltered.fna"),
+            faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
+            fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
+            short=temp("Genecatalog/all_genes/short_genes.faa"),
         run:
             from utils.io import cat_files
 
             cat_files(input.faa, output.faa)
             cat_files(input.fna, output.fna)
-
-
-localrules:
-    filter_genes,
-
-
-rule filter_genes:
-    input:
-        fna="Genecatalog/all_genes_unfiltered.fna",
-        faa="Genecatalog/all_genes_unfiltered.faa",
-    output:
-        fna="Genecatalog/all_genes/predicted_genes.fna",
-        faa="Genecatalog/all_genes/predicted_genes.faa",
-    threads: 1
-    params:
-        min_length=config["genecatalog"]["minlength"],
-    run:
-        from Bio import SeqIO
-
-        faa = SeqIO.parse(input.faa, "fasta")
-        fna = SeqIO.parse(input.fna, "fasta")
-
-        with open(output.faa, "w") as out_faa, open(output.fna, "w") as out_fna:
-
-            for gene in fna:
-                protein = next(faa)
-
-                if len(gene) >= params.min_length:
-                    SeqIO.write(gene, out_fna, "fasta")
-                    SeqIO.write(protein, out_faa, "fasta")
+            cat_files(input.short, output.short)
 
 
 if (config["genecatalog"]["clustermethod"] == "linclust") or (
@@ -142,39 +142,21 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
             """
 
-    localrules:
-        rename_protein_catalog,
-
-    rule rename_protein_catalog:
+    rule generate_orf_info:
         input:
             cluster_attribution="Genecatalog/orf2gene_oldnames.tsv",
         output:
-            cluster_attribution="Genecatalog/clustering/orf2gene.tsv.gz",
-        run:
-            import pandas as pd
-
-            # CLuterID    GeneID    empty third column
-            orf2gene = pd.read_csv(
-                input.cluster_attribution, index_col=1, header=None, sep="\t"
-            )
-
-            protein_clusters_old_names = orf2gene[0].unique()
-
-            map_names = dict(
-                zip(
-                    protein_clusters_old_names,
-                    utils.gen_names_for_range(len(protein_clusters_old_names), "Gene"),
-                )
-            )
-
-            orf2gene["Gene"] = orf2gene[0].map(map_names)
-            orf2gene.index.name = "ORF"
-            orf2gene["Gene"].to_csv(
-                output.cluster_attribution, sep="\t", header=True, compression="gzip"
-            )
-
-
+            cluster_attribution="Genecatalog/clustering/orf_info.parquet",
+            rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
+        threads: 1
+        log:
+            "logs/Genecatalog/clustering/generate_orf_info.log",
+        script:
+            "../scripts/generate_orf_info.py"
 # cluster genes with cd-hit-est
+
+
+
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
@@ -196,38 +178,18 @@ rule rename_gene_catalog:
     input:
         fna="Genecatalog/all_genes/predicted_genes.fna",
         faa="Genecatalog/all_genes/predicted_genes.faa",
-        orf2gene="Genecatalog/clustering/orf2gene.tsv.gz",
-        representatives="Genecatalog/representatives_of_clusters.fasta",
+        rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
     output:
         fna="Genecatalog/gene_catalog.fna",
         faa="Genecatalog/gene_catalog.faa",
-    run:
-        import pandas as pd
-        from Bio import SeqIO
-
-        representatives = []
-        with open(input.representatives) as fasta:
-            for line in fasta:
-                if line[0] == ">":
-                    representatives.append(line[1:].split()[0])
-
-        map_names = pd.read_csv(input.orf2gene, index_col=0, sep="\t").loc[
-            representatives, "Gene"
-        ]
-
-        # rename fna
-        faa_parser = SeqIO.parse(input.faa, "fasta")
-        fna_parser = SeqIO.parse(input.fna, "fasta")
-
-        with open(output.fna, "w") as fna, open(output.faa, "w") as faa:
-            for gene in fna_parser:
-                protein = next(faa_parser)
-                if gene.name in map_names.index:
-                    gene.id = map_names[gene.name]
-                    protein.id = map_names[protein.name]
-
-                    SeqIO.write(gene, fna, "fasta")
-                    SeqIO.write(protein, faa, "fasta")
+        fna_index=temp("Genecatalog/all_genes/predicted_genes.fna.fxi"),
+        faa_index=temp("Genecatalog/all_genes/predicted_genes.faa.fxi"),
+    log:
+        "logs/Genecatalog/clustering/rename_gene_catalog.log",
+    conda:
+        "../envs/fasta.yaml"
+    script:
+        "../scripts/rename_genecatalog.py"
 
 
 rule align_reads_to_Genecatalog:
@@ -283,7 +245,7 @@ rule pileup_Genecatalog:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         basecov=temp("Genecatalog/alignments/{sample}_base_coverage.txt.gz"),
     params:
-        pileup_secondary="t",  # a read maay map to different genes
+        pileup_secondary="t",  # a read may map to different genes
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
@@ -309,28 +271,14 @@ localrules:
 
 rule combine_gene_coverages:
     input:
-        covstats=expand(
-            "Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES
-        ),
+        covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
     output:
-        "Genecatalog/counts/median_coverage.tsv.gz",
-        "Genecatalog/counts/Nmapped_reads.tsv.gz",
-    run:
-        import pandas as pd
-        import os
-
-        combined_cov = {}
-        combined_N_reads = {}
-        for cov_file in input:
-
-            sample = os.path.split(cov_file)[-1].split("_")[0]
-            data = pd.read_csv(cov_file, index_col=0, sep="\t")
-            data.loc[data.Median_fold < 0, "Median_fold"] = 0
-            combined_cov[sample] = data.Median_fold
-            combined_N_reads[sample] = data.Plus_reads + data.Minus_reads
-
-        pd.DataFrame(combined_cov).to_csv(output[0], sep="\t", compression="gzip")
-        pd.DataFrame(combined_N_reads).to_csv(output[1], sep="\t", compression="gzip")
+        "Genecatalog/counts/median_coverage.parquet",
+        "Genecatalog/counts/Nmapped_reads.parquet",
+    log:
+        "logs/Genecatalog/counts/combine_gene_coverages.log",
+    script:
+        "../scripts/combine_gene_coverages.py"
 
 
 ###########
@@ -488,10 +436,12 @@ checkpoint gene_subsets:
         directory("Genecatalog/subsets/genes"),
     params:
         subset_size=config["genecatalog"]["SubsetSize"],
-    run:
-        from utils import fasta
-
-        fasta.split(input[0], params.subset_size, output[0], simplify_headers=True)
+    conda:
+        "../envs/sequence_utils.yaml"
+    log:
+        "logs/Genecatalog/clustering/split_genecatalog.log",
+    script:
+        "../scripts/split_genecatalog.py"
 
 
 def combine_genecatalog_annotations_input(wildcards):
@@ -531,49 +481,16 @@ rule gene2genome:
         contigs2bins="genomes/clustering/all_contigs2bins.tsv.gz",
         contigs2mags="genomes/clustering/contig2genome.tsv",
         old2newID="genomes/clustering/old2newID.tsv",
-        orf2gene="Genecatalog/clustering/orf2gene.tsv.gz",
+        orf_info="Genecatalog/clustering/orf_info.parquet",
     params:
-        remaned_contigs=config["rename_mags_contigs"] & (
-            config["genecatalog"]["source"] == "contigs"
-        ),
+        renamed_contigs=config["rename_mags_contigs"]
+        & (config["genecatalog"]["source"] == "contigs"),
     output:
-        "genomes/annotations/gene2genome.tsv.gz",
-    run:
-        import pandas as pd
-
-        if params.remaned_contigs:
-
-            contigs2bins = pd.read_csv(
-                input.contigs2bins, index_col=0, squeeze=False, sep="\t", header=None
-            )
-
-            contigs2bins.columns = ["Bin"]
-            old2newID = pd.read_csv(
-                input.old2newID, index_col=0, squeeze=True, sep="\t"
-            )
-
-            contigs2genome = (
-                contigs2bins.join(old2newID, on="Bin").dropna().drop("Bin", axis=1)
-            )
-        else:
-            contigs2genome = pd.read_csv(
-                input.contigs2mags, index_col=0, squeeze=False, sep="\t", header=None
-            )
-            contigs2genome.columns = ["MAG"]
-
-
-        orf2gene = pd.read_csv(
-            input.orf2gene, index_col=0, squeeze=False, sep="\t", header=0
-        )
-
-        orf2gene["Contig"] = orf2gene.index.map(lambda s: "_".join(s.split("_")[:-1]))
-        orf2gene = orf2gene.join(contigs2genome, on="Contig")
-        orf2gene = orf2gene.dropna(axis=0)
-
-        gene2genome = orf2gene.groupby(["Gene", "MAG"]).size()
-        gene2genome.name = "Ncopies"
-
-        gene2genome.to_csv(output[0], sep="\t", header=True, compression="gzip")
+        "genomes/annotations/gene2genome.parquet",
+    log:
+        "logs/genomes/annotations/gene2genome.log",
+    script:
+        "../scripts/gene2genome.py"
 
 
 # after combination need to add eggNOG headerself.

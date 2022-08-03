@@ -26,10 +26,11 @@ rule instrain_profile:
         " {input.sam} {input.genomes} "
         " -o {output} "
         " -p {threads} "
-        #" -g {resources.tmpdir}/all_genome_genes.fna "
+
         " -s {input.scaffold_to_genome} "
         " --database_mode "
         " {params.extra} &>> {log}"
+        #" -g {resources.tmpdir}/all_genome_genes.fna "
 
 
 rule instrain_compare:

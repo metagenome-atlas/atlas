@@ -42,11 +42,15 @@ From now on you can replace ``conda install`` with ``mamba install`` and see how
 Install metagenome-atlas
 ------------------------
 
-We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv``
+We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv`` 
+We also recommend to specify the lates version of metagenome-atlas.  
+.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg
+    :target: https://anaconda.org/bioconda/metagenome-atlas
+
 
 .. code-block:: bash
 
-    mamba create -y -n atlasenv metagenome-atlas
+    mamba create -y -n atlasenv metagenome-atlas=2.9
     source activate atlasenv
 
 
@@ -171,29 +175,26 @@ Start a new project with public data
 
 Since v2.9 atlas has possibility to start a new project from public data stored in the short read archive (SRA).
 
-You can run `atlas init-public SRA_IDs ` and specify any ids, like bioprojects, or other SRA ids. 
-
-
+You can run ``atlas init-public <SRA_IDs>`` and specify any ids, like bioprojects, or other SRA ids. 
 
 Atlas does the folowing steps:
 
-1. Search SRA for the corresponding sequences (Runs) and save them in the file `SRA/RunInfo_original.tsv`. 
-    For example if you specify a Bioproject, it fetches the information for all runs of this project. 
-2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in `RunInfo.tsv`
-3. Sometimes the same Sample is sequenced on different laines, which will result into multipe runs from the same sample. Atlas will **merge** runs from the same biosample.
-4. Prepare a sample table and a config.yaml similar to the `atlas init` command.
+  1. Search SRA for the corresponding sequences (Runs) and save them in the file ``SRA/RunInfo_original.tsv``. For example if you specify a Bioproject, it fetches the information for all runs of this project. 
+  2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.tsv``
+  3. Sometimes the same Sample is sequenced on different laines, which will result into multipe runs from the same sample. Atlas will **merge** runs from the same biosample.
+  4. Prepare a sample table and a config.yaml similar to the ``atlas init`` command.
 
 
-If you are not happy with the filtering atlas performs, you can go back to the `SRA/RunInfo_original.tsv` and modify the `RunInfo.tsv`. 
-If you then rerun `atlas init-public` it will continue from your modified RunInfo and do step 3. & 4. above. 
+If you are not happy with the filtering atlas performs, you can go back to the ``SRA/RunInfo_original.tsv`` and create a new ``RunInfo.tsv``. 
+If you then rerun ``atlas init-public continue`` it will continue from your modified RunInfo and do step 3. & 4. above. 
 
 
-Limitations: For now atlas, cannot handle a mixture of paaired and single end reads, so we focus primarily on the paired end. 
+Limitations: For now atlas, cannot handle a mixture of paired and single end reads, so we focus primarily on the paired end. 
 If you have longreads for your project, you would need to specify them yourself in the sample.tsv.
 
 During the run, the reads are downloaded from SRA in the likely most efficient way using prefetch and parallel, fastq.gz generation. 
 The download step has checkpoints, so if the pipline gets interupted, you can restart where you left off. 
-Using the comand line arguments `--restart-times 3 and --keep-going` You can even ask atlas to do multiple restarts befor stoping. 
+Using the comand line arguments ``--restart-times 3 and --keep-going`` You can even ask atlas to do multiple restarts befor stoping. 
 
 The downloaded reads, are directly processed. If you however want only to doenload the reads you can use.::
 
@@ -350,7 +351,7 @@ Single machine execution
 
 If you dont want to use the  :ref:`automatic scheduling <cluster>` you can use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
 
-Atlas detects how many CPUs and how much memory is available on your system and it will shedulle as many jobs in paralell as possible.  If you have less resources available than specified in the config file. The jobs are downscaled.
+Atlas detects how many CPUs and how much memory is available on your system and it will schedule as many jobs in paralell as possible.  If you have less resources available than specified in the config file, the jobs are downscaled.
 
 By default atlas will use all cpus and 95% of all the available memory. If you are not happy with that, or you need to specify an exact ammount of memory/ cpus you can use the comand line arguments ``--jobs`` and ``--max-mem`` to do so. 
 
@@ -358,7 +359,7 @@ By default atlas will use all cpus and 95% of all the available memory. If you a
 Cloud execution
 ===============
 
-Atlas, like any other snakemake pipeline can  also easily be submitted to cloud systems. I suggest looking at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake comand line argument can just be appended to the atlas command.
+Atlas, like any other snakemake pipeline can  also easily be submitted to cloud systems. I suggest looking at the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cluster-cloud.html>`_. Keep in mind any snakemake command line argument can just be appended to the atlas command.
 
 
 
@@ -369,9 +370,10 @@ Useful command line options
 
 Atlas builds on snakemake. We designed the command line interface in a way that additional snakemake arguments can be added to an atlas run call.
 
-For instance the ``--profile`` used for cluster execution. Other handy snakemake command line arguments include.
+For instance the ``--profile`` used for cluster execution. Other handy snakemake command line arguments include:
 
- ``--keep-going``, which  allows atlas in the case of a failed job to continue with independent steps.
+ ``--keep-going``, which allows atlas in the case of a failed job to continue with independent steps.
 
+ ``--report``, which allows atlas to generate a user-friendly run report (e.g., by specifying ``--report report.html``). This report includes the steps used in the analysis workflow and the versions of software tools used at each step. See discussions `#523 <https://github.com/metagenome-atlas/atlas/discussions/523>`_ and `#514 <https://github.com/metagenome-atlas/atlas/discussions/514))>`_.
 
 For a full list of snakemake arguments see the `snakemake doc <https://snakemake.readthedocs.io/en/stable/executing/cli.html#all-options>`_.

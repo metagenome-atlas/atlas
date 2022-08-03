@@ -6,8 +6,8 @@ localrules:
     prefetch,
 
 
-SRA_SUBDIR_RUN = "SRA/Runs"
 SRA_read_fractions = ["_1", "_2"] if PAIRED_END else [""]
+SRA_SUBDIR_RUN = "SRA/Runs"
 
 
 rule prefetch:
@@ -80,8 +80,7 @@ rule extract_run:
 RunTable = None
 
 
-def get_runs_for_biosample(wildcards):
-
+def get_runids_for_biosample(wildcards):
     global RunTable
     if RunTable is None:
 
@@ -91,14 +90,28 @@ def get_runs_for_biosample(wildcards):
 
     run_ids = RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
 
-    return {
-        fraction: expand(
+    return run_ids
+
+
+def get_runs_for_biosample(wildcards):
+
+    run_ids = get_runids_for_biosample(wildcards)
+
+    ReadFiles = {}
+    for fraction in SRA_read_fractions:
+
+        if fraction == "":
+            key = "se"
+        else:
+            key = fraction
+
+        ReadFiles[key] = expand(
             SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}{fraction}.fastq.gz",
             fraction=fraction,
             sra_run=run_ids,
         )
-        for fraction in SRA_read_fractions
-    }
+
+    return ReadFiles
 
 
 rule merge_runs_to_sample:
@@ -111,9 +124,12 @@ rule merge_runs_to_sample:
         ),
     threads: 1
     run:
-        for i, fraction in enumerate(SRA_read_fractions):
-            from utils import io
+        from utils import io
 
+        for i, fraction in enumerate(SRA_read_fractions):
+
+            if fraction == "":
+                fraction = "se"
             io.cat_files(input[fraction], output[i])
 
 
