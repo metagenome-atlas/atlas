@@ -328,7 +328,7 @@ rule get_bins:
     output:
         directory("{sample}/binning/{binner}/bins"),
     conda:
-        "%s/sequence_utils.yaml" % CONDAENV
+        "../envs/sequence_utils.yaml"
     log:
         "{sample}/logs/binning/get_bins_{binner}.log",
     script:
@@ -570,16 +570,14 @@ rule get_unique_bin_ids:
 rule run_das_tool:
     input:
         cluster_attribution=expand(
-            "{{sample}}/binning/DASTool/{binner}.scaffolds2bin", binner=config["binner"]
+            "{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
+            binner=config["binner"],
         ),
         contigs=BINNING_CONTIGS,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
-        "{sample}/binning/DASTool/{sample}_DASTool_summary.txt",
-        expand(
-            "{{sample}}/binning/DASTool/{{sample}}_{binner}.eval",
-            binner=config["binner"],
-        ),
+        "{sample}/binning/DASTool/{sample}_DASTool_summary.tsv",
+        "{sample}/binning/DASTool/{sample}_allBins.eval",
         cluster_attribution="{sample}/binning/DASTool/cluster_attribution.tsv",
     threads: config["threads"]
     log:
@@ -600,13 +598,13 @@ rule run_das_tool:
         " --contigs {input.contigs} "
         " --search_engine diamond "
         " --proteins {input.proteins} "
-        " --write_bin_evals 1 "
+        " --write_bin_evals "
         " --megabin_penalty {params.megabin_penalty}"
         " --duplicate_penalty {params.duplicate_penalty} "
         " --threads {threads} "
         " --debug "
         " --score_threshold {params.score_threshold} &> {log} "
-        " ; mv {params.output_prefix}_DASTool_scaffolds2bin.txt {output.cluster_attribution} &>> {log}"
+        " ; mv {params.output_prefix}_DASTool_contig2bin.tsv {output.cluster_attribution} &>> {log}"
 
 
 #

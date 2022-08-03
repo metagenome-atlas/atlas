@@ -1,7 +1,8 @@
 channels:
     - conda-forge
     - bioconda
-    - ruby-lang
     - defaults
 dependencies:
-    - das_tool=1.1.4
+    - pyfastx=0.8
+    - pandas=1.2
+    - pyarrow

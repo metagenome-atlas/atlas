@@ -24,12 +24,15 @@ large_mem: 250
 large_threads: 8
 assembly_threads: 8
 assembly_memory: 250
+simplejob_mem: 10
+simplejob_threads: 4
 
 #Runtime only for cluster execution
 runtime: #in h
     default: 5
     assembly: 48
     long: 24
+    simplejob: 1
 
 # Local directory for temp files, useful for cluster execution without shared file system
 tmpdir: /tmp
@@ -204,14 +207,17 @@ annotations:
 #  - checkm_taxonomy
 #  - checkm_tree
 
+gene_annotations:
+  - eggNOG
+
 ########################
 # Gene catalog
 #######################
 genecatalog:
   source: contigs               # [contigs, genomes] Predict genes from all contigs or only from the representative genomes
-  clustermethod: linclust       # [cd-hit-est or mmseqs or linclust] see mmseqs for more details
-  minlength_nt: 100
-  minid: 0.95                   # min id for gene clustering for the main gene catalog used for annotation
+  clustermethod: linclust       # [mmseqs or linclust] see mmseqs for more details
+  minlength_nt: 270             # min length 
+  minid: 0.90                   # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
   extra: ""
   SubsetSize: 500000
