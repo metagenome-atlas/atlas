@@ -55,20 +55,18 @@ def make_plots(bin_table):
 
     if snakemake.config["bin_quality_asesser"].lower()=="busco":
 
-        df["Bin id"] = df["Input_file"].str.replace(".fasta","")
+        df["Bin Id"] = df["Input_file"].str.replace(".fasta","",regex=False)
         
         
 
-        logging.waring("No taxonomic information available, use busco Dataset")
+        logging.info("No taxonomic information available, use busco Dataset")
 
         lineage_name="Dataset"
-        hover_data =None
+        hover_data =['Scores_archaea_odb10', 'Scores_bacteria_odb10', 'Scores_eukaryota_odb10']
         size_name = None
 
     elif snakemake.config["bin_quality_asesser"].lower()=="checkm":
         
-
-        df["Quality_Score"] = df.eval("Completeness - 5* Contamination")
 
         df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
 
@@ -103,7 +101,7 @@ def make_plots(bin_table):
     ## By sample
     fig = px.strip(
         data_frame=df,
-        y="Quality_Score",
+        y="Quality_score",
         x="Sample",
         color=lineage_name,
         hover_data=hover_data,
@@ -115,7 +113,7 @@ def make_plots(bin_table):
     # By Phylum
     fig = px.strip(
         data_frame=df,
-        y="Quality Score",
+        y="Quality_score",
         x=lineage_name,
         hover_data=hover_data,
         hover_name="Bin Id",
