@@ -44,8 +44,8 @@ def rename_genomes(
     file_name = f"{input_folder}/{{binid}}.fasta"
     (bin_ids,) = glob_wildcards(file_name)
 
-    old2new_name = dict(
-        zip(bin_ids, utils.gen_names_for_range(len(bin_ids), prefix="MAG"))
+    old2new_name = pd.Series(
+        index= bin_ids, data= utils.gen_names_for_range(len(bin_ids), prefix="MAG")
     )
     os.makedirs(output_dir)
 
@@ -109,7 +109,7 @@ def get_mapfile_bins(mapfile_bins, dereplication, old2new_name):
 
 def rename_quality(quality_in, quality_out, old2new_name):
 
-    Q = p.dread_csv(quality_in, index_col=0, sep="\t")
+    Q = pd.read_csv(quality_in, index_col=0, sep="\t")
 
     Q = Q.loc[old2new_name.index].rename(index=old2new_name)
 
