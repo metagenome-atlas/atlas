@@ -61,6 +61,7 @@ rule run_busco:
     shell:
         " busco -i {input.fasta_dir} "
         " --auto-lineage-prok "
+        " -f "
         " -m genome "
         " --out_path {params.tmpdir} "
         " -o output "
