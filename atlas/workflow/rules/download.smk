@@ -237,7 +237,8 @@ rule download_busco:
     log:
         "logs/busco_lineages.log",
     shell:
-        "busco -q --download_path {output} --download prokaryota &> {log}"
+        "busco -q --download_path {output} --download prokaryota &> {log} "
+        " rm -rf busco_*.log 2>> {log} "
 
 
 onsuccess:
