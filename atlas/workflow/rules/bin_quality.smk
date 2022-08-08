@@ -23,6 +23,31 @@ rule checkm2_download_db:
         " checkm2 database --download --path {output} "
         " &>> {log}"
 
+rule run_checkm2:
+    input:
+        fasta_dir = bin_quality_input_folder,
+        db= rules.checkm2_download_db.output
+    output:
+        directory("{sample}/binning/{binner}/bin_quality/checkm2"),
+    conda:
+        "../envs/checkm2.yaml"
+    threads:
+        config["threads"]
+    log:
+        "{sample}/logs/binning/{binner}/checkm2.log",
+    benchmark:
+        "logs/benchmarks/checkm2/{sample}_{binner}.tsv",
+    resources:
+        time=int(config["runtime"]['default']),
+        mem_mb=config["mem"],
+    shell:
+        " checkm2 predict "
+        " --threads {threads} "
+        " --input {input.fasta_dir} "
+        " --output-directory {output} "
+        " &> {log} "
+
+
 ## GUNC ###
 
 
@@ -136,7 +161,39 @@ localrules:
     build_bin_report,
     combine_bin_stats,
 
-if config['bin_quality_asesser'].lower() == 'checkm':
+if config['bin_quality_asesser'].lower() == 'checkm2':
+
+    rule combine_bin_stats:
+        input:
+            completeness_files=expand(
+                "{sample}/binning/{{binner}}/bin_quality/checkm2", sample=SAMPLES
+            )
+        output:
+            bin_table="reports/genomic_bins_{binner}.tsv",
+        params:
+            samples=SAMPLES,
+        log:
+            "logs/binning/combine_stats_{binner}.log",
+        script:
+            "../scripts/combine_checkm2.py"
+
+elif config['bin_quality_asesser'].lower() == 'busco':
+
+    rule combine_bin_stats:
+        input:
+            completeness_files=expand(
+                "{sample}/binning/{{binner}}/bin_quality/busco.tsv", sample=SAMPLES
+            ),
+        output:
+            bin_table="reports/genomic_bins_{binner}.tsv",
+        params:
+            samples=SAMPLES,
+        log:
+            "logs/binning/combine_stats_{binner}.log",
+        script:
+            "../scripts/combine_busco.py"
+
+elif config['bin_quality_asesser'].lower() == 'checkm':
 
     rule combine_bin_stats:
         input:
@@ -154,22 +211,6 @@ if config['bin_quality_asesser'].lower() == 'checkm':
             "logs/binning/combine_stats_{binner}.log",
         script:
             "../scripts/combine_checkm.py"
-
-elif config['bin_quality_asesser'].lower() == 'busco':
-
-    rule combine_bin_stats:
-        input:
-            completeness_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/busco.tsv", sample=SAMPLES
-            ),
-        output:
-            bin_table="reports/genomic_bins_{binner}.tsv",
-        params:
-            samples=SAMPLES,
-        log:
-            "logs/binning/combine_stats_{binner}.log",
-        script:
-            "../scripts/combine_busco.py"
 
 else:
 
