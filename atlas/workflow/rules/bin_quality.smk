@@ -43,6 +43,8 @@ rule run_checkm2:
     shell:
         " checkm2 predict "
         " --threads {threads} "
+        " --force "
+        " -x .fasta "
         " --input {input.fasta_dir} "
         " --output-directory {output} "
         " &> {log} "

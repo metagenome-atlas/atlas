@@ -17,7 +17,6 @@ dependencies:
   - requests
   - packaging
   - tqdm
-  - pip
   - git
-- pip:
-  - git+https://github.com/chklovski/CheckM2.git@e563159f005344d798defb60cea4189e0be8ec92
+  - pip:
+    - git+https://github.com/chklovski/CheckM2.git@e563159f005344d798defb60cea4189e0be8ec92
