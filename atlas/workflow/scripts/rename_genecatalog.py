@@ -50,20 +50,16 @@ logging.info(
 
 assert rep2gene.shape[0] > 0
 
-name_iterator = rep2gene.iteritems()
-i = 0
+
 with open(snakemake.output[0], "w") as fout:
     with open(snakemake.input.fasta, "r") as fin:
         for line in fin:
             if line[0] == ">":
                 gene_name = line[1:].split(" ")[0]
 
-                rep, gene_id = next(name_iterator)
-
-                if (i % 100) == 0:
-                    assert rep == gene_name, "genes are not in same order"
+                gene_id = rep2gene.loc[gene_name]
 
                 fout.write(f">{gene_id} {gene_name}\n")
-                i += 1
+                
             else:
                 fout.write(line)
