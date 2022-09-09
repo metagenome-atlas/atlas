@@ -50,11 +50,11 @@ logging.info(
 
 assert rep2gene.shape[0] > 0
 
-faa_parser = pyfastx.Fasta(snakemake.input.faa, build_index=True)
-fna_parser = pyfastx.Fasta(snakemake.input.fna, build_index=True)
+fasta_parser = pyfastx.Fasta(snakemake.input.fasta, build_index=True)
 
-with open(snakemake.output.fna, "w") as fna, open(snakemake.output.faa, "w") as faa:
+
+with open(snakemake.output[0], "w") as fout:
     for orf, gene_name in rep2gene.iteritems():
 
-        faa.write(f">{gene_name} {orf}\n{faa_parser[orf].seq}\n")
-        fna.write(f">{gene_name} {orf}\n{fna_parser[orf].seq}\n")
+        fout.write(f">{gene_name} {orf}\n{fasta_parser[orf].seq}\n")
+
