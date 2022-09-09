@@ -129,16 +129,15 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
         params:
             clusterdb=lambda wc, input: os.path.join(input.clusterdb, "clusterdb"),
             db=lambda wc, input: os.path.join(input.db, "inputdb"),
-            rep_seqs_db=lambda wc, output: os.path.join(output.rep_seqs_db, "db"),
         shell:
             """
             mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  &> {log}
 
             mkdir {output.rep_seqs_db} 2>> {log}
 
-            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  &>> {log}
+            mmseqs result2repseq {params.db} {params.clusterdb} {output.rep_seqs_db}/db  &>> {log}
 
-            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  &>> {log}
+            mmseqs result2flat {params.db} {params.db} {output.rep_seqs_db}/db {output.rep_seqs}  &>> {log}
 
             """
 
