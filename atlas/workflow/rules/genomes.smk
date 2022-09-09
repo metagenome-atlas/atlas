@@ -139,6 +139,7 @@ rule dereplication:
         " --completeness {params.filter_completeness} "
         " --contamination {params.filter_contamination} "
         " --S_ani {params.ANI} "
+        " --S_algorithm fastANI "
         " --cov_thresh {params.overlap} "
         " --completeness_weight {params.completeness_weight} "
         " --contamination_weight {params.contamination_weight} "
