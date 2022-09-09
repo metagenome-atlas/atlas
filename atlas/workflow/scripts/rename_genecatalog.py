@@ -55,7 +55,7 @@ with open(snakemake.output[0], "w") as fout:
     with open(snakemake.input.fasta, "r") as fin:
         for line in fin:
             if line[0] == ">":
-                gene_name = line[1:].split(" ")[0]
+                gene_name = line[1:].strip().split(" ")[0]
 
                 gene_id = rep2gene.loc[gene_name]
 
