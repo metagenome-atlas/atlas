@@ -202,11 +202,8 @@ rule rename_gene_catalog:
         rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
     output:
         "Genecatalog/gene_catalog.{ext}",
-        fasta_index=temp("Genecatalog/representatives_of_clusters.{ext}.fxi"),
     log:
         "logs/Genecatalog/clustering/rename_gene_catalog_{ext}.log",
-    conda:
-        "../envs/fasta.yaml"
     script:
         "../scripts/rename_genecatalog.py"
 
