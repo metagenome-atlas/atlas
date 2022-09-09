@@ -1,4 +1,4 @@
-### VAMB
+### VAMB
 
 
 localrules:

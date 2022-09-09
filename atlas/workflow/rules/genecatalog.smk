@@ -143,10 +143,10 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
     rule get_cds_of_proteins:
         input:
-            all= "Genecatalog/all_genes/predicted_genes.fna",
-            names = "Genecatalog/representatives_of_clusters.faa"
+            all="Genecatalog/all_genes/predicted_genes.fna",
+            names="Genecatalog/representatives_of_clusters.faa",
         output:
-            temp("Genecatalog/representatives_of_clusters.fna")
+            temp("Genecatalog/representatives_of_clusters.fna"),
         conda:
             "../envs/required_packages.yaml"
         threads: 1
@@ -158,7 +158,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
         shell:
             " filterbyname.sh "
             " in={input.all}"
-            " names={input.names}""
+            " names={input.names}"
             " include=t"
             " out={output} "
             " -Xmx{resources.java_mem}G "

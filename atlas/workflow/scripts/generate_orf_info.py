@@ -51,7 +51,7 @@ orf_info = gene_scripts.split_orf_to_index(orf2gene.ORF)
 # rename representative
 
 representative_names = orf2gene.Representative.unique()
- 
+
 map_names = pd.Series(
     index=representative_names,
     data=np.arange(1, len(representative_names) + 1, dtype=np.uint),

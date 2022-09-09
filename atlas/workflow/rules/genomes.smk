@@ -374,7 +374,7 @@ rule pileup_MAGs:
     input:
         sam="genomes/alignments/{sample}.sam",
     output:
-        # §basecov=temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
+        # basecov=temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
         # covhist=temp("genomes/alignments/{sample}_coverage_histogram.txt"),
         covstats=temp("genomes/alignments/{sample}_coverage.txt"),
         bincov=temp("genomes/alignments/{sample}_coverage_binned.txt"),

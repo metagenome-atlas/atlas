@@ -216,7 +216,7 @@ def make_plots(
 
     div["Reads"] = fig.to_html(**HTML_PARAMS)
 
-    ## Read length plot
+    ## Read length plot
 
     data_length = pd.read_table(read_length, index_col=0).T
     data_length.index.name = "Sample"
