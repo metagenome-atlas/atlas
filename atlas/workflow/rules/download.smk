@@ -196,11 +196,11 @@ rule extract_gtdb:
     resources:
         time=int(config.get("runtime", {"long": 10})["long"]),
     log:
-        "logs/download/gtdbtk.log",
+        "logs/download/gtdbtk_untar.log",
     shell:
-        ' tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log} '
-        ' echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}'
-        " conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
+        'tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log}; '
+        'echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}; '
+        "conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
 
 
 onsuccess:
