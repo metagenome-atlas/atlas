@@ -3,7 +3,7 @@ gtdb_dir = "genomes/taxonomy/gtdb"
 
 rule identify:
     input:
-        flag=rules.download_gtdb.output,
+        flag=rules.extract_gtdb.output,
         genes_flag="genomes/annotations/genes/predicted",
     output:
         directory(f"{gtdb_dir}/identify"),
