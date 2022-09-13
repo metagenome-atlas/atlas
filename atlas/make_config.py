@@ -158,7 +158,6 @@ def make_default_config():
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
     config["rename_mags_contigs"] = True
 
-
     config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simplejob": 1}
 
     return config

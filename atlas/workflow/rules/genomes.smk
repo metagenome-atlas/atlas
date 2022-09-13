@@ -56,7 +56,7 @@ rule merge_checkm_for_dereplication:
         # D.index = D.index.astype(str) + ".fasta"
         D.index.name = "genome"
         D.columns = D.columns.str.lower()
-        D.iloc[:, :3].to_csv(output[0], sep= "\t")
+        D.iloc[:, :3].to_csv(output[0], sep="\t")
 
 
 rule merge_checkm:
@@ -102,15 +102,16 @@ def get_dereplication_arguments(key):
     "key = completeness or contamination"
 
     if "filter" in config["genome_dereplication"]:
-        logger.info("The configuration for dereplication has changed. For now I will try to be backward compatible, but please update your config file. https://metagenome-atlas.readthedocs.io/en/latest/usage/configuration.html#detailed-configuration")
-        
+        logger.info(
+            "The configuration for dereplication has changed. For now I will try to be backward compatible, but please update your config file. https://metagenome-atlas.readthedocs.io/en/latest/usage/configuration.html#detailed-configuration"
+        )
+
         value = config["genome_dereplication"]["filter"][key]
 
-
     else:
-        if key =="completeness":
+        if key == "completeness":
             return config["genome_min_completeness"]
-        elif key =="contamination":
+        elif key == "contamination":
             return config["genome_max_contamination"]
         else:
             raise ValueError("key must be completeness, contamination")
@@ -121,24 +122,23 @@ rule dereplication:
         dir="genomes/all_bins",
         quality="genomes/quality.tsv",
     output:
-        dir= temp(directory("genomes/dereplicated_genomes")),
-        mapping_file = temp("genomes/clustring/allbins2genome_oldname.tsv"),
-    threads: 
-        config["threads"]
+        dir=temp(directory("genomes/dereplicated_genomes")),
+        mapping_file=temp("genomes/clustring/allbins2genome_oldname.tsv"),
+    threads: config["threads"]
     log:
         "logs/genomes/dereplication.log",
     conda:
         "../envs/galah.yaml"
     params:
         ANI=config["genome_dereplication"]["ANI"],
-        quality_formula = config["genome_dereplication"]["quality_formula"],
-        min_completeness = get_dereplication_arguments("completeness"),
-        max_contamination = get_dereplication_arguments("contamination"),
+        quality_formula=config["genome_dereplication"]["quality_formula"],
+        min_completeness=get_dereplication_arguments("completeness"),
+        max_contamination=get_dereplication_arguments("contamination"),
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
-        min_overlap = config["genome_dereplication"]["overlap"],
+        min_overlap=config["genome_dereplication"]["overlap"],
     shell:
         " galah cluster "
-        " --genome-fasta-directory {input.dir}" 
+        " --genome-fasta-directory {input.dir}"
         " --genome-fasta-extension fasta "
         " --checkm-tab-table {input.quality} "
         " --ani {params.ANI} "
@@ -156,11 +156,12 @@ rule dereplication:
 localrules:
     rename_genomes,
 
-TODO: adapt rename script for galah output
+
+# TODO: adapt rename script for galah output
 checkpoint rename_genomes:
     input:
         genomes="genomes/dereplicated_genomes",
-        mapping_file = "genomes/clustering/allbins2genome_oldname.tsv",
+        mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
