@@ -47,16 +47,18 @@ rule merge_checkm_for_dereplication:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config["final_binner"]),
     output:
-        temp("genomes/quality.tsv"),
+        temp("genomes/quality.csv"),
     run:
         import pandas as pd
 
         D = pd.read_csv(input[0], index_col=0, sep="\t")
 
-        # D.index = D.index.astype(str) + ".fasta"
+
         D.index.name = "genome"
+        
         D.columns = D.columns.str.lower()
-        D.iloc[:, :3].to_csv(output[0], sep="\t")
+        D = D[["completeness", "contamination"]]
+        D.to_csv(output[0])
 
 
 rule merge_checkm:
@@ -120,7 +122,7 @@ def get_dereplication_arguments(key):
 rule dereplication:
     input:
         dir="genomes/all_bins",
-        quality="genomes/quality.tsv",
+        quality="genomes/quality.csv",
     output:
         dir=temp(directory("genomes/dereplicated_genomes")),
         mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
@@ -140,9 +142,9 @@ rule dereplication:
         " galah cluster "
         " --genome-fasta-directory {input.dir}"
         " --genome-fasta-extension fasta "
-        " --checkm-tab-table {input.quality} "
+        " --genome-info {input.quality} "
         " --ani {params.ANI} "
-        " --min-overlap {params.min_overlap} "
+        " --min-aligned-fraction {params.min_overlap} "
         " {params.opt_parameters} "
         " --min-completeness {params.min_completeness} "
         " --max-contamination {params.max_contamination} "
