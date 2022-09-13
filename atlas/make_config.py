@@ -158,21 +158,6 @@ def make_default_config():
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
     config["rename_mags_contigs"] = True
 
-    config["genome_dereplication"] = dict(
-        filter=dict(noFilter=False, length=5000, completeness=50, contamination=10),
-        score=dict(
-            completeness=1,
-            contamination=5,
-            N50=0.5,
-            length=0,
-        ),
-        ANI=0.95,
-        overlap=0.6,
-        opt_parameters="",
-    )
-
-    config["cat_range"] = 5
-    config["cat_fraction"] = 0.3
 
     config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simplejob": 1}
 
