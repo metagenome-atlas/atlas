@@ -47,7 +47,7 @@ rule merge_checkm_for_dereplication:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config["final_binner"]),
     output:
-        temp("genomes/quality.csv"),
+        temp("genomes/quality.tsv"),
     run:
         import pandas as pd
 
@@ -123,7 +123,7 @@ rule dereplication:
         quality="genomes/quality.tsv",
     output:
         dir=temp(directory("genomes/dereplicated_genomes")),
-        mapping_file=temp("genomes/clustring/allbins2genome_oldname.tsv"),
+        mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
     threads: config["threads"]
     log:
         "logs/genomes/dereplication.log",
