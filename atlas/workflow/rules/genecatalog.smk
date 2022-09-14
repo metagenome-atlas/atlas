@@ -212,8 +212,8 @@ rule index_genecatalog:
     input:
         fasta="Genecatalog/gene_catalog.fna",
     output:
-       temp( directory("ref/genome/4")),
-       temp( directory("ref/index/4") ),
+        temp(directory("ref/genome/4")),
+        temp(directory("ref/index/4")),
     log:
         "logs/Genecatalog/alignment/index.log",
     conda:
@@ -234,10 +234,10 @@ rule index_genecatalog:
 rule align_reads_to_Genecatalog:
     input:
         reads=get_quality_controlled_reads,
-        index= rules.index_genecatalog.output,
+        index=rules.index_genecatalog.output,
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
-        rpkm= "Genecatalog/alignments/{sample}_rpkm.tsv",
+        rpkm="Genecatalog/alignments/{sample}_rpkm.tsv",
     params:
         input=lambda wc, input: input_params_for_bbwrap(input.reads),
         build=4,
@@ -245,7 +245,7 @@ rule align_reads_to_Genecatalog:
         ambiguous="all",
         minid=config["genecatalog"]["minid"],
         maxindel=1,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-        usejni = "t" if config.get("usejni", False) else "f",   
+        usejni="t" if config.get("usejni", False) else "f",
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     conda:
@@ -258,7 +258,7 @@ rule align_reads_to_Genecatalog:
         " cat {input.reads} | bbmap.sh "
         " local=t "
         " build={params.build} "
-        " unpigz=t "we
+        " unpigz=t "
         " in=stdin.fastq.gz "
         " usejni={params.usejni} "
         " covstats={output.covstats} "
