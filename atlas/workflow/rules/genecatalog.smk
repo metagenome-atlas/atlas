@@ -208,77 +208,63 @@ rule rename_gene_catalog:
         "../scripts/rename_genecatalog.py"
 
 
+rule index_genecatalog:
+    input:
+        fasta="Genecatalog/gene_catalog.fna",
+    output:
+        "ref/genome/4/summary.txt",
+    log:
+        "logs/Genecatalog/alignment/index.log",
+    conda:
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
+    params:
+        build=4,
+    resources:
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    shell:
+        " bbmap.sh ref={input.fasta} "
+        " build={wildcards.build} "
+        " -Xmx{resources.java_mem}G "
+        " 2> {log}"
+
+
 rule align_reads_to_Genecatalog:
     input:
         reads=get_quality_controlled_reads,
-        fasta="Genecatalog/gene_catalog.fna",
+        index="ref/genome/4/summary.txt",
     output:
-        sam=temp("Genecatalog/alignments/{sample}.sam"),
+        covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
     params:
         input=lambda wc, input: input_params_for_bbwrap(input.reads),
+        build=4,
         maxsites=4,
         ambiguous="all",
         minid=config["genecatalog"]["minid"],
         maxindel=1,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-    shadow:
-        "shallow"
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
     resources:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        """
-        bbwrap.sh nodisk=t \
-            local=t \
-            ref={input.fasta} \
-            {params.input} \
-            trimreaddescriptions=t \
-            out={output.sam} \
-            threads={threads} \
-            minid={params.minid} \
-            mdtag=t \
-            xstag=fs \
-            nmtag=t \
-            sam=1.3 \
-            ambiguous={params.ambiguous} \
-            secondary=t \
-            saa=f \
-            maxsites={params.maxsites} \
-            -Xmx{resources.java_mem}G \
-            2> {log}
-        """
-
-
-rule pileup_Genecatalog:
-    input:
-        sam="Genecatalog/alignments/{sample}.forpileup.sam",
-        bam="Genecatalog/alignments/{sample}.bam",
-    output:
-        covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
-        basecov=temp("Genecatalog/alignments/{sample}_base_coverage.txt.gz"),
-    params:
-        pileup_secondary="t",  # a read may map to different genes
-    log:
-        "logs/Genecatalog/alignment/{sample}_pileup.log",
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
-    resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    shell:
-        """pileup.sh in={input.sam} \
-        threads={threads} \
-        -Xmx{resources.java_mem}G \
-        covstats={output.covstats} \
-        basecov={output.basecov} \
-        secondary={params.pileup_secondary} \
-         2> {log}
-        """
+        " cat {input.reads} | bbmap.sh "
+        " local=t "
+        " build={params.build} "
+        " unpigz=t "
+        " in=stdin.fastq.gz "
+        " covstats={output.covstats} "
+        " maxsites={params.maxsites} "
+        " ambiguous={params.ambiguous} "
+        " minid={params.minid} "
+        " maxindel={params.maxindel} "
+        " secondary=t "
+        " -Xmx{resources.java_mem}G "
+        " 2> {log} "
 
 
 localrules:
