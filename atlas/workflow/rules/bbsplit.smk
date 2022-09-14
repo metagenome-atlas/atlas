@@ -39,7 +39,7 @@ rule bbsplit_index:
         )
 
 
-# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
+
 rule bbsplit:
     input:
         reads=lambda wildcards: get_quality_controlled_reads(wildcards),
