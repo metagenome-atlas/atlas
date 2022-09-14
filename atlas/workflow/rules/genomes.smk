@@ -108,7 +108,8 @@ def get_dereplication_arguments(key):
             "The configuration for dereplication has changed. For now I will try to be backward compatible, but please update your config file. https://metagenome-atlas.readthedocs.io/en/latest/usage/configuration.html#detailed-configuration"
         )
 
-        value = config["genome_dereplication"]["filter"][key]
+        return config["genome_dereplication"]["filter"][key]
+    
 
     else:
         if key == "completeness":
