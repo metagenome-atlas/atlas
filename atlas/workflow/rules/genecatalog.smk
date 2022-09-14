@@ -212,7 +212,8 @@ rule index_genecatalog:
     input:
         fasta="Genecatalog/gene_catalog.fna",
     output:
-        "ref/genome/4/summary.txt",
+       temp( directory("ref/genome/4")),
+       temp( directory("ref/index/4") ),
     log:
         "logs/Genecatalog/alignment/index.log",
     conda:
@@ -233,7 +234,7 @@ rule index_genecatalog:
 rule align_reads_to_Genecatalog:
     input:
         reads=get_quality_controlled_reads,
-        index="ref/genome/4/summary.txt",
+        index= rules.index_genecatalog.output,
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
     params:
