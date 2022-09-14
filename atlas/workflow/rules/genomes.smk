@@ -153,6 +153,7 @@ rule dereplication:
         " --threads {threads} "
         " --output-representative-fasta-directory {output.dir} "
         " --output-cluster-definition {output.mapping_file} "
+        " --precluster-method finch "
         " &> {log} "
 
 
