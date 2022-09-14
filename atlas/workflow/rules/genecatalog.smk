@@ -120,7 +120,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
         output:
             cluster_attribution=temp("Genecatalog/orf2gene_oldnames.tsv"),
             rep_seqs_db=temp(directory("Genecatalog/protein_catalog")),
-            rep_seqs=temp("Genecatalog/representatives_of_clusters.fasta"),
+            rep_seqs=temp("Genecatalog/representatives_of_clusters.faa"),
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
@@ -129,18 +129,40 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
         params:
             clusterdb=lambda wc, input: os.path.join(input.clusterdb, "clusterdb"),
             db=lambda wc, input: os.path.join(input.db, "inputdb"),
-            rep_seqs_db=lambda wc, output: os.path.join(output.rep_seqs_db, "db"),
         shell:
             """
             mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  &> {log}
 
             mkdir {output.rep_seqs_db} 2>> {log}
 
-            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  &>> {log}
+            mmseqs result2repseq {params.db} {params.clusterdb} {output.rep_seqs_db}/db  &>> {log}
 
-            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  &>> {log}
+            mmseqs result2flat {params.db} {params.db} {output.rep_seqs_db}/db {output.rep_seqs}  &>> {log}
 
             """
+
+    rule get_cds_of_proteins:
+        input:
+            all="Genecatalog/all_genes/predicted_genes.fna",
+            names="Genecatalog/representatives_of_clusters.faa",
+        output:
+            temp("Genecatalog/representatives_of_clusters.fna"),
+        conda:
+            "../envs/required_packages.yaml"
+        threads: 1
+        resources:
+            mem=config["mem"],
+            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+        log:
+            "logs/Genecatalog/clustering/get_cds_of_proteins.log",
+        shell:
+            " filterbyname.sh "
+            " in={input.all}"
+            " names={input.names}"
+            " include=t"
+            " out={output} "
+            " -Xmx{resources.java_mem}G "
+            " 2> {log}"
 
     rule generate_orf_info:
         input:
@@ -176,18 +198,12 @@ localrules:
 
 rule rename_gene_catalog:
     input:
-        fna="Genecatalog/all_genes/predicted_genes.fna",
-        faa="Genecatalog/all_genes/predicted_genes.faa",
+        fasta="Genecatalog/representatives_of_clusters.{ext}",
         rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
     output:
-        fna="Genecatalog/gene_catalog.fna",
-        faa="Genecatalog/gene_catalog.faa",
-        fna_index=temp("Genecatalog/all_genes/predicted_genes.fna.fxi"),
-        faa_index=temp("Genecatalog/all_genes/predicted_genes.faa.fxi"),
+        "Genecatalog/gene_catalog.{ext}",
     log:
-        "logs/Genecatalog/clustering/rename_gene_catalog.log",
-    conda:
-        "../envs/fasta.yaml"
+        "logs/Genecatalog/clustering/rename_gene_catalog_{ext}.log",
     script:
         "../scripts/rename_genecatalog.py"
 

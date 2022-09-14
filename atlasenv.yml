@@ -5,7 +5,7 @@ channels:
 dependencies:
   - python >=3.8, < 3.11
   - mamba
-  - bbmap = 38
+  - bbmap >= 38.98
   - snakemake-minimal = 7.3
   - pygments
   - networkx
@@ -15,4 +15,4 @@ dependencies:
   - click >=7
   - ruamel.yaml >=0.17
   - cookiecutter
-  - pathlib2
+  - pathlib

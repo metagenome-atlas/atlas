@@ -36,7 +36,7 @@ from utils.gene_scripts import geneNr_to_string
 
 
 # Start
-import pyfastx
+
 
 map_genenr = pd.read_csv(snakemake.input.rep2genenr, index_col=0, sep="\t").squeeze()
 
@@ -50,11 +50,16 @@ logging.info(
 
 assert rep2gene.shape[0] > 0
 
-faa_parser = pyfastx.Fasta(snakemake.input.faa, build_index=True)
-fna_parser = pyfastx.Fasta(snakemake.input.fna, build_index=True)
 
-with open(snakemake.output.fna, "w") as fna, open(snakemake.output.faa, "w") as faa:
-    for orf, gene_name in rep2gene.iteritems():
+with open(snakemake.output[0], "w") as fout:
+    with open(snakemake.input.fasta, "r") as fin:
+        for line in fin:
+            if line[0] == ">":
+                gene_name = line[1:].strip().split(" ")[0]
 
-        faa.write(f">{gene_name} {orf}\n{faa_parser[orf].seq}\n")
-        fna.write(f">{gene_name} {orf}\n{fna_parser[orf].seq}\n")
+                gene_id = rep2gene.loc[gene_name]
+
+                fout.write(f">{gene_id} {gene_name}\n")
+                
+            else:
+                fout.write(line)

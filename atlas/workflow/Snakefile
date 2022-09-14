@@ -4,7 +4,7 @@ import sys
 import tempfile
 import pandas as pd
 import numpy as np
-from pathlib2 import Path
+from pathlib import Path
 
 from snakemake.utils import logger, min_version
 
