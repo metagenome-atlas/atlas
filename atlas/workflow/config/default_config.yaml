@@ -1,4 +1,5 @@
-
+## use just in time compilation for bbmap
+usejni: false
 
 gene_annotations:
   - eggNOG

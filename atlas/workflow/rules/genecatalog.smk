@@ -245,6 +245,7 @@ rule align_reads_to_Genecatalog:
         ambiguous="all",
         minid=config["genecatalog"]["minid"],
         maxindel=1,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
+        usejni = "t" if config.get("usejni", False) else "f",   
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     conda:
@@ -259,6 +260,7 @@ rule align_reads_to_Genecatalog:
         " build={params.build} "
         " unpigz=t "
         " in=stdin.fastq.gz "
+        " usejni={params.usejni} "
         " covstats={output.covstats} "
         " rpkm={output.rpkm} "
         " maxsites={params.maxsites} "
