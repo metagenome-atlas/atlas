@@ -39,7 +39,6 @@ rule bbsplit_index:
         )
 
 
-
 rule bbsplit:
     input:
         reads=lambda wildcards: get_quality_controlled_reads(wildcards),
