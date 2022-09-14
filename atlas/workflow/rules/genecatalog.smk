@@ -226,7 +226,7 @@ rule index_genecatalog:
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         " bbmap.sh ref={input.fasta} "
-        " build={wildcards.build} "
+        " build={params.build} "
         " -Xmx{resources.java_mem}G "
         " 2> {log}"
 
@@ -258,7 +258,7 @@ rule align_reads_to_Genecatalog:
         " cat {input.reads} | bbmap.sh "
         " local=t "
         " build={params.build} "
-        " unpigz=t "
+        " unpigz=t "we
         " in=stdin.fastq.gz "
         " usejni={params.usejni} "
         " covstats={output.covstats} "
