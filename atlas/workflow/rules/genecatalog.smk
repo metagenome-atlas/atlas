@@ -237,6 +237,7 @@ rule align_reads_to_Genecatalog:
         index= rules.index_genecatalog.output,
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
+        rpkm= "Genecatalog/alignments/{sample}_rpkm.tsv",
     params:
         input=lambda wc, input: input_params_for_bbwrap(input.reads),
         build=4,
@@ -259,6 +260,7 @@ rule align_reads_to_Genecatalog:
         " unpigz=t "
         " in=stdin.fastq.gz "
         " covstats={output.covstats} "
+        " rpkm={output.rpkm} "
         " maxsites={params.maxsites} "
         " ambiguous={params.ambiguous} "
         " minid={params.minid} "
