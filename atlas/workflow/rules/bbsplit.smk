@@ -121,7 +121,7 @@ rule merge_counts:
     input:
         expand("genomes/alignments/{{scope}}stats/{sample}.tsv.gz", sample=SAMPLES),
     output:
-        counts="genomes/counts/combined_coverage_{scope}.parquet",
+        counts="genomes/counts/counts_{scope}.parquet",
     run:
         import pandas as pd
         import gc

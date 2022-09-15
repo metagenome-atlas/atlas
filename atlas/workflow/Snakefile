@@ -326,10 +326,9 @@ def get_genome_annotations():
 
 rule genomes:
     input:
-        "genomes/Dereplication/dereplicated_genomes",
         "genomes/counts/median_coverage_genomes.parquet",
         expand(
-            "genomes/counts/combined_coverage_{scope}.parquet", scope=["scaf", "ref"]
+            "genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]
         ),
         "genomes/clustering/allbins2genome.tsv",
         "genomes/counts/mapping_rate.tsv",
