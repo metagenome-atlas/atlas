@@ -50,7 +50,7 @@ mapping.columns = ["Bin_path", "Rep_path"]
 mapping[["Bin", "Representative"]] = mapping.applymap(
     lambda x: os.path.basename(x).replace(".fasta", "")
 )
-mapping.set_index("genome", inplace=True)
+mapping.set_index("Bin", inplace=True)
 
 
 # standardize names of representatives
