@@ -42,12 +42,12 @@ import pandas as pd
 # path/to/rep.fasta path/to/bin.fasta
 
 mapping = pd.read_csv(
-    snakemake.input.mapping_file, sep="\t", usecols=[1, 0], header=None
+    snakemake.input.mapping_file, sep="\t", usecols=[0,1], header=None
 )
-mapping.columns = ["Bin_path", "Rep_path"]
+mapping.columns = ["Rep_path","Bin_path"]
 
 # go from path to id
-mapping[["Bin", "Representative"]] = mapping.applymap(
+mapping[[ "Representative","Bin"]] = mapping.applymap(
     lambda x: os.path.basename(x).replace(".fasta", "")
 )
 mapping.set_index("Bin", inplace=True)
