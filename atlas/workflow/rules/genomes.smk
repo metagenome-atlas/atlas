@@ -161,7 +161,7 @@ localrules:
     rename_genomes,
 
 
-# TODO: adapt rename script for galah output
+
 checkpoint rename_genomes:
     input:
         genomes="genomes/dereplicated_genomes",
@@ -169,8 +169,8 @@ checkpoint rename_genomes:
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
-        mapfile_genomes="genomes/clustering/old2newID.tsv",
-        mapfile_bins="genomes/clustering/allbins2genome.tsv",
+        mapfile_old2mag="genomes/clustering/old2newID.tsv",
+        mapfile_allbins2mag="genomes/clustering/allbins2genome.tsv",
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
