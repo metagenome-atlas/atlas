@@ -55,7 +55,7 @@ rule merge_checkm_for_dereplication:
 
 
         D.index.name = "genome"
-        
+
         D.columns = D.columns.str.lower()
         D = D[["completeness", "contamination"]]
         D.to_csv(output[0])
@@ -109,7 +109,6 @@ def get_dereplication_arguments(key):
         )
 
         return config["genome_dereplication"]["filter"][key]
-    
 
     else:
         if key == "completeness":
@@ -159,7 +158,6 @@ rule dereplication:
 
 localrules:
     rename_genomes,
-
 
 
 checkpoint rename_genomes:

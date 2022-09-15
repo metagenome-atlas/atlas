@@ -41,11 +41,15 @@ import pandas as pd
 # tsv with format
 # path/to/rep.fasta path/to/bin.fasta
 
-mapping = pd.read_csv(snakemake.input.mapping_file, sep="\t", usecols=[1,0], header=None)
+mapping = pd.read_csv(
+    snakemake.input.mapping_file, sep="\t", usecols=[1, 0], header=None
+)
 mapping.columns = ["Bin_path", "Rep_path"]
 
 # go from path to id
-mapping[['Bin','Representative']] = mapping.applymap(lambda x: os.path.basename(x).replace(".fasta", ""))
+mapping[["Bin", "Representative"]] = mapping.applymap(
+    lambda x: os.path.basename(x).replace(".fasta", "")
+)
 mapping.set_index("genome", inplace=True)
 
 
@@ -53,17 +57,19 @@ mapping.set_index("genome", inplace=True)
 # MAG001 ....
 representatives = mapping.Representative.unique()
 old2new_name = dict(
-        zip(representatives, utils.gen_names_for_range(len(representatives), prefix="MAG"))
-    )
+    zip(representatives, utils.gen_names_for_range(len(representatives), prefix="MAG"))
+)
 mapping["MAG"] = mapping.Representative.map(old2new_name)
 
 
 # write cluster attribution
-mapping[["MAG","Representative"]].to_csv(snakemake.output.mapfile_allbins2mag, sep="\t", header=True)
+mapping[["MAG", "Representative"]].to_csv(
+    snakemake.output.mapfile_allbins2mag, sep="\t", header=True
+)
 
 # write out old2new ids
-old2new= mapping.loc[representatives, "MAG"]
-old2new.index.name= "Representative"
+old2new = mapping.loc[representatives, "MAG"]
+old2new.index.name = "Representative"
 old2new.to_csv(snakemake.output.mapfile_old2mag, sep="\t", header=True)
 
 #### Write genomes and contig to genome mapping file
@@ -76,7 +82,7 @@ rename_contigs = snakemake.params.rename_contigs
 os.makedirs(output_dir)
 
 with open(mapfile_contigs, "w") as out_contigs:
-    for rep,row in mapping.loc[representatives].iterrows():
+    for rep, row in mapping.loc[representatives].iterrows():
 
         fasta_in = row.Rep_path
         new_name = row.MAG
@@ -95,12 +101,10 @@ with open(mapfile_contigs, "w") as out_contigs:
                         new_header = f"{row.MAG}_{Nseq}"
                     else:
                         new_header = line[1:].strip().split()[0]
-                        
-                        
+
                     # write to contig to mapping file
                     out_contigs.write(f"{new_header}\t{row.MAG}\n")
                     # write to fasta file
                     ffo.write(f">{new_header}\n")
                 else:
                     ffo.write(line)
-
