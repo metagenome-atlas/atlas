@@ -210,44 +210,63 @@ rule rename_gene_catalog:
 
 rule index_genecatalog:
     input:
-        fasta="Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.fna",
     output:
-        temp(directory("ref/genome/4")),
-        temp(directory("ref/index/4")),
+        multiext(
+            "ref/Genecatalog/Genecatalog",
+            ".0123",
+            ".amb",
+            ".ann",
+            ".bwt.2bit.64",
+            ".pac",
+        ),
     log:
         "logs/Genecatalog/alignment/index.log",
-    conda:
-        "../envs/required_packages.yaml"
-    threads: config["threads"]
-    params:
-        build=4,
+    threads: 1
     resources:
         mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    wrapper:
+        "v1.12.2/bio/bwa-mem2/index"
+
+
+rule concat_reads:
+    input:
+        get_quality_controlled_reads,
+    output:
+        pipe("Genecatalog/alignment/{sample}.fastq.gz"),
+    log:
+        "logs/Genecatalog/alignment/concat_reads/{sample}.log",
+    threads: 1
     shell:
-        " bbmap.sh ref={input.fasta} "
-        " build={params.build} "
-        " -Xmx{resources.java_mem}G "
-        " 2> {log}"
+        "cat {input} > {output} 2> {log}"
 
 
 rule align_reads_to_Genecatalog:
     input:
-        reads=get_quality_controlled_reads,
-        index=rules.index_genecatalog.output,
+        reads=rules.concat_reads.output,
+        idx=rules.index_genecatalog.output,
+    output:
+        "Genecatalog/alignment/bams/{sample}.bam",
+    log:
+        "logs/Genecatalog/alignment/{sample}_ma.log",
+    params:
+        extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+        sort="none",
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+    wrapper:
+        "v1.12.2/bio/bwa-mem2/mem"
+
+
+rule pileup_Genecatalog:
+    input:
+        bam="Genecatalog/alignment/bams/{sample}.bam",
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         rpkm="Genecatalog/alignments/{sample}_rpkm.tsv",
-    params:
-        input=lambda wc, input: input_params_for_bbwrap(input.reads),
-        build=4,
-        maxsites=4,
-        ambiguous="all",
-        minid=config["genecatalog"]["minid"],
-        maxindel=1,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-        usejni="t" if config.get("usejni", False) else "f",
     log:
-        "logs/Genecatalog/alignment/{sample}_map.log",
+        "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
         "../envs/required_packages.yaml"
     threads: config["threads"]
@@ -255,19 +274,10 @@ rule align_reads_to_Genecatalog:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        " cat {input.reads} | bbmap.sh "
-        " local=t "
-        " build={params.build} "
-        " unpigz=t "
-        " in=stdin.fastq.gz "
-        " usejni={params.usejni} "
+        " pileup.sh "
+        " in={input.bam} "
         " covstats={output.covstats} "
         " rpkm={output.rpkm} "
-        " maxsites={params.maxsites} "
-        " ambiguous={params.ambiguous} "
-        " minid={params.minid} "
-        " maxindel={params.maxindel} "
-        " secondary=t "
         " -Xmx{resources.java_mem}G "
         " 2> {log} "
 
