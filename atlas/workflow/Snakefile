@@ -78,15 +78,7 @@ def io_params_for_tadpole(io, key="in"):
     return flag
 
 
-def input_paired_only(files):
-    """
-    return only paired interleaved or not
-    """
 
-    if not PAIRED_END:
-        raise IOError("Ask for paired end samples if not paired end workflow")
-
-    return files[: min(len(files), 2)]
 
 
 def input_params_for_bbwrap(input):
@@ -199,16 +191,23 @@ def get_files_from_sampleTable(sample, Headers):
     return list(files)
 
 
-def get_quality_controlled_reads(wildcards):
-    """Gets quality controlled reads for two cases. When preprocessed with
-    ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
-    externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
+def get_quality_controlled_reads(wildcards, include_se=False):
+    """
+    Gets quality controlled reads. 
+    R1 and R1 or se are returned as a dict.
+
+    if the files are not in the sample tible impute default path produced with atlas.
+    set 
+
     """
 
     if config.get("interleaved_fastqs", False) and SKIP_QC:
         QC_Headers = ["Reads_QC_se"]
     else:
         QC_Headers = ["Reads_QC_" + f for f in MULTIFILE_FRACTIONS]
+        if not include_se:
+            # get only R1 and R2 or se
+            QC_Headers = QC_Headers[: min(len(QC_Headers), 2)]
 
     try:
         return get_files_from_sampleTable(wildcards.sample, QC_Headers)

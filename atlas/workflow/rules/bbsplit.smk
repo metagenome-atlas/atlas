@@ -41,7 +41,7 @@ rule bbsplit_index:
 
 rule bbsplit:
     input:
-        reads=lambda wildcards: get_quality_controlled_reads(wildcards),
+        reads= get_quality_controlled_reads
         refdir=rules.bbsplit_index.output.index,
     output:
         scafstats=temp("genomes/alignments/scafstats/{sample}.tsv.gz"),

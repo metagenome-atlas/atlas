@@ -101,7 +101,7 @@ rule samtools_dict:
 
 rule minimap:
     input:
-        fq=lambda wildcards: input_paired_only(get_quality_controlled_reads(wildcards)),
+        fq=get_quality_controlled_reads,
         mmi="Cobinning/combined_contigs.mmi",
         dict="Cobinning/combined_contigs.dict",
     output:
