@@ -147,20 +147,20 @@ rule get_read_stats:
             tmp_file = os.path.join(subfolder, "read_stats.tmp")
             shell(
                 """
-                                                                                                                                mkdir -p {subfolder} 2> {log}
+                                                                                                                                        mkdir -p {subfolder} 2> {log}
 
-                                                                                                                                reformat.sh {params_in} \
-                                                                                                                                bhist={subfolder}/base_hist.txt \
-                                                                                                                                qhist={subfolder}/quality_by_pos.txt \
-                                                                                                                                lhist={subfolder}/readlength.txt \
-                                                                                                                                gchist={subfolder}/gc_hist.txt \
-                                                                                                                                gcbins=auto \
-                                                                                                                                bqhist={subfolder}/boxplot_quality.txt \
-                                                                                                                                threads={threads} \
-                                                                                                                                overwrite=true \
-                                                                                                                                -Xmx{mem}G \
-                                                                                                                                2> >(tee -a {log} {tmp_file} )
-                                                                                                                                """.format(
+                                                                                                                                        reformat.sh {params_in} \
+                                                                                                                                        bhist={subfolder}/base_hist.txt \
+                                                                                                                                        qhist={subfolder}/quality_by_pos.txt \
+                                                                                                                                        lhist={subfolder}/readlength.txt \
+                                                                                                                                        gchist={subfolder}/gc_hist.txt \
+                                                                                                                                        gcbins=auto \
+                                                                                                                                        bqhist={subfolder}/boxplot_quality.txt \
+                                                                                                                                        threads={threads} \
+                                                                                                                                        overwrite=true \
+                                                                                                                                        -Xmx{mem}G \
+                                                                                                                                        2> >(tee -a {log} {tmp_file} )
+                                                                                                                                        """.format(
                     subfolder=subfolder,
                     params_in=params_in,
                     log=log,
