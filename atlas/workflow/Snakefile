@@ -334,8 +334,8 @@ rule genomes:
 
 rule quantify_genomes:
     input:
-        "genomes/counts/median_coverage_genomes.tsv",
-        "genomes/counts/raw_counts_genomes.tsv",
+        "genomes/counts/median_coverage_genomes.parquet",
+        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
 
 
 rule binning:
