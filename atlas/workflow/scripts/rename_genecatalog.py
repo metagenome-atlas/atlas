@@ -60,6 +60,6 @@ with open(snakemake.output[0], "w") as fout:
                 gene_id = rep2gene.loc[gene_name]
 
                 fout.write(f">{gene_id} {gene_name}\n")
-
+                
             else:
                 fout.write(line)
