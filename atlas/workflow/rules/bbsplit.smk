@@ -1,18 +1,4 @@
-def run_bbsplit(*args, log=None, **kwargs):
 
-    command = "bbsplit.sh"
-
-    for a in args:
-        command += " " + a
-    for k in kwargs:
-        if type(kwargs[k]) == bool:
-            kwargs[k] = "t" if kwargs[k] else "f"
-        command += f" {k}={kwargs[k]} "
-    if log is not None:
-        command += f" 2>{log}"
-
-    logger.info(f"run: {command}")
-    shell(command)
 
 
 rule bbsplit_index:
@@ -20,6 +6,8 @@ rule bbsplit_index:
         genome_dir,
     output:
         index=directory("genomes/bbsplit_ref/ref"),
+    params:
+        path=lambda wc, output: os.path.dirname(output[0]),
     threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1000,
@@ -29,14 +17,15 @@ rule bbsplit_index:
         "logs/genomes/mapping/build_bbmap_index.log",
     benchmark:
         "logs/benchmark/genomes/bbsplit_index.log"
-    run:
-        run_bbsplit(
-            f"-Xmx{resources.java_mem}G",
-            ref=input,
-            path=os.path.dirname(output[0]),
-            threads=threads,
-            log=log[0],
-        )
+    conda:
+        "../envs/required_packages.yaml"
+    shell:
+        " bbsplit.sh ref={input.genome_dir} "
+        " path={params.path} "
+        " threads={threads} "
+        " log={log} "
+        " -Xmx{resources.java_mem}G "
+        " 2> {log} "
 
 
 rule bbsplit:
@@ -49,6 +38,8 @@ rule bbsplit:
         covstats="genomes/alignments/coverage/{sample}.tsv.gz",
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
     params:
+        reads=lambda wc, input: io_params_for_tadpole(input.reads, "in"),
+        path=lambda wc, output: os.path.dirname(output[0]),
         ambiguous="all",
         ambiguous2="best",
         minid=config["contig_min_id"],
@@ -60,21 +51,26 @@ rule bbsplit:
     benchmark:
         "logs/benchmark/genomes/bbsplit/{sample}.txt"
     threads: config["threads"]
+    conda:
+        "../envs/required_packages.yaml"
     resources:
         mem_mb=1000 * config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         time_min=config["runtime"]["default"] * 60,
         time=config["runtime"]["default"],
-    run:
-        run_bbsplit(
-            f"-Xmx{resources.java_mem}G",
-            io_params_for_tadpole(input.reads, "in"),
-            path=os.path.dirname(input.refdir),
-            threads=threads,
-            log=log[0],
-            **output,
-            **params,
-        )
+    shell:
+        " bbsplit.sh "
+        " {params.reads} "
+        " path={params.path} "
+        " threads={threads} "
+        " ambiguous={params.ambiguous} "
+        " ambiguous2={params.ambiguous2} "
+        " minid={params.minid} "
+        " scafstats={output.scafstats} "
+        " refstats={output.refstats} "
+        " covstats={output.covstats} "
+        " bincov={output.bincov} "
+        " 2> {log} "
 
 
 localrules:
@@ -112,6 +108,9 @@ rule combine_bined_coverages_MAGs:
     log:
         "logs/genomes/counts/combine_binned_coverages_MAGs.log",
     threads: 1
+    resources:
+        mem_mb=1000 * config["simplejob_mem"],
+        time_min=config["runtime"]["simplejob"] * 60,
     script:
         "../scripts/combine_coverage_MAGs.py"
 
@@ -121,6 +120,7 @@ rule merge_counts:
         expand("genomes/alignments/{{scope}}stats/{sample}.tsv.gz", sample=SAMPLES),
     output:
         counts="genomes/counts/counts_{scope}.parquet",
+    threads: 1
     run:
         import pandas as pd
         import gc
