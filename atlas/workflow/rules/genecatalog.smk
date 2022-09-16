@@ -255,12 +255,16 @@ rule align_reads_to_Genecatalog:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        " cat {input.reads} | bbmap.sh "
+        " temp_fastq={resources.tmpdir}/{wildcards.sample}_for_gene.fastq.gz "
+        " ; "
+        " cat {input.reads} > $temp_fastq 2> {log} "
+        " ; "
+        " bbmap.sh "
         " local=t "
         " build={params.build} "
         " unpigz=t "
         " interleaved=f "
-        " in=stdin.fastq.gz "
+        " in=$temp_fastq "
         " usejni={params.usejni} "
         " covstats={output.covstats} "
         " rpkm={output.rpkm} "
@@ -270,7 +274,7 @@ rule align_reads_to_Genecatalog:
         " maxindel={params.maxindel} "
         " secondary=t "
         " -Xmx{resources.java_mem}G "
-        " 2> {log} "
+        " 2>> {log} "
 
 
 localrules:
