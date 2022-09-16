@@ -232,10 +232,10 @@ rule index_genecatalog:
 
 rule align_reads_to_Genecatalog:
     input:
-        target=rules.index_genecatalog.output,
+        mmi=rules.index_genecatalog.output,
         reads=get_quality_controlled_reads,
     output:
-        temp("Genecatalog/alignments/{sample}.sam"),
+        temp("Genecatalog/alignments/{sample}.bam"),
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     params:
@@ -248,7 +248,7 @@ rule align_reads_to_Genecatalog:
     conda:
         "../envs/minimap.yaml"
     shell:
-        " cat {input.reads} | "
+        " (cat {input.reads} | "
         " minimap2 "
         " -t {threads} "
         "-a "
@@ -256,10 +256,8 @@ rule align_reads_to_Genecatalog:
         " {input.mmi} "
         " - "
         " | samtools view -b "
-        " > {output.sam} 2>{log}"
-        # output in SAM format
-        # short reads
-        # convert to BAM
+        " > {output} ) 2>{log}"
+
 
 
 rule pileup_Genecatalog:
@@ -268,8 +266,6 @@ rule pileup_Genecatalog:
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         rpkm="Genecatalog/alignments/{sample}_rpkm.tsv",
-    params:
-        minid=config["genecatalog"]["minid"],
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
@@ -302,6 +298,12 @@ rule combine_gene_coverages:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     script:
         "../scripts/combine_gene_coverages.py"
+
+
+# TODO: caluclate mapping rate from pileup mapping files
+# logs/Genecatalog/alignment/sample2_pileup.log
+# Reads:                                  1207217
+# Mapped reads:                           1071071
 
 
 ###########
