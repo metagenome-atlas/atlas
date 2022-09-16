@@ -21,7 +21,7 @@ rule bbsplit_index:
     conda:
         "../envs/required_packages.yaml"
     shell:
-        " bbsplit.sh ref={input.genome_dir} "
+        " bbsplit.sh ref={input[0]} "
         " build=5 "
         " threads={threads} "
         " log={log} "
@@ -81,7 +81,7 @@ localrules:
 rule count_mapped_reads:
     input:
         logfile=expand("logs/genomes/bbsplit/{sample}.log", sample=SAMPLES),
-        out_check=expand("genomes/alignments/scafstats/{sample}.tsv.gz", sample=SAMPLES),
+        out_check=expand(rules.bbsplit.output.covstats, sample=SAMPLES),
     output:
         "genomes/counts/mapping_rate.tsv",
     run:
@@ -131,7 +131,7 @@ rule merge_counts:
         Reads = {}
         for i in range(len(input)):
             df = pd.read_csv(input[i], index_col=0, sep="\t")
-            Reads[samples[i]] = pd.to_numeric(df.unambiguousReads, downcast="usigned")
+            Reads[samples[i]] = pd.to_numeric(df.unambiguousReads)
             del df
             gc.collect()
 

@@ -46,7 +46,7 @@ for i, cov_file in enumerate(snakemake.input.binned_coverage_files):
 binCov = pd.DataFrame.from_dict(binCov)
 
 gc.collect()
-logging.info(f"Saving combined binCov to {snakemake.output.binCov}")
+logging.info(f"Saving combined binCov to {snakemake.output.binned_cov}")
 binCov.reset_index().to_parquet(snakemake.output.binned_cov)
 
 

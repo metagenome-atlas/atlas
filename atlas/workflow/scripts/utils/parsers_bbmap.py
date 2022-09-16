@@ -116,7 +116,7 @@ def read_bbsplit_bincov(bbsplit_bincov_file):
 
     """
     binCov = pd.read_csv(
-        covarage_binned_file,
+        bbsplit_bincov_file,
         sep="\t",
         skiprows=2,
         index_col=[0, 2],  # Ref$Contig and Position
