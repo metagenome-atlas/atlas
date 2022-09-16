@@ -44,7 +44,6 @@ rule bbsplit:
         reads=lambda wildcards: get_quality_controlled_reads(wildcards),
         refdir=rules.bbsplit_index.output.index,
     output:
-        sam=temp("genomes/alignments/sam/{sample}.sam"),
         scafstats=temp("genomes/alignments/scafstats/{sample}.tsv.gz"),
         refstats=temp("genomes/alignments/refstats/{sample}.tsv.gz"),
         covstats="genomes/alignments/coverage/{sample}.tsv.gz",
