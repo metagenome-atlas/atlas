@@ -259,7 +259,6 @@ rule align_reads_to_Genecatalog:
         " > {output} ) 2>{log}"
 
 
-
 rule pileup_Genecatalog:
     input:
         bam=rules.align_reads_to_Genecatalog.output,
