@@ -5,7 +5,8 @@ rule bbsplit_index:
     input:
         genome_dir,
     output:
-        index=directory("genomes/bbsplit_ref/ref"),
+        directory("ref/genome/5"),
+        directory("ref/index/5"),
     params:
         path=lambda wc, output: os.path.dirname(output[0]),
     threads: config["threads"]
@@ -21,7 +22,7 @@ rule bbsplit_index:
         "../envs/required_packages.yaml"
     shell:
         " bbsplit.sh ref={input.genome_dir} "
-        " path={params.path} "
+        " build=5 "
         " threads={threads} "
         " log={log} "
         " -Xmx{resources.java_mem}G "
@@ -31,7 +32,7 @@ rule bbsplit_index:
 rule bbsplit:
     input:
         reads=get_quality_controlled_reads,
-        refdir=rules.bbsplit_index.output.index,
+        refdir=rules.bbsplit_index.output,
     output:
         scafstats=temp("genomes/alignments/scafstats/{sample}.tsv.gz"),
         refstats=temp("genomes/alignments/refstats/{sample}.tsv.gz"),
@@ -61,7 +62,7 @@ rule bbsplit:
     shell:
         " bbsplit.sh "
         " {params.reads} "
-        " path={params.path} "
+        " build=5 "
         " threads={threads} "
         " ambiguous={params.ambiguous} "
         " ambiguous2={params.ambiguous2} "
