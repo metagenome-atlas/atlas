@@ -259,6 +259,7 @@ rule align_reads_to_Genecatalog:
         " local=t "
         " build={params.build} "
         " unpigz=t "
+        " interleaved=f "
         " in=stdin.fastq.gz "
         " usejni={params.usejni} "
         " covstats={output.covstats} "
