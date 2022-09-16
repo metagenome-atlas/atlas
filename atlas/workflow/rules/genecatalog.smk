@@ -222,10 +222,23 @@ rule index_genecatalog:
         "v1.12.2/bio/minimap2/index"
 
 
+rule cat_reads_for_genecatalog:
+    input:
+        get_quality_controlled_reads
+    output:
+        temp("Genecatalog/alignments/reads_{sample}.fastq.gz")
+    threads:
+        1
+    resources:
+        mem=config["mem"],
+        mem_mb=config["mem"]*1000,
+    shell:
+        "cat {input} > {output}"
+
 rule align_reads_to_Genecatalog:
     input:
-        target=rules.index_genecatalog.output,
-        query=get_quality_controlled_reads,
+        target= rules.index_genecatalog.output,
+        query= rules.cat_reads_for_genecatalog.output,
     output:
         temp("Genecatalog/alignments/{sample}.bam"),
     log:
@@ -236,6 +249,7 @@ rule align_reads_to_Genecatalog:
     threads: config["threads"]
     resources:
         mem=config["mem"],
+        mem_mb=config["mem"]*1000,
     wrapper:
         "v1.12.2/bio/minimap2/aligner"
 
