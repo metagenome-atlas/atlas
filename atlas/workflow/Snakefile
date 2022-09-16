@@ -325,7 +325,7 @@ def get_genome_annotations():
 
 rule genomes:
     input:
-        "genomes/Dereplication/dereplicated_genomes",
+        "genomes/genomes",
         "genomes/counts/median_coverage_genomes.tsv",
         "genomes/counts/raw_counts_genomes.tsv",
         "genomes/clustering/allbins2genome.tsv",
