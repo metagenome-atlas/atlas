@@ -3,7 +3,7 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - bbmap >=38.99,<39.0 
+    - bbmap=37 # 38.99 has still error in minid
     - pigz
     - bzip2=1.0
     - pandas=1.2
