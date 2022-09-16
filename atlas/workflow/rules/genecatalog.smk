@@ -210,7 +210,7 @@ rule rename_gene_catalog:
 
 rule align_reads_to_Genecatalog:
     input:
-        reads= lambda wc: get_quality_controlled_reads(wc, include_se = True),
+        reads=lambda wc: get_quality_controlled_reads(wc, include_se=True),
         fasta="Genecatalog/gene_catalog.fna",
     output:
         sam=temp("Genecatalog/alignments/{sample}.sam"),

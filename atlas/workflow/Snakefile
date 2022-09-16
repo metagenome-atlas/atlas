@@ -78,9 +78,6 @@ def io_params_for_tadpole(io, key="in"):
     return flag
 
 
-
-
-
 def input_params_for_bbwrap(input):
 
     if len(input) == 3:
@@ -193,11 +190,11 @@ def get_files_from_sampleTable(sample, Headers):
 
 def get_quality_controlled_reads(wildcards, include_se=False):
     """
-    Gets quality controlled reads. 
+    Gets quality controlled reads.
     R1 and R1 or se are returned as a dict.
 
     if the files are not in the sample tible impute default path produced with atlas.
-    set 
+    set
 
     """
 
