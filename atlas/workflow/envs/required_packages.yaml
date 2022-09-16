@@ -3,7 +3,7 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - bbmap >=38.98 
+    - bbmap >=38.99,<39.0 
     - pigz
     - bzip2=1.0
     - pandas=1.2
