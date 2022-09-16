@@ -215,32 +215,27 @@ rule index_genecatalog:
         "ref/Genecatalog.mmi",
     log:
         "logs/Genecatalog/alignment/index.log",
-    threads: config["threads"]
+    params:
+        index_size="12G",
+    threads: 3
     resources:
         mem=config["mem"],
-    wrapper:
-        "v1.12.2/bio/minimap2/index"
-
-
-rule cat_reads_for_genecatalog:
-    input:
-        get_quality_controlled_reads
-    output:
-        temp("Genecatalog/alignments/reads_{sample}.fastq.gz")
-    threads:
-        1
-    resources:
-        mem=config["mem"],
-        mem_mb=config["mem"]*1000,
+    conda:
+        "../envs/minimap.yaml"
     shell:
-        "cat {input} > {output}"
+        " minimap2 "
+        " -I {params.index_size} "
+        " -t {threads} "
+        " -d {output} "
+        " {input} 2> {log} "
+
 
 rule align_reads_to_Genecatalog:
     input:
-        target= rules.index_genecatalog.output,
-        query= rules.cat_reads_for_genecatalog.output,
+        target=rules.index_genecatalog.output,
+        reads=get_quality_controlled_reads,
     output:
-        temp("Genecatalog/alignments/{sample}.bam"),
+        temp("Genecatalog/alignments/{sample}.sam"),
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     params:
@@ -249,9 +244,22 @@ rule align_reads_to_Genecatalog:
     threads: config["threads"]
     resources:
         mem=config["mem"],
-        mem_mb=config["mem"]*1000,
-    wrapper:
-        "v1.12.2/bio/minimap2/aligner"
+        mem_mb=config["mem"] * 1000,
+    conda:
+        "../envs/minimap.yaml"
+    shell:
+        " cat {input.reads} | "
+        " minimap2 "
+        " -t {threads} "
+        "-a "
+        "-x sr "
+        " {input.mmi} "
+        " - "
+        " | samtools view -b "
+        " > {output.sam} 2>{log}"
+        # output in SAM format
+        # short reads
+        # convert to BAM
 
 
 rule pileup_Genecatalog:
