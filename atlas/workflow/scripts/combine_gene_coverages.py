@@ -44,14 +44,28 @@ def measure_memory(write_log_entry=True):
 
     return mem_uage
 
+
+logging.info("Start")
+measure_memory()
+
+# read gene info
+
+#gene_info= pd.read_table(input.info, index_col=0)
+#gene_info.sort_index(inplace=True)
+#gene_list= gene_info.index
+
+#N_genes= gene_info.shape[0]
+
+N_samples = len(snakemake.input.covstats)
+
 # prepare snakemake.output tables
 combined_cov = {}
 combined_N_reads = {}
 
 
-measure_memory()
 
-N_samples = len(snakemake.input.covstats)
+
+
 for i,cov_file in enumerate(snakemake.input.covstats):
 
     sample = os.path.split(cov_file)[-1].split("_")[0]
@@ -64,12 +78,16 @@ for i,cov_file in enumerate(snakemake.input.covstats):
         cov_file, coverage_measure="Avg_fold"
     )
 
+
+    # transform index to int this should drastrically redruce memory
+    data.index= data.index.str[len("Gene"):].astype(int)
+
     # genes are not sorted
     # data.sort_index(inplace=True)
 
 
-    combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float").astype(pd.SparseDtype(float, fill_value=0))
-    combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="integer").astype(pd.SparseDtype(int, fill_value=0))
+    combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
+    combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="integer")
 
     # delete interminate data and release mem
     del data
@@ -99,21 +117,16 @@ measure_memory()
 
 logging.info("Write first table")
 
-from scipy.sparse import save_npz
-save_npz("Genecatalog/counts/Nmapped_reads.npz", combined_N_reads.sparse.to_coo())
-pd.Series(combined_N_reads.columns).to_csv("Genecatalog/counts/header.tsv",sep="\t", header=False,index=False)
-pd.Series(combined_N_reads.index).to_csv("Genecatalog/counts/index.tsv",sep="\t", header=False,index=False)
-
-#combined_N_reads.reset_index().to_hdf(,key='data',complevel=7,mode='w')
+combined_N_reads.reset_index().to_parquet(snakemake.output[1])
 del combined_N_reads
 gc.collect()
 measure_memory()
-# .sparse.to_coo() 
+
 
 logging.info("Concatenate coverage data")
 combined_cov = pd.concat(combined_cov,axis=1,sort=True,copy=False).fillna(0)
 combined_cov.index.name = "GeneNr"
 
-#combined_cov.reset_index().to_hdf(snakemake.output[0],key='data',complevel=7,mode='w')
-save_npz("Genecatalog/counts/median_coverage.npz", combined_cov.sparse.to_coo())
+combined_cov.reset_index().to_parquet(snakemake.output[0])
+
 del combined_cov

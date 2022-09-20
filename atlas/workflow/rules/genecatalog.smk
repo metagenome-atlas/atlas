@@ -222,7 +222,7 @@ rule get_genecatalog_seq_info:
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "stats.sh gcformat=4 gc={output} in={input} &> {log}"
-        
+
 rule index_genecatalog:
     input:
         target="Genecatalog/gene_catalog.fna",
@@ -305,8 +305,8 @@ rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
     output:
-        "Genecatalog/counts/median_coverage.h5",
-        "Genecatalog/counts/Nmapped_reads.h5",
+        "Genecatalog/counts/median_coverage.parquet",
+        "Genecatalog/counts/Nmapped_reads.parquet",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     threads: 1
