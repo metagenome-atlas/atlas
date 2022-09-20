@@ -208,6 +208,22 @@ rule rename_gene_catalog:
         "../scripts/rename_genecatalog.py"
 
 
+rule get_genecatalog_seq_info:
+    input:
+        "Genecatalog/gene_catalog.fna"
+    output:
+        "Genecatalog/counts/sequence_infos.tsv"
+    log:
+        "logs/Genecatalog/get_seq_info.log",
+    conda:
+        "../envs/required_packages.yaml"
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
+    shell:
+        "stats.sh gcformat=4 gc={output} in={input} &> {log}"
+
 rule index_genecatalog:
     input:
         target="Genecatalog/gene_catalog.fna",
@@ -288,10 +304,11 @@ rule pileup_Genecatalog:
 
 rule combine_gene_coverages:
     input:
+        info= "Genecatalog/counts/sequence_infos.tsv",
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
     output:
-        "Genecatalog/counts/median_coverage.h5",
-        "Genecatalog/counts/Nmapped_reads.h5",
+        "Genecatalog/counts/median_coverage.npz",
+        "Genecatalog/counts/Nmapped_reads.npz",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     threads: 1

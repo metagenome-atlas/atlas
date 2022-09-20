@@ -44,14 +44,28 @@ def measure_memory(write_log_entry=True):
 
     return mem_uage
 
+
+logging.info("Start")
+measure_memory()
+
+# read gene info
+
+gene_info= pd.read_table(input.info, index_col=0)
+
+gene_info.sort_index(inplace=True)
+
+gene_list= gene_info.index
+N_genes= gene_info.shape[0]
+N_samples = len(snakemake.input.covstats)
+
 # prepare snakemake.output tables
 combined_cov = {}
 combined_N_reads = {}
 
 
-measure_memory()
 
-N_samples = len(snakemake.input.covstats)
+
+
 for i,cov_file in enumerate(snakemake.input.covstats):
 
     sample = os.path.split(cov_file)[-1].split("_")[0]
