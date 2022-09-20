@@ -283,21 +283,24 @@ rule pileup_Genecatalog:
         " 2> {log} "
 
 
-localrules:
-    combine_gene_coverages,
+
 
 
 rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
     output:
-        "Genecatalog/counts/median_coverage.parquet",
-        "Genecatalog/counts/Nmapped_reads.parquet",
+        "Genecatalog/counts/median_coverage.h5",
+        "Genecatalog/counts/Nmapped_reads.h5",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
+    threads: 1
+    resources:
+        mem=config["large_mem"],
     script:
         "../scripts/combine_gene_coverages.py"
 
+# TODO: combine RPKM
 
 # TODO: caluclate mapping rate from pileup mapping files
 # logs/Genecatalog/alignment/sample2_pileup.log

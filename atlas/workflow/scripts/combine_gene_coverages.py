@@ -34,54 +34,86 @@ import pandas as pd
 import gc, os
 from utils.parsers_bbmap import read_pileup_coverage
 
+import psutil
+
+def measure_memory(write_log_entry=True):
+    mem_uage = psutil.Process().memory_info().rss / (1024 * 1024)
+
+    if write_log_entry:
+        logging.info(f"The process is currelnty using {mem_uage: 7.0f} MB of RAM")
+
+    return mem_uage
+
 # prepare snakemake.output tables
-combined_cov = pd.DataFrame(
-    dtype=int,
-)
-combined_N_reads = pd.DataFrame(
-    dtype=float,
-)
+combined_cov = {}
+combined_N_reads = {}
 
 
-for cov_file in snakemake.input.covstats:
+measure_memory()
+
+N_samples = len(snakemake.input.covstats)
+for i,cov_file in enumerate(snakemake.input.covstats):
 
     sample = os.path.split(cov_file)[-1].split("_")[0]
 
-    # print(f"read file for sample {sample}")
 
-    if cov_file == snakemake.input.covstats[0]:
-        other_columns = ["Length"]
-    else:
-        other_columns = []
+
+
 
     data = read_pileup_coverage(
-        cov_file, coverage_measure="Avg_fold", other_columns=other_columns
+        cov_file, coverage_measure="Avg_fold"
     )
 
     # genes are not sorted
-    data.sort_index(inplace=True)
+    # data.sort_index(inplace=True)
 
-    # add gene length to dataframe of counts
-    if cov_file == snakemake.input.covstats[0]:
-        combined_N_reads["Length"] = pd.to_numeric(data.Length, downcast="unsigned")
 
-    combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
-    combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="unsigned")
+    combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float").astype(pd.SparseDtype(float, fill_value=0))
+    combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="integer").astype(pd.SparseDtype(int, fill_value=0))
 
-    # delete interminate data and releace mem
+    # delete interminate data and release mem
     del data
     gc.collect()
 
+    logging.info(f"Read coverage file for sample {i+1}: {sample}")
+    current_mem_uage= measure_memory()
+    estimated_max_mem = current_mem_uage/(i+1)*(N_samples+1)/1024
 
+    logging.info(f"Estimated max mem is {estimated_max_mem:5.0f} GB")
+
+
+
+
+# merge N reads
+logging.info("Concatenate raw reads")
+combined_N_reads = pd.concat(combined_N_reads,axis=1,sort=True,copy=False).fillna(0)
 # give index nice name
-combined_cov.index.name = "GeneNr"
 combined_N_reads.index.name = "GeneNr"
+
+measure_memory()
+
+
 
 # Store as parquet
 # add index so that it can be read in R
-combined_N_reads.reset_index().to_parquet(snakemake.output[1])
+
+logging.info("Write first table")
+
+from scipy.sparse import save_npz
+save_npz("Genecatalog/counts/Nmapped_reads.npz", combined_N_reads.sparse.to_coo())
+pd.Series(combined_N_reads.columns).to_csv("Genecatalog/counts/header.tsv",sep="\t", header=False,index=False)
+pd.Series(combined_N_reads.index).to_csv("Genecatalog/counts/index.tsv",sep="\t", header=False,index=False)
+
+#combined_N_reads.reset_index().to_hdf(,key='data',complevel=7,mode='w')
 del combined_N_reads
 gc.collect()
+measure_memory()
+# .sparse.to_coo() 
 
-combined_cov.reset_index().to_parquet(snakemake.output[0])
+logging.info("Concatenate coverage data")
+combined_cov = pd.concat(combined_cov,axis=1,sort=True,copy=False).fillna(0)
+combined_cov.index.name = "GeneNr"
+
+#combined_cov.reset_index().to_hdf(snakemake.output[0],key='data',complevel=7,mode='w')
+save_npz("Genecatalog/counts/median_coverage.npz", combined_cov.sparse.to_coo())
 del combined_cov
