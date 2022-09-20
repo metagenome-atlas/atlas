@@ -40,7 +40,6 @@ rule bbsplit:
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
     params:
         reads=lambda wc, input: io_params_for_tadpole(input.reads, "in"),
-        path=lambda wc, output: os.path.dirname(output[0]),
         ambiguous="all",
         ambiguous2="best",
         minid=config["contig_min_id"],
