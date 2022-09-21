@@ -33,6 +33,7 @@ sys.excepthook = handle_exception
 import pandas as pd
 import gc, os
 from utils.parsers_bbmap import read_pileup_coverage
+from pathlib import Path
 
 import psutil
 
@@ -59,14 +60,14 @@ measure_memory()
 N_samples = len(snakemake.input.covstats)
 
 
-
-
+output_dir = Path(snakemake.output[0])
+output_dir.mkdir()
 
 
 for i,cov_file in enumerate(snakemake.input.covstats):
 
     sample = os.path.split(cov_file)[-1].split("_")[0]
-
+    logging.info(f"Read coverage file for sample {i+1}: {sample}")
 
 
 
@@ -77,53 +78,28 @@ for i,cov_file in enumerate(snakemake.input.covstats):
 
 
     # transform index to int this should drastrically redruce memory
-    data.index= data.index.str[len("Gene"):].astype(int)
-
+    data.index= pd.to_numeric(data.index.str[len("Gene"):].astype(int), downcast="integer")
+    data.index.name = "GeneNr"
     # genes are not sorted
-    # data.sort_index(inplace=True)
+    data.sort_index(inplace=True)
 
 
-    combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
-    combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="integer")
+    data["Avg_fold"] = pd.to_numeric(data.Avg_fold, downcast="float")
+    data["Reads"] = pd.to_numeric(data.Reads, downcast="integer")
+
+
+    output_file = output_dir /f"Sample={sample}"/"0.parq"
+    output_file.parent.mkdir()
+
+    data.to_parquet(output_file,index=True)
 
     # delete interminate data and release mem
     del data
     gc.collect()
 
-    logging.info(f"Read coverage file for sample {i+1}: {sample}")
+    
     current_mem_uage= measure_memory()
-    estimated_max_mem = current_mem_uage/(i+1)*(N_samples+1)/1024
-
-    logging.info(f"Estimated max mem is {estimated_max_mem:5.0f} GB")
 
 
 
-
-# merge N reads
-logging.info("Concatenate raw reads")
-combined_N_reads = pd.concat(combined_N_reads,axis=1,sort=True,copy=False).fillna(0)
-# give index nice name
-combined_N_reads.index.name = "GeneNr"
-
-measure_memory()
-
-
-
-# Store as parquet
-# add index so that it can be read in R
-
-logging.info("Write first table")
-
-combined_N_reads.reset_index().to_parquet(snakemake.output[1])
-del combined_N_reads
-gc.collect()
-measure_memory()
-
-
-logging.info("Concatenate coverage data")
-combined_cov = pd.concat(combined_cov,axis=1,sort=True,copy=False).fillna(0)
-combined_cov.index.name = "GeneNr"
-
-combined_cov.reset_index().to_parquet(snakemake.output[0])
-
-del combined_cov
+logging.info("Finished")

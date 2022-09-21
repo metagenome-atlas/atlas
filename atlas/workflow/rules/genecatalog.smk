@@ -305,13 +305,13 @@ rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
     output:
-        "Genecatalog/counts/median_coverage.parquet",
-        "Genecatalog/counts/Nmapped_reads.parquet",
+        directory("Genecatalog/counts/counts"),
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     threads: 1
     resources:
-        mem=config["large_mem"],
+        mem=config["simplejob_
+        mem"],
     script:
         "../scripts/combine_gene_coverages.py"
 
