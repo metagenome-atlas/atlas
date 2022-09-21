@@ -93,7 +93,8 @@ rule fasttree:
         "%s/tree.yaml" % CONDAENV
     shell:
         "export OMP_NUM_THREADS={threads}; "
-        "FastTree -log {log} {input} > {output} "
+        "gunzip -c {input} | "
+        " FastTree > {output} 2> {log} "
 
 
 localrules:
