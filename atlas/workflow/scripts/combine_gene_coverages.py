@@ -58,9 +58,6 @@ measure_memory()
 
 N_samples = len(snakemake.input.covstats)
 
-# prepare snakemake.output tables
-combined_cov = {}
-combined_N_reads = {}
 
 
 
