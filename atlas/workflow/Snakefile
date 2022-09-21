@@ -205,7 +205,7 @@ def get_quality_controlled_reads(wildcards, include_se=False):
 
     elif not include_se:
         # get only R1 and R2 or se
-        Fractions = QC_Headers[: min(len(Fractions), 2)]
+        Fractions = Fractions[: min(len(Fractions), 2)]
 
     try:
         QC_Headers = ["Reads_QC_" + f for f in Fractions]
