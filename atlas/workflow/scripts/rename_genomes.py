@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+from atlas import utils
+import pandas as pd
 
 import sys, os
 import logging, traceback
@@ -11,6 +13,8 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
+    file_name = f"{input_folder}/{{binid}}.fasta"
+    (bin_ids,) = glob_wildcards(file_name)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -30,6 +34,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
+            old2new_mapping_file.write(f"{binid}\t{new_name}\n")
 
 from snakemake.io import glob_wildcards
 
@@ -42,12 +47,12 @@ import pandas as pd
 # path/to/rep.fasta path/to/bin.fasta
 
 mapping = pd.read_csv(
-    snakemake.input.mapping_file, sep="\t", usecols=[0,1], header=None
+    snakemake.input.mapping_file, sep="\t", usecols=[0, 1], header=None
 )
-mapping.columns = ["Rep_path","Bin_path"]
+mapping.columns = ["Rep_path", "Bin_path"]
 
 # go from path to id
-mapping[[ "Representative","Bin"]] = mapping.applymap(
+mapping[["Representative", "Bin"]] = mapping.applymap(
     lambda x: os.path.basename(x).replace(".fasta", "")
 )
 mapping.set_index("Bin", inplace=True)

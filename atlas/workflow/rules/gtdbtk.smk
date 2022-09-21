@@ -81,16 +81,9 @@ rule combine_taxonomy:
         "../scripts/combine_taxonomy.py"
 
 
-msa_paths = {
-    "checkm": "genomes/checkm/storage/tree/concatenated.fasta",
-    "gtdbtk.bac120": f"{gtdb_dir}/align/gtdbtk.bac120.user_msa.fasta",
-    "gtdbtk.ar122": f"{gtdb_dir}/align/gtdbtk.ar122.user_msa.fasta",
-}
-
-
 rule fasttree:
     input:
-        lambda wildcards: msa_paths[wildcards.msa],
+        f"{gtdb_dir}/align/{{msa}}.user_msa.fasta.gz"
     output:
         temp("genomes/tree/{msa}.unrooted.nwk"),
     log:
@@ -100,7 +93,8 @@ rule fasttree:
         "%s/tree.yaml" % CONDAENV
     shell:
         "export OMP_NUM_THREADS={threads}; "
-        "FastTree -log {log} {input} > {output} "
+        "gunzip -c {input} | "
+        " FastTree > {output} 2> {log} "
 
 
 localrules:
@@ -129,7 +123,7 @@ rule root_tree:
 def all_gtdb_trees_input(wildcards):
     dir = checkpoints.align.get().output[0]
 
-    domains = glob_wildcards(f"{dir}/gtdbtk.{{domain}}.user_msa.fasta").domain
+    domains = glob_wildcards(f"{dir}/gtdbtk.{{domain}}.user_msa.fasta.gz").domain
 
     return expand("genomes/tree/gtdbtk.{domain}.nwk", domain=domains)
 
