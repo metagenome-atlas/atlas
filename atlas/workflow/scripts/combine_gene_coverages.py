@@ -70,9 +70,9 @@ data.index.name = "GeneNr"
 # genes are not sorted
 data.sort_index(inplace=True)
 
-
-data["Avg_fold"] = pd.to_numeric(data.Avg_fold, downcast="float")
-data["Reads"] = pd.to_numeric(data.Reads, downcast="integer")
+# Downcasting creates inconsistent datatypes
+#data["Avg_fold"] = pd.to_numeric(data.Avg_fold, downcast="float")
+#data["Reads"] = pd.to_numeric(data.Reads, downcast="integer")
 
 
 data.to_parquet(output_file,index=True)

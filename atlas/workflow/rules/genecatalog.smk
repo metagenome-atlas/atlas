@@ -318,7 +318,7 @@ rule transform2parquet:
 localrules: combine_gene_coverages
 rule combine_gene_coverages:
     input:
-        expand("Genecatalog/counts/counts/Sample={sample}/0.parq", sample=SAMPLES)
+        expand(rules.transform2parquet.output, sample=SAMPLES)
     output:
         "Genecatalog/counts/Readme.md"
     run:
@@ -331,7 +331,8 @@ rule combine_gene_coverages:
 
             ```
             import pandas as pd
-            D = pd.read_parquet("Genecatalog/counts/counts", columns=["Reads"])
+            D = pd.read_parquet("Genecatalog/counts/counts", columns=["Reads","Sample"])
+            D = D.pivot(columns='Sample', values='Reads')
             ```
 
             ## In R
