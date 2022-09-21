@@ -301,19 +301,60 @@ rule pileup_Genecatalog:
 
 
 
-rule combine_gene_coverages:
+rule transform2parquet:
     input:
-        covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
+        covstats=rules.pileup_Genecatalog.output.covstats,
     output:
-        directory("Genecatalog/counts/counts"),
+        "Genecatalog/counts/counts/Sample={sample}/0.parq",
     log:
-        "logs/Genecatalog/counts/combine_gene_coverages.log",
+        "logs/Genecatalog/alignment/{sample}_to_parquet.log",
     threads: 1
     resources:
-        mem=config["simplejob_
-        mem"],
+        mem=config["simplejob_mem"],
     script:
         "../scripts/combine_gene_coverages.py"
+
+
+localrules: combine_gene_coverages
+rule combine_gene_coverages:
+    input:
+        expand("Genecatalog/counts/counts/Sample={sample}/0.parq", sample=SAMPLES)
+    output:
+        "Genecatalog/counts/Readme.md"
+    run:
+        
+        content=deident("""
+            # Gene quantification output
+            The output of the gene quantification is a distibuted parquet file. Read it as folows
+
+            ## In python
+
+            ```
+            import pandas as pd
+            D = pd.read_parquet("Genecatalog/counts/counts", columns=["Reads"])
+            ```
+
+            ## In R
+            ```
+            library("arrow")
+            DS= open_dataset(sources = "Genecatalog/counts/counts")
+            SO <- Scanner$create(DS,projection = c("GeneNr","Sample","Reads"))
+            ## Load it as n Arrow Table in memory
+            AT <- SO$ToTable()
+            ## Convert it to an R data frame
+            DF <- as.data.frame(AT)
+
+            ```
+
+            For both, instead of `"Reads"` you can use `"Avg_fold"`
+
+            """
+        )
+
+        with open(output[0],"w") as fout:
+            fout.write(content)
+
+
 
 # TODO: combine RPKM
 

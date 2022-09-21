@@ -35,19 +35,11 @@ import gc, os
 from utils.parsers_bbmap import read_pileup_coverage
 from pathlib import Path
 
-import psutil
 
-def measure_memory(write_log_entry=True):
-    mem_uage = psutil.Process().memory_info().rss / (1024 * 1024)
-
-    if write_log_entry:
-        logging.info(f"The process is currelnty using {mem_uage: 7.0f} MB of RAM")
-
-    return mem_uage
 
 
 logging.info("Start")
-measure_memory()
+
 
 # read gene info
 
@@ -57,48 +49,33 @@ measure_memory()
 
 #N_genes= gene_info.shape[0]
 
-N_samples = len(snakemake.input.covstats)
-
-
-output_dir = Path(snakemake.output[0])
-output_dir.mkdir()
-
-
-for i,cov_file in enumerate(snakemake.input.covstats):
-
-    sample = os.path.split(cov_file)[-1].split("_")[0]
-    logging.info(f"Read coverage file for sample {i+1}: {sample}")
 
 
 
+output_file = Path(snakemake.output[0])
 
-    data = read_pileup_coverage(
-        cov_file, coverage_measure="Avg_fold"
-    )
+sample = snakemake.wildcards.sample
 
-
-    # transform index to int this should drastrically redruce memory
-    data.index= pd.to_numeric(data.index.str[len("Gene"):].astype(int), downcast="integer")
-    data.index.name = "GeneNr"
-    # genes are not sorted
-    data.sort_index(inplace=True)
+logging.info(f"Read coverage file for sample {sample}")
 
 
-    data["Avg_fold"] = pd.to_numeric(data.Avg_fold, downcast="float")
-    data["Reads"] = pd.to_numeric(data.Reads, downcast="integer")
+data = read_pileup_coverage(
+    snakemake.input[0], coverage_measure="Avg_fold"
+)
 
 
-    output_file = output_dir /f"Sample={sample}"/"0.parq"
-    output_file.parent.mkdir()
+# transform index to int this should drastrically redruce memory
+data.index= pd.to_numeric(data.index.str[len("Gene"):].astype(int), downcast="integer")
+data.index.name = "GeneNr"
+# genes are not sorted
+data.sort_index(inplace=True)
 
-    data.to_parquet(output_file,index=True)
 
-    # delete interminate data and release mem
-    del data
-    gc.collect()
+data["Avg_fold"] = pd.to_numeric(data.Avg_fold, downcast="float")
+data["Reads"] = pd.to_numeric(data.Reads, downcast="integer")
 
-    
-    current_mem_uage= measure_memory()
+
+data.to_parquet(output_file,index=True)
 
 
 
