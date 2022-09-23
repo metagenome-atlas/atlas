@@ -78,17 +78,6 @@ def io_params_for_tadpole(io, key="in"):
     return flag
 
 
-def input_paired_only(files):
-    """
-    return only paired interleaved or not
-    """
-
-    if not PAIRED_END:
-        raise IOError("Ask for paired end samples if not paired end workflow")
-
-    return files[: min(len(files), 2)]
-
-
 def input_params_for_bbwrap(input):
 
     if len(input) == 3:
@@ -199,25 +188,35 @@ def get_files_from_sampleTable(sample, Headers):
     return list(files)
 
 
-def get_quality_controlled_reads(wildcards):
-    """Gets quality controlled reads for two cases. When preprocessed with
-    ATLAS, returns R1, R2 and se fastq files or just se. When preprocessed
-    externaly and run ATLAS workflow assembly, we expect R1, R2 or se.
+def get_quality_controlled_reads(wildcards, include_se=False):
+    """
+    Gets quality controlled reads.
+    R1 and R1 or se are returned as a dict.
+
+    if the files are not in the sample tible impute default path produced with atlas.
+    set
+
     """
 
+    Fractions = MULTIFILE_FRACTIONS
+
     if config.get("interleaved_fastqs", False) and SKIP_QC:
-        QC_Headers = ["Reads_QC_se"]
-    else:
-        QC_Headers = ["Reads_QC_" + f for f in MULTIFILE_FRACTIONS]
+        Fractions = ["se"]
+
+    elif not include_se:
+        # get only R1 and R2 or se
+        Fractions = Fractions[: min(len(Fractions), 2)]
 
     try:
+        QC_Headers = ["Reads_QC_" + f for f in Fractions]
         return get_files_from_sampleTable(wildcards.sample, QC_Headers)
+
     except FileNotInSampleTableException:
 
         # return files as named by atlas pipeline
         return expand(
             "{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS,
+            fraction=Fractions,
             sample=wildcards.sample,
         )
 
@@ -233,6 +232,7 @@ include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 include: "rules/strains.smk"
+include: "rules/bbsplit.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
@@ -325,10 +325,10 @@ def get_genome_annotations():
 
 rule genomes:
     input:
-        "genomes/Dereplication/dereplicated_genomes",
-        "genomes/counts/median_coverage_genomes.tsv",
-        "genomes/counts/raw_counts_genomes.tsv",
+        "genomes/counts/median_coverage_genomes.parquet",
+        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
         "genomes/clustering/allbins2genome.tsv",
+        "genomes/counts/mapping_rate.tsv",
         *get_genome_annotations(),
         "finished_binning",
     output:
@@ -337,8 +337,8 @@ rule genomes:
 
 rule quantify_genomes:
     input:
-        "genomes/counts/median_coverage_genomes.tsv",
-        "genomes/counts/raw_counts_genomes.tsv",
+        "genomes/counts/median_coverage_genomes.parquet",
+        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
 
 
 rule binning:

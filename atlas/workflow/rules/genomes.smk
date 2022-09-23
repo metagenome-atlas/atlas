@@ -39,11 +39,11 @@ rule all_contigs2bins:
 
 
 localrules:
-    get_quality_for_dRep_from_checkm,
+    merge_checkm_for_dereplication,
     merge_checkm,
 
 
-rule get_quality_for_dRep_from_checkm:
+rule merge_checkm_for_dereplication:
     input:
         "reports/genomic_bins_{binner}.tsv".format(binner=config["final_binner"]),
     output:
@@ -53,10 +53,12 @@ rule get_quality_for_dRep_from_checkm:
 
         D = pd.read_csv(input[0], index_col=0, sep="\t")
 
-        D.index = D.index.astype(str) + ".fasta"
+
         D.index.name = "genome"
+
         D.columns = D.columns.str.lower()
-        D.iloc[:, :3].to_csv(output[0])
+        D = D[["completeness", "contamination"]]
+        D.to_csv(output[0])
 
 
 rule merge_checkm:
@@ -98,56 +100,59 @@ rule merge_checkm:
                 shutil.copyfileobj(open(fasta, "rb"), fout)
 
 
+def get_dereplication_arguments(key):
+    "key = completeness or contamination"
+
+    if "filter" in config["genome_dereplication"]:
+        logger.info(
+            "The configuration for dereplication has changed. For now I will try to be backward compatible, but please update your config file. https://metagenome-atlas.readthedocs.io/en/latest/usage/configuration.html#detailed-configuration"
+        )
+
+        return config["genome_dereplication"]["filter"][key]
+
+    else:
+        if key == "completeness":
+            return config["genome_min_completeness"]
+        elif key == "contamination":
+            return config["genome_max_contamination"]
+        else:
+            raise ValueError("key must be completeness, contamination")
+
+
 rule dereplication:
     input:
-        "genomes/all_bins",
+        dir="genomes/all_bins",
         quality="genomes/quality.csv",
     output:
-        directory("genomes/Dereplication/dereplicated_genomes"),
+        dir=temp(directory("genomes/dereplicated_genomes")),
+        mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
     threads: config["threads"]
     log:
         "logs/genomes/dereplication.log",
-    shadow:
-        "shallow"
     conda:
-        "%s/dRep.yaml" % CONDAENV
+        "../envs/galah.yaml"
     params:
-        filter=(
-            " --noQualityFiltering "
-            if config["genome_dereplication"]["filter"]["noFilter"]
-            else ""
-        ),
-        filter_length=config["genome_dereplication"]["filter"]["length"],
-        filter_completeness=config["genome_dereplication"]["filter"]["completeness"],
-        filter_contamination=config["genome_dereplication"]["filter"]["contamination"],
         ANI=config["genome_dereplication"]["ANI"],
-        overlap=config["genome_dereplication"]["overlap"],
-        completeness_weight=config["genome_dereplication"]["score"]["completeness"],
-        contamination_weight=config["genome_dereplication"]["score"]["contamination"],
-        #not in table
-        N50_weight=config["genome_dereplication"]["score"]["N50"],
-        size_weight=config["genome_dereplication"]["score"]["length"],
+        quality_formula=config["genome_dereplication"]["quality_formula"],
+        min_completeness=get_dereplication_arguments("completeness"),
+        max_contamination=get_dereplication_arguments("contamination"),
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
-        work_directory=lambda wc, output: os.path.dirname(output[0]),
+        min_overlap=config["genome_dereplication"]["overlap"],
     shell:
-        " rm -rf {params.work_directory} ;"
-        " dRep dereplicate "
-        " --genomes {input[0]}/*.fasta "
-        " --genomeInfo {input.quality} "
-        " {params.filter} "
-        " --length {params.filter_length} "
-        " --completeness {params.filter_completeness} "
-        " --contamination {params.filter_contamination} "
-        " --S_ani {params.ANI} "
-        " --S_algorithm fastANI "
-        " --cov_thresh {params.overlap} "
-        " --completeness_weight {params.completeness_weight} "
-        " --contamination_weight {params.contamination_weight} "
-        " --N50_weight {params.N50_weight} "
-        " --size_weight {params.size_weight} "
-        " --processors {threads} "
+        " galah cluster "
+        " --genome-fasta-directory {input.dir}"
+        " --genome-fasta-extension fasta "
+        " --genome-info {input.quality} "
+        " --ani {params.ANI} "
+        " --min-aligned-fraction {params.min_overlap} "
         " {params.opt_parameters} "
-        " {params.work_directory} "
+        " --min-completeness {params.min_completeness} "
+        " --max-contamination {params.max_contamination} "
+        " --quality-formula {params.quality_formula} "
+        " --threads {threads} "
+        " --output-representative-fasta-directory {output.dir} "
+        " --output-cluster-definition {output.mapping_file} "
+        " --precluster-method finch "
         " &> {log} "
 
 
@@ -157,12 +162,13 @@ localrules:
 
 checkpoint rename_genomes:
     input:
-        genomes="genomes/Dereplication/dereplicated_genomes",
+        genomes="genomes/dereplicated_genomes",
+        mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
-        mapfile_genomes="genomes/clustering/old2newID.tsv",
-        mapfile_bins="genomes/clustering/allbins2genome.tsv",
+        mapfile_old2mag="genomes/clustering/old2newID.tsv",
+        mapfile_allbins2mag="genomes/clustering/allbins2genome.tsv",
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
@@ -285,135 +291,6 @@ rule run_all_checkm_lineage_wf:
             {input.dir} \
             {params.output_dir} &> {log}
         """
-
-
-### Quantification
-
-
-rule build_db_genomes:
-    input:
-        genome_dir,
-    output:
-        index="ref/genome/3/summary.txt",
-        fasta=temp("genomes/all_contigs.fasta"),
-    threads: config.get("threads", 6)
-    resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    log:
-        "logs/genomes/mapping/build_bbmap_index.log",
-    shell:
-        """
-        cat {input}/*.fasta > {output.fasta} 2> {log}
-        bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
-
-        """
-
-
-# generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
-rule align_reads_to_MAGs:
-    input:
-        reads=get_quality_controlled_reads,
-        ref=rules.build_db_genomes.output.index,
-    output:
-        sam=temp("genomes/alignments/{sample}.sam"),
-        unmapped=expand(
-            "genomes/alignments/unmapped/{{sample}}_{fraction}.fastq.gz",
-            fraction=MULTIFILE_FRACTIONS,
-        ),
-    params:
-        input=lambda wc, input: input_params_for_bbwrap(input.reads),
-        unmapped=lambda wc, output: io_params_for_tadpole(output.unmapped, "outu"),
-        maxsites=config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-        max_distance_between_pairs=config.get(
-            "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
-        ),
-        paired_only=(
-            "t"
-            if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY)
-            else "f"
-        ),
-        ambiguous="all" if CONTIG_COUNT_MULTI_MAPPED_READS else "best",
-        min_id=config.get("contig_min_id", CONTIG_MIN_ID),
-        maxindel=100,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-    shadow:
-        "shallow"
-    log:
-        "logs/genomes/mapping/map_{sample}.log",
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
-    resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    shell:
-        """
-        bbwrap.sh \
-        build=3 \
-        {params.input} \
-        trimreaddescriptions=t \
-        outm={output.sam} \
-        {params.unmapped} \
-        threads={threads} \
-        pairlen={params.max_distance_between_pairs} \
-        pairedonly={params.paired_only} \
-        minid={params.min_id} \
-        mdtag=t \
-        xstag=fs \
-        nmtag=t \
-        sam=1.3 \
-        ambiguous={params.ambiguous} \
-        secondary=t \
-        saa=f \
-        maxsites={params.maxsites} \
-        -Xmx{resources.java_mem}G \
-        2> {log}
-        """
-
-
-rule pileup_MAGs:
-    input:
-        sam="genomes/alignments/{sample}.sam",
-    output:
-        # basecov=temp("genomes/alignments/{sample}_base_coverage.txt.gz"),
-        # covhist=temp("genomes/alignments/{sample}_coverage_histogram.txt"),
-        covstats=temp("genomes/alignments/{sample}_coverage.txt"),
-        bincov=temp("genomes/alignments/{sample}_coverage_binned.txt"),
-    log:
-        "logs/genomes/alignments/pilup_{sample}.log",
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
-    resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    shell:
-        """pileup.sh in={input.sam} \
-        threads={threads} \
-        -Xmx{resources.java_mem}G \
-        covstats={output.covstats} \
-        concise=t \
-        bincov={output.bincov} 2> {log}"""
-
-
-rule combine_coverages_MAGs:
-    input:
-        covstats=expand("genomes/alignments/{sample}_coverage.txt", sample=SAMPLES),
-        binned_coverage_files=expand(
-            "genomes/alignments/{sample}_coverage_binned.txt", sample=SAMPLES
-        ),
-        contig2genome="genomes/clustering/contig2genome.tsv",
-    params:
-        samples=SAMPLES,
-    output:
-        counts="genomes/counts/raw_counts_genomes.tsv",
-        binned_cov="genomes/counts/binned_coverage.tsv.gz",
-        median_abund="genomes/counts/median_coverage_genomes.tsv",
-    log:
-        "logs/genomes/counts/combine_coverages_MAGs.log",
-    threads: 1
-    script:
-        "../scripts/combine_coverage_MAGs.py"
 
 
 # rule predict_genes_genomes:

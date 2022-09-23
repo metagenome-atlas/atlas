@@ -225,7 +225,7 @@ rule get_genecatalog_seq_info:
 
 rule index_genecatalog:
     input:
-        target="Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.fna",
     output:
         "ref/Genecatalog.mmi",
     log:
@@ -248,14 +248,11 @@ rule index_genecatalog:
 rule align_reads_to_Genecatalog:
     input:
         mmi=rules.index_genecatalog.output,
-        reads=get_quality_controlled_reads,
+        reads=lambda wc: get_quality_controlled_reads(wc, include_se=True),
     output:
         temp("Genecatalog/alignments/{sample}.bam"),
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
-    params:
-        extra="-x sr",  # short reads
-        sorting="none",
     threads: config["threads"]
     resources:
         mem=config["mem"],
@@ -279,7 +276,7 @@ rule pileup_Genecatalog:
         bam=rules.align_reads_to_Genecatalog.output,
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
-        rpkm="Genecatalog/alignments/{sample}_rpkm.tsv",
+        rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
