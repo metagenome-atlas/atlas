@@ -86,7 +86,7 @@ for i,cov_file in enumerate(snakemake.input.covstats):
     # data.sort_index(inplace=True)
 
 
-    combined_cov[sample] = pd.to_numeric(data.Avg_fold, downcast="float")
+    combined_cov[sample] = pd.to_numeric(data.Median_fold, downcast="float")
     combined_N_reads[sample] = pd.to_numeric(data.Reads, downcast="integer")
 
     # delete interminate data and release mem
