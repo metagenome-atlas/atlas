@@ -322,8 +322,8 @@ rule combine_gene_coverages:
     output:
         "Genecatalog/counts/Readme.md"
     run:
-        
-        content=deident("""
+        from textwrap import dedent
+        content=dedent("""
             # Gene quantification output
             The output of the gene quantification is a distibuted parquet file. Read it as folows
 
