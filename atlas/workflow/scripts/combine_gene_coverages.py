@@ -75,7 +75,7 @@ for i,cov_file in enumerate(snakemake.input.covstats):
 
 
     data = read_pileup_coverage(
-        cov_file, coverage_measure="Avg_fold"
+        cov_file, coverage_measure="Median_fold"
     )
 
 
