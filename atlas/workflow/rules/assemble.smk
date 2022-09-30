@@ -86,8 +86,6 @@ else:
                     fraction=MULTIFILE_FRACTIONS,
                 )
             ),
-        log:
-            "{sample}/logs/assembly/init.log",
         threads: 1
         run:
             # make symlink
