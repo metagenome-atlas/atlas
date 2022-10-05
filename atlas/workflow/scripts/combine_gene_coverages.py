@@ -66,10 +66,10 @@ combined_N_reads = {}
 
 
 
-for i,cov_file in enumerate(snakemake.input.covstats):
+for i,sample in enumerate(snakemake.params.samples):
 
-    sample = os.path.split(cov_file)[-1].split("_")[0]
 
+    cov_file = snakemake.input.covstats[i]
 
 
 

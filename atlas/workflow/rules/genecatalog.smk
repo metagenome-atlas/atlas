@@ -306,6 +306,8 @@ rule combine_gene_coverages:
         "Genecatalog/counts/Nmapped_reads.parquet",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
+    params:
+        samples = SAMPLES
     threads: 1
     resources:
         mem=config["large_mem"],
