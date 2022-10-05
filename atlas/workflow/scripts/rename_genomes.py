@@ -13,8 +13,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-    file_name = f"{input_folder}/{{binid}}.fasta"
-    (bin_ids,) = glob_wildcards(file_name)
+
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -34,7 +33,9 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-            old2new_mapping_file.write(f"{binid}\t{new_name}\n")
+
+# start
+old2new_mapping_file.write(f"{binid}\t{new_name}\n")
 
 from snakemake.io import glob_wildcards
 
