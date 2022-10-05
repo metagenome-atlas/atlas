@@ -35,7 +35,7 @@ sys.excepthook = handle_exception
 
 
 # start
-old2new_mapping_file.write(f"{binid}\t{new_name}\n")
+
 
 from snakemake.io import glob_wildcards
 
