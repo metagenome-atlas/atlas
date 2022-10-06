@@ -180,19 +180,13 @@ DASTool:
 bin_quality_asesser: busco          #[ checkm2, busco, cehckm]
 
 genome_dereplication:
-  ANI: 0.975                        ## Genome dreplication threshold
-  overlap: 0.2                      ## more info https://drep.readthedocs.io/en/latest/choosing_parameters.html
+  ANI: 97.5                        ## Genome dreplication threshold
+  overlap: 0.50                  # See more on https://wwood.github.io/galah/galah-cluster.html
   opt_parameters: ""
-  filter:
-      noFilter: false
-      length: 5000
-      completeness: 50
-      contamination: 10
-  score:
-      completeness: 1
-      contamination: 5
-      N50: 0.5
-      length: 0
+  quality_formula: "Parks2020_reduced" # completeness-5*contamination-5*num_contigs/100-5*num_ambiguous_bases/100000
+  
+genome_min_completeness: 50
+genome_max_contamination: 10
 
 rename_mags_contigs: true        #Rename contigs of representative MAGs
 
@@ -208,6 +202,7 @@ annotations:
   - dram
 
 
+
 gene_annotations:
   - eggNOG
 
@@ -220,7 +215,7 @@ genecatalog:
   minlength_nt: 270             # min length 
   minid: 0.90                   # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
-  extra: ""
+  extra: " "
   SubsetSize: 500000
 
 eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation

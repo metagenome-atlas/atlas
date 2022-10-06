@@ -78,7 +78,7 @@ else:
 
     rule init_pre_assembly_processing:
         input:
-            get_quality_controlled_reads,  #expect SE or R1,R2 or R1,R2,SE
+            lambda wildcards: get_quality_controlled_reads(wildcards, include_se=True)
         output:
             temp(
                 expand(
@@ -86,8 +86,6 @@ else:
                     fraction=MULTIFILE_FRACTIONS,
                 )
             ),
-        log:
-            "{sample}/logs/assembly/init.log",
         threads: 1
         run:
             # make symlink

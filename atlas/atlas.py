@@ -177,6 +177,7 @@ def run_workflow(
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
+        " --rerun-triggers mtime "
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "

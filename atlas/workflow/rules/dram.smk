@@ -42,8 +42,10 @@ rule DRAM_set_db_loc:
     threads: 1
     conda:
         "../envs/dram.yaml"
+    log:
+        "logs/dram/set_db_loc.log",
     shell:
-        "DRAM-setup.py import_config --config_loc {input}"
+        "DRAM-setup.py import_config --config_loc {input} &> {log}"
 
 
 rule DRAM_annotate:

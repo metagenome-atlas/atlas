@@ -104,7 +104,7 @@ def parse_file(full_path, sample_dict, sample_name=None):
                 "Ignore file."
             )
 
-    #  se reads
+    # se reads
     else:
 
         if sample_name is None:

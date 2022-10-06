@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from collections import defaultdict
 import click
-from pathlib2 import Path
+from pathlib import Path
 
 from ..make_config import make_config, validate_config
 from .create_sample_table import get_samples_from_fastq, simplify_sample_names
