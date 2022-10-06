@@ -120,7 +120,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
         output:
             cluster_attribution=temp("Genecatalog/orf2gene_oldnames.tsv"),
             rep_seqs_db=temp(directory("Genecatalog/protein_catalog")),
-            rep_seqs=temp("Genecatalog/representatives_of_clusters.fasta"),
+            rep_seqs=temp("Genecatalog/representatives_of_clusters.faa"),
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
@@ -129,18 +129,40 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
         params:
             clusterdb=lambda wc, input: os.path.join(input.clusterdb, "clusterdb"),
             db=lambda wc, input: os.path.join(input.db, "inputdb"),
-            rep_seqs_db=lambda wc, output: os.path.join(output.rep_seqs_db, "db"),
         shell:
             """
             mmseqs createtsv {params.db} {params.db} {params.clusterdb} {output.cluster_attribution}  &> {log}
 
             mkdir {output.rep_seqs_db} 2>> {log}
 
-            mmseqs result2repseq {params.db} {params.clusterdb} {params.rep_seqs_db}  &>> {log}
+            mmseqs result2repseq {params.db} {params.clusterdb} {output.rep_seqs_db}/db  &>> {log}
 
-            mmseqs result2flat {params.db} {params.db} {params.rep_seqs_db} {output.rep_seqs}  &>> {log}
+            mmseqs result2flat {params.db} {params.db} {output.rep_seqs_db}/db {output.rep_seqs}  &>> {log}
 
             """
+
+    rule get_cds_of_proteins:
+        input:
+            all="Genecatalog/all_genes/predicted_genes.fna",
+            names="Genecatalog/representatives_of_clusters.faa",
+        output:
+            temp("Genecatalog/representatives_of_clusters.fna"),
+        conda:
+            "../envs/required_packages.yaml"
+        threads: 1
+        resources:
+            mem=config["mem"],
+            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+        log:
+            "logs/Genecatalog/clustering/get_cds_of_proteins.log",
+        shell:
+            " filterbyname.sh "
+            " in={input.all}"
+            " names={input.names}"
+            " include=t"
+            " out={output} "
+            " -Xmx{resources.java_mem}G "
+            " 2> {log}"
 
     rule generate_orf_info:
         input:
@@ -176,97 +198,103 @@ localrules:
 
 rule rename_gene_catalog:
     input:
-        fna="Genecatalog/all_genes/predicted_genes.fna",
-        faa="Genecatalog/all_genes/predicted_genes.faa",
+        fasta="Genecatalog/representatives_of_clusters.{ext}",
         rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
     output:
-        fna="Genecatalog/gene_catalog.fna",
-        faa="Genecatalog/gene_catalog.faa",
-        fna_index=temp("Genecatalog/all_genes/predicted_genes.fna.fxi"),
-        faa_index=temp("Genecatalog/all_genes/predicted_genes.faa.fxi"),
+        "Genecatalog/gene_catalog.{ext}",
     log:
-        "logs/Genecatalog/clustering/rename_gene_catalog.log",
-    conda:
-        "../envs/fasta.yaml"
+        "logs/Genecatalog/clustering/rename_gene_catalog_{ext}.log",
     script:
         "../scripts/rename_genecatalog.py"
 
 
-rule align_reads_to_Genecatalog:
+rule get_genecatalog_seq_info:
     input:
-        reads=get_quality_controlled_reads,
-        fasta="Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.fna",
     output:
-        sam=temp("Genecatalog/alignments/{sample}.sam"),
-    params:
-        input=lambda wc, input: input_params_for_bbwrap(input.reads),
-        maxsites=4,
-        ambiguous="all",
-        minid=config["genecatalog"]["minid"],
-        maxindel=1,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-    shadow:
-        "shallow"
+        "Genecatalog/counts/sequence_infos.tsv",
     log:
-        "logs/Genecatalog/alignment/{sample}_map.log",
+        "logs/Genecatalog/get_seq_info.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
+    shell:
+        "stats.sh gcformat=4 gc={output} in={input} &> {log}"
+
+
+rule index_genecatalog:
+    input:
+        "Genecatalog/gene_catalog.fna",
+    output:
+        "ref/Genecatalog.mmi",
+    log:
+        "logs/Genecatalog/alignment/index.log",
+    params:
+        index_size="12G",
+    threads: 3
     resources:
         mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    conda:
+        "../envs/minimap.yaml"
     shell:
-        """
-        bbwrap.sh nodisk=t \
-            local=t \
-            ref={input.fasta} \
-            {params.input} \
-            trimreaddescriptions=t \
-            out={output.sam} \
-            threads={threads} \
-            minid={params.minid} \
-            mdtag=t \
-            xstag=fs \
-            nmtag=t \
-            sam=1.3 \
-            ambiguous={params.ambiguous} \
-            secondary=t \
-            saa=f \
-            maxsites={params.maxsites} \
-            -Xmx{resources.java_mem}G \
-            2> {log}
-        """
+        " minimap2 "
+        " -I {params.index_size} "
+        " -t {threads} "
+        " -d {output} "
+        " {input} 2> {log} "
+
+
+rule align_reads_to_Genecatalog:
+    input:
+        mmi=rules.index_genecatalog.output,
+        reads=lambda wc: get_quality_controlled_reads(wc, include_se=True),
+    output:
+        temp("Genecatalog/alignments/{sample}.bam"),
+    log:
+        "logs/Genecatalog/alignment/{sample}_map.log",
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
+    conda:
+        "../envs/minimap.yaml"
+    shell:
+        " (cat {input.reads} | "
+        " minimap2 "
+        " -t {threads} "
+        "-a "
+        "-x sr "
+        " {input.mmi} "
+        " - "
+        " | samtools view -b "
+        " > {output} ) 2>{log}"
 
 
 rule pileup_Genecatalog:
     input:
-        sam="Genecatalog/alignments/{sample}.forpileup.sam",
-        bam="Genecatalog/alignments/{sample}.bam",
+        bam=rules.align_reads_to_Genecatalog.output,
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
-        basecov=temp("Genecatalog/alignments/{sample}_base_coverage.txt.gz"),
-    params:
-        pileup_secondary="t",  # a read may map to different genes
+        rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
     resources:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        """pileup.sh in={input.sam} \
-        threads={threads} \
-        -Xmx{resources.java_mem}G \
-        covstats={output.covstats} \
-        basecov={output.basecov} \
-        secondary={params.pileup_secondary} \
-         2> {log}
-        """
-
-
-localrules:
-    combine_gene_coverages,
+        " pileup.sh "
+        " in={input.bam}"
+        " covstats={output.covstats} "
+        " rpkm={output.rpkm} "
+        " secondary=t "
+        " -Xmx{resources.java_mem}G "
+        " 2> {log} "
 
 
 rule combine_gene_coverages:
@@ -277,8 +305,21 @@ rule combine_gene_coverages:
         "Genecatalog/counts/Nmapped_reads.parquet",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
+    params:
+        samples=SAMPLES,
+    threads: 1
+    resources:
+        mem=config["large_mem"],
     script:
         "../scripts/combine_gene_coverages.py"
+
+
+# TODO: combine RPKM
+
+# TODO: caluclate mapping rate from pileup mapping files
+# logs/Genecatalog/alignment/sample2_pileup.log
+# Reads:                                  1207217
+# Mapped reads:                           1071071
 
 
 ###########

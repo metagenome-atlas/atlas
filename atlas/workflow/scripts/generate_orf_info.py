@@ -43,7 +43,7 @@ orf2gene = pd.read_csv(
     snakemake.input.cluster_attribution, header=None, sep="\t", usecols=[0, 1]
 )
 
-orf2gene.columns = ["ORF", "Representative"]
+orf2gene.columns = ["Representative", "ORF"]
 
 # split orf names in sample, contig_nr, and orf_nr
 orf_info = gene_scripts.split_orf_to_index(orf2gene.ORF)

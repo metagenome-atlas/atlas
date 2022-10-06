@@ -8,7 +8,7 @@ assignees: ''
 
 ---
 
-- [ ] I checked and didn't found a related issue,e.g. while typing the title
+- [ ] I checked and didn't found a related issue,e.g. while typing the title
 - [ ] ** I got an error in the following rule(s):** `   `
 
 <!-- The error messages are highlighted in red in the stdout. Otherwise you can get all the errors occurred in the workflow by running the following command in the atlas working directory:
@@ -44,7 +44,7 @@ cluster logs are usually in `cluster_log/*external_id*` or so.
 
 Here is the relevant log output:
 
-```
+```
 
 
 

@@ -182,4 +182,4 @@ rule semibin:
         expand("{sample}/binning/SemiBin/cluster_attribution.tsv", sample=SAMPLES),
 
 
-# alternative to pretrained model --environment: Environment for the built-in model(human_gut/dog_gut/ocean).”
+# alternative to pretrained model --environment: Environment for the built-in model(human_gut/dog_gut/ocean)."

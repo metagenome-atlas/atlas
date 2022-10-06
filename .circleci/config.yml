@@ -248,13 +248,13 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
-      - sra_init:
-          requires:
-            - build_and_dryrun
       - genome_quantify:
           requires:
             - build_and_dryrun
             
+      # - sra_init:
+      #     requires:
+      #       - build_and_dryrun
       # - get_example_data
       # - getenvs:
       #     requires:

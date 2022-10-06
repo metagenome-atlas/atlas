@@ -49,48 +49,46 @@ def make_plots(bin_table):
 
     # Prepare data
     df = pd.read_table(bin_table)
-    
 
+    if snakemake.config["bin_quality_asesser"].lower() == "busco":
 
-
-    if snakemake.config["bin_quality_asesser"].lower()=="busco":
-
-        df["Bin Id"] = df["Input_file"].str.replace(".fasta","",regex=False)
-        
-        
+        df["Bin Id"] = df["Input_file"].str.replace(".fasta", "", regex=False)
 
         logging.info("No taxonomic information available, use busco Dataset")
 
-        lineage_name="Dataset"
-        hover_data =['Scores_archaea_odb10', 'Scores_bacteria_odb10', 'Scores_eukaryota_odb10']
+        lineage_name = "Dataset"
+        hover_data = [
+            "Scores_archaea_odb10",
+            "Scores_bacteria_odb10",
+            "Scores_eukaryota_odb10",
+        ]
         size_name = None
 
-    elif snakemake.config["bin_quality_asesser"].lower()=="checkm":
-        
+    elif snakemake.config["bin_quality_asesser"].lower() == "checkm":
 
-        df = df.join(tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA"))
+        df = df.join(
+            tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA")
+        )
 
-        lineage_name="phylum"
+        lineage_name = "phylum"
         size_name = "Genome size (Mbp)"
-        hover_data=["genus"]
+        hover_data = ["genus"]
     else:
         raise Exception(f"bin_quality_asesser in the config file not understood")
 
-    
     df.index = df["Bin Id"]
-    
 
     div[
         "QualityScore"
     ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
-        
+
     # 2D plot
     fig = px.scatter(
         data_frame=df,
         y="Completeness",
         x="Contamination",
         color=lineage_name,
-        size= size_name,
+        size=size_name,
         hover_data=hover_data,
         hover_name="Bin Id",
     )

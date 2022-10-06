@@ -25,7 +25,7 @@ wheels/
 .installed.cfg
 *.egg
 .snakemake/
-
+.history
 # atlas specific
 databases
 

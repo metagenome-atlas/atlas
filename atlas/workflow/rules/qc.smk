@@ -35,17 +35,6 @@ def get_ribosomal_rna_input(wildcards):
         return {"clean_reads": clean_reads}
 
 
-# def get_finalize_qc_input(wildcards):
-#     inputs = get_quality_controlled_reads(wildcards)
-#     try:
-#         # FIXME: 'decontaminated_seqs': ['{sample}/sequence_quality_control/contaminants/PhiX_R1.fastq.gz'...
-#         # inputs["decontaminated_seqs"] = rules.decontamination.output.contaminants
-#         inputs["decontaminated_stats"] = "{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt".format(sample=wildcards.sample)
-#     except AttributeError:
-#         pass
-#     return inputs
-
-
 if SKIP_QC:
     PROCESSED_STEPS = ["QC"]
 
@@ -158,20 +147,20 @@ rule get_read_stats:
             tmp_file = os.path.join(subfolder, "read_stats.tmp")
             shell(
                 """
-                                        mkdir -p {subfolder} 2> {log}
+                            mkdir -p {subfolder} 2> {log}
 
-                                        reformat.sh {params_in} \
-                                        bhist={subfolder}/base_hist.txt \
-                                        qhist={subfolder}/quality_by_pos.txt \
-                                        lhist={subfolder}/readlength.txt \
-                                        gchist={subfolder}/gc_hist.txt \
-                                        gcbins=auto \
-                                        bqhist={subfolder}/boxplot_quality.txt \
-                                        threads={threads} \
-                                        overwrite=true \
-                                        -Xmx{mem}G \
-                                        2> >(tee -a {log} {tmp_file} )
-                                        """.format(
+                            reformat.sh {params_in} \
+                            bhist={subfolder}/base_hist.txt \
+                            qhist={subfolder}/quality_by_pos.txt \
+                            lhist={subfolder}/readlength.txt \
+                            gchist={subfolder}/gc_hist.txt \
+                            gcbins=auto \
+                            bqhist={subfolder}/boxplot_quality.txt \
+                            threads={threads} \
+                            overwrite=true \
+                            -Xmx{mem}G \
+                            2> >(tee -a {log} {tmp_file} )
+                        """.format(
                     subfolder=subfolder,
                     params_in=params_in,
                     log=log,
@@ -577,7 +566,7 @@ if PAIRED_END:
 
     rule calculate_insert_size:
         input:
-            lambda wildcards: input_paired_only(get_quality_controlled_reads(wildcards)),
+            get_quality_controlled_reads,
         output:
             ihist=(
                 "{sample}/sequence_quality_control/read_stats/QC_insert_size_hist.txt"

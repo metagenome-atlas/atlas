@@ -32,7 +32,7 @@ sys.excepthook = handle_exception
 #### Begining of scripts
 
 import pandas as pd
-from utils.parsers import read_busco_output
+from utils.parsers import read_checkm2_output
 
 
 def main(samples, completeness_files, bin_table):
@@ -42,24 +42,10 @@ def main(samples, completeness_files, bin_table):
     df = pd.DataFrame()
 
     for i, sample in enumerate(samples):
-        sample_data = read_busco_output(completeness_files[i])
+        sample_data = read_checkm2_output(completness_table=completeness_files[i])
         sample_data["Sample"] = sample
 
         df = df.append(sample_data)
-
-    # remove missing
-
-    failed_genomes = df.index[df.Dataset.str.lower().str.contains("run failed")]
-
-    if len(failed_genomes) > 0:
-
-        logging.warn(
-            "Following genomes didn't pass BUSCO. I ignore them, because "
-            "I think theas means they are too bad to be quantified:\n"
-            f"{failed_genomes}"
-        )
-
-        df.loc[failed_genomes, ["Completeness", "Contamination", "Quality_score"]] = 0
 
     df.to_csv(bin_table, sep="\t")
 

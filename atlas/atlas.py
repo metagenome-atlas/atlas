@@ -54,7 +54,6 @@ def handle_max_mem(max_mem, profile):
         return f" --resources mem={floor(max_mem)} mem_mb={floor(max_mem*1024)} java_mem={floor(0.85* max_mem)} "
 
 
-
 @click.group(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.version_option(__version__)
 @click.pass_context
@@ -177,6 +176,7 @@ def run_workflow(
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
+        " --rerun-triggers mtime "
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "
