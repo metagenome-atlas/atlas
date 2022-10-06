@@ -83,7 +83,7 @@ rule combine_taxonomy:
 
 rule fasttree:
     input:
-        f"{gtdb_dir}/align/{{msa}}.user_msa.fasta.gz"
+        f"{gtdb_dir}/align/{{msa}}.user_msa.fasta.gz",
     output:
         temp("genomes/tree/{msa}.unrooted.nwk"),
     log:
