@@ -410,6 +410,7 @@ rule combine_bined_coverages_MAGs:
         coverage_files=expand(
             "genomes/alignments/coverage/{sample}.tsv.gz", sample=SAMPLES
         ),
+        contig2genome = "genomes/clustering/contig2genome.tsv"
     params:
         samples=SAMPLES,
     output:
