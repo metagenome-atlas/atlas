@@ -2,13 +2,18 @@ DBDIR = config["database_dir"]
 
 
 def get_dram_config(wildcards):
-    return config.get("dram_config_file", f"{DBDIR}/DRAM.config")
+
+    old_dram_path= f"{DBDIR}/Dram"
+    if os.path.exist(old_dram_path):
+        logger.error(f"Detected an old database for DRAM in {old_dram_path}. You can delete it.")
+
+    return config.get("dram_config_file", f"{DBDIR}/DRAM/DRAM.config")
 
 
 rule dram_download:
     output:
-        dbdir=directory(f"{DBDIR}/Dram/"),
-        config=f"{DBDIR}/DRAM.config",
+        dbdir=directory(f"{DBDIR}/DRAM/db/"),
+        config=f"{DBDIR}/DRAM/DRAM.config",
     threads: config["threads"]
     resources:
         mem=config["mem"],
@@ -38,7 +43,7 @@ rule DRAM_set_db_loc:
     input:
         get_dram_config,
     output:
-        touch(f"{DBDIR}/dram_config_imported"),
+        touch(f"{DBDIR}/DRAM/dram_config_imported"),
     threads: 1
     conda:
         "../envs/dram.yaml"
