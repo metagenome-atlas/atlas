@@ -12,7 +12,7 @@ rule concat_genomes:
 
 rule index_genomes:
     input:
-        "genomes/all_contigs.fasta",
+        target= "genomes/all_contigs.fasta",
     output:
         "ref/genomes.mmi",
     log:
@@ -22,45 +22,30 @@ rule index_genomes:
     threads: 3
     resources:
         mem=config["mem"],
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        " minimap2 "
-        " -I {params.index_size} "
-        " -t {threads} "
-        " -d {output} "
-        " {input} 2> {log} "
+    wrapper:
+        "v1.14.1/bio/minimap2/index"
 
 
 rule align_reads_to_genomes:
     input:
-        mmi=rules.index_genomes.output,
-        reads=get_quality_controlled_reads,
+        target=rules.index_genomes.output,
+        query=get_quality_controlled_reads,
     output:
         "genomes/alignments/{sample}.bam",
     log:
         "logs/genomes/alignment/{sample}_map.log",
+    params:
+        extra="-x sr",
     threads: config["threads"]
     resources:
         mem=config["mem"],
         mem_mb=config["mem"] * 1000,
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        " ( minimap2 "
-        " -t {threads} "
-        "-a "
-        "-x sr "
-        " {input.mmi} "
-        " - "
-        " | samtools view -b "
-        " > {output} ) 2>{log}"
-
-
+    wrapper:
+        "v1.14.1/bio/minimap2/aligner"
 
 rule instrain_profile:
     input:
-        sam="genomes/alignments/{sample}.bam",
+        bam="genomes/alignments/{sample}.bam",
         genomes="genomes/all_contigs.fasta",
         # genes=lambda wc: get_all_genes(wc, extension=".fna"),
         scaffold_to_genome="genomes/clustering/contig2genome.tsv",
@@ -82,7 +67,7 @@ rule instrain_profile:
         #" cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
         #" ; "
         "inStrain profile "
-        " {input.sam} {input.genomes} "
+        " {input.bam} {input.genomes} "
         " -o {output} "
         " -p {threads} "
 
