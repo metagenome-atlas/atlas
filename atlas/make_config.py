@@ -108,7 +108,7 @@ def make_default_config():
 
     config["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
-    config["bin_quality_asesser"] ="checkm"
+    config["bin_quality_asesser"] = "checkm"
     # gene cluster
     config["genecatalog"] = {
         "source": "genomes",

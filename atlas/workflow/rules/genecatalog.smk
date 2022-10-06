@@ -207,11 +207,12 @@ rule rename_gene_catalog:
     script:
         "../scripts/rename_genecatalog.py"
 
+
 rule get_genecatalog_seq_info:
     input:
-        "Genecatalog/gene_catalog.fna"
+        "Genecatalog/gene_catalog.fna",
     output:
-        "Genecatalog/counts/sequence_infos.tsv"
+        "Genecatalog/counts/sequence_infos.tsv",
     log:
         "logs/Genecatalog/get_seq_info.log",
     conda:
@@ -222,6 +223,7 @@ rule get_genecatalog_seq_info:
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "stats.sh gcformat=4 gc={output} in={input} &> {log}"
+
 
 rule index_genecatalog:
     input:
@@ -295,9 +297,6 @@ rule pileup_Genecatalog:
         " 2> {log} "
 
 
-
-
-
 rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
@@ -307,12 +306,13 @@ rule combine_gene_coverages:
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     params:
-        samples = SAMPLES
+        samples=SAMPLES,
     threads: 1
     resources:
         mem=config["large_mem"],
     script:
         "../scripts/combine_gene_coverages.py"
+
 
 # TODO: combine RPKM
 

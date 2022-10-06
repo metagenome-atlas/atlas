@@ -1,7 +1,4 @@
-
-
 bin_quality_input_folder = "{sample}/binning/{binner}/bins"
-
 
 
 ### Checkm2 ###
@@ -10,11 +7,10 @@ bin_quality_input_folder = "{sample}/binning/{binner}/bins"
 ##### checkM  #########
 rule checkm2_download_db:
     output:
-        directory(f"{DBDIR}/CheckM2")
+        directory(f"{DBDIR}/CheckM2"),
     conda:
         "../envs/checkm2.yaml"
-    threads: 
-        1
+    threads: 1
     log:
         "logs/download/checkm2.log",
     resources:
@@ -23,22 +19,22 @@ rule checkm2_download_db:
         " checkm2 database --download --path {output} "
         " &>> {log}"
 
+
 rule run_checkm2:
     input:
-        fasta_dir = bin_quality_input_folder,
-        db= rules.checkm2_download_db.output
+        fasta_dir=bin_quality_input_folder,
+        db=rules.checkm2_download_db.output,
     output:
         directory("{sample}/binning/{binner}/bin_quality/checkm2"),
     conda:
         "../envs/checkm2.yaml"
-    threads:
-        config["threads"]
+    threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/checkm2.log",
     benchmark:
-        "logs/benchmarks/checkm2/{sample}_{binner}.tsv",
+        "logs/benchmarks/checkm2/{sample}_{binner}.tsv"
     resources:
-        time=int(config["runtime"]['default']),
+        time=int(config["runtime"]["default"]),
         mem_mb=config["mem"],
     shell:
         " checkm2 predict "
@@ -55,22 +51,21 @@ rule run_checkm2:
 
 rule run_gunc:
     input:
-        db = rules.download_gunc.output[0].format(**config),
-        fasta_dir = bin_quality_input_folder,
+        db=rules.download_gunc.output[0].format(**config),
+        fasta_dir=bin_quality_input_folder,
     output:
         "{sample}/binning/{binner}/bin_quality/gunc.tsv",
     params:
-        tmpdir = lambda wc: f"{config['tmpdir']}/gunc/{wc.sample}",
+        tmpdir=lambda wc: f"{config['tmpdir']}/gunc/{wc.sample}",
     conda:
         "../envs/gunc.yaml"
-    threads:
-        config["threads"]
+    threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/gunc.log",
     benchmark:
-        "logs/benchmarks/gunc/{sample}_{binner}.tsv",
+        "logs/benchmarks/gunc/{sample}_{binner}.tsv"
     resources:
-        time=int(config["runtime"]['default']),
+        time=int(config["runtime"]["default"]),
         mem_mb=config["mem"],
     shell:
         " mkdir -p {params.tmpdir}/ 2> {log} "
@@ -87,24 +82,24 @@ rule run_gunc:
 
 ##### BUSCO  #########
 
+
 rule run_busco:
     input:
-        fasta_dir = bin_quality_input_folder,
-        db= BUSCODIR
+        fasta_dir=bin_quality_input_folder,
+        db=BUSCODIR,
     output:
         "{sample}/binning/{binner}/bin_quality/busco.tsv",
     params:
-        tmpdir = lambda wc: f"{config['tmpdir']}/busco/{wc.sample}_{wc.binner}",
+        tmpdir=lambda wc: f"{config['tmpdir']}/busco/{wc.sample}_{wc.binner}",
     conda:
         "../envs/busco.yaml"
-    threads:
-        config["threads"]
+    threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/busco.log",
     benchmark:
-        "logs/benchmarks/busco/{sample}_{binner}.tsv",
+        "logs/benchmarks/busco/{sample}_{binner}.tsv"
     resources:
-        time=int(config["runtime"]['default']),
+        time=int(config["runtime"]["default"]),
         mem_mb=config["mem"],
     shell:
         " busco -i {input.fasta_dir} "
@@ -118,7 +113,9 @@ rule run_busco:
         " ; "
         " mv {params.tmpdir}/output/batch_summary.txt {output} 2>> {log}"
 
+
 # fetch also output/logs/busco.log
+
 
 ##### checkM  #########
 rule run_checkm:
@@ -126,11 +123,11 @@ rule run_checkm:
         touched_output="logs/checkm_init.txt",
         bins=bin_quality_input_folder,  # actualy path to fastas
     output:
-        completeness= "{sample}/binning/{binner}/bin_quality/checkm.tsv",
-        taxonomy=     "{sample}/binning/{binner}/bin_quality/checkm_taxonomy.tsv",
+        completeness="{sample}/binning/{binner}/bin_quality/checkm.tsv",
+        taxonomy="{sample}/binning/{binner}/bin_quality/checkm_taxonomy.tsv",
     params:
-        tmp_output_dir = lambda wc: f"{config['tmpdir']}/checkm/{wc.sample}_{wc.binner}",
-        extension ="fasta"
+        tmp_output_dir=lambda wc: f"{config['tmpdir']}/checkm/{wc.sample}_{wc.binner}",
+        extension="fasta",
     conda:
         "../envs/checkm.yaml"
     threads: config["threads"]
@@ -163,13 +160,14 @@ localrules:
     build_bin_report,
     combine_bin_stats,
 
-if config['bin_quality_asesser'].lower() == 'checkm2':
+
+if config["bin_quality_asesser"].lower() == "checkm2":
 
     rule combine_bin_stats:
         input:
             completeness_files=expand(
                 "{sample}/binning/{{binner}}/bin_quality/checkm2", sample=SAMPLES
-            )
+            ),
         output:
             bin_table="reports/genomic_bins_{binner}.tsv",
         params:
@@ -179,7 +177,8 @@ if config['bin_quality_asesser'].lower() == 'checkm2':
         script:
             "../scripts/combine_checkm2.py"
 
-elif config['bin_quality_asesser'].lower() == 'busco':
+
+elif config["bin_quality_asesser"].lower() == "busco":
 
     rule combine_bin_stats:
         input:
@@ -195,7 +194,8 @@ elif config['bin_quality_asesser'].lower() == 'busco':
         script:
             "../scripts/combine_busco.py"
 
-elif config['bin_quality_asesser'].lower() == 'checkm':
+
+elif config["bin_quality_asesser"].lower() == "checkm":
 
     rule combine_bin_stats:
         input:
@@ -203,7 +203,8 @@ elif config['bin_quality_asesser'].lower() == 'checkm':
                 "{sample}/binning/{{binner}}/bin_quality/checkm.tsv", sample=SAMPLES
             ),
             taxonomy_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/checkm_taxonomy.tsv", sample=SAMPLES
+                "{sample}/binning/{{binner}}/bin_quality/checkm_taxonomy.tsv",
+                sample=SAMPLES,
             ),
         output:
             bin_table="reports/genomic_bins_{binner}.tsv",
@@ -214,11 +215,14 @@ elif config['bin_quality_asesser'].lower() == 'checkm':
         script:
             "../scripts/combine_checkm.py"
 
+
 else:
 
-    raise Exception("'bin_quality_asesser' should be 'busco' or 'checkM' got {bin_quality_asesser}".format(**config))
-
-
+    raise Exception(
+        "'bin_quality_asesser' should be 'busco' or 'checkM' got {bin_quality_asesser}".format(
+            **config
+        )
+    )
 
 
 rule build_bin_report:

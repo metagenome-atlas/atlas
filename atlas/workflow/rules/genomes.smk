@@ -128,7 +128,7 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
-        source_genomes= "genomes/all_bins"
+        source_genomes="genomes/all_bins",
         genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
     output:
         dir=directory("genomes/genomes"),

@@ -42,7 +42,7 @@ def main(samples, completeness_files, bin_table):
     df = pd.DataFrame()
 
     for i, sample in enumerate(samples):
-        sample_data = read_checkm2_output( completness_table=completeness_files[i])
+        sample_data = read_checkm2_output(completness_table=completeness_files[i])
         sample_data["Sample"] = sample
 
         df = df.append(sample_data)

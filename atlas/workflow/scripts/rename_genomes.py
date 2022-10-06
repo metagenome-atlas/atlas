@@ -18,7 +18,6 @@ logging.basicConfig(
 )
 
 
-
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
@@ -127,7 +126,8 @@ def rename_quality(quality_in, quality_out, old2new_name):
     Q = Q.loc[old2new_name.index].rename(index=old2new_name)
 
     Q.to_csv(quality_out, sep="\t")
-    
+
+
 rename_quality(
     quality_in=snakemake.input.genome_quality,
     quality_out=snakemake.output.genome_quality,

@@ -47,19 +47,19 @@ def main(samples, completeness_files, bin_table):
 
         df = df.append(sample_data)
 
-
     # remove missing
 
     failed_genomes = df.index[df.Dataset.str.lower().str.contains("run failed")]
 
-    if len(failed_genomes) >0:
+    if len(failed_genomes) > 0:
 
-      logging.warn("Following genomes didn't pass BUSCO. I ignore them, because "
-                    "I think theas means they are too bad to be quantified:\n"
-                    f"{failed_genomes}"
-                    )
+        logging.warn(
+            "Following genomes didn't pass BUSCO. I ignore them, because "
+            "I think theas means they are too bad to be quantified:\n"
+            f"{failed_genomes}"
+        )
 
-      df.loc[failed_genomes,["Completeness","Contamination","Quality_score"]] = 0
+        df.loc[failed_genomes, ["Completeness", "Contamination", "Quality_score"]] = 0
 
     df.to_csv(bin_table, sep="\t")
 
