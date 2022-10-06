@@ -13,8 +13,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-    file_name = f"{input_folder}/{{binid}}.fasta"
-    (bin_ids,) = glob_wildcards(file_name)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
