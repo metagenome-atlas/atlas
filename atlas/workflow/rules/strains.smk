@@ -1,7 +1,53 @@
 
+
+rule concat_genomes:
+    input:
+        genome_dir,
+    output:
+        "genomes/all_contigs.fasta",
+    params:
+        ext="fasta",
+    shell:
+        "cat {input}/*{params.ext} > {output}"
+
+
+rule index_genomes:
+    input:
+        target="genomes/all_contigs.fasta",
+    output:
+        "ref/genomes.mmi",
+    log:
+        "logs/genomes/alignment/index.log",
+    params:
+        index_size="12G",
+    threads: 3
+    resources:
+        mem=config["mem"],
+    wrapper:
+        "v1.14.1/bio/minimap2/index"
+
+
+rule align_reads_to_genomes:
+    input:
+        target=rules.index_genomes.output,
+        query=get_quality_controlled_reads,
+    output:
+        "genomes/alignments/{sample}.bam",
+    log:
+        "logs/genomes/alignment/{sample}_map.log",
+    params:
+        extra="-x sr",
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
+    wrapper:
+        "v1.14.1/bio/minimap2/aligner"
+
+
 rule instrain_profile:
     input:
-        sam="genomes/alignments/{sample}.sam",
+        bam="genomes/alignments/{sample}.bam",
         genomes="genomes/all_contigs.fasta",
         # genes=lambda wc: get_all_genes(wc, extension=".fna"),
         scaffold_to_genome="genomes/clustering/contig2genome.tsv",
@@ -23,7 +69,7 @@ rule instrain_profile:
         #" cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
         #" ; "
         "inStrain profile "
-        " {input.sam} {input.genomes} "
+        " {input.bam} {input.genomes} "
         " -o {output} "
         " -p {threads} "
 

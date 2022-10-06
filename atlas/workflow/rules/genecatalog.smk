@@ -208,81 +208,93 @@ rule rename_gene_catalog:
         "../scripts/rename_genecatalog.py"
 
 
-rule align_reads_to_Genecatalog:
+rule get_genecatalog_seq_info:
     input:
-        reads=lambda wc: get_quality_controlled_reads(wc, include_se=True),
-        fasta="Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.fna",
     output:
-        sam=temp("Genecatalog/alignments/{sample}.sam"),
-    params:
-        input=lambda wc, input: input_params_for_bbwrap(input.reads),
-        maxsites=4,
-        ambiguous="all",
-        minid=config["genecatalog"]["minid"],
-        maxindel=1,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-    shadow:
-        "shallow"
+        "Genecatalog/counts/sequence_infos.tsv",
     log:
-        "logs/Genecatalog/alignment/{sample}_map.log",
+        "logs/Genecatalog/get_seq_info.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
+    shell:
+        "stats.sh gcformat=4 gc={output} in={input} &> {log}"
+
+
+rule index_genecatalog:
+    input:
+        "Genecatalog/gene_catalog.fna",
+    output:
+        "ref/Genecatalog.mmi",
+    log:
+        "logs/Genecatalog/alignment/index.log",
+    params:
+        index_size="12G",
+    threads: 3
     resources:
         mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    conda:
+        "../envs/minimap.yaml"
     shell:
-        """
-        bbwrap.sh nodisk=t \
-            local=t \
-            ref={input.fasta} \
-            {params.input} \
-            trimreaddescriptions=t \
-            out={output.sam} \
-            threads={threads} \
-            minid={params.minid} \
-            mdtag=t \
-            xstag=fs \
-            nmtag=t \
-            sam=1.3 \
-            ambiguous={params.ambiguous} \
-            secondary=t \
-            saa=f \
-            maxsites={params.maxsites} \
-            -Xmx{resources.java_mem}G \
-            2> {log}
-        """
+        " minimap2 "
+        " -I {params.index_size} "
+        " -t {threads} "
+        " -d {output} "
+        " {input} 2> {log} "
+
+
+rule align_reads_to_Genecatalog:
+    input:
+        mmi=rules.index_genecatalog.output,
+        reads=lambda wc: get_quality_controlled_reads(wc, include_se=True),
+    output:
+        temp("Genecatalog/alignments/{sample}.bam"),
+    log:
+        "logs/Genecatalog/alignment/{sample}_map.log",
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
+    conda:
+        "../envs/minimap.yaml"
+    shell:
+        " (cat {input.reads} | "
+        " minimap2 "
+        " -t {threads} "
+        "-a "
+        "-x sr "
+        " {input.mmi} "
+        " - "
+        " | samtools view -b "
+        " > {output} ) 2>{log}"
 
 
 rule pileup_Genecatalog:
     input:
-        sam="Genecatalog/alignments/{sample}.forpileup.sam",
-        bam="Genecatalog/alignments/{sample}.bam",
+        bam=rules.align_reads_to_Genecatalog.output,
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
-        basecov=temp("Genecatalog/alignments/{sample}_base_coverage.txt.gz"),
-    params:
-        pileup_secondary="t",  # a read may map to different genes
+        rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
     resources:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        """pileup.sh in={input.sam} \
-        threads={threads} \
-        -Xmx{resources.java_mem}G \
-        covstats={output.covstats} \
-        basecov={output.basecov} \
-        secondary={params.pileup_secondary} \
-         2> {log}
-        """
-
-
-localrules:
-    combine_gene_coverages,
+        " pileup.sh "
+        " in={input.bam}"
+        " covstats={output.covstats} "
+        " rpkm={output.rpkm} "
+        " secondary=t "
+        " -Xmx{resources.java_mem}G "
+        " 2> {log} "
 
 
 rule combine_gene_coverages:
@@ -293,8 +305,21 @@ rule combine_gene_coverages:
         "Genecatalog/counts/Nmapped_reads.parquet",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
+    params:
+        samples=SAMPLES,
+    threads: 1
+    resources:
+        mem=config["large_mem"],
     script:
         "../scripts/combine_gene_coverages.py"
+
+
+# TODO: combine RPKM
+
+# TODO: caluclate mapping rate from pileup mapping files
+# logs/Genecatalog/alignment/sample2_pileup.log
+# Reads:                                  1207217
+# Mapped reads:                           1071071
 
 
 ###########

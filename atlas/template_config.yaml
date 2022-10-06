@@ -213,7 +213,7 @@ genecatalog:
   minlength_nt: 270             # min length 
   minid: 0.90                   # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
-  extra: " --precluster-method finch "
+  extra: " "
   SubsetSize: 500000
 
 eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation
