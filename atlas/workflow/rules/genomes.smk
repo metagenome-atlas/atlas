@@ -350,3 +350,79 @@ rule all_prodigal:
         get_all_genes,
     output:
         touch("genomes/annotations/genes/predicted"),
+
+
+### Quantification
+
+
+rule build_db_genomes:
+    input:
+        genome_dir,
+    output:
+        index="ref/genome/3/summary.txt",
+        fasta=temp("genomes/all_contigs.fasta"),
+    threads: config.get("threads", 6)
+    resources:
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    log:
+        "logs/genomes/mapping/build_bbmap_index.log",
+    shell:
+        """
+        cat {input}/*.fasta > {output.fasta} 2> {log}
+        bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
+        """
+
+
+# bam comes from minimap in strain.smk
+
+rule pileup_MAGs:
+    input:
+        sam="genomes/alignments/{sample}.bam",
+    output:
+        covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
+        bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
+    log:
+        "logs/genomes/alignments/pilup_{sample}.log",
+    conda:
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    shell:
+        "pileup.sh in={input.bam} "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G "
+        " covstats={output.covstats} "
+        " concise=t "
+        " phicalcov=t "
+        " bincov={output.bincov} "
+        " 2> {log}"
+
+
+
+rule combine_bined_coverages_MAGs:
+    input:
+        binned_coverage_files=expand(
+            "genomes/alignments/coverage_binned/{sample}.tsv.gz", sample=SAMPLES
+        ),
+        coverage_files=expand(
+            "genomes/alignments/coverage/{sample}.tsv.gz", sample=SAMPLES
+        ),
+    params:
+        samples=SAMPLES,
+    output:
+        counts="genomes/counts/counts_genomes.parquet",
+        binned_cov="genomes/counts/binned_coverage.parquet",
+        median_abund="genomes/counts/median_coverage_genomes.parquet",
+    log:
+        "logs/genomes/counts/combine_binned_coverages_MAGs.log",
+    threads: 1
+    resources:
+        mem_mb=1000 * config["simplejob_mem"],
+        time_min=config["runtime"]["simplejob"] * 60,
+    script:
+        "../scripts/combine_coverage_MAGs.py"
+
+#TODO mapping rate from pileup

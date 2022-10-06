@@ -232,7 +232,7 @@ include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 include: "rules/strains.smk"
-include: "rules/bbsplit.smk"
+
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
@@ -326,9 +326,9 @@ def get_genome_annotations():
 rule genomes:
     input:
         "genomes/counts/median_coverage_genomes.parquet",
-        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
+        expand("genomes/counts/counts_genomes.parquet"),
         "genomes/clustering/allbins2genome.tsv",
-        "genomes/counts/mapping_rate.tsv",
+        # "genomes/counts/mapping_rate.tsv",
         *get_genome_annotations(),
         "finished_binning",
     output:
@@ -338,7 +338,7 @@ rule genomes:
 rule quantify_genomes:
     input:
         "genomes/counts/median_coverage_genomes.parquet",
-        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
+        expand("genomes/counts/counts_genomes.parquet"),
 
 
 rule binning:

@@ -29,9 +29,30 @@ sys.excepthook = handle_exception
 
 
 import pandas as pd
-import os
-from utils.parsers_bbmap import read_bbsplit_bincov
-import gc
+import os,gc
+from utils.parsers_bbmap import read_coverage_binned, combine_coverages
+
+
+contig2genome = pd.read_csv(
+    snakemake.input.contig2genome, header=None, index_col=0, sep="\t"
+).iloc[:, 0]
+
+
+# sum counts
+
+combined_cov, Counts_contigs = combine_coverages(
+    snakemake.input.coverage_files, snakemake.params.samples
+)
+
+
+Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
+Counts_genome.index.name = "Sample"
+
+logging.info(f"Saving counts to {(snakemake.output.counts}")
+
+Counts_genome.reset_index().to_parquet(snakemake.output.counts)
+del Counts_genome
+gc.collect()
 
 # Binned coverage
 
@@ -39,23 +60,27 @@ binCov = {}
 for i, cov_file in enumerate(snakemake.input.binned_coverage_files):
 
     sample = snakemake.params.samples[i]
-    logging.info(f"Reading bincov_file for sample {sample}")
 
-    binCov[sample] = read_bbsplit_bincov(cov_file)
+    binCov[sample] = read_coverage_binned(cov_file)
 
 binCov = pd.DataFrame.from_dict(binCov)
+
+binCov.insert(0,"Genome",values = pd.Categorical(contig2genome.loc[binCov.index].values))
 
 gc.collect()
 logging.info(f"Saving combined binCov to {snakemake.output.binned_cov}")
 binCov.reset_index().to_parquet(snakemake.output.binned_cov)
 
-
 # Median coverage
 logging.info("Calculate median coverage")
-Median_abund = binCov.groupby(level=0).median().T
+Median_abund = (
+    binCov.groupby(contig2genome.loc[binCov.index.get_level_values(0)].values)
+    .median()
+    .T
+)
 del binCov
+gc.collect()
 Median_abund.reset_index().to_parquet(snakemake.output.median_abund)
 
 
-del Median_abund
-gc.collect()
+
