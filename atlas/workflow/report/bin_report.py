@@ -45,6 +45,8 @@ def make_plots(bin_table):
 
     div = {}
 
+    div["input_file"] = bin_table
+
     # Prepare data
     df = pd.read_table(bin_table)
 
@@ -70,7 +72,7 @@ def make_plots(bin_table):
         size_name = "Genome size (Mbp)"
         hover_data = ["genus"]
     else:
-        raise Exception(f"bin_quality_asessor in the config file not understood")
+        raise Exception(f"bin_quality_asessor in the config file not understood, got {snakemake.config['bin_quality_asessor']}")
 
     df.index = df["Bin Id"]
 
