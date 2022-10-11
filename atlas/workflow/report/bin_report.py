@@ -45,14 +45,10 @@ def make_plots(bin_table):
 
     div = {}
 
-    div["input_file"] = bin_table
-
     # Prepare data
     df = pd.read_table(bin_table)
 
     if snakemake.config["bin_quality_asessor"].lower() == "busco":
-
-        df["Bin Id"] = df["Input_file"].str.replace(".fasta", "", regex=False)
 
         logging.info("No taxonomic information available, use busco Dataset")
 
