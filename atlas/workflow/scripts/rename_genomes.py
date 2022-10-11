@@ -1,12 +1,5 @@
 #! /usr/bin/env python
 
-logging.basicConfig(
-    filename=snakemake.log[0],
-    level=logging.INFO,
-    format="%(asctime)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
 import sys, os
 import logging, traceback
 
@@ -123,7 +116,7 @@ def rename_quality(quality_in, quality_out, old2new_name):
 
     Q = pd.read_csv(quality_in, index_col=0, sep="\t")
 
-    Q = Q.loc[old2new_name.index].rename(index=old2new_name)
+    Q = Q.loc[old2new_name.keys()].rename(index=old2new_name)
 
     Q.to_csv(quality_out, sep="\t")
 
