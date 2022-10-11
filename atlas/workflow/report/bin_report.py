@@ -50,7 +50,7 @@ def make_plots(bin_table):
     # Prepare data
     df = pd.read_table(bin_table)
 
-    if snakemake.config["bin_quality_asesser"].lower() == "busco":
+    if snakemake.config["bin_quality_asessor"].lower() == "busco":
 
         df["Bin Id"] = df["Input_file"].str.replace(".fasta", "", regex=False)
 
@@ -64,7 +64,7 @@ def make_plots(bin_table):
         ]
         size_name = None
 
-    elif snakemake.config["bin_quality_asesser"].lower() == "checkm":
+    elif snakemake.config["bin_quality_asessor"].lower() == "checkm":
 
         df = df.join(
             tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA")
@@ -74,7 +74,7 @@ def make_plots(bin_table):
         size_name = "Genome size (Mbp)"
         hover_data = ["genus"]
     else:
-        raise Exception(f"bin_quality_asesser in the config file not understood")
+        raise Exception(f"bin_quality_asessor in the config file not understood")
 
     df.index = df["Bin Id"]
 

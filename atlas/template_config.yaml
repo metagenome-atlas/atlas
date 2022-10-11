@@ -177,7 +177,7 @@ DASTool:
   search_engine: 'diamond'
   score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
 
-bin_quality_asesser: busco          #[ checkm2, busco, cehckm]
+bin_quality_asessor: busco          #[ checkm2, busco, cehckm]
 
 genome_dereplication:
   ANI: 97.5                        ## Genome dreplication threshold

@@ -162,7 +162,7 @@ localrules:
     combine_bin_stats,
 
 
-if config["bin_quality_asesser"].lower() == "checkm2":
+if config["bin_quality_asessor"].lower() == "checkm2":
 
     rule combine_bin_stats:
         input:
@@ -179,7 +179,7 @@ if config["bin_quality_asesser"].lower() == "checkm2":
             "../scripts/combine_checkm2.py"
 
 
-elif config["bin_quality_asesser"].lower() == "busco":
+elif config["bin_quality_asessor"].lower() == "busco":
 
     rule combine_bin_stats:
         input:
@@ -196,7 +196,7 @@ elif config["bin_quality_asesser"].lower() == "busco":
             "../scripts/combine_busco.py"
 
 
-elif config["bin_quality_asesser"].lower() == "checkm":
+elif config["bin_quality_asessor"].lower() == "checkm":
 
     rule combine_bin_stats:
         input:
@@ -220,7 +220,7 @@ elif config["bin_quality_asesser"].lower() == "checkm":
 else:
 
     raise Exception(
-        "'bin_quality_asesser' should be 'busco' or 'checkM' got {bin_quality_asesser}".format(
+        "'bin_quality_asessor' should be 'busco' or 'checkM' got {bin_quality_asessor}".format(
             **config
         )
     )
