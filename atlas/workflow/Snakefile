@@ -233,6 +233,7 @@ include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 include: "rules/strains.smk"
 include: "rules/bbsplit.smk"
+include: "rules/dereplication.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
