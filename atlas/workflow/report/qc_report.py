@@ -195,7 +195,10 @@ def make_plots(
 
     df = pd.read_csv(read_counts, index_col=[0, 1], sep="\t")
 
-    df.drop("clean", axis=0, level=1, inplace=True)
+    try:
+        df.drop("clean", axis=0, level=1, inplace=True)
+    except KeyError:
+        pass
 
     data_qc = df.query('Step=="QC"')
 
