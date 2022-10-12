@@ -40,7 +40,7 @@ rule all_contigs2bins:
 
 localrules:
     merge_checkm_for_dereplication,
-    merge_checkm,
+
 
 
 rule merge_checkm_for_dereplication:
