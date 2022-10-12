@@ -60,7 +60,7 @@ logging.info(f"Read coverage file for sample {sample}")
 
 
 data = read_pileup_coverage(
-    snakemake.input[0], coverage_measure="Avg_fold"
+    snakemake.input[0], coverage_measure="Median_fold"
 )
 
 
