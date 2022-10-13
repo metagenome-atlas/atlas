@@ -100,7 +100,7 @@ rule run_busco:
         "logs/benchmarks/busco/{sample}_{binner}.tsv"
     resources:
         time=int(config["runtime"]["default"]),
-        mem_mb=config["mem"],
+        mem_mb=config["large_mem"],
     shell:
         " busco -i {input.fasta_dir} "
         " --auto-lineage-prok "
