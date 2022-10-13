@@ -1,26 +1,7 @@
 ## dRep
 localrules:
-    get_all_bins,
     all_contigs2bins,
 
-
-rule get_all_bins:
-    input:
-        bins=expand(
-            "{sample}/binning/{binner}/bins",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        temp(directory("genomes/all_bins")),
-    run:
-        os.mkdir(output[0])
-        from utils.io import symlink_relative
-
-        for bin_folder in input.bins:
-
-            fasta_files = [f for f in os.listdir(bin_folder) if f.endswith(".fasta")]
-            symlink_relative(fasta_files, bin_folder, output[0])
 
 
 rule all_contigs2bins:
@@ -39,26 +20,52 @@ rule all_contigs2bins:
 
 
 localrules:
-    merge_checkm_for_dereplication,
-    merge_checkm,
+    merge_checkm, filter_bins
 
 
-rule merge_checkm_for_dereplication:
+localrules: get_bin_filenames
+
+rule get_bin_filenames:
     input:
-        "reports/genomic_bins_{binner}.tsv".format(binner=config["final_binner"]),
+        dirs= expand(
+            "{sample}/binning/{binner}/bins",
+            sample=SAMPLES,
+            binner=config["final_binner"],
+        )
     output:
-        temp("genomes/quality.csv"),
+        filenames="genomes/filter/paths.tsv",
     run:
         import pandas as pd
+        from pathlib import Path
+        from utils import io
+        fasta_files = []
 
-        D = pd.read_csv(input[0], index_col=0, sep="\t")
 
+        # searh for fasta files (.f*) in all bin folders
+        for dir in input.dirs:
+            dir = Path(dir)
+            fasta_files += list(dir.glob("*.f*"))
+        
+        filenames = pd.DataFrame(fasta_files,columns=['Filename'])
+        filenames.index= filenames.Filename.apply(io.simplify_path)
+        filenames.index.name='Bin'
 
-        D.index.name = "genome"
+        filenames.to_csv(output.filenames,sep='\t')
 
-        D.columns = D.columns.str.lower()
-        D = D[["completeness", "contamination"]]
-        D.to_csv(output[0])
+        
+rule calculate_stats:
+    input:
+        rules.get_bin_filenames.output.filenames,
+    output:
+        "genomes/all_bins/genome_stats.tsv"
+    threads:
+        config['threads']
+    run:
+        from utils.genome_stats import get_many_genome_stats
+        import pandas as pd
+        filenames= pd.read_csv(input[0],sep='\t',index_col=0).squeeze()
+        get_many_genome_stats(filenames, output[0], threads)
+
 
 
 rule merge_checkm:
@@ -79,8 +86,8 @@ rule merge_checkm:
             binner=config["final_binner"],
         ),
     output:
-        checkm="genomes/checkm/checkm_all_bins.tsv",
-        markers="genomes/checkm/all_bins_markers.fasta",
+        checkm="genomes/all_bins/checkm_all_bins.tsv",
+        markers="genomes/all_bins/all_bins_markers.fasta",
     run:
         import pandas as pd
         import shutil
@@ -100,29 +107,33 @@ rule merge_checkm:
                 shutil.copyfileobj(open(fasta, "rb"), fout)
 
 
-def get_dereplication_arguments(key):
-    "key = completeness or contamination"
 
-    if "filter" in config["genome_dereplication"]:
-        logger.info(
-            "The configuration for dereplication has changed. For now I will try to be backward compatible, but please update your config file. https://metagenome-atlas.readthedocs.io/en/latest/usage/configuration.html#detailed-configuration"
-        )
+rule filter_bins:
+    input:
+        paths= rules.get_bin_filenames.output.filenames,
+        quality = "genomes/all_bins/checkm_all_bins.tsv",
+        stats = "genomes/all_bins/genome_stats.tsv"
+    output:
+        quality="genomes/all_bins/filtered_quality.tsv",
+        paths = temp("genomes/all_bins/filtered_bins.txt"),
+        quality_for_derep = temp("genomes/all_bins/filtered_quality.csv")
+    threads:
+        1
+    log:
+        "logs/genomes/filter_bins.log"
+    params:
+        filter_criteria = config["genome_filter_criteria"]
+    script:
+        "../scripts/filter_genomes.py"
 
-        return config["genome_dereplication"]["filter"][key]
 
-    else:
-        if key == "completeness":
-            return config["genome_min_completeness"]
-        elif key == "contamination":
-            return config["genome_max_contamination"]
-        else:
-            raise ValueError("key must be completeness, contamination")
+
 
 
 rule dereplication:
     input:
-        dir="genomes/all_bins",
-        quality="genomes/quality.csv",
+        paths="genomes/all_bins/filtered_bins.txt",
+        quality="genomes/all_bins/filtered_quality.csv",
     output:
         dir=temp(directory("genomes/dereplicated_genomes")),
         mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
@@ -134,20 +145,15 @@ rule dereplication:
     params:
         ANI=config["genome_dereplication"]["ANI"],
         quality_formula=config["genome_dereplication"]["quality_formula"],
-        min_completeness=get_dereplication_arguments("completeness"),
-        max_contamination=get_dereplication_arguments("contamination"),
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
         min_overlap=config["genome_dereplication"]["overlap"],
     shell:
         " galah cluster "
-        " --genome-fasta-directory {input.dir}"
-        " --genome-fasta-extension fasta "
+        " --genome-fasta-list {input.paths}"
         " --genome-info {input.quality} "
         " --ani {params.ANI} "
         " --min-aligned-fraction {params.min_overlap} "
         " {params.opt_parameters} "
-        " --min-completeness {params.min_completeness} "
-        " --max-contamination {params.max_contamination} "
         " --quality-formula {params.quality_formula} "
         " --threads {threads} "
         " --output-representative-fasta-directory {output.dir} "
@@ -164,7 +170,6 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
-        source_genomes="genomes/all_bins",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
