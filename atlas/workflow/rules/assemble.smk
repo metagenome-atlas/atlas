@@ -504,7 +504,7 @@ rule calculate_contigs_stats:
     output:
         "{sample}/assembly/contig_stats/{assembly_step}_contig_stats.txt",
     conda:
-        "../evs/required_packages.yaml"
+        "../envs/required_packages.yaml"
     log:
         "{sample}/logs/assembly/post_process/contig_stats_{assembly_step}.log",
     threads: 1
