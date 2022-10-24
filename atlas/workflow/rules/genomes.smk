@@ -167,11 +167,13 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
+        genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_old2mag="genomes/clustering/old2newID.tsv",
         mapfile_allbins2mag="genomes/clustering/allbins2genome.tsv",
+        genome_quality="genomes/genome_quality.tsv",
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
@@ -261,39 +263,6 @@ rule get_contig2genomes:
 ruleorder: get_contig2genomes > rename_genomes
 
 
-rule run_all_checkm_lineage_wf:
-    input:
-        touched_output="logs/checkm_init.txt",
-        dir=genome_dir,
-    output:
-        "genomes/checkm/completeness.tsv",
-        "genomes/checkm/storage/tree/concatenated.fasta",
-    params:
-        output_dir=lambda wc, output: os.path.dirname(output[0]),
-        tmpdir=config["tmpdir"],
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    threads: config.get("threads", 1)
-    resources:
-        time=config["runtime"]["long"],
-        mem=config["large_mem"],
-    log:
-        "logs/genomes/checkm.log",
-    benchmark:
-        "logs/benchmarks/checkm_lineage_wf/all_genomes.tsv"
-    shell:
-        """
-        rm -r {params.output_dir}
-        checkm lineage_wf \
-            --tmpdir {params.tmpdir} \
-            --file {params.output_dir}/completeness.tsv \
-            --tab_table \
-            --quiet \
-            --extension fasta \
-            --threads {threads} \
-            {input.dir} \
-            {params.output_dir} &> {log}
-        """
 
 
 # rule predict_genes_genomes:
