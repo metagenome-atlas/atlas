@@ -234,7 +234,6 @@ include: "rules/dram.smk"
 include: "rules/strains.smk"
 
 
-
 CONDAENV = "envs"  # overwrite definition in download.smk
 
 

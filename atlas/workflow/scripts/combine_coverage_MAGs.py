@@ -29,7 +29,7 @@ sys.excepthook = handle_exception
 
 
 import pandas as pd
-import os,gc
+import os, gc
 from utils.parsers_bbmap import read_coverage_binned, combine_coverages
 
 
@@ -48,7 +48,7 @@ combined_cov, Counts_contigs = combine_coverages(
 Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
 Counts_genome.index.name = "Sample"
 
-logging.info(f"Saving counts to {(snakemake.output.counts}")
+logging.info(f"Saving counts to {snakemake.output.counts}")
 
 Counts_genome.reset_index().to_parquet(snakemake.output.counts)
 del Counts_genome
@@ -65,7 +65,9 @@ for i, cov_file in enumerate(snakemake.input.binned_coverage_files):
 
 binCov = pd.DataFrame.from_dict(binCov)
 
-binCov.insert(0,"Genome",values = pd.Categorical(contig2genome.loc[binCov.index].values))
+binCov.insert(
+    0, "Genome", values=pd.Categorical(contig2genome.loc[binCov.index].values)
+)
 
 gc.collect()
 logging.info(f"Saving combined binCov to {snakemake.output.binned_cov}")
@@ -81,6 +83,3 @@ Median_abund = (
 del binCov
 gc.collect()
 Median_abund.reset_index().to_parquet(snakemake.output.median_abund)
-
-
-

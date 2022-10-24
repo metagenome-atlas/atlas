@@ -378,6 +378,7 @@ rule build_db_genomes:
 
 # bam comes from minimap in strain.smk
 
+
 rule pileup_MAGs:
     input:
         sam="genomes/alignments/{sample}.bam",
@@ -403,7 +404,6 @@ rule pileup_MAGs:
         " 2> {log}"
 
 
-
 rule combine_bined_coverages_MAGs:
     input:
         binned_coverage_files=expand(
@@ -412,7 +412,7 @@ rule combine_bined_coverages_MAGs:
         coverage_files=expand(
             "genomes/alignments/coverage/{sample}.tsv.gz", sample=SAMPLES
         ),
-        contig2genome = "genomes/clustering/contig2genome.tsv"
+        contig2genome="genomes/clustering/contig2genome.tsv",
     params:
         samples=SAMPLES,
     output:
@@ -428,4 +428,5 @@ rule combine_bined_coverages_MAGs:
     script:
         "../scripts/combine_coverage_MAGs.py"
 
-#TODO mapping rate from pileup
+
+# TODO mapping rate from pileup
