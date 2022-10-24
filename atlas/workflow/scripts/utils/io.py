@@ -4,7 +4,7 @@ import gzip as gz
 
 def simplify_path(path, remove_gz=True):
     """Removes dir and extension from a filepath.
-        checks if file has an e
+    checks if file has an e
     """
     name, ext = os.path.splitext(os.path.basename(path))
 
@@ -26,7 +26,6 @@ def simply_open(filename, mode="r", *args, **kwargs):
         return gz.open(filename, mode, *args, **kwargs)
     else:
         return open(filename, mode, *args, **kwargs)
-
 
 
 def cat_files(files, outfilename, gzip=False):

@@ -3,7 +3,6 @@ localrules:
     all_contigs2bins,
 
 
-
 rule all_contigs2bins:
     input:
         expand(
@@ -20,24 +19,28 @@ rule all_contigs2bins:
 
 
 localrules:
-    merge_checkm, filter_bins
+    merge_checkm,
+    filter_bins,
 
 
-localrules: get_bin_filenames
+localrules:
+    get_bin_filenames,
+
 
 rule get_bin_filenames:
     input:
-        dirs= expand(
+        dirs=expand(
             "{sample}/binning/{binner}/bins",
             sample=SAMPLES,
             binner=config["final_binner"],
-        )
+        ),
     output:
         filenames="genomes/filter/paths.tsv",
     run:
         import pandas as pd
         from pathlib import Path
         from utils import io
+
         fasta_files = []
 
 
@@ -45,27 +48,26 @@ rule get_bin_filenames:
         for dir in input.dirs:
             dir = Path(dir)
             fasta_files += list(dir.glob("*.f*"))
-        
-        filenames = pd.DataFrame(fasta_files,columns=['Filename'])
-        filenames.index= filenames.Filename.apply(io.simplify_path)
-        filenames.index.name='Bin'
 
-        filenames.to_csv(output.filenames,sep='\t')
+        filenames = pd.DataFrame(fasta_files, columns=["Filename"])
+        filenames.index = filenames.Filename.apply(io.simplify_path)
+        filenames.index.name = "Bin"
 
-        
+        filenames.to_csv(output.filenames, sep="\t")
+
+
 rule calculate_stats:
     input:
         rules.get_bin_filenames.output.filenames,
     output:
-        "genomes/all_bins/genome_stats.tsv"
-    threads:
-        config['threads']
+        "genomes/all_bins/genome_stats.tsv",
+    threads: config["threads"]
     run:
         from utils.genome_stats import get_many_genome_stats
         import pandas as pd
-        filenames= pd.read_csv(input[0],sep='\t',index_col=0).squeeze()
-        get_many_genome_stats(filenames, output[0], threads)
 
+        filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
+        get_many_genome_stats(filenames, output[0], threads)
 
 
 rule merge_checkm:
@@ -107,27 +109,22 @@ rule merge_checkm:
                 shutil.copyfileobj(open(fasta, "rb"), fout)
 
 
-
 rule filter_bins:
     input:
-        paths= rules.get_bin_filenames.output.filenames,
-        quality = "genomes/all_bins/checkm_all_bins.tsv",
-        stats = "genomes/all_bins/genome_stats.tsv"
+        paths=rules.get_bin_filenames.output.filenames,
+        quality="genomes/all_bins/checkm_all_bins.tsv",
+        stats="genomes/all_bins/genome_stats.tsv",
     output:
         quality="genomes/all_bins/filtered_quality.tsv",
-        paths = temp("genomes/all_bins/filtered_bins.txt"),
-        quality_for_derep = temp("genomes/all_bins/filtered_quality.csv")
-    threads:
-        1
+        paths=temp("genomes/all_bins/filtered_bins.txt"),
+        quality_for_derep=temp("genomes/all_bins/filtered_quality.csv"),
+    threads: 1
     log:
-        "logs/genomes/filter_bins.log"
+        "logs/genomes/filter_bins.log",
     params:
-        filter_criteria = config["genome_filter_criteria"]
+        filter_criteria=config["genome_filter_criteria"],
     script:
         "../scripts/filter_genomes.py"
-
-
-
 
 
 rule dereplication:
