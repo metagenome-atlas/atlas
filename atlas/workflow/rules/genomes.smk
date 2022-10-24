@@ -263,8 +263,6 @@ rule get_contig2genomes:
 ruleorder: get_contig2genomes > rename_genomes
 
 
-
-
 # rule predict_genes_genomes:
 #     input:
 #         dir= genomes_dir
