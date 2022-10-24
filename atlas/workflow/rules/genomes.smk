@@ -324,25 +324,6 @@ rule all_prodigal:
 ### Quantification
 
 
-rule build_db_genomes:
-    input:
-        genome_dir,
-    output:
-        index="ref/genome/3/summary.txt",
-        fasta=temp("genomes/all_contigs.fasta"),
-    threads: config.get("threads", 6)
-    resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    log:
-        "logs/genomes/mapping/build_bbmap_index.log",
-    shell:
-        """
-        cat {input}/*.fasta > {output.fasta} 2> {log}
-        bbmap.sh build=3 -Xmx{resources.java_mem}G ref={output.fasta} threads={threads} local=f 2>> {log}
-        """
-
-
 # bam comes from minimap in strain.smk
 
 
