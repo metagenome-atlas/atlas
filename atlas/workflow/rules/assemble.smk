@@ -504,13 +504,15 @@ rule calculate_contigs_stats:
     output:
         "{sample}/assembly/contig_stats/{assembly_step}_contig_stats.txt",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "../envs/required_packages.yaml"
+    log:
+        "{sample}/logs/assembly/post_process/contig_stats_{assembly_step}.log",
     threads: 1
     resources:
         mem=1,
         time=config["runtime"]["simplejob"],
     shell:
-        "stats.sh in={input} format=3 > {output}"
+        "stats.sh in={input} format=3 out={output} &> {log}"
 
 
 rule combine_sample_contig_stats:
