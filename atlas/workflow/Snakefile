@@ -232,6 +232,7 @@ include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 include: "rules/strains.smk"
+include: "rules/dereplication.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
