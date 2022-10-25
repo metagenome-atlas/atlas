@@ -400,7 +400,7 @@ rule pileup_MAGs:
         " -Xmx{resources.java_mem}G "
         " covstats={output.covstats} "
         " concise=t "
-        " phicalcov=t "
+        " physical=t "
         " bincov={output.bincov} "
         " 2> {log}"
 
