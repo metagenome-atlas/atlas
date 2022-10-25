@@ -382,10 +382,12 @@ rule align_reads_to_genomes:
 
 rule pileup_MAGs:
     input:
-        sam="genomes/alignments/{sample}.bam",
+        bam="genomes/alignments/{sample}.bam",
+        orf= "genomes/all_orfs.fasta"
     output:
         covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
+        orf= "genomes/alignments/orf_coverage/{sample}.tsv.gz"
     log:
         "logs/genomes/alignments/pilup_{sample}.log",
     conda:
@@ -399,6 +401,7 @@ rule pileup_MAGs:
         " threads={threads} "
         " -Xmx{resources.java_mem}G "
         " covstats={output.covstats} "
+        " fastaorf={input.orf} outorf={output.orf} "
         " concise=t "
         " physical=t "
         " bincov={output.bincov} "
