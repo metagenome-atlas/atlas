@@ -49,12 +49,7 @@ def cat_files(files, outfilename, gzip=False):
                 shutil.copyfileobj(f_in, f_out)
 
 
-def convert_percentages(df):
-    """Convet all columns with strings and % at the end to percentages"""
-    for col in df.columns:
-        if df.dtypes[col] == "object":
-            if df[col].iloc[0].endswith("%"):
-                df.loc[:, col] = df[col].str.rstrip("%").astype("float") / 100.0
+
 
 
 def symlink_relative(files, input_dir, output_dir):

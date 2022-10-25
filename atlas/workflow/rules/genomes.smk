@@ -35,7 +35,7 @@ rule get_bin_filenames:
             binner=config["final_binner"],
         ),
     output:
-        filenames="genomes/filter/paths.tsv",
+        filenames="genomes/all_bins/all_bins.txt",
     run:
         import pandas as pd
         from pathlib import Path
@@ -116,7 +116,7 @@ rule filter_bins:
         stats="genomes/all_bins/genome_stats.tsv",
     output:
         quality="genomes/all_bins/filtered_quality.tsv",
-        paths=temp("genomes/all_bins/filtered_bins.txt"),
+        paths="genomes/all_bins/filtered_bins.txt",
         quality_for_derep=temp("genomes/all_bins/filtered_quality.csv"),
     threads: 1
     log:

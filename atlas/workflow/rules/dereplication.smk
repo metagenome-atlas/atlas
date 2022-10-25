@@ -3,11 +3,11 @@
 
 rule bindash_sketch_genome:
     input:
-        "sketches/genome_list_bindash.txt"
+        "genomes/all_bins/filtered_bins.txt"
     output:
-        "sketches/genomes.bdsh",
-        "sketches/genomes.bdsh.dat",
-        "sketches/genomes.bdsh.txt"
+        "genomes/sketches/genomes.bdsh",
+        "genomes/sketches/genomes.bdsh.dat",
+        "genomes/sketches/genomes.bdsh.txt"
     params:
         k= config['sketch_k'],
         sketchsize64= int(config['sketch_size'])//64,
@@ -33,7 +33,7 @@ rule bindash_dist:
     input:
         rules.bindash_sketch_genome.output[0]
     output:
-        "tables/bindash_dists.tsv"
+        "genomes/sketches/bindash_dists.tsv"
     params:
         d= config['sketch_max_dist']
     threads:
@@ -52,30 +52,16 @@ rule bindash_dist:
 
 rule tsv2parquet:
     input:
-        "tables/{tool}_dists.tsv"
+        rules.bindash_dist.output
     output:
-        "tables/{tool}_dists.parquet"
+        "genomes/clustering/sketch_dists.parquet"
     resources:
         mem_mb=config['mem']['large'] *1000
     threads:
         1
     run:
 
-        if wildcards.tool == "mummer":
-            open_function= gd.load_mummer
-        elif wildcards.tool == "minimap":
-            open_function= gd.load_minimap
-        elif wildcards.tool == "bindash":
-            open_function= gd.load_bindash
-        elif wildcards.tool == "fastani":
-            open_function= gd.load_fastani
-        elif wildcards.tool == "mash":
-            open_function= gd.load_mash
-        else:
-            raise Exception(
-                f"Don't know how to load table from tool : {wildcards.tool}"
-            )
-
+        from utils.sketches import load_bindash
 
         M= open_function(input[0]).drop(['Identity'],axis=1)
         M.to_parquet(output[0],engine="pyarrow")
