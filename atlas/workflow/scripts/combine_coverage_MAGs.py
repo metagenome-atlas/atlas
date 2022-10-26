@@ -39,11 +39,21 @@ contig2genome = pd.read_csv(
 
 
 # sum counts
+logging.info("Loading counts and coverage per contig")
 
 combined_cov, Counts_contigs = combine_coverages(
     snakemake.input.coverage_files, snakemake.params.samples
 )
 
+combine_coverages.insert(
+    0, "Genome", values=pd.Categorical(contig2genome.loc[combine_coverages.index].values)
+)
+
+logging.info(f"Saving coverage to {snakemake.output.coverage_contigs}")
+
+Counts_genome.reset_index().to_parquet(snakemake.output.coverage_contigs)
+
+logging.info("Sum counts per genome")
 
 Counts_genome = Counts_contigs.groupby(contig2genome, axis=1).sum().T
 Counts_genome.index.name = "Sample"
@@ -51,11 +61,11 @@ Counts_genome.index.name = "Sample"
 logging.info(f"Saving counts to {snakemake.output.counts}")
 
 Counts_genome.reset_index().to_parquet(snakemake.output.counts)
-del Counts_genome
+del Counts_genome, combined_cov, Counts_contigs
 gc.collect()
 
 # Binned coverage
-
+logging.info("Loading binned coverage")
 binCov = {}
 for i, cov_file in enumerate(snakemake.input.binned_coverage_files):
 
@@ -65,8 +75,9 @@ for i, cov_file in enumerate(snakemake.input.binned_coverage_files):
 
 binCov = pd.DataFrame.from_dict(binCov)
 
+logging.info("Add genome information to it")
 binCov.insert(
-    0, "Genome", values=pd.Categorical(contig2genome.loc[binCov.index].values)
+    0, "Genome", values=pd.Categorical(contig2genome.loc[binCov.index.get_level_values(0)].values)
 )
 
 gc.collect()
@@ -75,11 +86,8 @@ binCov.reset_index().to_parquet(snakemake.output.binned_cov)
 
 # Median coverage
 logging.info("Calculate median coverage")
-Median_abund = (
-    binCov.groupby(contig2genome.loc[binCov.index.get_level_values(0)].values)
-    .median()
-    .T
-)
+Median_abund = binCov.groupby("Genome").median().T
 del binCov
 gc.collect()
+logging.info(f"Saving mediuan coverage {snakemake.output.median_abund}")
 Median_abund.reset_index().to_parquet(snakemake.output.median_abund)

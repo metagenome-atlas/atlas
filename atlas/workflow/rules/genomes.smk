@@ -408,7 +408,7 @@ rule pileup_MAGs:
         " 2> {log}"
 
 
-rule combine_bined_coverages_MAGs:
+rule combine_coverages_MAGs:
     input:
         binned_coverage_files=expand(
             "genomes/alignments/coverage_binned/{sample}.tsv.gz", sample=SAMPLES
@@ -420,6 +420,7 @@ rule combine_bined_coverages_MAGs:
     params:
         samples=SAMPLES,
     output:
+        coverage_contigs = "genomes/counts/coverage_contigs.parquet",
         counts="genomes/counts/counts_genomes.parquet",
         binned_cov="genomes/counts/binned_coverage.parquet",
         median_abund="genomes/counts/median_coverage_genomes.parquet",
