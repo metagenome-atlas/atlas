@@ -45,13 +45,15 @@ combined_cov, Counts_contigs = combine_coverages(
     snakemake.input.coverage_files, snakemake.params.samples
 )
 
-combine_coverages.insert(
-    0, "Genome", values=pd.Categorical(contig2genome.loc[combine_coverages.index].values)
+combined_cov = combined_cov.T
+
+combined_cov.insert(
+    0, "Genome", value=pd.Categorical(contig2genome.loc[combined_cov.index].values)
 )
 
 logging.info(f"Saving coverage to {snakemake.output.coverage_contigs}")
 
-Counts_genome.reset_index().to_parquet(snakemake.output.coverage_contigs)
+combined_cov.reset_index().to_parquet(snakemake.output.coverage_contigs)
 
 logging.info("Sum counts per genome")
 
@@ -77,7 +79,7 @@ binCov = pd.DataFrame.from_dict(binCov)
 
 logging.info("Add genome information to it")
 binCov.insert(
-    0, "Genome", values=pd.Categorical(contig2genome.loc[binCov.index.get_level_values(0)].values)
+    0, "Genome", value=pd.Categorical(contig2genome.loc[binCov.index.get_level_values(0)].values)
 )
 
 gc.collect()
