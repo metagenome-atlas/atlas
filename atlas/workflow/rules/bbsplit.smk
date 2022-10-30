@@ -70,6 +70,7 @@ rule bbsplit:
         " refstats={output.refstats} "
         " covstats={output.covstats} "
         " bincov={output.bincov} "
+        " -Xmx{resources.java_mem}G "
         " 2> {log} "
 
 
