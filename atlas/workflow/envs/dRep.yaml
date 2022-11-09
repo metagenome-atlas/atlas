@@ -4,9 +4,8 @@ channels:
     - ruby-lang
     - defaults
 dependencies:
-    - python=3.6
-    - mummer>=3.22
+    - python>=3.8, <3.11
     - mash>=2
     - prodigal=2.6.3
     - fastani=1.32
-    - drep=3.2
+    - drep>=3.4 , <4

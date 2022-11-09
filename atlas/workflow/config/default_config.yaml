@@ -11,7 +11,11 @@ genome_dereplication:
   ANI: 97.5                        ## Genome dreplication threshold
   overlap: 0.5                  # See more on https://wwood.github.io/galah/galah-cluster.html
   opt_parameters: ""
-  quality_formula: "Parks2020_reduced" # completeness-5*contamination-5*num_contigs/100-5*num_ambiguous_bases/100000
+  score:
+    completeness: 1
+    contamination: 5
+    N50: 0.5
+    length: 0
   
 genome_min_completeness: 50
 genome_max_contamination: 10

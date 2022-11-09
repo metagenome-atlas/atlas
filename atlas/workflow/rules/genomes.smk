@@ -126,7 +126,7 @@ rule filter_bins:
     script:
         "../scripts/filter_genomes.py"
 
-
+'''
 rule dereplication:
     input:
         paths="genomes/all_bins/filtered_bins.txt",
@@ -157,6 +157,49 @@ rule dereplication:
         " --output-cluster-definition {output.mapping_file} "
         " --precluster-method finch "
         " &> {log} "
+
+'''
+
+rule dereplication:
+    input:
+        paths="genomes/all_bins/filtered_bins.txt",
+        quality="genomes/all_bins/filtered_quality.csv",
+    output:
+        directory("genomes/Dereplication/drep_output"),
+    threads: config["threads"]
+    log:
+        "logs/genomes/dereplication.log",
+    shadow:
+        "shallow"
+    conda:
+        "../envs/dRep.yaml"
+    params:
+        filter= " --noQualityFiltering ",
+        ANI=config["genome_dereplication"]["ANI"],
+        overlap=config["genome_dereplication"]["overlap"],
+        completeness_weight=config["genome_dereplication"]["score"]["completeness"],
+        contamination_weight=config["genome_dereplication"]["score"]["contamination"],
+        #not in table
+        N50_weight=config["genome_dereplication"]["score"]["N50"],
+        size_weight=config["genome_dereplication"]["score"]["length"],
+        opt_parameters=config["genome_dereplication"]["opt_parameters"],
+    shell:
+        " dRep dereplicate "
+        " --genomes {input.paths} "
+        " --genomeInfo {input.quality} "
+        " {params.filter} "
+        " --S_ani {params.ANI} "
+        " --S_algorithm fastANI "
+        " --cov_thresh {params.overlap} "
+        " --completeness_weight {params.completeness_weight} "
+        " --contamination_weight {params.contamination_weight} "
+        " --N50_weight {params.N50_weight} "
+        " --size_weight {params.size_weight} "
+        " --processors {threads} "
+        " {params.opt_parameters} "
+        " {output} "
+        " &> {log} "
+
 
 
 localrules:
