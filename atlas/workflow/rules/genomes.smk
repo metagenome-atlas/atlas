@@ -1,4 +1,4 @@
-## dRep
+
 localrules:
     all_contigs2bins,
 
@@ -434,4 +434,34 @@ rule combine_coverages_MAGs:
         "../scripts/combine_coverage_MAGs.py"
 
 
-# TODO mapping rate from pileup
+rule calculate_mapping_rate_MAGs:
+    input:
+        pileup_logfile=expand(
+            "logs/genomes/alignments/pilup_{sample}.log", sample=SAMPLES
+        ),
+    output:
+        coverage_contigs = "genomes/counts/mapping_rate.tsv",
+    log:
+        "logs/genomes/counts/calcualte_mapping_rate_MAGs.log",
+    threads: 1
+    resources:
+        mem_mb=1000 * config["simplejob_mem"],
+        time_min=config["runtime"]["simplejob"] * 60,
+    run:
+        from from utils.parsers_bbmap import parse_pileup_log_file
+
+        import pandas as pd
+
+        combined_mapping_stats = {}
+        for sample,log_file in zip(SAMPLES,input):
+            combined_mapping_stats[sample] = parse_pileup_log_file(log_file)
+
+        combined_mapping_stats = pd.DataFrame(combined_mapping_stats)
+
+        combined_mapping_stats = combined_mapping_stats[["Reads","Mapped reads","Mapped bases","Percent mapped","Percent proper pairs"]]
+
+        combined_mapping_stats.to_csv(output[0],sep='\t')
+        
+            
+
+

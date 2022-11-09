@@ -1,5 +1,6 @@
 import pandas as pd
-import os
+
+
 
 
 def parse_comments(file, comment="#", sep="\t", expect_one_value=True):
@@ -182,6 +183,44 @@ def parse_bbmap_log_file(log_file):
 
         return used, mapped
 
+
+def parse_pileup_log_file(log_file):
+    """
+    parses a bbmap log file (paired or single end)
+    returns a dixt with parsed values
+    """
+
+    parsed = {}
+
+    with open(log_file) as f:
+
+        # drop first tree lines with contain log info
+        for i in range(3):
+            f.readline()
+
+        for line in f:
+            if ": " in line:
+                try:
+                    #parse line
+                    key,value_with_whitespace = line.strip().split(":")
+
+                    try:
+                        value = int(value_with_whitespace)
+                    except ValueError:
+                        value = float(value_with_whitespace)
+
+                    
+                    
+                    parsed[key] = value
+                except Exception as e:
+                    raise Exception(f"Error parsing line:\n{line}\n in log file {log_file}") from e
+
+
+
+        return parsed
+
+
+    return used, mapped
 
 # def parse_simple_log_file(log_file, keyword, expect_one_value=True):
 #     content = open(log_file).read()

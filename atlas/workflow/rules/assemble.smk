@@ -542,64 +542,25 @@ if config["filter_contigs"]:
 
     rule align_reads_to_prefilter_contigs:
         input:
-            reads=get_quality_controlled_reads,
-            fasta=rules.rename_contigs.output,
+            query=get_quality_controlled_reads,
+            target=rules.rename_contigs.output,
         output:
-            sam=temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam"),
+            bam=temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.bam"),
         params:
-            input=lambda wc, input: input_params_for_bbwrap(input.reads),
-            maxsites=config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-            max_distance_between_pairs=config.get(
-                "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
-            ),
-            paired_only=(
-                "t"
-                if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY)
-                else "f"
-            ),
-            min_id=config.get("contig_min_id", CONTIG_MIN_ID),
-            maxindel=100,
-            ambiguous="all",
-        shadow:
-            "shallow"
+            extra="-x sr",
         log:
             "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log",
-        conda:
-            "%s/required_packages.yaml" % CONDAENV
-        threads: config.get("threads", 1)
+        threads: config["threads"]
         resources:
-            mem=config["mem"],
-            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-        shell:
-            """
-            bbwrap.sh nodisk=t \
-            ref={input.fasta} \
-            {params.input} \
-            trimreaddescriptions=t \
-            out={output.sam} \
-            threads={threads} \
-            pairlen={params.max_distance_between_pairs} \
-            pairedonly={params.paired_only} \
-            minid={params.min_id} \
-            mdtag=t \
-            xstag=fs \
-            nmtag=t \
-            sam=1.3 \
-            local=t \
-            ambiguous={params.ambiguous} \
-            secondary=t \
-            saa=f \
-            append=t \
-            machineout=t \
-            unpigz=t \
-            maxsites={params.maxsites} \
-            -Xmx{resources.java_mem}G 2> {log}
-            """
+            mem_mb=config["mem"]*1000,
+        wrapper:
+            "v1.19.0/bio/minimap2/aligner"
+
 
     rule pileup_prefilter:
         input:
             fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
-            sam="{sample}/sequence_alignment/alignment_to_prefilter_contigs.sam",
+            bam="{sample}/sequence_alignment/alignment_to_prefilter_contigs.bam",
         output:
             covstats="{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
         params:
@@ -607,20 +568,19 @@ if config["filter_contigs"]:
         log:
             "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log",
         conda:
-            "%s/required_packages.yaml" % CONDAENV
-        threads: config.get("threads", 1)
+            "../envs/required_packages.yaml"
+        threads: config["threads"]
         resources:
-            mem=config["mem"],
+            mem_mb=config["mem"]*1000,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
-            """
-            pileup.sh ref={input.fasta} in={input.sam} \
-                threads={threads} \
-                -Xmx{resources.java_mem}G \
-                covstats={output.covstats} \
-                concise=t \
-                secondary={params.pileup_secondary} 2> {log}
-            """
+            "pileup.sh ref={input.fasta} in={input.bam} "
+            " threads={threads} "
+            " -Xmx{resources.java_mem}G "
+            " covstats={output.covstats} "
+            " concise=t "
+            " secondary={params.pileup_secondary} "
+            " 2> {log}"
 
     rule filter_by_coverage:
         input:
@@ -630,10 +590,8 @@ if config["filter_contigs"]:
             fasta="{sample}/assembly/{sample}_final_contigs.fasta",
             removed_names="{sample}/assembly/{sample}_discarded_contigs.fasta",
         params:
-            minc=config.get("minimum_average_coverage", MINIMUM_AVERAGE_COVERAGE),
-            minp=config.get(
-                "minimum_percent_covered_bases", MINIMUM_PERCENT_COVERED_BASES
-            ),
+            minc=config["minimum_average_coverage"],
+            minp=config["minimum_percent_covered_bases"],
             minr=config.get("minimum_mapped_reads", MINIMUM_MAPPED_READS),
             minl=config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
             trim=config.get("contig_trim_bp", CONTIG_TRIM_BP),
@@ -692,117 +650,28 @@ rule finalize_contigs:
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
 rule align_reads_to_final_contigs:
     input:
-        reads=get_quality_controlled_reads,
-        fasta="{sample_contigs}/{sample_contigs}_contigs.fasta",
+        query=get_quality_controlled_reads,
+        target="{sample_contigs}/{sample_contigs}_contigs.fasta",
     output:
-        sam=temp("{sample_contigs}/sequence_alignment/{sample}.sam"),
-        #unmapped = temp(expand("{{sample_contigs}}/assembly/unmapped_post_filter/{{sample}}_unmapped_{fraction}.fastq.gz",
-        #                  fraction=MULTIFILE_FRACTIONS))
+        bam="{sample_contigs}/sequence_alignment/{sample}.bam",
     params:
-        input=lambda wc, input: input_params_for_bbwrap(input.reads),
-        maxsites=config.get("maximum_counted_map_sites", MAXIMUM_COUNTED_MAP_SITES),
-        #unmapped = lambda wc, output: "outu1={0},{2} outu2={1},null".format(*output.unmapped) if PAIRED_END else "outu={0}".format(*output.unmapped),
-        max_distance_between_pairs=config.get(
-            "contig_max_distance_between_pairs", CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
-        ),
-        paired_only=(
-            "t"
-            if config.get("contig_map_paired_only", CONTIG_MAP_PAIRED_ONLY)
-            else "f"
-        ),
-        ambiguous="all" if CONTIG_COUNT_MULTI_MAPPED_READS else "best",
-        min_id=config.get("contig_min_id", CONTIG_MIN_ID),
-        maxindel=100,  # default 16000 good for genome deletions but not necessarily for alignment to contigs
-    shadow:
-        "shallow"
+        extra="-x sr",
+        sorting="coordinate"
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log",  # this file is udes for assembly report
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log", 
+    threads: config["threads"]
     resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    shell:
-        """
-        bbwrap.sh nodisk=t \
-            ref={input.fasta} \
-            {params.input} \
-            trimreaddescriptions=t \
-            out={output.sam} \
-            threads={threads} \
-            pairlen={params.max_distance_between_pairs} \
-            pairedonly={params.paired_only} \
-            minid={params.min_id} \
-            mdtag=t \
-            xstag=fs \
-            nmtag=t \
-            sam=1.3 \
-            local=t \
-            ambiguous={params.ambiguous} \
-            secondary=t \
-            saa=f \
-            maxsites={params.maxsites} \
-            unpigz=t \
-            -Xmx{resources.java_mem}G \
-            2> {log}
-        """
+        mem_mb=config["mem"]*1000,
+    wrapper:
+        "v1.19.0/bio/minimap2/aligner"
 
 
-ruleorder: bam_2_sam_contigs > convert_sam_to_bam
-
-
-rule convert_sam_to_bam:
-    input:
-        "{file}.sam",
-    output:
-        bam="{file}.bam",
-        sam=temp("{file}.forpileup.sam"),
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("simplejob_threads", 1)
-    shadow:
-        "shallow"
-    resources:
-        mem=2 * config.get("simplejob_threads", 1),
-    shell:
-        """samtools view \
-           -m 1G \
-           -@ {threads} \
-           -bSh1 {input} | samtools sort \
-                               -m 1G \
-                               -@ {threads} \
-                               -T {wildcards.file}_tmp \
-                               -o {output.bam} \
-                               -O bam -
-        mv {input} {output.sam}
-        """
-
-
-rule bam_2_sam_contigs:
-    input:
-        "{sample}/sequence_alignment/{sample}.bam",
-    output:
-        temp("{sample}/sequence_alignment/{sample}.forpileup.sam"),
-    threads: config["simplejob_threads"]
-    resources:
-        mem=config["simplejob_mem"],
-    shadow:
-        "shallow"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    shell:
-        """
-        reformat.sh in={input} out={output} sam=1.3
-        """
-
-
-rule pileup:
+rule pileup_contigs_sample:
     input:
         fasta="{sample}/{sample}_contigs.fasta",
-        sam="{sample}/sequence_alignment/{sample}.forpileup.sam",
+        bam="{sample}/sequence_alignment/{sample}.bam",
     output:
         basecov=temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
         covhist="{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
@@ -817,7 +686,7 @@ rule pileup:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",
+        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", # This log file is uesd for report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("threads", 1)
@@ -825,15 +694,18 @@ rule pileup:
         mem=config["mem"],
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        """pileup.sh ref={input.fasta} in={input.sam} \
-        threads={threads} \
-        -Xmx{resources.java_mem}G \
-        covstats={output.covstats} \
-        hist={output.covhist} \
-        basecov={output.basecov}\
-        concise=t \
-        secondary={params.pileup_secondary} \
-        bincov={output.bincov} 2> {log}"""
+        "pileup.sh "
+        " ref={input.fasta} "
+        " in={input.bam} "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G "
+        " covstats={output.covstats} "
+        " hist={output.covhist} "
+        " basecov={output.basecov} "
+        " concise=t "
+        " secondary={params.pileup_secondary} "
+        " bincov={output.bincov} "
+        " 2> {log} "
 
 
 rule create_bam_index:
@@ -842,10 +714,10 @@ rule create_bam_index:
     output:
         "{file}.bam.bai",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem=2 * config.get("simplejob_threads", 1),
+        mem=2 * config["simplejob_threads"]
     shell:
         "samtools index {input}"
 
@@ -937,7 +809,7 @@ rule combine_contig_stats:
             "{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES
         ),
         mapping_logs=expand(
-            "{sample}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log",
+            "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",
             sample=SAMPLES,
         ),
         # mapping logs will be incomplete unless we wait on alignment to finish
