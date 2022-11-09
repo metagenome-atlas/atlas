@@ -4,6 +4,9 @@ usejni: false
 gene_annotations:
   - eggNOG
 
+genome_filter_criteria: "(Completeness-5*Contamination >50 )  & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
+exclude_unplacable_genomes: false
+
 genome_dereplication:
   ANI: 97.5                        ## Genome dreplication threshold
   overlap: 0.5                  # See more on https://wwood.github.io/galah/galah-cluster.html
@@ -12,3 +15,4 @@ genome_dereplication:
   
 genome_min_completeness: 50
 genome_max_contamination: 10
+
