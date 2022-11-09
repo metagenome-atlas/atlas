@@ -4,15 +4,16 @@ rule concat_genomes:
     input:
         genome_dir,
     output:
-        "genomes/all_contigs.fasta"
+        "genomes/all_contigs.fasta",
     params:
-        ext="fasta"
+        ext="fasta",
     shell:
         "cat {input}/*{params.ext} > {output}"
 
+
 rule index_genomes:
     input:
-        target= "genomes/all_contigs.fasta",
+        target="genomes/all_contigs.fasta",
     output:
         "ref/genomes.mmi",
     log:
@@ -42,6 +43,7 @@ rule align_reads_to_genomes:
         mem_mb=config["mem"] * 1000,
     wrapper:
         "v1.14.1/bio/minimap2/aligner"
+
 
 rule instrain_profile:
     input:
