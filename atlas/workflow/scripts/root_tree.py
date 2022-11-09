@@ -39,15 +39,12 @@ T = ete3.Tree(snakemake.input.tree, quoted_node_names=True, format=1)
 
 try:
 
-
     T.unroot()
     if len(T) > 2:
         T.set_outgroup(T.get_midpoint_outgroup())
 
-except Exception as e: 
-    logging.error('Failed to root tree, keep unrooted. Reason was:\n\n'+str(e))
-
-
+except Exception as e:
+    logging.error("Failed to root tree, keep unrooted. Reason was:\n\n" + str(e))
 
 
 T.write(outfile=snakemake.output.tree)

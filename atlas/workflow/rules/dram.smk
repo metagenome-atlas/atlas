@@ -3,9 +3,11 @@ DBDIR = config["database_dir"]
 
 def get_dram_config(wildcards):
 
-    old_dram_path= f"{DBDIR}/Dram"
+    old_dram_path = f"{DBDIR}/Dram"
     if os.path.exist(old_dram_path):
-        logger.error(f"Detected an old database for DRAM in {old_dram_path}. You can delete it.")
+        logger.error(
+            f"Detected an old database for DRAM in {old_dram_path}. You can delete it."
+        )
 
     return config.get("dram_config_file", f"{DBDIR}/DRAM/DRAM.config")
 
