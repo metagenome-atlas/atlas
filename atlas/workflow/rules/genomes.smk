@@ -358,7 +358,7 @@ rule index_genomes:
     resources:
         mem=config["mem"],
     wrapper:
-        "v1.14.1/bio/minimap2/index"
+        "v1.19.0/bio/minimap2/index"
 
 
 rule align_reads_to_genomes:
@@ -376,7 +376,7 @@ rule align_reads_to_genomes:
         mem=config["mem"],
         mem_mb=config["mem"] * 1000,
     wrapper:
-        "v1.14.1/bio/minimap2/aligner"
+        "v1.19.0/bio/minimap2/aligner"
 
 
 
