@@ -202,12 +202,14 @@ def parse_pileup_log_file(log_file):
                     # parse line
                     key, value_with_whitespace = line.strip().split(":")
 
-                    try:
-                        value = int(value_with_whitespace)
-                    except ValueError:
-                        value = float(value_with_whitespace)
+                    if not key=="Time":
+                        try:
+                            value = int(value_with_whitespace)
+                        except ValueError:
+                            value = float(value_with_whitespace)
 
-                    parsed[key] = value
+                        parsed[key] = value
+                        
                 except Exception as e:
                     raise Exception(
                         f"Error parsing line:\n{line}\n in log file {log_file}"
