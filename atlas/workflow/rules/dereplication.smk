@@ -65,3 +65,26 @@ rule tsv2parquet:
 
         M= open_function(input[0]).drop(['Identity'],axis=1)
         M.to_parquet(output[0],engine="pyarrow")
+
+# TODO: adapt this rule
+checkpoint cluster_species:
+    input:
+        dists= rules.tsv2parquet.output,
+        genome_info = "genomes/all_bins/filtered_quality.tsv",
+    output:
+        cluster_file="genomes/clustering/bins_clustering.tsv",
+    resources:
+        mem_mb=config['mem']['large']*1000
+    params:
+        threshold=config["genome_dereplication"]["ANI"],
+        linkage_method= 'average',
+    script:
+        "../scripts/cluster_genomes.py"
+
+
+def get_species(wildcards):
+    import pandas as pd
+    cluster_file=checkpoints.cluster_species.get().output.cluster_file
+
+    df= pd.read_csv(cluster_file,sep='\t',index_col=0)
+    return list(df.Species.unique())
