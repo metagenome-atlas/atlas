@@ -119,7 +119,7 @@ rule minimap:
         """minimap2 -t {threads} -ax sr {input.mmi} {input.fq} | grep -v "^@" | cat {input.dict} - | samtools view -F 3584 -b - > {output.bam} 2>{log}"""
 
 
-ruleorder: sort_bam > minimap > convert_sam_to_bam
+ruleorder: sort_bam > minimap
 
 
 rule sort_bam:
