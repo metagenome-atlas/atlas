@@ -232,7 +232,6 @@ include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
 include: "rules/dram.smk"
 include: "rules/strains.smk"
-include: "rules/bbsplit.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk
@@ -296,10 +295,6 @@ rule genecatalog:
 def get_genome_annotations():
 
     annotation_file_names = {
-        "cat_taxonomy": "genomes/taxonomy/taxonomy.tsv",
-        "ssu": "genomes/SSU/ssu_summary.tsv",
-        "checkm_taxonomy": "genomes/checkm/taxonomy.tsv",
-        "checkm_tree": "genomes/tree/checkm.nwk",
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
         "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
         "genes": "genomes/annotations/genes/predicted",
@@ -310,7 +305,7 @@ def get_genome_annotations():
     annotations_requested = config["annotations"]
 
     try:
-        annotations_files = ["genomes/checkm/completeness.tsv"] + [
+        annotations_files = ["genomes/genome_quality.tsv"] + [
             annotation_file_names[an] for an in annotations_requested
         ]
 
@@ -326,9 +321,9 @@ def get_genome_annotations():
 rule genomes:
     input:
         "genomes/counts/median_coverage_genomes.parquet",
-        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
+        expand("genomes/counts/counts_genomes.parquet"),
         "genomes/clustering/allbins2genome.tsv",
-        "genomes/counts/mapping_rate.tsv",
+        # "genomes/counts/mapping_rate.tsv",
         *get_genome_annotations(),
         "finished_binning",
     output:
@@ -338,7 +333,7 @@ rule genomes:
 rule quantify_genomes:
     input:
         "genomes/counts/median_coverage_genomes.parquet",
-        expand("genomes/counts/counts_{scope}.parquet", scope=["scaf", "ref"]),
+        expand("genomes/counts/counts_genomes.parquet"),
 
 
 rule binning:
@@ -349,7 +344,7 @@ rule binning:
             sample=SAMPLES,
         ),
         expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
-        "genomes/checkm/checkm_all_bins.tsv",
+        "genomes/all_bins/checkm_all_bins.tsv",
         "finished_assembly",
     output:
         temp(touch("finished_binning")),

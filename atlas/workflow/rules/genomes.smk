@@ -1,26 +1,6 @@
 ## dRep
 localrules:
-    get_all_bins,
     all_contigs2bins,
-
-
-rule get_all_bins:
-    input:
-        bins=expand(
-            "{sample}/binning/{binner}/bins",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        temp(directory("genomes/all_bins")),
-    run:
-        os.mkdir(output[0])
-        from utils.io import symlink_relative
-
-        for bin_folder in input.bins:
-
-            fasta_files = [f for f in os.listdir(bin_folder) if f.endswith(".fasta")]
-            symlink_relative(fasta_files, bin_folder, output[0])
 
 
 rule all_contigs2bins:
@@ -39,26 +19,55 @@ rule all_contigs2bins:
 
 
 localrules:
-    merge_checkm_for_dereplication,
     merge_checkm,
+    filter_bins,
 
 
-rule merge_checkm_for_dereplication:
+localrules:
+    get_bin_filenames,
+
+
+rule get_bin_filenames:
     input:
-        "reports/genomic_bins_{binner}.tsv".format(binner=config["final_binner"]),
+        dirs=expand(
+            "{sample}/binning/{binner}/bins",
+            sample=SAMPLES,
+            binner=config["final_binner"],
+        ),
     output:
-        temp("genomes/quality.csv"),
+        filenames="genomes/filter/paths.tsv",
     run:
         import pandas as pd
+        from pathlib import Path
+        from utils import io
 
-        D = pd.read_csv(input[0], index_col=0, sep="\t")
+        fasta_files = []
 
 
-        D.index.name = "genome"
+        # searh for fasta files (.f*) in all bin folders
+        for dir in input.dirs:
+            dir = Path(dir)
+            fasta_files += list(dir.glob("*.f*"))
 
-        D.columns = D.columns.str.lower()
-        D = D[["completeness", "contamination"]]
-        D.to_csv(output[0])
+        filenames = pd.DataFrame(fasta_files, columns=["Filename"])
+        filenames.index = filenames.Filename.apply(io.simplify_path)
+        filenames.index.name = "Bin"
+
+        filenames.to_csv(output.filenames, sep="\t")
+
+
+rule calculate_stats:
+    input:
+        rules.get_bin_filenames.output.filenames,
+    output:
+        "genomes/all_bins/genome_stats.tsv",
+    threads: config["threads"]
+    run:
+        from utils.genome_stats import get_many_genome_stats
+        import pandas as pd
+
+        filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
+        get_many_genome_stats(filenames, output[0], threads)
 
 
 rule merge_checkm:
@@ -79,8 +88,8 @@ rule merge_checkm:
             binner=config["final_binner"],
         ),
     output:
-        checkm="genomes/checkm/checkm_all_bins.tsv",
-        markers="genomes/checkm/all_bins_markers.fasta",
+        checkm="genomes/all_bins/checkm_all_bins.tsv",
+        markers="genomes/all_bins/all_bins_markers.fasta",
     run:
         import pandas as pd
         import shutil
@@ -100,29 +109,28 @@ rule merge_checkm:
                 shutil.copyfileobj(open(fasta, "rb"), fout)
 
 
-def get_dereplication_arguments(key):
-    "key = completeness or contamination"
-
-    if "filter" in config["genome_dereplication"]:
-        logger.info(
-            "The configuration for dereplication has changed. For now I will try to be backward compatible, but please update your config file. https://metagenome-atlas.readthedocs.io/en/latest/usage/configuration.html#detailed-configuration"
-        )
-
-        return config["genome_dereplication"]["filter"][key]
-
-    else:
-        if key == "completeness":
-            return config["genome_min_completeness"]
-        elif key == "contamination":
-            return config["genome_max_contamination"]
-        else:
-            raise ValueError("key must be completeness, contamination")
+rule filter_bins:
+    input:
+        paths=rules.get_bin_filenames.output.filenames,
+        quality="genomes/all_bins/checkm_all_bins.tsv",
+        stats="genomes/all_bins/genome_stats.tsv",
+    output:
+        quality="genomes/all_bins/filtered_quality.tsv",
+        paths=temp("genomes/all_bins/filtered_bins.txt"),
+        quality_for_derep=temp("genomes/all_bins/filtered_quality.csv"),
+    threads: 1
+    log:
+        "logs/genomes/filter_bins.log",
+    params:
+        filter_criteria=config["genome_filter_criteria"],
+    script:
+        "../scripts/filter_genomes.py"
 
 
 rule dereplication:
     input:
-        dir="genomes/all_bins",
-        quality="genomes/quality.csv",
+        paths="genomes/all_bins/filtered_bins.txt",
+        quality="genomes/all_bins/filtered_quality.csv",
     output:
         dir=temp(directory("genomes/dereplicated_genomes")),
         mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
@@ -134,20 +142,15 @@ rule dereplication:
     params:
         ANI=config["genome_dereplication"]["ANI"],
         quality_formula=config["genome_dereplication"]["quality_formula"],
-        min_completeness=get_dereplication_arguments("completeness"),
-        max_contamination=get_dereplication_arguments("contamination"),
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
         min_overlap=config["genome_dereplication"]["overlap"],
     shell:
         " galah cluster "
-        " --genome-fasta-directory {input.dir}"
-        " --genome-fasta-extension fasta "
+        " --genome-fasta-list {input.paths}"
         " --genome-info {input.quality} "
         " --ani {params.ANI} "
         " --min-aligned-fraction {params.min_overlap} "
         " {params.opt_parameters} "
-        " --min-completeness {params.min_completeness} "
-        " --max-contamination {params.max_contamination} "
         " --quality-formula {params.quality_formula} "
         " --threads {threads} "
         " --output-representative-fasta-directory {output.dir} "
@@ -164,12 +167,13 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
-        source_genomes="genomes/all_bins",
+        genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_old2mag="genomes/clustering/old2newID.tsv",
         mapfile_allbins2mag="genomes/clustering/allbins2genome.tsv",
+        genome_quality="genomes/genome_quality.tsv",
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
@@ -259,41 +263,6 @@ rule get_contig2genomes:
 ruleorder: get_contig2genomes > rename_genomes
 
 
-rule run_all_checkm_lineage_wf:
-    input:
-        touched_output="logs/checkm_init.txt",
-        dir=genome_dir,
-    output:
-        "genomes/checkm/completeness.tsv",
-        "genomes/checkm/storage/tree/concatenated.fasta",
-    params:
-        output_dir=lambda wc, output: os.path.dirname(output[0]),
-        tmpdir=config["tmpdir"],
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    threads: config.get("threads", 1)
-    resources:
-        time=config["runtime"]["long"],
-        mem=config["large_mem"],
-    log:
-        "logs/genomes/checkm.log",
-    benchmark:
-        "logs/benchmarks/checkm_lineage_wf/all_genomes.tsv"
-    shell:
-        """
-        rm -r {params.output_dir}
-        checkm lineage_wf \
-            --tmpdir {params.tmpdir} \
-            --file {params.output_dir}/completeness.tsv \
-            --tab_table \
-            --quiet \
-            --extension fasta \
-            --threads {threads} \
-            {input.dir} \
-            {params.output_dir} &> {log}
-        """
-
-
 # rule predict_genes_genomes:
 #     input:
 #         dir= genomes_dir
@@ -350,3 +319,119 @@ rule all_prodigal:
         get_all_genes,
     output:
         touch("genomes/annotations/genes/predicted"),
+
+
+### Quantification
+
+localrules: concat_orfs, concat_genomes
+
+rule concat_orfs:
+    input:
+        lambda wc: get_all_genes(wc, extension=".fna")
+    output:
+        temp("genomes/all_orfs.fasta"),
+    shell:
+        "cat {input} > {output}"
+
+
+rule concat_genomes:
+    input:
+        genome_dir,
+    output:
+        "genomes/all_contigs.fasta",
+    params:
+        ext="fasta",
+    shell:
+        "cat {input}/*{params.ext} > {output}"
+
+
+rule index_genomes:
+    input:
+        target="genomes/all_contigs.fasta",
+    output:
+        "ref/genomes.mmi",
+    log:
+        "logs/genomes/alignment/index.log",
+    params:
+        index_size="12G",
+    threads: 3
+    resources:
+        mem=config["mem"],
+    wrapper:
+        "v1.14.1/bio/minimap2/index"
+
+
+rule align_reads_to_genomes:
+    input:
+        target=rules.index_genomes.output,
+        query=get_quality_controlled_reads,
+    output:
+        "genomes/alignments/{sample}.bam",
+    log:
+        "logs/genomes/alignment/{sample}_map.log",
+    params:
+        extra="-x sr",
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
+    wrapper:
+        "v1.14.1/bio/minimap2/aligner"
+
+
+
+rule pileup_MAGs:
+    input:
+        bam="genomes/alignments/{sample}.bam",
+        orf= "genomes/all_orfs.fasta"
+    output:
+        covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
+        bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
+        orf= "genomes/alignments/orf_coverage/{sample}.tsv.gz"
+    log:
+        "logs/genomes/alignments/pilup_{sample}.log",
+    conda:
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
+    resources:
+        mem=config["mem"],
+        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+    shell:
+        "pileup.sh in={input.bam} "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G "
+        " covstats={output.covstats} "
+        " fastaorf={input.orf} outorf={output.orf} "
+        " concise=t "
+        " physical=t "
+        " bincov={output.bincov} "
+        " 2> {log}"
+
+
+rule combine_coverages_MAGs:
+    input:
+        binned_coverage_files=expand(
+            "genomes/alignments/coverage_binned/{sample}.tsv.gz", sample=SAMPLES
+        ),
+        coverage_files=expand(
+            "genomes/alignments/coverage/{sample}.tsv.gz", sample=SAMPLES
+        ),
+        contig2genome="genomes/clustering/contig2genome.tsv",
+    params:
+        samples=SAMPLES,
+    output:
+        coverage_contigs = "genomes/counts/coverage_contigs.parquet",
+        counts="genomes/counts/counts_genomes.parquet",
+        binned_cov="genomes/counts/binned_coverage.parquet",
+        median_abund="genomes/counts/median_coverage_genomes.parquet",
+    log:
+        "logs/genomes/counts/combine_binned_coverages_MAGs.log",
+    threads: 1
+    resources:
+        mem_mb=1000 * config["simplejob_mem"],
+        time_min=config["runtime"]["simplejob"] * 60,
+    script:
+        "../scripts/combine_coverage_MAGs.py"
+
+
+# TODO mapping rate from pileup

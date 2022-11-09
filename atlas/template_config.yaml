@@ -175,16 +175,18 @@ maxbin:
 
 DASTool:
   search_engine: 'diamond'
-  score_threshold: 0.5              #Score threshold until selection algorithm will keep selecting bins [0..1].
+  score_threshold: 0.5              # Score threshold until selection algorithm will keep selecting bins [0..1].
+
+# Acording to Parks et al. 2020 (GTDB)
+genome_filter_criteria: "(Completeness-5*Contamination >50 )  & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
+
 
 genome_dereplication:
-  ANI: 97.5                        ## Genome dreplication threshold
-  overlap: 0.50                  # See more on https://wwood.github.io/galah/galah-cluster.html
+  ANI: 95                        ## Genome dreplication threshold
+  overlap: 0.30                  # See more on https://wwood.github.io/galah/galah-cluster.html
   opt_parameters: ""
   quality_formula: "Parks2020_reduced" # completeness-5*contamination-5*num_contigs/100-5*num_ambiguous_bases/100000
   
-genome_min_completeness: 50
-genome_max_contamination: 10
 
 rename_mags_contigs: true        #Rename contigs of representative MAGs
 
@@ -196,8 +198,8 @@ annotations:
   - gtdb_tree
   - gtdb_taxonomy
   - genes
-  - kegg_modules
-  - dram
+ # - kegg_modules
+ # - dram
 
 
 

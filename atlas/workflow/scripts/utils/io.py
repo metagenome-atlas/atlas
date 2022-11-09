@@ -1,4 +1,5 @@
 import os
+import gzip as gz
 
 
 def simplify_path(path, remove_gz=True):
@@ -11,6 +12,20 @@ def simplify_path(path, remove_gz=True):
         name = os.path.splitext(name)[0]
 
     return name
+
+
+def simply_open(filename, mode="r", *args, **kwargs):
+    """open file irrespective if gz compressed or not"""
+
+    if filename.endswith(".gz"):
+
+        # To read file in textmode
+        if mode in ["r", "a", "w", "x"]:
+            mode += "t"
+
+        return gz.open(filename, mode, *args, **kwargs)
+    else:
+        return open(filename, mode, *args, **kwargs)
 
 
 def cat_files(files, outfilename, gzip=False):

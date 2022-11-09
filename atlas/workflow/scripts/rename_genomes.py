@@ -113,3 +113,19 @@ with open(mapfile_contigs, "w") as out_contigs:
                     ffo.write(f">{new_header}\n")
                 else:
                     ffo.write(line)
+
+
+def rename_quality(quality_in, quality_out, old2new_name):
+
+    Q = pd.read_csv(quality_in, index_col=0, sep="\t")
+
+    Q = Q.loc[old2new_name.keys()].rename(index=old2new_name)
+
+    Q.to_csv(quality_out, sep="\t")
+
+
+rename_quality(
+    quality_in=snakemake.input.genome_quality,
+    quality_out=snakemake.output.genome_quality,
+    old2new_name=old2new_name,
+)

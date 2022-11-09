@@ -1,8 +1,4 @@
 #! /usr/bin/env python
-
-from atlas import utils
-import pandas as pd
-
 import sys, os
 import logging, traceback
 

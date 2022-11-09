@@ -39,6 +39,10 @@ atlas init --db-dir $databaseDir --threads=$NThreads -w $WD $reads_dir
 echo "Dryrun all"
 atlas run all -w $WD --max-mem $MaxMem --jobs $NThreads --dryrun $@
 
+echo "Dryrun strains"
+atlas run genomes strains -w $WD --max-mem $MaxMem --jobs $NThreads --dryrun $@
+
+
 for binner in SemiBin vamb DASTool ; do
 
   echo "
