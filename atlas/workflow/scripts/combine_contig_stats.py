@@ -43,12 +43,8 @@ def parse_map_stats(sample_data, out_tsv):
         df.name = sample
         genes_df = pd.read_csv(sample_data[sample]["gene_table"], index_col=0, sep="\t")
         df["N_Predicted_Genes"] = genes_df.shape[0]
-        
-        mapping_stats = parse_pileup_log_file(
-            sample_data[sample]["mapping_log"]
-        )
 
-
+        mapping_stats = parse_pileup_log_file(sample_data[sample]["mapping_log"])
 
         df["Assembled_Reads"] = mapping_stats["Mapped reads"]
         df["Percent_Assembled_Reads"] = mapping_stats["Percent mapped"]

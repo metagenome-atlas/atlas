@@ -1,8 +1,6 @@
 import pandas as pd
 
 
-
-
 def parse_comments(file, comment="#", sep="\t", expect_one_value=True):
     "parse comments at begin of file #Avg: 123"
     Parsed = {}
@@ -201,26 +199,24 @@ def parse_pileup_log_file(log_file):
         for line in f:
             if ": " in line:
                 try:
-                    #parse line
-                    key,value_with_whitespace = line.strip().split(":")
+                    # parse line
+                    key, value_with_whitespace = line.strip().split(":")
 
                     try:
                         value = int(value_with_whitespace)
                     except ValueError:
                         value = float(value_with_whitespace)
 
-                    
-                    
                     parsed[key] = value
                 except Exception as e:
-                    raise Exception(f"Error parsing line:\n{line}\n in log file {log_file}") from e
-
-
+                    raise Exception(
+                        f"Error parsing line:\n{line}\n in log file {log_file}"
+                    ) from e
 
         return parsed
 
-
     return used, mapped
+
 
 # def parse_simple_log_file(log_file, keyword, expect_one_value=True):
 #     content = open(log_file).read()

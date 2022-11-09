@@ -552,10 +552,9 @@ if config["filter_contigs"]:
             "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log",
         threads: config["threads"]
         resources:
-            mem_mb=config["mem"]*1000,
+            mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/minimap2/aligner"
-
 
     rule pileup_prefilter:
         input:
@@ -571,7 +570,7 @@ if config["filter_contigs"]:
             "../envs/required_packages.yaml"
         threads: config["threads"]
         resources:
-            mem_mb=config["mem"]*1000,
+            mem_mb=config["mem"] * 1000,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
             "pileup.sh ref={input.fasta} in={input.bam} "
@@ -656,14 +655,14 @@ rule align_reads_to_final_contigs:
         bam="{sample_contigs}/sequence_alignment/{sample}.bam",
     params:
         extra="-x sr",
-        sorting="coordinate"
+        sorting="coordinate",
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log", 
+        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log",
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1000,
+        mem_mb=config["mem"] * 1000,
     wrapper:
         "v1.19.0/bio/minimap2/aligner"
 
@@ -686,7 +685,7 @@ rule pileup_contigs_sample:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log", # This log file is uesd for report
+        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",  # This log file is uesd for report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("threads", 1)
@@ -717,7 +716,7 @@ rule create_bam_index:
         "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem=2 * config["simplejob_threads"]
+        mem=2 * config["simplejob_threads"],
     shell:
         "samtools index {input}"
 

@@ -323,11 +323,15 @@ rule all_prodigal:
 
 ### Quantification
 
-localrules: concat_orfs, concat_genomes
+
+localrules:
+    concat_orfs,
+    concat_genomes,
+
 
 rule concat_orfs:
     input:
-        lambda wc: get_all_genes(wc, extension=".fna")
+        lambda wc: get_all_genes(wc, extension=".fna"),
     output:
         temp("genomes/all_orfs.fasta"),
     shell:
@@ -379,15 +383,14 @@ rule align_reads_to_genomes:
         "v1.19.0/bio/minimap2/aligner"
 
 
-
 rule pileup_MAGs:
     input:
         bam="genomes/alignments/{sample}.bam",
-        orf= "genomes/all_orfs.fasta"
+        orf="genomes/all_orfs.fasta",
     output:
         covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
-        orf= "genomes/alignments/orf_coverage/{sample}.tsv.gz"
+        orf="genomes/alignments/orf_coverage/{sample}.tsv.gz",
     log:
         "logs/genomes/alignments/pilup_{sample}.log",
     conda:
@@ -420,7 +423,7 @@ rule combine_coverages_MAGs:
     params:
         samples=SAMPLES,
     output:
-        coverage_contigs = "genomes/counts/coverage_contigs.parquet",
+        coverage_contigs="genomes/counts/coverage_contigs.parquet",
         counts="genomes/counts/counts_genomes.parquet",
         binned_cov="genomes/counts/binned_coverage.parquet",
         median_abund="genomes/counts/median_coverage_genomes.parquet",
@@ -440,7 +443,7 @@ rule calculate_mapping_rate_MAGs:
             "logs/genomes/alignments/pilup_{sample}.log", sample=SAMPLES
         ),
     output:
-        coverage_contigs = "genomes/counts/mapping_rate.tsv",
+        coverage_contigs="genomes/counts/mapping_rate.tsv",
     log:
         "logs/genomes/counts/calcualte_mapping_rate_MAGs.log",
     threads: 1
@@ -448,20 +451,24 @@ rule calculate_mapping_rate_MAGs:
         mem_mb=1000 * config["simplejob_mem"],
         time_min=config["runtime"]["simplejob"] * 60,
     run:
-        from from utils.parsers_bbmap import parse_pileup_log_file
+        from utils.parsers_bbmap import parse_pileup_log_file
 
         import pandas as pd
 
         combined_mapping_stats = {}
-        for sample,log_file in zip(SAMPLES,input):
+        for sample, log_file in zip(SAMPLES, input):
             combined_mapping_stats[sample] = parse_pileup_log_file(log_file)
 
         combined_mapping_stats = pd.DataFrame(combined_mapping_stats)
 
-        combined_mapping_stats = combined_mapping_stats[["Reads","Mapped reads","Mapped bases","Percent mapped","Percent proper pairs"]]
+        combined_mapping_stats = combined_mapping_stats[
+            [
+                "Reads",
+                "Mapped reads",
+                "Mapped bases",
+                "Percent mapped",
+                "Percent proper pairs",
+            ]
+        ]
 
-        combined_mapping_stats.to_csv(output[0],sep='\t')
-        
-            
-
-
+        combined_mapping_stats.to_csv(output[0], sep="\t")
