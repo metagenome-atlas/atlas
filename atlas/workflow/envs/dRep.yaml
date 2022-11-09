@@ -7,5 +7,5 @@ dependencies:
     - python>=3.8, <3.11
     - mash>=2
     - prodigal=2.6.3
-    - fastani=1.32
+    - fastani=1.33
     - drep>=3.4 , <4
