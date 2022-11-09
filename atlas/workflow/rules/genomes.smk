@@ -126,51 +126,47 @@ rule filter_bins:
     script:
         "../scripts/filter_genomes.py"
 
-'''
-rule dereplication:
+
+rule drep_compare:
     input:
         paths="genomes/all_bins/filtered_bins.txt",
         quality="genomes/all_bins/filtered_quality.csv",
     output:
-        dir=temp(directory("genomes/dereplicated_genomes")),
-        mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
+        tables=multiext("genomes/Dereplication/data_tables/","Cdb.csv","Wdb.csv")
     threads: config["threads"]
     log:
-        "logs/genomes/dereplication.log",
+        "logs/genomes/drep_compare.log",
     conda:
-        "../envs/galah.yaml"
+        "../envs/dRep.yaml"
     params:
+        filter= " --noQualityFiltering ",
         ANI=config["genome_dereplication"]["ANI"],
-        quality_formula=config["genome_dereplication"]["quality_formula"],
-        opt_parameters=config["genome_dereplication"]["opt_parameters"],
-        min_overlap=config["genome_dereplication"]["overlap"],
+        overlap=config["genome_dereplication"]["overlap"],
+        working_dir= lambda wc, output: Path(output[0]).parent.parent
     shell:
-        " galah cluster "
-        " --genome-fasta-list {input.paths}"
-        " --genome-info {input.quality} "
-        " --ani {params.ANI} "
-        " --min-aligned-fraction {params.min_overlap} "
+        " rm -r {params.working_dir} 2> {log}"
+        ";"
+        " dRep compare "
+        " --genomes {input.paths} "
+        " --genomeInfo {input.quality} "
+        " {params.filter} "
+        " --S_ani {params.ANI} "
+        " --S_algorithm fastANI "
+        " --cov_thresh {params.overlap} "
+        " --processors {threads} "
         " {params.opt_parameters} "
-        " --quality-formula {params.quality_formula} "
-        " --threads {threads} "
-        " --output-representative-fasta-directory {output.dir} "
-        " --output-cluster-definition {output.mapping_file} "
-        " --precluster-method finch "
-        " &> {log} "
+        " {params.working_dir} "
+        " &>> {log} "
 
-'''
-
-rule dereplication:
+rule dereplicate:
     input:
-        paths="genomes/all_bins/filtered_bins.txt",
+        rules.drep_compare.output,
         quality="genomes/all_bins/filtered_quality.csv",
     output:
-        directory("genomes/Dereplication/drep_output"),
+        genomes=temp(directory("genomes/Dereplication/dereplicated_genomes")),
     threads: config["threads"]
     log:
-        "logs/genomes/dereplication.log",
-    shadow:
-        "shallow"
+        "logs/genomes/dereplicate.log",
     conda:
         "../envs/dRep.yaml"
     params:
@@ -183,9 +179,9 @@ rule dereplication:
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
+        working_dir= lambda wc, output: Path(output.input[0]).parent.parent
     shell:
         " dRep dereplicate "
-        " --genomes {input.paths} "
         " --genomeInfo {input.quality} "
         " {params.filter} "
         " --S_ani {params.ANI} "
@@ -197,9 +193,33 @@ rule dereplication:
         " --size_weight {params.size_weight} "
         " --processors {threads} "
         " {params.opt_parameters} "
-        " {output} "
+        " {params.working_dir} "
         " &> {log} "
 
+rule parse_drep:
+    input:
+        rules.drep_compare.output,
+    output:
+        "genomes/clustering/allbins2genome_oldname.tsv"
+    run:
+        import pandas as pd
+        from pathlib import Path
+
+
+
+        def get_genome2cluster(Drep_folder):
+
+            Cdb = pd.read_csv(os.path.join(Drep_folder, "..", "data_tables", "Cdb.csv"))
+            Cdb.index = Cdb.genome  # location changes
+
+            Wdb = pd.read_csv(os.path.join(Drep_folder, "..", "data_tables", "Wdb.csv"))
+            Wdb.index = Wdb.cluster
+            map_genome2cluster = Cdb.secondary_cluster.map(Wdb.genome)
+
+            return map_genome2cluster
+
+        genome2cluster = get_genome2cluster(Path(input[0]).parent.parent)
+        genome2cluster.to_csv(output[0],sep='\t')
 
 
 localrules:
@@ -208,7 +228,7 @@ localrules:
 
 checkpoint rename_genomes:
     input:
-        genomes="genomes/dereplicated_genomes",
+        genomes="genomes/Dereplication/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
         genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
     output:

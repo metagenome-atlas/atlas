@@ -184,7 +184,7 @@ genome_filter_criteria: "(Completeness-5*Contamination >50 )  & (Ambigious_bases
 genome_dereplication:
   ANI: 95                        ## Genome dreplication threshold
   overlap: 0.30                  # See more on https://wwood.github.io/galah/galah-cluster.html
-  opt_parameters: ""
+  opt_parameters: "--run_tertiary_clustering"
   score:
     completeness: 1
     contamination: 5
