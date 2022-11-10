@@ -349,38 +349,81 @@ rule concat_genomes:
         "cat {input}/*{params.ext} > {output}"
 
 
-rule index_genomes:
-    input:
-        target="genomes/all_contigs.fasta",
-    output:
-        "ref/genomes.mmi",
-    log:
-        "logs/genomes/alignment/index.log",
-    params:
-        index_size="12G",
-    threads: 3
-    resources:
-        mem=config["mem"],
-    wrapper:
-        "v1.19.0/bio/minimap2/index"
+if config["genome_aligner"]=="minimap":
+
+    rule index_genomes:
+        input:
+            target="genomes/all_contigs.fasta",
+        output:
+            "ref/genomes.mmi",
+        log:
+            "logs/genomes/alignmentsindex.log",
+        params:
+            index_size="12G",
+        threads: 3
+        resources:
+            mem=config["mem"],
+        wrapper:
+            "v1.19.0/bio/minimap2/index"
 
 
-rule align_reads_to_genomes:
-    input:
-        target=rules.index_genomes.output,
-        query=get_quality_controlled_reads,
-    output:
-        "genomes/alignments/{sample}.bam",
-    log:
-        "logs/genomes/alignment/{sample}_map.log",
-    params:
-        extra="-x sr",
-    threads: config["threads"]
-    resources:
-        mem=config["mem"],
-        mem_mb=config["mem"] * 1000,
-    wrapper:
-        "v1.19.0/bio/minimap2/aligner"
+    rule align_reads_to_genomes:
+        input:
+            target=rules.index_genomes.output,
+            query=get_quality_controlled_reads,
+        output:
+            "genomes/alignments/{sample}.bam",
+        log:
+            "logs/genomes/alignments{sample}_map.log",
+        params:
+            extra="-x sr",
+            sort="coordinate"
+        threads: config["threads"]
+        resources:
+            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
+        wrapper:
+            "v1.19.0/bio/minimap2/aligner"
+
+
+
+if config["genome_aligner"]=="bwa":
+
+    rule index_genomes:
+        input:
+            "genomes/all_contigs.fasta",
+        output:
+            multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac") ,
+        log:
+            "logs/genomes/alignments/bwa_index.log",
+        threads: 4
+        resources:
+            mem=config["mem"],
+        wrapper:
+            "v1.19.0/bio/bwa-mem2/index"
+
+
+    rule align_reads_to_genomes:
+        input:
+            idx=rules.index_genomes.output,
+            reads=get_quality_controlled_reads,
+        output:
+            "genomes/alignments/{sample}.bam",
+        log:
+            "logs/genomes/alignments{sample}_bwa.log",
+        params:
+            extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+            sort="samtools", 
+            sort_order="coordinate", 
+        threads: config["threads"]
+        resources:
+            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
+        wrapper:
+            "v1.19.0/bio/bwa-mem2/mem"
+
+else:
+    raise Exception("'genome_aligner' not understood, check config file")
 
 
 rule pileup_MAGs:
