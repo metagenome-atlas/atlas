@@ -459,7 +459,8 @@ rule calculate_mapping_rate_MAGs:
         for sample, log_file in zip(SAMPLES, input):
             combined_mapping_stats[sample] = parse_pileup_log_file(log_file)
 
-        combined_mapping_stats = pd.DataFrame(combined_mapping_stats)
+        combined_mapping_stats = pd.DataFrame(combined_mapping_stats).T
+
 
         combined_mapping_stats = combined_mapping_stats[
             [
