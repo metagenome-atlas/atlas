@@ -349,7 +349,7 @@ rule concat_genomes:
         "cat {input}/*{params.ext} > {output}"
 
 
-if config["genome_aligner"]=="minimap":
+if config["genome_aligner"] == "minimap":
 
     rule index_genomes:
         input:
@@ -366,7 +366,6 @@ if config["genome_aligner"]=="minimap":
         wrapper:
             "v1.19.0/bio/minimap2/index"
 
-
     rule align_reads_to_genomes:
         input:
             target=rules.index_genomes.output,
@@ -377,7 +376,7 @@ if config["genome_aligner"]=="minimap":
             "logs/genomes/alignments{sample}_map.log",
         params:
             extra="-x sr",
-            sort="coordinate"
+            sort="coordinate",
         threads: config["threads"]
         resources:
             mem=config["mem"],
@@ -386,14 +385,13 @@ if config["genome_aligner"]=="minimap":
             "v1.19.0/bio/minimap2/aligner"
 
 
-
-if config["genome_aligner"]=="bwa":
+if config["genome_aligner"] == "bwa":
 
     rule index_genomes:
         input:
             "genomes/all_contigs.fasta",
         output:
-            multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac") ,
+            multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac"),
         log:
             "logs/genomes/alignments/bwa_index.log",
         threads: 4
@@ -401,7 +399,6 @@ if config["genome_aligner"]=="bwa":
             mem=config["mem"],
         wrapper:
             "v1.19.0/bio/bwa-mem2/index"
-
 
     rule align_reads_to_genomes:
         input:
@@ -413,14 +410,15 @@ if config["genome_aligner"]=="bwa":
             "logs/genomes/alignments{sample}_bwa.log",
         params:
             extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
-            sort="samtools", 
-            sort_order="coordinate", 
+            sort="samtools",
+            sort_order="coordinate",
         threads: config["threads"]
         resources:
             mem=config["mem"],
             mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/bwa-mem2/mem"
+
 
 else:
     raise Exception("'genome_aligner' not understood, check config file")
