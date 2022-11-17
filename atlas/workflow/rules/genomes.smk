@@ -349,43 +349,132 @@ rule concat_genomes:
         "cat {input}/*{params.ext} > {output}"
 
 
-rule index_genomes:
-    input:
-        target="genomes/all_contigs.fasta",
-    output:
-        "ref/genomes.mmi",
-    log:
-        "logs/genomes/alignment/index.log",
-    params:
-        index_size="12G",
-    threads: 3
-    resources:
-        mem=config["mem"],
-    wrapper:
-        "v1.19.0/bio/minimap2/index"
+if config["genome_aligner"] == "minimap":
+
+    rule index_genomes:
+        input:
+            target="genomes/all_contigs.fasta",
+        output:
+            "ref/genomes.mmi",
+        log:
+            "logs/genomes/alignmentsindex.log",
+        params:
+            index_size="12G",
+        threads: 3
+        resources:
+            mem=config["mem"],
+        wrapper:
+            "v1.19.0/bio/minimap2/index"
+
+    rule align_reads_to_genomes:
+        input:
+            target=rules.index_genomes.output,
+            query=get_quality_controlled_reads,
+        output:
+            "genomes/alignments/bams/{sample}.bam",
+        log:
+            "logs/genomes/alignments/{sample}_map.log",
+        params:
+            extra="-x sr",
+            sort="coordinate",
+        threads: config["threads"]
+        resources:
+            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
+        wrapper:
+            "v1.19.0/bio/minimap2/aligner"
 
 
-rule align_reads_to_genomes:
+elif config["genome_aligner"] == "bwa":
+
+    rule index_genomes:
+        input:
+            "genomes/all_contigs.fasta",
+        output:
+            multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac"),
+        log:
+            "logs/genomes/alignments/bwa_index.log",
+        threads: 4
+        resources:
+            mem=config["mem"],
+        wrapper:
+            "v1.19.0/bio/bwa-mem2/index"
+
+    rule align_reads_to_genomes:
+        input:
+            idx=rules.index_genomes.output,
+            reads=get_quality_controlled_reads,
+        output:
+            "genomes/alignments/bams/{sample}.bam",
+        log:
+            "logs/genomes/alignments/{sample}_bwa.log",
+        params:
+            extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+            sort="samtools",
+            sort_order="coordinate",
+        threads: config["threads"]
+        resources:
+            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
+        wrapper:
+            "v1.19.0/bio/bwa-mem2/mem"
+
+
+else:
+    raise Exception(
+        "'genome_aligner' not understood, it should be 'minimap' or 'bwa', got '{genome_aligner}'. check config file".format(
+            **config
+        )
+    )
+
+
+# path change for bam file
+localrules:
+    move_old_bam,
+
+
+ruleorder: move_old_bam > align_reads_to_genomes
+
+
+rule move_old_bam:
     input:
-        target=rules.index_genomes.output,
-        query=get_quality_controlled_reads,
-    output:
         "genomes/alignments/{sample}.bam",
+    output:
+        "genomes/alignments/bams/{sample}.bam",
     log:
-        "logs/genomes/alignment/{sample}_map.log",
-    params:
-        extra="-x sr",
-    threads: config["threads"]
+        "logs/genomes/alignments/{sample}_move.log",
+    shell:
+        "mv {input} {output} > {log}"
+
+
+rule mapping_stats_genomes:
+    input:
+        bam="genomes/alignments/bams/{sample}.bam",
+    output:
+        "genomes/alignments/stats/{sample}.stats",
+    log:
+        "logs/genomes/alignments/{sample}_stats.log",
+    threads: 1
     resources:
-        mem=config["mem"],
-        mem_mb=config["mem"] * 1000,
+        mem=config["simplejob_mem"],
     wrapper:
-        "v1.19.0/bio/minimap2/aligner"
+        "v1.19.0/bio/samtools/stats"
+
+
+rule multiqc_mapping_genome:
+    input:
+        expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES),
+    output:
+        "reports/genome_mapping/results.html",
+    log:
+        "logs/genomes/alignment/multiqc.log",
+    wrapper:
+        "v1.19.1/bio/multiqc"
 
 
 rule pileup_MAGs:
     input:
-        bam="genomes/alignments/{sample}.bam",
+        bam="genomes/alignments/bams/{sample}.bam",
         orf="genomes/all_orfs.fasta",
     output:
         covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
@@ -435,41 +524,3 @@ rule combine_coverages_MAGs:
         time_min=config["runtime"]["simplejob"] * 60,
     script:
         "../scripts/combine_coverage_MAGs.py"
-
-
-rule calculate_mapping_rate_MAGs:
-    input:
-        pileup_logfile=expand(
-            "logs/genomes/alignments/pilup_{sample}.log", sample=SAMPLES
-        ),
-    output:
-        coverage_contigs="genomes/counts/mapping_rate.tsv",
-    log:
-        "logs/genomes/counts/calcualte_mapping_rate_MAGs.log",
-    threads: 1
-    resources:
-        mem_mb=1000 * config["simplejob_mem"],
-        time_min=config["runtime"]["simplejob"] * 60,
-    run:
-        from utils.parsers_bbmap import parse_pileup_log_file
-
-        import pandas as pd
-
-        combined_mapping_stats = {}
-        for sample, log_file in zip(SAMPLES, input):
-            combined_mapping_stats[sample] = parse_pileup_log_file(log_file)
-
-        combined_mapping_stats = pd.DataFrame(combined_mapping_stats).T
-
-
-        combined_mapping_stats = combined_mapping_stats[
-            [
-                "Reads",
-                "Mapped reads",
-                "Mapped bases",
-                "Percent mapped",
-                "Percent proper pairs",
-            ]
-        ]
-
-        combined_mapping_stats.to_csv(output[0], sep="\t")

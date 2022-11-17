@@ -323,7 +323,7 @@ rule genomes:
         "genomes/counts/median_coverage_genomes.parquet",
         expand("genomes/counts/counts_genomes.parquet"),
         "genomes/clustering/allbins2genome.tsv",
-        "genomes/counts/mapping_rate.tsv",
+        "reports/genome_mapping/results.html",
         *get_genome_annotations(),
         "finished_binning",
     output:
