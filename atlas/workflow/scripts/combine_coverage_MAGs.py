@@ -79,7 +79,9 @@ binCov = pd.DataFrame.from_dict(binCov)
 
 logging.info("Add genome information to it")
 binCov.insert(
-    0, "Genome", value=pd.Categorical(contig2genome.loc[binCov.index.get_level_values(0)].values)
+    0,
+    "Genome",
+    value=pd.Categorical(contig2genome.loc[binCov.index.get_level_values(0)].values),
 )
 
 gc.collect()
