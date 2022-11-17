@@ -465,7 +465,7 @@ rule multiqc_mapping_genome:
     input:
         expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES),
     output:
-        "reports/genome_mapping_resuls.html",
+        "reports/genome_mapping/results.html",
     log:
         "logs/genomes/alignment/multiqc.log",
     wrapper:
@@ -474,7 +474,7 @@ rule multiqc_mapping_genome:
 
 rule pileup_MAGs:
     input:
-        bam="genomes/alignments/{sample}.bam",
+        bam="genomes/alignments/bams/{sample}.bam",
         orf="genomes/all_orfs.fasta",
     output:
         covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
