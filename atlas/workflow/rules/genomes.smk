@@ -449,7 +449,7 @@ rule move_old_bam:
 
 rule mapping_stats_genomes:
     input:
-        "genomes/alignments/bams/{sample}.bam",
+        bam="genomes/alignments/bams/{sample}.bam",
     output:
         "genomes/alignments/stats/{sample}.stats",
     log:
