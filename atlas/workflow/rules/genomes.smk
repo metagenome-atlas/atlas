@@ -371,7 +371,7 @@ if config["genome_aligner"] == "minimap":
             target=rules.index_genomes.output,
             query=get_quality_controlled_reads,
         output:
-            "genomes/alignments/{sample}.bam",
+            "genomes/alignments/bams/{sample}.bam",
         log:
             "logs/genomes/alignments/{sample}_map.log",
         params:
@@ -405,7 +405,7 @@ if config["genome_aligner"] == "bwa":
             idx=rules.index_genomes.output,
             reads=get_quality_controlled_reads,
         output:
-            "genomes/alignments/{sample}.bam",
+            "genomes/alignments/bams/{sample}.bam",
         log:
             "logs/genomes/alignments/{sample}_bwa.log",
         params:
@@ -423,6 +423,42 @@ if config["genome_aligner"] == "bwa":
 else:
     raise Exception("'genome_aligner' not understood, check config file")
 
+# path change for bam file
+localrules: move_old_bam
+ruleorder: move_old_bam > align_reads_to_genomes
+
+rule move_old_bam:
+    input:
+        "genomes/alignments/{sample}.bam",
+    output:
+        "genomes/alignments/bams/{sample}.bam",
+    log:
+        "logs/genomes/alignments/{sample}_move.log",
+    shell:
+        "mv {input} {output} > {log}"
+
+rule mapping_stats_genomes:
+    input:
+        "genomes/alignments/bams/{sample}.bam",
+    output:
+        "genomes/alignments/stats/{sample}.stats",
+    log:
+        "logs/genomes/alignments/{sample}_stats.log",
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+    wrapper:
+        "v1.19.0/bio/samtools/stats"
+
+rule multiqc_mapping_genome:
+    input:
+        expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES)
+    output:
+        "reports/genome_mapping_resuls.html"
+    log:
+        "logs/genomes/alignment/multiqc.log"
+    wrapper:
+        "v1.19.1/bio/multiqc"
 
 rule pileup_MAGs:
     input:
@@ -477,40 +513,3 @@ rule combine_coverages_MAGs:
     script:
         "../scripts/combine_coverage_MAGs.py"
 
-
-rule calculate_mapping_rate_MAGs:
-    input:
-        pileup_logfile=expand(
-            "logs/genomes/alignments/pilup_{sample}.log", sample=SAMPLES
-        ),
-    output:
-        coverage_contigs="genomes/counts/mapping_rate.tsv",
-    log:
-        "logs/genomes/counts/calcualte_mapping_rate_MAGs.log",
-    threads: 1
-    resources:
-        mem_mb=1000 * config["simplejob_mem"],
-        time_min=config["runtime"]["simplejob"] * 60,
-    run:
-        from utils.parsers_bbmap import parse_pileup_log_file
-
-        import pandas as pd
-
-        combined_mapping_stats = {}
-        for sample, log_file in zip(SAMPLES, input):
-            combined_mapping_stats[sample] = parse_pileup_log_file(log_file)
-
-        combined_mapping_stats = pd.DataFrame(combined_mapping_stats).T
-
-
-        combined_mapping_stats = combined_mapping_stats[
-            [
-                "Reads",
-                "Mapped reads",
-                "Mapped bases",
-                "Percent mapped",
-                "Percent proper pairs",
-            ]
-        ]
-
-        combined_mapping_stats.to_csv(output[0], sep="\t")
