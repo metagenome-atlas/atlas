@@ -3,7 +3,7 @@
 
 rule instrain_profile:
     input:
-        bam="genomes/alignments/{sample}.bam",
+        bam="genomes/alignments/bams/{sample}.bam",
         genomes="genomes/all_contigs.fasta",
         # genes=lambda wc: get_all_genes(wc, extension=".fna"),
         scaffold_to_genome="genomes/clustering/contig2genome.tsv",

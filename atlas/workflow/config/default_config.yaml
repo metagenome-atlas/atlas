@@ -19,5 +19,4 @@ genome_dereplication:
     length: 0
     centrality: 1
 
-
 genome_aligner: "minimap"
