@@ -465,7 +465,7 @@ rule multiqc_mapping_genome:
     input:
         expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES),
     output:
-        "reports/genome_mapping_resuls.html",
+        "reports/genome_mapping/results.html",
     log:
         "logs/genomes/alignment/multiqc.log",
     wrapper:
