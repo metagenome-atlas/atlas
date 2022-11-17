@@ -373,7 +373,7 @@ if config["genome_aligner"] == "minimap":
         output:
             "genomes/alignments/{sample}.bam",
         log:
-            "logs/genomes/alignments{sample}_map.log",
+            "logs/genomes/alignments/{sample}_map.log",
         params:
             extra="-x sr",
             sort="coordinate",
@@ -407,7 +407,7 @@ if config["genome_aligner"] == "bwa":
         output:
             "genomes/alignments/{sample}.bam",
         log:
-            "logs/genomes/alignments{sample}_bwa.log",
+            "logs/genomes/alignments/{sample}_bwa.log",
         params:
             extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
             sort="samtools",
