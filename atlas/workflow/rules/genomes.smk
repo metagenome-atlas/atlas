@@ -385,7 +385,7 @@ if config["genome_aligner"] == "minimap":
             "v1.19.0/bio/minimap2/aligner"
 
 
-if config["genome_aligner"] == "bwa":
+elif config["genome_aligner"] == "bwa":
 
     rule index_genomes:
         input:
@@ -421,7 +421,8 @@ if config["genome_aligner"] == "bwa":
 
 
 else:
-    raise Exception("'genome_aligner' not understood, check config file")
+    raise Exception("'genome_aligner' not understood, it should be 'minimap' or 'bwa', got '{genome_aligner}'. check config file".format(**config))
+
 
 # path change for bam file
 localrules: move_old_bam
