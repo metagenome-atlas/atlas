@@ -3,7 +3,6 @@ from glob import glob
 BINNING_CONTIGS = "{sample}/{sample}_contigs.fasta"
 
 
-
 rule pileup_for_binning:
     input:
         fasta=BINNING_CONTIGS,
@@ -22,7 +21,7 @@ rule pileup_for_binning:
         "../envs/required_packages.yaml"
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1000,
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         "pileup.sh "
