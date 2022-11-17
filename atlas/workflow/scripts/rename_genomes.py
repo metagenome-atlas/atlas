@@ -51,7 +51,9 @@ mapping = pd.read_csv(
 )
 mapping.columns = ["Rep_path", "Bin_path"]
 
-assert mapping.Bin_path.is_unique, "The second column of {snakemake.input.mapping_file} should be unique"
+assert (
+    mapping.Bin_path.is_unique
+), "The second column of {snakemake.input.mapping_file} should be unique"
 
 # go from path to id
 mapping[["Representative", "Bin"]] = mapping.applymap(

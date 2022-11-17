@@ -130,61 +130,63 @@ rule filter_bins:
 def get_greedy_drep_Arguments(wildcards):
     "Select greedy options of drep see: https://drep.readthedocs.io/en/latest/module_descriptions.html"
 
-    use_greedy= config["genome_dereplication"]["greedy_clustering"]
-    if (type(use_greedy) == str) and use_greedy.strip().lower()=="auto":
+    use_greedy = config["genome_dereplication"]["greedy_clustering"]
+    if (type(use_greedy) == str) and use_greedy.strip().lower() == "auto":
 
-    # count number of bins in file
-        bin_list= rules.filter_bins.output.paths
+        # count number of bins in file
+        bin_list = rules.filter_bins.output.paths
 
-    
-        n_bins=0
+        n_bins = 0
         with open(bin_list) as f:
             for line in f:
-                n_bins+=1
+                n_bins += 1
 
         use_greedy = n_bins > 10e3
 
         if use_greedy:
-        
-            logger.warning(f"You have {n_bins} to be dereplicated. I will use greedy algorithms with single linkage.")
 
-    if  use_greedy:
+            logger.warning(
+                f"You have {n_bins} to be dereplicated. I will use greedy algorithms with single linkage."
+            )
+
+    if use_greedy:
 
         return " --multiround_primary_clustering --greedy_secondary_clustering "
-
 
     else:
 
         return ""
 
+
 def get_drep_ani(wildcards):
     "Enshure that ani is [0.1]"
     ani = config["genome_dereplication"]["ANI"]
 
-    if ani>1:
-        logger.warning(f"genome_dereplication - ANI is {ani} should be between 0 and 1, I correct this for you.")
-        
-        ani = ani/100
+    if ani > 1:
+        logger.warning(
+            f"genome_dereplication - ANI is {ani} should be between 0 and 1, I correct this for you."
+        )
+
+        ani = ani / 100
     return ani
 
-    
+
 rule drep_compare:
     input:
         paths="genomes/all_bins/filtered_bins.txt",
     output:
         tables="genomes/Dereplication/data_tables/Cdb.csv",
-        bdb= "genomes/Dereplication/data_tables/Bdb.csv"
-
+        bdb="genomes/Dereplication/data_tables/Bdb.csv",
     threads: config["threads"]
     log:
         "logs/genomes/drep_compare.log",
     conda:
         "../envs/dRep.yaml"
     params:
-        ANI= get_drep_ani,
+        ANI=get_drep_ani,
         overlap=config["genome_dereplication"]["overlap"],
-        greedy_options = get_greedy_drep_Arguments,
-        working_dir= lambda wc, output: Path(output[0]).parent.parent
+        greedy_options=get_greedy_drep_Arguments,
+        working_dir=lambda wc, output: Path(output[0]).parent.parent,
     shell:
         " rm -r {params.working_dir} 2> {log}"
         ";"
@@ -198,14 +200,14 @@ rule drep_compare:
         " {params.working_dir} "
         " &>> {log} "
 
+
 rule dereplicate:
     input:
         rules.drep_compare.output,
         quality="genomes/all_bins/filtered_quality.csv",
     output:
         genomes=temp(directory("genomes/Dereplication/dereplicated_genomes")),
-        wdb= "genomes/Dereplication/data_tables/Wdb.csv",
-
+        wdb="genomes/Dereplication/data_tables/Wdb.csv",
     threads: config["threads"]
     log:
         "logs/genomes/dereplicate.log",
@@ -213,7 +215,7 @@ rule dereplicate:
         "../envs/dRep.yaml"
     params:
         # no filtering
-        no_filer= " --length 100  --completeness 0 --contamination  100 ",
+        no_filer=" --length 100  --completeness 0 --contamination  100 ",
         ANI=get_drep_ani,
         overlap=config["genome_dereplication"]["overlap"],
         completeness_weight=config["genome_dereplication"]["score"]["completeness"],
@@ -222,7 +224,7 @@ rule dereplicate:
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
-        working_dir= lambda wc, input: Path(input[0]).parent.parent
+        working_dir=lambda wc, input: Path(input[0]).parent.parent,
     shell:
         " dRep dereplicate "
         " {params.no_filer} "
@@ -240,37 +242,42 @@ rule dereplicate:
         " {params.working_dir} "
         " &> {log} "
 
-localrules: parse_drep
+
+localrules:
+    parse_drep,
+
+
 rule parse_drep:
     input:
-        cdb= "genomes/Dereplication/data_tables/Cdb.csv",
-        bdb = "genomes/Dereplication/data_tables/Bdb.csv",
-        wdb = "genomes/Dereplication/data_tables/Wdb.csv"
+        cdb="genomes/Dereplication/data_tables/Cdb.csv",
+        bdb="genomes/Dereplication/data_tables/Bdb.csv",
+        wdb="genomes/Dereplication/data_tables/Wdb.csv",
     output:
-        "genomes/clustering/allbins2genome_oldname.tsv"
+        "genomes/clustering/allbins2genome_oldname.tsv",
     run:
         import pandas as pd
-       
 
 
         Cdb = pd.read_csv(input.cdb)
-        Cdb.set_index("genome",inplace=True)
+        Cdb.set_index("genome", inplace=True)
 
         Wdb = pd.read_csv(input.wdb)
         Wdb.set_index("cluster", inplace=True)
         genome2cluster = Cdb.secondary_cluster.map(Wdb.genome)
 
-        
-        genome2cluster= genome2cluster.to_frame().reset_index()
-        genome2cluster.columns= ["Bin","Rep"]
+
+        genome2cluster = genome2cluster.to_frame().reset_index()
+        genome2cluster.columns = ["Bin", "Rep"]
 
         # map to full paths
-        file_paths= pd.read_csv(input.bdb,index_col=0).location
+        file_paths = pd.read_csv(input.bdb, index_col=0).location
         for col in genome2cluster:
-            genome2cluster[col+"_path"] = file_paths.loc[genome2cluster[col]].values
+            genome2cluster[col + "_path"] = file_paths.loc[genome2cluster[col]].values
 
-        #expected output is inverted columns
-        genome2cluster[["Rep_path","Bin_path"]].to_csv(output[0],sep='\t',index=False,header=False)
+        # expected output is inverted columns
+        genome2cluster[["Rep_path", "Bin_path"]].to_csv(
+            output[0], sep="\t", index=False, header=False
+        )
 
 
 localrules:
