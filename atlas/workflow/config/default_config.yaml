@@ -20,3 +20,4 @@ genome_dereplication:
 genome_min_completeness: 50
 genome_max_contamination: 10
 
+genome_aligner: "minimap"

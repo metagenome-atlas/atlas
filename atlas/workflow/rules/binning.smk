@@ -3,29 +3,10 @@ from glob import glob
 BINNING_CONTIGS = "{sample}/{sample}_contigs.fasta"
 
 
-rule bam_2_sam_binning:
-    input:
-        "{sample}/sequence_alignment/{sample_reads}.bam",
-    output:
-        temp("{sample}/sequence_alignment/binning_{sample_reads}.sam"),
-    threads: config["threads"]
-    resources:
-        mem=config["mem"],
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
-    shadow:
-        "shallow"
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
-    shell:
-        """
-        reformat.sh in={input} out={output} sam=1.3
-        """
-
-
 rule pileup_for_binning:
     input:
         fasta=BINNING_CONTIGS,
-        sam=rules.bam_2_sam_binning.output,
+        bam="{sample}/sequence_alignment/{sample_reads}.bam",
     output:
         covstats="{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
     params:
@@ -37,19 +18,20 @@ rule pileup_for_binning:
     log:
         "{sample}/logs/binning/calculate_coverage/pileup_reads_from_{sample_reads}_to_filtered_contigs.log",  # this file is udes for assembly report
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
-        """pileup.sh ref={input.fasta} in={input.sam} \
-        threads={threads} \
-        -Xmx{resources.java_mem}G \
-        covstats={output.covstats} \
-        secondary={params.pileup_secondary} \
-         2> {log}
-        """
+        "pileup.sh "
+        " ref={input.fasta} "
+        " in={input.bam} "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G "
+        " covstats={output.covstats} "
+        " secondary={params.pileup_secondary} "
+        " 2> {log} "
 
 
 localrules:

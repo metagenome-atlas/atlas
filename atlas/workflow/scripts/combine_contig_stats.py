@@ -29,7 +29,7 @@ sys.excepthook = handle_exception
 
 
 import pandas as pd
-from utils.parsers_bbmap import parse_bbmap_log_file
+from utils.parsers_bbmap import parse_pileup_log_file
 
 
 def parse_map_stats(sample_data, out_tsv):
@@ -43,11 +43,11 @@ def parse_map_stats(sample_data, out_tsv):
         df.name = sample
         genes_df = pd.read_csv(sample_data[sample]["gene_table"], index_col=0, sep="\t")
         df["N_Predicted_Genes"] = genes_df.shape[0]
-        used_reads, mapped_reads = parse_bbmap_log_file(
-            sample_data[sample]["mapping_log"]
-        )
-        df["Assembled_Reads"] = mapped_reads
-        df["Percent_Assembled_Reads"] = mapped_reads / used_reads * 100
+
+        mapping_stats = parse_pileup_log_file(sample_data[sample]["mapping_log"])
+
+        df["Assembled_Reads"] = mapping_stats["Mapped reads"]
+        df["Percent_Assembled_Reads"] = mapping_stats["Percent mapped"]
 
         stats_df = stats_df.append(df)
     stats_df = stats_df.loc[:, ~stats_df.columns.str.startswith("scaf_")]
