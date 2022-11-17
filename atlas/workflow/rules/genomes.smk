@@ -421,12 +421,20 @@ elif config["genome_aligner"] == "bwa":
 
 
 else:
-    raise Exception("'genome_aligner' not understood, it should be 'minimap' or 'bwa', got '{genome_aligner}'. check config file".format(**config))
+    raise Exception(
+        "'genome_aligner' not understood, it should be 'minimap' or 'bwa', got '{genome_aligner}'. check config file".format(
+            **config
+        )
+    )
 
 
 # path change for bam file
-localrules: move_old_bam
+localrules:
+    move_old_bam,
+
+
 ruleorder: move_old_bam > align_reads_to_genomes
+
 
 rule move_old_bam:
     input:
@@ -437,6 +445,7 @@ rule move_old_bam:
         "logs/genomes/alignments/{sample}_move.log",
     shell:
         "mv {input} {output} > {log}"
+
 
 rule mapping_stats_genomes:
     input:
@@ -451,15 +460,17 @@ rule mapping_stats_genomes:
     wrapper:
         "v1.19.0/bio/samtools/stats"
 
+
 rule multiqc_mapping_genome:
     input:
-        expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES)
+        expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES),
     output:
-        "reports/genome_mapping_resuls.html"
+        "reports/genome_mapping_resuls.html",
     log:
-        "logs/genomes/alignment/multiqc.log"
+        "logs/genomes/alignment/multiqc.log",
     wrapper:
         "v1.19.1/bio/multiqc"
+
 
 rule pileup_MAGs:
     input:
@@ -513,4 +524,3 @@ rule combine_coverages_MAGs:
         time_min=config["runtime"]["simplejob"] * 60,
     script:
         "../scripts/combine_coverage_MAGs.py"
-
