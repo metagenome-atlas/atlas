@@ -70,11 +70,13 @@ Q.to_csv(snakemake.output.quality, sep="\t")
 
 
 # output quality for derepliation
-D = Q
+D = Q.copy()
 
 D.index.name = "genome"
 
 D.columns = D.columns.str.lower()
+# fasta extension is needed even if otherwise stated https://github.com/MrOlm/drep/issues/169
+D.index += ".fasta"
 D = D[["completeness", "contamination"]]
 D.to_csv(snakemake.output.quality_for_derep)
 

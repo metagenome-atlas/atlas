@@ -177,16 +177,20 @@ DASTool:
   search_engine: 'diamond'
   score_threshold: 0.5              # Score threshold until selection algorithm will keep selecting bins [0..1].
 
-# Acording to Parks et al. 2020 (GTDB)
-genome_filter_criteria: "(Completeness-5*Contamination >50 )  & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
+
+genome_filter_criteria: "(Completeness-5*Contamination >50 ) & (Length >=50000) & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
 
 
 genome_dereplication:
-  ANI: 95                        ## Genome dreplication threshold
-  overlap: 0.30                  # See more on https://wwood.github.io/galah/galah-cluster.html
-  opt_parameters: ""
-  quality_formula: "Parks2020_reduced" # completeness-5*contamination-5*num_contigs/100-5*num_ambiguous_bases/100000
-  
+  ANI: 0.95                     ## Genome dreplication threshold 0.95 is more or less species
+  overlap: 0.2                  # See more on https://drep.readthedocs.io/en/latest/module_descriptions.html
+  greedy_clustering: "auto"     # Add options for greedy clustering 'auto' when using more than 5k bins
+  score:
+    completeness: 1
+    contamination: 5
+    N50: 0.5
+    length: 0
+    centrality: 1
 
 rename_mags_contigs: true        #Rename contigs of representative MAGs
 
