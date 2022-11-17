@@ -146,28 +146,19 @@ rule get_read_stats:
             subfolder = os.path.join(params.folder, fraction)
             tmp_file = os.path.join(subfolder, "read_stats.tmp")
             shell(
-                """
-                                    mkdir -p {subfolder} 2> {log}
-
-                                    reformat.sh {params_in} \
-                                    bhist={subfolder}/base_hist.txt \
-                                    qhist={subfolder}/quality_by_pos.txt \
-                                    lhist={subfolder}/readlength.txt \
-                                    gchist={subfolder}/gc_hist.txt \
-                                    gcbins=auto \
-                                    bqhist={subfolder}/boxplot_quality.txt \
-                                    threads={threads} \
-                                    overwrite=true \
-                                    -Xmx{mem}G \
-                                    2> >(tee -a {log} {tmp_file} )
-                                """.format(
-                    subfolder=subfolder,
-                    params_in=params_in,
-                    log=log,
-                    threads=threads,
-                    mem=resources.java_mem,
-                    tmp_file=tmp_file,
-                )
+                f" mkdir -p {subfolder} 2> {log} "
+                " ; "
+                f" reformat.sh {params_in} "
+                f" bhist={subfolder}/base_hist.txt "
+                f" qhist={subfolder}/quality_by_pos.txt "
+                f" lhist={subfolder}/readlength.txt "
+                f" gchist={subfolder}/gc_hist.txt "
+                " gcbins=auto "
+                f" bqhist={subfolder}/boxplot_quality.txt "
+                f" threads={threads} "
+                " overwrite=true "
+                f" -Xmx{resources.java_mem}G "
+                f" 2> >(tee -a {log} {tmp_file} ) "
             )
             content = open(tmp_file).read()
             pos = content.find("Input:")
