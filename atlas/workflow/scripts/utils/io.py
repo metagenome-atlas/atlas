@@ -144,7 +144,7 @@ def _pandas_concat_disck_based(
             file, index_col=index_col, sep=sep, dtype=str, **read_arguments
         )
         # set to common header
-        table = table.reindex(headers,axis=1)
+        table = table.reindex(headers, axis=1)
 
         if file == input_tables[0]:
             mode = "w"
