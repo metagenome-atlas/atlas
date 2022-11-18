@@ -4,7 +4,7 @@ DBDIR = config["database_dir"]
 def get_dram_config(wildcards):
 
     old_dram_path = f"{DBDIR}/Dram"
-    if os.path.exist(old_dram_path):
+    if Path(old_dram_path).exists():
         logger.error(
             f"Detected an old database for DRAM in {old_dram_path}. You can delete it."
         )
@@ -111,25 +111,18 @@ rule concat_annotations:
         expand("genomes/annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
     resources:
         time=config["runtime"]["default"],
-    #     mem = config['mem']
     run:
-        # from utils import io
+        from utils import io
+
         for i, annotation_file in enumerate(DRAM_ANNOTATON_FILES):
 
             input_files = [
                 os.path.join(dram_folder, annotation_file) for dram_folder in input
             ]
 
-            # drop files that don't exist for rrna and trna
-            if not i == 0:
-                input_files = [f for f in input_files if os.path.exists(f)]
-
-            shell(f"head -n1 {input_files[0]} > {output[i]} ")
-            for f in input_files:
-                shell(f"tail -n+2 {f} >> {output[i]}")
-
-        # io.pandas_concat(input_files, output[i],sep='\t',index_col=0, axis=0)
-
+            io.pandas_concat(
+                input_files, output[i], sep="\t", index_col=0, axis=0, disk_based=True
+            )
 
 
 rule DRAM_destill:
