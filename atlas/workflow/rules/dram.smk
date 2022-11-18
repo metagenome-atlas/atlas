@@ -2,13 +2,20 @@ DBDIR = config["database_dir"]
 
 
 def get_dram_config(wildcards):
-    return config.get("dram_config_file", f"{DBDIR}/DRAM.config")
+
+    old_dram_path = f"{DBDIR}/Dram"
+    if Path(old_dram_path).exists():
+        logger.error(
+            f"Detected an old database for DRAM in {old_dram_path}. You can delete it."
+        )
+
+    return config.get("dram_config_file", f"{DBDIR}/DRAM/DRAM.config")
 
 
 rule dram_download:
     output:
-        dbdir=directory(f"{DBDIR}/Dram/"),
-        config=f"{DBDIR}/DRAM.config",
+        dbdir=directory(f"{DBDIR}/DRAM/db/"),
+        config=f"{DBDIR}/DRAM/DRAM.config",
     threads: config["threads"]
     resources:
         mem=config["mem"],
@@ -38,7 +45,7 @@ rule DRAM_set_db_loc:
     input:
         get_dram_config,
     output:
-        touch(f"{DBDIR}/dram_config_imported"),
+        touch(f"{DBDIR}/DRAM/dram_config_imported"),
     threads: 1
     conda:
         "../envs/dram.yaml"
@@ -104,25 +111,18 @@ rule concat_annotations:
         expand("genomes/annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
     resources:
         time=config["runtime"]["default"],
-    #     mem = config['mem']
     run:
-        # from utils import io
+        from utils import io
+
         for i, annotation_file in enumerate(DRAM_ANNOTATON_FILES):
 
             input_files = [
                 os.path.join(dram_folder, annotation_file) for dram_folder in input
             ]
 
-            # drop files that don't exist for rrna and trna
-            if not i == 0:
-                input_files = [f for f in input_files if os.path.exists(f)]
-
-            shell(f"head -n1 {input_files[0]} > {output[i]} ")
-            for f in input_files:
-                shell(f"tail -n+2 {f} >> {output[i]}")
-
-        # io.pandas_concat(input_files, output[i],sep='\t',index_col=0, axis=0)
-
+            io.pandas_concat(
+                input_files, output[i], sep="\t", index_col=0, axis=0, disk_based=True
+            )
 
 
 rule DRAM_destill:
