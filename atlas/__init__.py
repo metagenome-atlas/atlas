@@ -23,4 +23,6 @@ BLAST6 = [
 
 from . import _version
 
-__version__ = _version.get_versions()["version"]
+import snakemake
+
+__version__ = _version.get_versions()["version"] + f" Snakemake {snakemake.__version__}"
