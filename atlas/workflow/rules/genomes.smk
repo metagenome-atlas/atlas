@@ -171,6 +171,7 @@ def get_drep_ani(wildcards):
     return ani
 
 
+"""
 rule drep_compare:
     input:
         paths="genomes/all_bins/filtered_bins.txt",
@@ -199,15 +200,18 @@ rule drep_compare:
         " {params.greedy_options} "
         " {params.working_dir} "
         " &>> {log} "
+"""
 
 
 rule dereplicate:
     input:
-        rules.drep_compare.output,
+        paths="genomes/all_bins/filtered_bins.txt",
         quality="genomes/all_bins/filtered_quality.csv",
     output:
         genomes=temp(directory("genomes/Dereplication/dereplicated_genomes")),
         wdb="genomes/Dereplication/data_tables/Wdb.csv",
+        tables="genomes/Dereplication/data_tables/Cdb.csv",
+        bdb="genomes/Dereplication/data_tables/Bdb.csv",
     threads: config["threads"]
     log:
         "logs/genomes/dereplicate.log",
@@ -217,6 +221,7 @@ rule dereplicate:
         # no filtering
         no_filer=" --length 100  --completeness 0 --contamination  100 ",
         ANI=get_drep_ani,
+        greedy_options=get_greedy_drep_Arguments,
         overlap=config["genome_dereplication"]["overlap"],
         completeness_weight=config["genome_dereplication"]["score"]["completeness"],
         contamination_weight=config["genome_dereplication"]["score"]["contamination"],
@@ -224,13 +229,17 @@ rule dereplicate:
         N50_weight=config["genome_dereplication"]["score"]["N50"],
         size_weight=config["genome_dereplication"]["score"]["length"],
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
-        working_dir=lambda wc, input: Path(input[0]).parent.parent,
+        working_dir=lambda wc, output: Path(output.genomes).parent,
     shell:
+        " rm -r {params.working_dir} 2> {log}"
+        ";"
         " dRep dereplicate "
         " {params.no_filer} "
+        " --genomes {input.paths} "
+        " --S_algorithm fastANI "
+        " {params.greedy_options} "
         " --genomeInfo {input.quality} "
         " --S_ani {params.ANI} "
-        " --S_algorithm fastANI "
         " --cov_thresh {params.overlap} "
         " --completeness_weight {params.completeness_weight} "
         " --contamination_weight {params.contamination_weight} "
