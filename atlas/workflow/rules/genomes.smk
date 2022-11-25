@@ -212,7 +212,7 @@ rule dereplicate:
         wdb="genomes/Dereplication/data_tables/Wdb.csv",
         tables="genomes/Dereplication/data_tables/Cdb.csv",
         bdb="genomes/Dereplication/data_tables/Bdb.csv",
-    threads: config["threads"]
+    threads: config["large_threads"]
     log:
         "logs/genomes/dereplicate.log",
     conda:
