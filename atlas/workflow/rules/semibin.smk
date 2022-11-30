@@ -108,6 +108,8 @@ rule parse_semibin_output:
         rules.run_semibin.output[0],
     output:
         "{sample}/binning/SemiBin/cluster_attribution.tsv",
+    conda:
+        "../envs/semibin.yaml"
     log:
         "logs/semibin/parse_output/{sample}.log",
     params:
