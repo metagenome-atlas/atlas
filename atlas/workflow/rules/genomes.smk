@@ -1,4 +1,4 @@
-## dRep
+
 localrules:
     all_contigs2bins,
 
@@ -127,36 +127,166 @@ rule filter_bins:
         "../scripts/filter_genomes.py"
 
 
-rule dereplication:
+def get_greedy_drep_Arguments(wildcards):
+    "Select greedy options of drep see: https://drep.readthedocs.io/en/latest/module_descriptions.html"
+
+    use_greedy = config["genome_dereplication"]["greedy_clustering"]
+    if (type(use_greedy) == str) and use_greedy.strip().lower() == "auto":
+
+        # count number of bins in file
+        bin_list = rules.filter_bins.output.paths
+
+        n_bins = 0
+        with open(bin_list) as f:
+            for line in f:
+                n_bins += 1
+
+        use_greedy = n_bins > 10e3
+
+        if use_greedy:
+
+            logger.warning(
+                f"You have {n_bins} to be dereplicated. I will use greedy algorithms with single linkage."
+            )
+
+    if use_greedy:
+
+        return " --multiround_primary_clustering --greedy_secondary_clustering "
+
+    else:
+
+        return ""
+
+
+def get_drep_ani(wildcards):
+    "Enshure that ani is [0.1]"
+    ani = config["genome_dereplication"]["ANI"]
+
+    if ani > 1:
+        logger.warning(
+            f"genome_dereplication - ANI is {ani} should be between 0 and 1, I correct this for you."
+        )
+
+        ani = ani / 100
+    return ani
+
+
+"""
+rule drep_compare:
+    input:
+        paths="genomes/all_bins/filtered_bins.txt",
+    output:
+        tables="genomes/Dereplication/data_tables/Cdb.csv",
+        bdb="genomes/Dereplication/data_tables/Bdb.csv",
+    threads: config["threads"]
+    log:
+        "logs/genomes/drep_compare.log",
+    conda:
+        "../envs/dRep.yaml"
+    params:
+        ANI=get_drep_ani,
+        overlap=config["genome_dereplication"]["overlap"],
+        greedy_options=get_greedy_drep_Arguments,
+        working_dir=lambda wc, output: Path(output[0]).parent.parent,
+    shell:
+        " rm -r {params.working_dir} 2> {log}"
+        ";"
+        " dRep compare "
+        " --genomes {input.paths} "
+        " --S_ani {params.ANI} "
+        " --S_algorithm fastANI "
+        " --cov_thresh {params.overlap} "
+        " --processors {threads} "
+        " {params.greedy_options} "
+        " {params.working_dir} "
+        " &>> {log} "
+"""
+
+
+rule dereplicate:
     input:
         paths="genomes/all_bins/filtered_bins.txt",
         quality="genomes/all_bins/filtered_quality.csv",
     output:
-        dir=temp(directory("genomes/dereplicated_genomes")),
-        mapping_file=temp("genomes/clustering/allbins2genome_oldname.tsv"),
-    threads: config["threads"]
+        genomes=temp(directory("genomes/Dereplication/dereplicated_genomes")),
+        wdb="genomes/Dereplication/data_tables/Wdb.csv",
+        tables="genomes/Dereplication/data_tables/Cdb.csv",
+        bdb="genomes/Dereplication/data_tables/Bdb.csv",
+    threads: config["large_threads"]
     log:
-        "logs/genomes/dereplication.log",
+        "logs/genomes/dereplicate.log",
     conda:
-        "../envs/galah.yaml"
+        "../envs/dRep.yaml"
     params:
-        ANI=config["genome_dereplication"]["ANI"],
-        quality_formula=config["genome_dereplication"]["quality_formula"],
+        # no filtering
+        no_filer=" --length 100  --completeness 0 --contamination  100 ",
+        ANI=get_drep_ani,
+        greedy_options=get_greedy_drep_Arguments,
+        overlap=config["genome_dereplication"]["overlap"],
+        completeness_weight=config["genome_dereplication"]["score"]["completeness"],
+        contamination_weight=config["genome_dereplication"]["score"]["contamination"],
+        #not in table
+        N50_weight=config["genome_dereplication"]["score"]["N50"],
+        size_weight=config["genome_dereplication"]["score"]["length"],
         opt_parameters=config["genome_dereplication"]["opt_parameters"],
-        min_overlap=config["genome_dereplication"]["overlap"],
+        working_dir=lambda wc, output: Path(output.genomes).parent,
     shell:
-        " galah cluster "
-        " --genome-fasta-list {input.paths}"
-        " --genome-info {input.quality} "
-        " --ani {params.ANI} "
-        " --min-aligned-fraction {params.min_overlap} "
+        " rm -r {params.working_dir} 2> {log}"
+        ";"
+        " dRep dereplicate "
+        " {params.no_filer} "
+        " --genomes {input.paths} "
+        " --S_algorithm fastANI "
+        " {params.greedy_options} "
+        " --genomeInfo {input.quality} "
+        " --S_ani {params.ANI} "
+        " --cov_thresh {params.overlap} "
+        " --completeness_weight {params.completeness_weight} "
+        " --contamination_weight {params.contamination_weight} "
+        " --N50_weight {params.N50_weight} "
+        " --size_weight {params.size_weight} "
+        " --processors {threads} "
+        " --run_tertiary_clustering "
         " {params.opt_parameters} "
-        " --quality-formula {params.quality_formula} "
-        " --threads {threads} "
-        " --output-representative-fasta-directory {output.dir} "
-        " --output-cluster-definition {output.mapping_file} "
-        " --precluster-method finch "
+        " {params.working_dir} "
         " &> {log} "
+
+
+localrules:
+    parse_drep,
+
+
+rule parse_drep:
+    input:
+        cdb="genomes/Dereplication/data_tables/Cdb.csv",
+        bdb="genomes/Dereplication/data_tables/Bdb.csv",
+        wdb="genomes/Dereplication/data_tables/Wdb.csv",
+    output:
+        "genomes/clustering/allbins2genome_oldname.tsv",
+    run:
+        import pandas as pd
+
+
+        Cdb = pd.read_csv(input.cdb)
+        Cdb.set_index("genome", inplace=True)
+
+        Wdb = pd.read_csv(input.wdb)
+        Wdb.set_index("cluster", inplace=True)
+        genome2cluster = Cdb.secondary_cluster.map(Wdb.genome)
+
+
+        genome2cluster = genome2cluster.to_frame().reset_index()
+        genome2cluster.columns = ["Bin", "Rep"]
+
+        # map to full paths
+        file_paths = pd.read_csv(input.bdb, index_col=0).location
+        for col in genome2cluster:
+            genome2cluster[col + "_path"] = file_paths.loc[genome2cluster[col]].values
+
+        # expected output is inverted columns
+        genome2cluster[["Rep_path", "Bin_path"]].to_csv(
+            output[0], sep="\t", index=False, header=False
+        )
 
 
 localrules:
@@ -165,7 +295,7 @@ localrules:
 
 checkpoint rename_genomes:
     input:
-        genomes="genomes/dereplicated_genomes",
+        genomes="genomes/Dereplication/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
         genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
     output:
@@ -323,11 +453,15 @@ rule all_prodigal:
 
 ### Quantification
 
-localrules: concat_orfs, concat_genomes
+
+localrules:
+    concat_orfs,
+    concat_genomes,
+
 
 rule concat_orfs:
     input:
-        lambda wc: get_all_genes(wc, extension=".fna")
+        lambda wc: get_all_genes(wc, extension=".fna"),
     output:
         temp("genomes/all_orfs.fasta"),
     shell:
@@ -345,49 +479,137 @@ rule concat_genomes:
         "cat {input}/*{params.ext} > {output}"
 
 
-rule index_genomes:
-    input:
-        target="genomes/all_contigs.fasta",
-    output:
-        "ref/genomes.mmi",
-    log:
-        "logs/genomes/alignment/index.log",
-    params:
-        index_size="12G",
-    threads: 3
-    resources:
-        mem=config["mem"],
-    wrapper:
-        "v1.14.1/bio/minimap2/index"
+if config["genome_aligner"] == "minimap":
+
+    rule index_genomes:
+        input:
+            target="genomes/all_contigs.fasta",
+        output:
+            "ref/genomes.mmi",
+        log:
+            "logs/genomes/alignmentsindex.log",
+        params:
+            index_size="12G",
+        threads: 3
+        resources:
+            mem=config["mem"],
+        wrapper:
+            "v1.19.0/bio/minimap2/index"
+
+    rule align_reads_to_genomes:
+        input:
+            target=rules.index_genomes.output,
+            query=get_quality_controlled_reads,
+        output:
+            "genomes/alignments/bams/{sample}.bam",
+        log:
+            "logs/genomes/alignments/{sample}_map.log",
+        params:
+            extra="-x sr",
+            sort="coordinate",
+        threads: config["threads"]
+        resources:
+            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
+        wrapper:
+            "v1.19.0/bio/minimap2/aligner"
 
 
-rule align_reads_to_genomes:
+elif config["genome_aligner"] == "bwa":
+
+    rule index_genomes:
+        input:
+            "genomes/all_contigs.fasta",
+        output:
+            multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac"),
+        log:
+            "logs/genomes/alignments/bwa_index.log",
+        threads: 4
+        resources:
+            mem=config["mem"],
+        wrapper:
+            "v1.19.0/bio/bwa-mem2/index"
+
+    rule align_reads_to_genomes:
+        input:
+            idx=rules.index_genomes.output,
+            reads=get_quality_controlled_reads,
+        output:
+            "genomes/alignments/bams/{sample}.bam",
+        log:
+            "logs/genomes/alignments/{sample}_bwa.log",
+        params:
+            extra=r"-R '@RG\tID:{sample}\tSM:{sample}'",
+            sort="samtools",
+            sort_order="coordinate",
+        threads: config["threads"]
+        resources:
+            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
+        wrapper:
+            "v1.19.0/bio/bwa-mem2/mem"
+
+
+else:
+    raise Exception(
+        "'genome_aligner' not understood, it should be 'minimap' or 'bwa', got '{genome_aligner}'. check config file".format(
+            **config
+        )
+    )
+
+
+# path change for bam file
+localrules:
+    move_old_bam,
+
+
+ruleorder: move_old_bam > align_reads_to_genomes
+
+
+rule move_old_bam:
     input:
-        target=rules.index_genomes.output,
-        query=get_quality_controlled_reads,
-    output:
         "genomes/alignments/{sample}.bam",
+    output:
+        "genomes/alignments/bams/{sample}.bam",
     log:
-        "logs/genomes/alignment/{sample}_map.log",
-    params:
-        extra="-x sr",
-    threads: config["threads"]
-    resources:
-        mem=config["mem"],
-        mem_mb=config["mem"] * 1000,
-    wrapper:
-        "v1.14.1/bio/minimap2/aligner"
+        "logs/genomes/alignments/{sample}_move.log",
+    shell:
+        "mv {input} {output} > {log}"
 
+
+rule mapping_stats_genomes:
+    input:
+        bam="genomes/alignments/bams/{sample}.bam",
+    output:
+        "genomes/alignments/stats/{sample}.stats",
+    log:
+        "logs/genomes/alignments/{sample}_stats.log",
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+    wrapper:
+        "v1.19.0/bio/samtools/stats"
+
+
+rule multiqc_mapping_genome:
+    input:
+        expand("genomes/alignments/stats/{sample}.stats", sample=SAMPLES),
+    output:
+        "reports/genome_mapping/results.html",
+    log:
+        "logs/genomes/alignment/multiqc.log",
+    wrapper:
+        "v1.19.1/bio/multiqc"
 
 
 rule pileup_MAGs:
     input:
-        bam="genomes/alignments/{sample}.bam",
-        orf= "genomes/all_orfs.fasta"
+        bam="genomes/alignments/bams/{sample}.bam",
+        orf="genomes/all_orfs.fasta",
     output:
         covstats=temp("genomes/alignments/coverage/{sample}.tsv.gz"),
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
-        orf= "genomes/alignments/orf_coverage/{sample}.tsv.gz"
+        orf="genomes/alignments/orf_coverage/{sample}.tsv.gz",
     log:
         "logs/genomes/alignments/pilup_{sample}.log",
     conda:
@@ -408,7 +630,7 @@ rule pileup_MAGs:
         " 2> {log}"
 
 
-rule combine_bined_coverages_MAGs:
+rule combine_coverages_MAGs:
     input:
         binned_coverage_files=expand(
             "genomes/alignments/coverage_binned/{sample}.tsv.gz", sample=SAMPLES
@@ -420,6 +642,7 @@ rule combine_bined_coverages_MAGs:
     params:
         samples=SAMPLES,
     output:
+        coverage_contigs="genomes/counts/coverage_contigs.parquet",
         counts="genomes/counts/counts_genomes.parquet",
         binned_cov="genomes/counts/binned_coverage.parquet",
         median_abund="genomes/counts/median_coverage_genomes.parquet",
@@ -431,6 +654,3 @@ rule combine_bined_coverages_MAGs:
         time_min=config["runtime"]["simplejob"] * 60,
     script:
         "../scripts/combine_coverage_MAGs.py"
-
-
-# TODO mapping rate from pileup
