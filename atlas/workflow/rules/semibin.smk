@@ -25,7 +25,7 @@ rule run_semibin:
         " --input-bam {input.bams} "
         " --output {params.output_dir} "
         " --threads {threads} "
-	" --training-mode=self "
+	" --training-type=self "
         " --minfasta-kbs {params.min_bin_kbs}"
         " {params.extra} "
         " 2> {log}"
