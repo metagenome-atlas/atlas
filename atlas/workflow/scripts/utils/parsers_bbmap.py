@@ -197,7 +197,7 @@ def parse_pileup_log_file(log_file):
             f.readline()
 
         for line in f:
-            if ": " in line:
+            if ": " in line and not "Coverage capped" in line:
                 try:
                     # parse line
                     key, value_with_whitespace = line.strip().split(":")
