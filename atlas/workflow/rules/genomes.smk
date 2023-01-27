@@ -72,7 +72,7 @@ rule calculate_stats:
 rule filter_bins:
     input:
         paths=rules.get_bin_filenames.output.filenames,
-        quality="genomes/all_bins/checkm_all_bins.tsv",
+        quality="reports/genomic_bins_{final_binner}.tsv".format(**config),
         stats="genomes/all_bins/genome_stats.tsv",
     output:
         quality="genomes/all_bins/filtered_quality.tsv",
