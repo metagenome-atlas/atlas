@@ -19,7 +19,6 @@ rule all_contigs2bins:
 
 
 localrules:
-    merge_checkm,
     filter_bins,
 
 
@@ -69,44 +68,6 @@ rule calculate_stats:
         filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
         get_many_genome_stats(filenames, output[0], threads)
 
-
-rule merge_checkm:
-    input:
-        completeness=expand(
-            "{sample}/binning/{binner}/checkm/completeness.tsv",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-        taxonomy=expand(
-            "{sample}/binning/{binner}/checkm/taxonomy.tsv",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-        markers=expand(
-            "{sample}/binning/{binner}/checkm/storage/tree/concatenated.fasta",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        checkm="genomes/all_bins/checkm_all_bins.tsv",
-        markers="genomes/all_bins/all_bins_markers.fasta",
-    run:
-        import pandas as pd
-        import shutil
-
-        D = []
-
-        for i in range(len(SAMPLES)):
-            df = pd.read_csv(input.completeness[i], index_col=0, sep="\t")
-            df = df.join(pd.read_csv(input.taxonomy[i], index_col=0, sep="\t"))
-            D.append(df)
-
-        D = pd.concat(D, axis=0)
-        D.to_csv(output.checkm, sep="\t")
-
-        with open(output.markers, "wb") as fout:
-            for fasta in input.markers:
-                shutil.copyfileobj(open(fasta, "rb"), fout)
 
 
 rule filter_bins:
