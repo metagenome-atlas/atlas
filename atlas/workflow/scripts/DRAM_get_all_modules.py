@@ -43,14 +43,16 @@ annotations = pd.read_csv(annotation_file, sep="\t", index_col=0)
 
 
 # get db_locs and read in dbs
-database_handler = DatabaseHandler()
-if "module_step_form" not in database_handler.dram_sheet_locs:
+database_handler = DatabaseHandler(logger=logging)
+
+
+if "module_step_form" not in database_handler.config["dram_sheets"]:
     raise ValueError(
         "Module step form location must be set in order to summarize genomes"
     )
 
 module_steps_form = pd.read_csv(
-    database_handler.dram_sheet_locs["module_step_form"], sep="\t"
+    database_handler.config["dram_sheets"]["module_step_form"], sep="\t"
 )
 
 all_module_nets = {

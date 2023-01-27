@@ -55,6 +55,10 @@ mapping = pd.read_csv(
 )
 mapping.columns = ["Rep_path", "Bin_path"]
 
+assert (
+    mapping.Bin_path.is_unique
+), "The second column of {snakemake.input.mapping_file} should be unique"
+
 # go from path to id
 mapping[["Representative", "Bin"]] = mapping.applymap(
     lambda x: os.path.basename(x).replace(".fasta", "")
@@ -123,7 +127,7 @@ def rename_quality(quality_in, quality_out, old2new_name):
 
     Q = pd.read_csv(quality_in, index_col=0, sep="\t")
 
-    Q = Q.loc[old2new_name.index].rename(index=old2new_name)
+    Q = Q.loc[old2new_name.keys()].rename(index=old2new_name)
 
     Q.to_csv(quality_out, sep="\t")
 

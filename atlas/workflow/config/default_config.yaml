@@ -4,11 +4,19 @@ usejni: false
 gene_annotations:
   - eggNOG
 
+genome_filter_criteria: "(Completeness-5*Contamination >50 ) & (Length_scaffolds >=50000) & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
+exclude_unplacable_genomes: false
+
 genome_dereplication:
-  ANI: 97.5                        ## Genome dreplication threshold
-  overlap: 0.5                  # See more on https://wwood.github.io/galah/galah-cluster.html
+  ANI: 0.95                        ## Genome dreplication threshold
+  overlap: 0.2                  # See more on https://drep.readthedocs.io/en/latest/module_descriptions.html
+  greedy_clustering: "auto"     # Add options for greedy clustering 'auto' when using more than 5k bins
   opt_parameters: ""
-  quality_formula: "Parks2020_reduced" # completeness-5*contamination-5*num_contigs/100-5*num_ambiguous_bases/100000
-  
-genome_min_completeness: 50
-genome_max_contamination: 10
+  score:
+    completeness: 1
+    contamination: 5
+    N50: 0.5
+    length: 0
+    centrality: 1
+
+genome_aligner: "minimap"

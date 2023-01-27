@@ -43,16 +43,16 @@ Install metagenome-atlas
 ------------------------
 
 We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv`` 
-We also recommend to specify the lates version of metagenome-atlas.  
-.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg
-    :target: https://anaconda.org/bioconda/metagenome-atlas
-
+We also recommend to specify the latest version of metagenome-atlas.  
 
 .. code-block:: bash
 
-    mamba create -y -n atlasenv metagenome-atlas=2.9
+    mamba create -y -n atlasenv metagenome-atlas={latest_version}
     source activate atlasenv
 
+where `{latest_version}` should be replaced by 
+.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg   
+  :target: https://anaconda.org/bioconda/metagenome-atlas
 
 
 Install metagenome-atlas from GitHub

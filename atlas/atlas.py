@@ -239,6 +239,7 @@ def run_download(db_dir, jobs, snakemake_args):
         "--jobs {jobs} --rerun-incomplete "
         "--conda-frontend mamba --scheduler greedy "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
+        " --show-failed-logs "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
