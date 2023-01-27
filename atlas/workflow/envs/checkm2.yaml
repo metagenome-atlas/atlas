@@ -3,20 +3,4 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python>=3.6
-  - scikit-learn=0.23.2
-  - h5py=2.10.0
-  - numpy>=1.16.4
-  - diamond>=2.0.4
-  - tensorflow >=2.3.0
-  - lightgbm >=3.2.1
-  - pandas >=1.3
-  - scipy
-  - prodigal>=2.6.3
-  - setuptools
-  - requests
-  - packaging
-  - tqdm
-  - git
-  - pip:
-    - git+https://github.com/chklovski/CheckM2.git@e563159f005344d798defb60cea4189e0be8ec92
+  - checkm2>=1.0.1, <1.1
