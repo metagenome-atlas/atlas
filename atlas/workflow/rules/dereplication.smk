@@ -33,7 +33,7 @@ rule bindash_dist:
     input:
         rules.bindash_sketch_genome.output[0]
     output:
-        "genomes/sketches/bindash_dists.tsv"
+        temp("genomes/sketches/bindash_dists.tsv")
     params:
         d= config['sketch_max_dist']
     threads:
