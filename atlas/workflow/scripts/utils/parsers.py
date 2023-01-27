@@ -24,7 +24,6 @@ def read_checkm_output(taxonomy_table, completness_table):
     return df
 
 
-
 def read_busco_output(
     completness_table, quality_score_formula="Completeness - 5*Contamination"
 ):
@@ -46,6 +45,7 @@ def read_busco_output(
     df.index.name = "Bin Id"
 
     return df
+
 
 def load_quality(quality_file):
     Q = pd.read_csv(quality_file, index_col=0, sep="\t")
@@ -72,4 +72,3 @@ def load_quality(quality_file):
     assert not Q.index.duplicated().any(), f"duplicated indexes in {quality_file}"
 
     return Q
-

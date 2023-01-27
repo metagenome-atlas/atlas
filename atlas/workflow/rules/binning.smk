@@ -6,7 +6,6 @@ BINNING_CONTIGS = "{sample}/{sample}_contigs.fasta"
 include: "bin_quality.smk"
 
 
-
 rule pileup_for_binning:
     input:
         fasta=BINNING_CONTIGS,
