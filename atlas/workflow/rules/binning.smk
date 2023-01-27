@@ -320,22 +320,9 @@ rule get_bins:
 
 
 
-localrules:
-    build_bin_report,
-    combine_bin_stats,
 
 
-rule build_bin_report:
-    input:
-        bin_table="reports/genomic_bins_{binner}.tsv",
-    output:
-        report="reports/bin_report_{binner}.html",
-    conda:
-        "../envs/report.yaml"
-    log:
-        "logs/binning/report_{binner}.log",
-    script:
-        "../report/bin_report.py"
+
 
 
 localrules:

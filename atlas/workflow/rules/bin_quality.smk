@@ -44,6 +44,9 @@ rule run_checkm2:
         " --output-directory {output} "
         " &> {log} "
 
+localrules:
+    build_bin_report,
+    combine_bin_stats,
 
 
 rule combine_bin_stats:
