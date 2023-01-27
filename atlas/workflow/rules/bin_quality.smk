@@ -4,7 +4,6 @@ bin_quality_input_folder = "{sample}/binning/{binner}/bins"
 ### Checkm2 ###
 
 
-##### checkM  #########
 rule checkm2_download_db:
     output:
         directory(f"{DBDIR}/CheckM2"),

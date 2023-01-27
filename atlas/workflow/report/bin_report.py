@@ -70,9 +70,22 @@ def make_plots(bin_table):
             tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA")
         )
 
+    
         lineage_name = "phylum"
         size_name = "Genome size (Mbp)"
         hover_data = ["genus"]
+
+    elif snakemake.config["bin_quality_asesser"].lower() == "checkm2":
+
+
+        logging.info("No taxonomic information available, I don't know what to use")
+
+        df["Bin Id"] = df.index
+
+
+        lineage_name = None
+        hover_data = []
+        size_name = None
     else:
         raise Exception(f"bin_quality_asesser in the config file not understood")
 
