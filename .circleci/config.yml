@@ -247,17 +247,16 @@ workflows:
           requires:
             - build_and_dryrun
       - get_example_data
-      - getenvs:
-          requires:
-            - build_and_dryrun
       - assembly:
           requires:
             - build_and_dryrun
             - get_example_data
       - binning:
           requires:
-            - build_and_dryrun
-            - get_example_data
+            - assembly
+      # - getenvs:
+      #     requires:
+      #       - build_and_dryrun
             
       # - sra_init:
       #     requires:
