@@ -27,8 +27,8 @@ rule run_checkm2:
         "{sample}/binning/{binner}/bin_quality/checkm2/quality_report.tsv",
         #faa=temp(directory("{sample}/binning/{binner}/bin_quality/checkm2/protein_files")),
     params:
-        outdir= lambda wc, output: Path(output[0]).parent,
-        lowmem = " --lowmem " if config["mem"] < 10 else ""
+        outdir=lambda wc, output: Path(output[0]).parent,
+        lowmem=" --lowmem " if config["mem"] < 10 else "",
     conda:
         "../envs/checkm2.yaml"
     shadow:
@@ -36,7 +36,7 @@ rule run_checkm2:
     threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/checkm2.log",
-        "{sample}/binning/{binner}/bin_quality/checkm2/checkm2.log"
+        "{sample}/binning/{binner}/bin_quality/checkm2/checkm2.log",
     benchmark:
         "logs/benchmarks/checkm2/{sample}_{binner}.tsv"
     resources:
@@ -175,7 +175,8 @@ if config["bin_quality_asesser"].lower() == "checkm2":
     rule combine_bin_stats:
         input:
             completeness_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/checkm2/quality_report.tsv", sample=SAMPLES,
+                "{sample}/binning/{{binner}}/bin_quality/checkm2/quality_report.tsv",
+                sample=SAMPLES,
             ),
         output:
             bin_table="reports/genomic_bins_{binner}.tsv",

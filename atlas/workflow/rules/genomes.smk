@@ -69,7 +69,6 @@ rule calculate_stats:
         get_many_genome_stats(filenames, output[0], threads)
 
 
-
 rule filter_bins:
     input:
         paths=rules.get_bin_filenames.output.filenames,
