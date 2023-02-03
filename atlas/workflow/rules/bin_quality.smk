@@ -24,12 +24,19 @@ rule run_checkm2:
         fasta_dir=bin_quality_input_folder,
         db=rules.checkm2_download_db.output,
     output:
-        directory("{sample}/binning/{binner}/bin_quality/checkm2"),
+        "{sample}/binning/{binner}/bin_quality/checkm2/quality_report.tsv",
+        #faa=temp(directory("{sample}/binning/{binner}/bin_quality/checkm2/protein_files")),
+    params:
+        outdir= lambda wc, output: Path(output[0]).parent,
+        lowmem = " --lowmem " if config["mem"] < 10 else ""
     conda:
         "../envs/checkm2.yaml"
+    shadow:
+        "minimal"
     threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/checkm2.log",
+        "{sample}/binning/{binner}/bin_quality/checkm2/checkm2.log"
     benchmark:
         "logs/benchmarks/checkm2/{sample}_{binner}.tsv"
     resources:
@@ -38,11 +45,14 @@ rule run_checkm2:
     shell:
         " checkm2 predict "
         " --threads {threads} "
+        " {params.lowmem} "
         " --force "
+        " --allmodels "
         " -x .fasta "
+        " --tmpdir {resources.tmpdir} "
         " --input {input.fasta_dir} "
-        " --output-directory {output} "
-        " &> {log} "
+        " --output-directory {params.outdir} "
+        " &> {log[0]} "
 
 
 ## GUNC ###
@@ -165,7 +175,7 @@ if config["bin_quality_asesser"].lower() == "checkm2":
     rule combine_bin_stats:
         input:
             completeness_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/checkm2", sample=SAMPLES
+                "{sample}/binning/{{binner}}/bin_quality/checkm2/quality_report.tsv", sample=SAMPLES,
             ),
         output:
             bin_table="reports/genomic_bins_{binner}.tsv",
@@ -218,7 +228,7 @@ elif config["bin_quality_asesser"].lower() == "checkm":
 else:
 
     raise Exception(
-        "'bin_quality_asesser' should be 'busco' or 'checkM' got {bin_quality_asesser}".format(
+        "'bin_quality_asesser' should be 'checkm2','busco' or 'checkm' got {bin_quality_asesser}".format(
             **config
         )
     )

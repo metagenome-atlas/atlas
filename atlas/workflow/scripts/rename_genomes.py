@@ -1,12 +1,5 @@
 #! /usr/bin/env python
 
-logging.basicConfig(
-    filename=snakemake.log[0],
-    level=logging.INFO,
-    format="%(asctime)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
 import sys, os
 import logging, traceback
 

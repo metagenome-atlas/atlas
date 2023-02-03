@@ -35,7 +35,7 @@ import pandas as pd
 from glob import glob
 from numpy import log
 
-from utils.parsers_checkm import load_quality
+from utils.parsers import load_quality
 
 
 Q = load_quality(snakemake.input.quality)

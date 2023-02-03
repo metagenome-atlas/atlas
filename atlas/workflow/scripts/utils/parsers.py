@@ -47,6 +47,34 @@ def read_busco_output(
     return df
 
 
+def read_checkm2_output(
+    completness_table, quality_score_formula="Completeness - 5*Contamination"
+):
+
+    df = pd.read_table(completness_table, index_col=0)
+
+
+    if not "Completeness" in df.columns:
+        # create empty column
+        df.insert(0,"Completeness",0.)
+        
+        # add completeness depending on selected model
+        specific = df.Completeness_Model_Used.str.contains("Specific Model")
+        df.loc[specific,"Completeness"] = df.loc[specific,"Completeness_Specific"]
+        df.loc[~specific,"Completeness"] = df.loc[~specific,"Completeness_General"]
+
+
+    df.eval(
+        "Quality_score = " + quality_score_formula,
+        inplace=True,
+    )
+
+
+    df.index.name = "Bin Id"
+
+    return df
+
+
 def load_quality(quality_file):
     Q = pd.read_csv(quality_file, index_col=0, sep="\t")
 
