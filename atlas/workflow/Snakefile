@@ -344,7 +344,6 @@ rule binning:
             sample=SAMPLES,
         ),
         expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
-        "genomes/all_bins/checkm_all_bins.tsv",
         "finished_assembly",
     output:
         temp(touch("finished_binning")),
