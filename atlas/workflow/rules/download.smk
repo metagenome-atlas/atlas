@@ -110,7 +110,7 @@ rule download:
             "{dir}/{filename}", dir=DBDIR, filename=["adapters.fa", "phiX174_virus.fa"]
         ),
         get_eggnog_db_file(),
-        CHECKMFILES,
+        f"{DBDIR}/CheckM2",
         os.path.join(GTDBTK_DATA_PATH, "downloaded_success"),
 
 
@@ -206,6 +206,22 @@ rule extract_gtdb:
         'tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log}; '
         'echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}; '
         "conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
+
+
+rule checkm2_download_db:
+    output:
+        directory(f"{DBDIR}/CheckM2"),
+    conda:
+        "../envs/checkm2.yaml"
+    threads: 1
+    log:
+        "logs/download/checkm2.log",
+    resources:
+        time=int(config.get("runtime", {"long": 10})["long"]),
+    shell:
+        " checkm2 database --download --path {output} "
+        " &>> {log}"
+
 
 
 rule download_gunc:
