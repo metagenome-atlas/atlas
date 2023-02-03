@@ -166,8 +166,6 @@ jobs:
           command: |
             source activate ./atlasenv
             test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
-            
-          # --omit-from build_qc_report build_assembly_report
       - store_artifacts:
           path: test/Test_assembly/logs
           destination: assembly_logs
@@ -190,6 +188,7 @@ jobs:
             source activate ./atlasenv
             WD='test/Test_assembly'
             atlas run genecatalog --omit-from combine_egg_nogg_annotations  -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
+
   binning:
     <<: *defaults
     environment:
@@ -199,22 +198,18 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
-      - run: tar -cf conda_envs.tar atlas/envs
-      - restore_cache:
-          keys:
-            - conda-environements-{{ checksum "conda_envs.tar"  }}
-            - conda-environements-
       - run:
-          name: test binning
+          name: run binning
           command: |
             source activate ./atlasenv
-            test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+            WD='test/Test_assembly'
+            atlas run binning -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat
 
       - store_test_results:
-          path: example_data/binning/reports
+          path: test/Test_assembly/reports/bin_report_metabat.html
       - store_artifacts:
-          path: example_data/binning/reports
-          destination: binning_results
+          path: test/Test_assembly/reports/bin_report_metabat.html
+          destination: bin_report
 
   #
   #
@@ -251,19 +246,19 @@ workflows:
       - genome_quantify:
           requires:
             - build_and_dryrun
+      - get_example_data
+      - getenvs:
+          requires:
+            - build_and_dryrun
+      - assembly:
+          requires:
+            - build_and_dryrun
+            - get_example_data
+      - binning:
+          requires:
+            - build_and_dryrun
+            - get_example_data
             
       # - sra_init:
       #     requires:
       #       - build_and_dryrun
-      # - get_example_data
-      # - getenvs:
-      #     requires:
-      #       - build_and_dryrun
-      # - assembly:
-      #     requires:
-      #       - build_and_dryrun
-      #       - get_example_data
-      # - binning:
-      #     requires:
-      #       - build_and_dryrun
-      #       - get_example_data
