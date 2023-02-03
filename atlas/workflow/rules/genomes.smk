@@ -72,7 +72,7 @@ rule calculate_stats:
 rule filter_bins:
     input:
         paths=rules.get_bin_filenames.output.filenames,
-        quality="genomes/all_bins/checkm_all_bins.tsv",
+        quality="reports/genomic_bins_{binner}.tsv".format(binner = config["final_binner"]),
         stats="genomes/all_bins/genome_stats.tsv",
     output:
         quality="genomes/all_bins/filtered_quality.tsv",
@@ -411,25 +411,6 @@ rule all_prodigal:
         touch("genomes/annotations/genes/predicted"),
 
 
-### get genome bin_quality
-
-
-# temporaty solution to make compatible with previous steps
-# if old checkm file exist simply copy this one and do not rerun eerithing.
-localrules:
-    copy_old_checkm_genome_quality,
-
-
-ruleorder: copy_old_checkm_genome_quality > rename_genomes
-
-
-rule copy_old_checkm_genome_quality:
-    input:
-        "genomes/checkm/completeness.tsv",
-    output:
-        "genomes/genome_quality.tsv",
-    shell:
-        "cp {input} {output}"
 
 
 ### Quantification
