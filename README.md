@@ -13,7 +13,6 @@ Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It ha
 You can start using atlas with three commands:
 ```
     mamba install -y -c bioconda -c conda-forge metagenome-atlas={latest_version}
-
     atlas init --db-dir databases path/to/fastq/files
     atlas run all
 ```
