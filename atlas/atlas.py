@@ -1,4 +1,3 @@
-from email.policy import default
 import os, sys
 from .color_logger import logger
 

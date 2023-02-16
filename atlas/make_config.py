@@ -108,6 +108,7 @@ def make_default_config():
 
     config["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
+    config["bin_quality_asesser"] = "checkm"
     # gene cluster
     config["genecatalog"] = {
         "source": "genomes",
@@ -149,6 +150,8 @@ def make_default_config():
         "duplicate_penalty": 0.6,
         "megabin_penalty": 0.5,
     }
+
+    config["gunc_database"] = "gtdb"
 
     config["cobining_min_contig_length"] = 2000
     config["cobining_min_bin_size"] = 200 * 1000

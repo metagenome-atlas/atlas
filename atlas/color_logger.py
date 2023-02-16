@@ -4,9 +4,6 @@ import logging, traceback
 # root logger
 logger = logging.getLogger()
 
-# logger= logging
-
-
 grey = "\x1b[38;21m"
 green = "\x1b[32;21m"
 yellow = "\x1b[33;21m"
@@ -89,3 +86,8 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
 # Install exception handler
 sys.excepthook = handle_exception
+
+# root logger
+logger = logging.getLogger()
+
+# logger= logging

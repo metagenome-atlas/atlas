@@ -1,0 +1,6 @@
+channels:
+- conda-forge
+- bioconda
+- defaults
+dependencies:
+- busco=5.4
