@@ -672,7 +672,6 @@ rule pileup_contigs_sample:
         fasta="{sample}/{sample}_contigs.fasta",
         bam="{sample}/sequence_alignment/{sample}.bam",
     output:
-        basecov=temp("{sample}/assembly/contig_stats/postfilter_base_coverage.txt.gz"),
         covhist="{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
         covstats="{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
         bincov="{sample}/assembly/contig_stats/postfilter_coverage_binned.txt",
@@ -700,7 +699,6 @@ rule pileup_contigs_sample:
         " -Xmx{resources.java_mem}G "
         " covstats={output.covstats} "
         " hist={output.covhist} "
-        " basecov={output.basecov} "
         " concise=t "
         " secondary={params.pileup_secondary} "
         " bincov={output.bincov} "
