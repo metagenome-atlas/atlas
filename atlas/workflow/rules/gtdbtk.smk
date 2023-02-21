@@ -61,8 +61,10 @@ rule classify:
     params:
         outdir=gtdb_dir,
         extension="fasta",
+        mashdir = Path(GTDBTK_DATA_PATH)/"mash_db"
     shell:
         "gtdbtk classify --genome_dir {input.genome_dir} --align_dir {params.outdir} "
+        " --mash_db {params.mashdir} "
         "--out_dir {params.outdir} "
         " --tmpdir {resources.tmpdir} "
         "--extension {params.extension} "
