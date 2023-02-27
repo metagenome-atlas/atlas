@@ -18,6 +18,7 @@ rule identify:
         extension="faa",
         gene_dir=lambda wc, input: os.path.abspath(os.path.dirname(input.genes_flag)),
     shell:
+        'export GTDBTK_DATA_PATH="{GTDBTK_DATA_PATH}" ; '
         "gtdbtk identify "
         "--genes --genome_dir {params.gene_dir} "
         " --out_dir {params.outdir} "
@@ -39,6 +40,7 @@ checkpoint align:
     params:
         outdir=gtdb_dir,
     shell:
+        'export GTDBTK_DATA_PATH="{GTDBTK_DATA_PATH}" ; '
         "gtdbtk align --identify_dir {params.outdir} --out_dir {params.outdir} "
         "--cpus {threads} &> {log[0]}"
 
@@ -63,6 +65,7 @@ rule classify:
         extension="fasta",
         mashdir = Path(GTDBTK_DATA_PATH)/"mash_db"
     shell:
+        'export GTDBTK_DATA_PATH="{GTDBTK_DATA_PATH}" ; '
         "gtdbtk classify --genome_dir {input.genome_dir} --align_dir {params.outdir} "
         " --mash_db {params.mashdir} "
         "--out_dir {params.outdir} "
@@ -83,20 +86,26 @@ rule combine_taxonomy:
         "../scripts/combine_taxonomy.py"
 
 
-rule fasttree:
+
+rule build_tree:
     input:
         f"{gtdb_dir}/align/{{msa}}.user_msa.fasta.gz",
     output:
         temp("genomes/tree/{msa}.unrooted.nwk"),
     log:
-        "logs/genomes/tree/FastTree_{msa}.log",
+        "logs/genomes/tree/{msa}.log",
+        "logs/genomes/tree/{msa}.warnings.log"
     threads: max(config["threads"], 3)
+    params:
+        outdir = lambda wc, output: Path(output[0]).parent
     conda:
-        "%s/tree.yaml" % CONDAENV
+        "../envs/gtdbtk.yaml"
     shell:
-        "export OMP_NUM_THREADS={threads}; "
-        "gunzip -c {input} | "
-        " FastTree > {output} 2> {log} "
+        "gtdbtk infer --msa_file {input} "
+        " --out_dir {params.outdir} "
+        " --prefix {wildcards.msa} "
+        " --cpus {threads} "
+        "--tmpdir {resources.tmpdir} "
 
 
 localrules:
