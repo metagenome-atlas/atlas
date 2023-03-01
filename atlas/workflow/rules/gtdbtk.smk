@@ -91,21 +91,22 @@ rule build_tree:
     input:
         f"{gtdb_dir}/align/{{msa}}.user_msa.fasta.gz",
     output:
-        temp("genomes/tree/{msa}.unrooted.nwk"),
+        temp("genomes/taxonomy/gtdb/{msa}.unrooted.tree"),
     log:
         "logs/genomes/tree/{msa}.log",
-        "logs/genomes/tree/{msa}.warnings.log"
+        "logs/genomes/tree/{msa}.err"
     threads: max(config["threads"], 3)
     params:
         outdir = lambda wc, output: Path(output[0]).parent
     conda:
         "../envs/gtdbtk.yaml"
     shell:
+        'export GTDBTK_DATA_PATH="{GTDBTK_DATA_PATH}" ; '
         "gtdbtk infer --msa_file {input} "
         " --out_dir {params.outdir} "
         " --prefix {wildcards.msa} "
         " --cpus {threads} "
-        "--tmpdir {resources.tmpdir} "
+        "--tmpdir {resources.tmpdir} > {log[0]} 2> {log[1]}"
 
 
 localrules:
@@ -114,13 +115,13 @@ localrules:
 
 rule root_tree:
     input:
-        tree="genomes/tree/{msa}.unrooted.nwk",
+        tree= rules.build_tree.output[0],
     wildcard_constraints:
         msa="((?!unrooted).)*",
     output:
         tree="genomes/tree/{msa}.nwk",
     conda:
-        "%s/tree.yaml" % CONDAENV
+        "../envs/tree.yaml"
     threads: 1
     resources:
         mem=config["simplejob_mem"],
