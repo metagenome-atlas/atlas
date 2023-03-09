@@ -53,7 +53,7 @@ rule semibin_train:
         "logs/benchmarks/semibin/train/{sample}.tsv"
     params:
         output_dir=lambda wc, output: os.path.dirname(output[0]),
-        extra=" --epochs 20 --mode single ",
+        extra="  ",
     shell:
         "SemiBin train_self "
         " --output {params.output_dir} "
