@@ -31,10 +31,11 @@ jobs:
             This PR will automatically close soon if no further activity occurs. 
             
             Thank you for your contributions.
-        days-before-stale: 30
-        days-before-close: 5
+        days-before-stale: 60
+        days-before-close: 15
         stale-issue-label: stale
         stale-pr-label: stale
-        exempt-issue-labels: 'keep,enhancement,bug,documentation,"Feature request","Known issue"'
+        exempt-issue-labels: 'keep,enhancement,bug,documentation,Feature-request,Known-issue'
         exempt-pr-labels: ''
-        days-before-pr-stale: 99999999
+        days-before-pr-stale: 1000
+        exempt-assignees: silask
