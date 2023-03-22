@@ -22,3 +22,5 @@ genome_dereplication:
 genome_aligner: "minimap"
 
 bin_quality_asesser: checkm2          #[ checkm2, busco, cehckm]
+
+semibin_train_extra: ""
