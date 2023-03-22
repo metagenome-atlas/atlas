@@ -11,8 +11,8 @@ rule run_checkm2:
         fasta_dir=bin_quality_input_folder,
         db=rules.checkm2_download_db.output,
     output:
-        "{sample}/binning/{binner}/bin_quality/checkm2/quality_report.tsv",
-        #faa=temp(directory("{sample}/binning/{binner}/bin_quality/checkm2/protein_files")),
+        "{sample}/binning/{binner}/checkm2/quality_report.tsv",
+        faa=directory("{sample}/binning/{binner}/checkm2/protein_files"),
     params:
         outdir=lambda wc, output: Path(output[0]).parent,
         lowmem=" --lowmem " if config["mem"] < 10 else "",
@@ -23,7 +23,7 @@ rule run_checkm2:
     threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/checkm2.log",
-        "{sample}/binning/{binner}/bin_quality/checkm2/checkm2.log",
+        "{sample}/binning/{binner}/checkm2/checkm2.log",
     benchmark:
         "logs/benchmarks/checkm2/{sample}_{binner}.tsv"
     resources:
@@ -42,17 +42,18 @@ rule run_checkm2:
         " &> {log[0]} "
 
 
+bin_faa_folder = rules.run_checkm2.output.faa
+
 ## GUNC ###
 
 
 rule run_gunc:
     input:
         db=rules.download_gunc.output[0].format(**config),
-        fasta_dir=bin_quality_input_folder,
+        fasta_dir= bin_faa_folder
     output:
-        "{sample}/binning/{binner}/bin_quality/gunc.tsv",
-    params:
-        tmpdir=lambda wc: f"{config['tmpdir']}/gunc/{wc.sample}",
+        table="{sample}/binning/{binner}/gunc_output.tsv",
+        folder=directory("{sample}/binning/{binner}/gunc")
     conda:
         "../envs/gunc.yaml"
     threads: config["threads"]
@@ -64,18 +65,18 @@ rule run_gunc:
         time=int(config["runtime"]["default"]),
         mem_mb=config["mem"],
     shell:
-        " mkdir -p {params.tmpdir}/ 2> {log} "
-        " ; "
         " gunc run "
         " --threads {threads} "
+        " --gene_calls "
         " --db_file {input.db} "
         " --input_dir {input.fasta_dir} "
+        " --temp_dir {resources.tmpdir} "
         " --file_suffix .fasta "
-        " --out_dir {params.tmpdir} &>> {log} "
-        " ; "
-        " mv {params.tmpdir}/*.tsv {output} 2>> {log}"
+        " --out_dir {output.folder} &> {log} "
+        " ;\n "
+        " cp {output.folder}/*.tsv {output.table} 2>> {log}"
 
-
+'''
 ##### BUSCO  #########
 
 
@@ -109,7 +110,7 @@ rule run_busco:
         " ; "
         " mv {params.tmpdir}/output/batch_summary.txt {output} 2>> {log}"
 
-
+'''
 # fetch also output/logs/busco.log
 
 
@@ -162,7 +163,11 @@ if config["bin_quality_asesser"].lower() == "checkm2":
     rule combine_bin_stats:
         input:
             completeness_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/checkm2/quality_report.tsv",
+                "{sample}/binning/{{binner}}/checkm2/quality_report.tsv",
+                sample=SAMPLES,
+            ),
+            gunc=expand(
+                "{sample}/binning/{{binner}}/gunc_output.tsv",
                 sample=SAMPLES,
             ),
         output:
