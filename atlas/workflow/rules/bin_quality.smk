@@ -191,7 +191,7 @@ rule combine_bin_stats:
             sample=SAMPLES,
         )
     output:
-        bin_table="Binning/{binner}/quality_report.tsv",
+        bin_table="Binning/{binner}/checkm2_report.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -262,6 +262,14 @@ rule calculate_stats:
 
         filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
         get_many_genome_stats(filenames, output[0], threads)
+
+rule merge_bin_stats:
+    input:
+        stats= "Binning/{binner}/genome_stats.tsv",
+        gunc= "Binning/{binner}/gunc_report.tsv",
+        quality= "Binning/{binner}/checkm2_report.tsv"
+    output:
+        "Binning/{binner}/quality_report.tsv"
 
 
 
