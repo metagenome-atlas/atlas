@@ -22,58 +22,13 @@ localrules:
     filter_bins,
 
 
-localrules:
-    get_bin_filenames,
-
-
-rule get_bin_filenames:
-    input:
-        dirs=expand(
-            "{sample}/binning/{binner}/bins",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        filenames="genomes/filter/paths.tsv",
-    run:
-        import pandas as pd
-        from pathlib import Path
-        from utils import io
-
-        fasta_files = []
-
-
-        # searh for fasta files (.f*) in all bin folders
-        for dir in input.dirs:
-            dir = Path(dir)
-            fasta_files += list(dir.glob("*.f*"))
-
-        filenames = pd.DataFrame(fasta_files, columns=["Filename"])
-        filenames.index = filenames.Filename.apply(io.simplify_path)
-        filenames.index.name = "Bin"
-
-        filenames.to_csv(output.filenames, sep="\t")
-
-
-rule calculate_stats:
-    input:
-        rules.get_bin_filenames.output.filenames,
-    output:
-        "genomes/all_bins/genome_stats.tsv",
-    threads: config["threads"]
-    run:
-        from utils.genome_stats import get_many_genome_stats
-        import pandas as pd
-
-        filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
-        get_many_genome_stats(filenames, output[0], threads)
-
 
 rule filter_bins:
     input:
-        paths=rules.get_bin_filenames.output.filenames,
-        quality="reports/genomic_bins_{binner}.tsv".format(binner = config["final_binner"]),
-        stats="genomes/all_bins/genome_stats.tsv",
+        paths=rules.get_bin_filenames.output.filenames.format(binner = config["final_binner"]),
+        quality="Binning/{binner}/quality_report.tsv".format(binner = config["final_binner"]),
+        stats="Binning/{binner}/genome_stats.tsv".format(binner = config["final_binner"]),
+        gunc = "Binning/{binner}/gunc_report.tsv".format(binner = config["final_binner"]),
     output:
         quality="genomes/all_bins/filtered_quality.tsv",
         paths=temp("genomes/all_bins/filtered_bins.txt"),
@@ -257,7 +212,7 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
-        genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
+        genome_quality=f"Binning/{config['final_binner']}/quality_report.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",

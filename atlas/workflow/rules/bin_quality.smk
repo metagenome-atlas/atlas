@@ -11,8 +11,9 @@ rule run_checkm2:
         fasta_dir=bin_quality_input_folder,
         db=rules.checkm2_download_db.output,
     output:
-        "{sample}/binning/{binner}/checkm2/quality_report.tsv",
-        faa=directory("{sample}/binning/{binner}/checkm2/protein_files"),
+        dir=directory("{sample}/binning/{binner}/checkm2"),
+        table = "{sample}/binning/{binner}/checkm2_report.tsv",
+        faa=directory("{sample}/binning/{binner}/faa"),
     params:
         outdir=lambda wc, output: Path(output[0]).parent,
         lowmem=" --lowmem " if config["mem"] < 10 else "",
@@ -38,11 +39,14 @@ rule run_checkm2:
         " -x .fasta "
         " --tmpdir {resources.tmpdir} "
         " --input {input.fasta_dir} "
-        " --output-directory {params.outdir} "
+        " --output-directory {output.dir} "
         " &> {log[0]} "
+        ";\n"
+        " cp {output.dir}/quality_report.tsv {output.table} 2>> {log[0]} ; "
+        " mv {output.dir}/protein_files {output.faa} 2>> {log[0]} ; "
 
 
-bin_faa_folder = rules.run_checkm2.output.faa
+
 
 ## GUNC ###
 
@@ -50,7 +54,7 @@ bin_faa_folder = rules.run_checkm2.output.faa
 rule run_gunc:
     input:
         db=rules.download_gunc.output[0].format(**config),
-        fasta_dir= bin_faa_folder
+        fasta_dir= "{sample}/binning/{binner}/faa"
     output:
         table="{sample}/binning/{binner}/gunc_output.tsv",
         folder=directory("{sample}/binning/{binner}/gunc")
@@ -76,8 +80,10 @@ rule run_gunc:
         " ;\n "
         " cp {output.folder}/*.tsv {output.table} 2>> {log}"
 
-'''
+
 ##### BUSCO  #########
+'''
+
 
 
 rule run_busco:
@@ -158,83 +164,117 @@ localrules:
     combine_bin_stats,
 
 
-if config["bin_quality_asesser"].lower() == "checkm2":
-
-    rule combine_bin_stats:
-        input:
-            completeness_files=expand(
-                "{sample}/binning/{{binner}}/checkm2/quality_report.tsv",
-                sample=SAMPLES,
-            ),
-            gunc=expand(
-                "{sample}/binning/{{binner}}/gunc_output.tsv",
-                sample=SAMPLES,
-            ),
-        output:
-            bin_table="reports/genomic_bins_{binner}.tsv",
-        params:
-            samples=SAMPLES,
-        log:
-            "logs/binning/combine_stats_{binner}.log",
-        script:
-            "../scripts/combine_checkm2.py"
 
 
-elif config["bin_quality_asesser"].lower() == "busco":
 
-    rule combine_bin_stats:
-        input:
-            completeness_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/busco.tsv", sample=SAMPLES
-            ),
-        output:
-            bin_table="reports/genomic_bins_{binner}.tsv",
-        params:
-            samples=SAMPLES,
-        log:
-            "logs/binning/combine_stats_{binner}.log",
-        script:
-            "../scripts/combine_busco.py"
-
-
-elif config["bin_quality_asesser"].lower() == "checkm":
-
-    rule combine_bin_stats:
-        input:
-            completeness_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/checkm.tsv", sample=SAMPLES
-            ),
-            taxonomy_files=expand(
-                "{sample}/binning/{{binner}}/bin_quality/checkm_taxonomy.tsv",
-                sample=SAMPLES,
-            ),
-        output:
-            bin_table="reports/genomic_bins_{binner}.tsv",
-        params:
-            samples=SAMPLES,
-        log:
-            "logs/binning/combine_stats_{binner}.log",
-        script:
-            "../scripts/combine_checkm.py"
+rule combine_gunc:
+    input:
+        expand(
+            "{sample}/binning/{{binner}}/gunc_output.tsv",
+            sample=SAMPLES,
+        ),
+    output:
+        bin_table="Binning/{binner}/gunc_report.tsv",
+    params:
+        samples=SAMPLES,
+    log:
+        "logs/binning/{binner}/combine_gunc.log",
+    script:
+        "../scripts/combine_gunc.py"
 
 
-else:
 
-    raise Exception(
-        "'bin_quality_asesser' should be 'checkm2','busco' or 'checkm' got {bin_quality_asesser}".format(
-            **config
+rule combine_bin_stats:
+    input:
+        completeness_files=expand(
+            "{sample}/binning/{{binner}}/checkm2_report.tsv",
+            sample=SAMPLES,
         )
-    )
+    output:
+        bin_table="Binning/{binner}/quality_report.tsv",
+    params:
+        samples=SAMPLES,
+    log:
+        "logs/binning/combine_stats_{binner}.log",
+    script:
+        "../scripts/combine_checkm2.py"
+
+
+localrules:
+    get_bin_filenames,
+
+rule get_bin_filenames:
+    input:
+        dirs=expand(
+            "{sample}/binning/{{binner}}/bins",
+            sample=SAMPLES,
+        ),
+        protein_dirs=expand(
+            "{sample}/binning/{{binner}}/faa",
+            sample=SAMPLES,
+        ),
+    output:
+        filenames="Binning/{binner}/paths.tsv",
+    run:
+        import pandas as pd
+        from pathlib import Path
+        from utils import io
+
+
+        def get_list_of_files(dirs,pattern):
+
+            fasta_files = []
+
+            # searh for fasta files (.f*) in all bin folders
+            for dir in dirs:
+                dir = Path(dir)
+                fasta_files += list(dir.glob(pattern))
+
+            filenames = pd.DataFrame(fasta_files, columns=["Filename"])
+            filenames.index = filenames.Filename.apply(io.simplify_path)
+            filenames.index.name = "Bin"
+
+            filenames.sort_index(inplace=True)
+
+            return(filenames)
+
+        fasta_filenames= get_list_of_files(input.dirs,"*.f*")
+        faa_filenames= get_list_of_files(input.protein_dirs,"*.faa")
+
+        assert faa_filenames.index == fasta_filenames.index, "faa index and faa index are nt the same"
+
+        faa_filenames.name= "Proteins"
+
+        filenames= pd.concat((fasta_filenames,faa_filenames),axis=1)
+
+        filenames.to_csv(output.filenames, sep="\t")
+
+
+rule calculate_stats:
+    input:
+        rules.get_bin_filenames.output.filenames,
+    output:
+        "Binning/{binner}/genome_stats.tsv",
+    threads: config["threads"]
+    run:
+        from utils.genome_stats import get_many_genome_stats
+        import pandas as pd
+
+        filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
+        get_many_genome_stats(filenames, output[0], threads)
+
 
 
 rule build_bin_report:
     input:
-        bin_table="reports/genomic_bins_{binner}.tsv",
+        bin_table="Binning/{binner}/quality_report.tsv",
     output:
-        report="reports/bin_report_{binner}.html",
+        report="Binning/{binner}/report.html",
     conda:
         "%s/report.yaml" % CONDAENV
     log:
         "logs/binning/report_{binner}.log",
     script:
         "../report/bin_report.py"
+
+
