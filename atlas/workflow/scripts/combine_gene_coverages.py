@@ -29,7 +29,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 sys.excepthook = handle_exception
 
 #### Begining of script
-
+import numpy as np
 import pandas as pd
 import gc, os
 from utils.parsers_bbmap import read_pileup_coverage
@@ -53,7 +53,7 @@ N_samples = len(snakemake.input.covstats)
 
 logging.info("Read gene info")
 
-gene_info= pd.read_table(input.info, index_col=0)
+gene_info= pd.read_table(snakemake.input.info, index_col=0)
 gene_info.sort_index(inplace=True)
 N_genes= gene_info.shape[0]
 #gene_list= gene_info.index
@@ -69,11 +69,11 @@ logging.info("Open hdf files for writing")
 
 gene_matrix_shape = (N_samples,N_genes)
 
-with h5py.File(output.cov, 'w') as hdf_cov_file, h5py.File(output.counts, 'w') as hdf_counts_file: 
+with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.output.counts, 'w') as hdf_counts_file: 
 
 
     combined_cov = hdf_cov_file.create_dataset('data', shape= gene_matrix_shape ,fillvalue=0, compression="gzip")
-    combined_counts = hdf_cov_file.create_dataset('data', shape= gene_matrix_shape ,fillvalue=0, compression="gzip")
+    combined_counts = hdf_counts_file.create_dataset('data', shape= gene_matrix_shape ,fillvalue=0, compression="gzip")
 
     # add Smaple names attribute
     sample_names = np.array(list(snakemake.params.samples)).astype("S")
@@ -94,11 +94,14 @@ with h5py.File(output.cov, 'w') as hdf_cov_file, h5py.File(output.counts, 'w') a
 
         data = read_pileup_coverage(sample_cov_file, coverage_measure="Median_fold")
 
-        # transform index to int this should drastrically redruce memory
-        # data.index = data.index.str[len("Gene") :].astype(int)
 
-        # I hope genes are sorted
-        assert data.index.is_monotonic_increasing
+        
+        assert data.shape[0] == N_genes, f"I only have {data.shape[0]} /{N_genes} in the file {sample_cov_file}"
+
+        # genes are not sorted :-()
+        data.sort_index(inplace=True)
+
+        
 
         # downcast data 
         Median_fold = pd.to_numeric(data.Median_fold, downcast="float")
@@ -120,13 +123,11 @@ with h5py.File(output.cov, 'w') as hdf_cov_file, h5py.File(output.counts, 'w') a
                            "Non_zero_coverage"   : non_zero_coverage.shape[0],
                            "Max_coverage" : Median_fold.max(),
                            "Average_nonzero_coverage" : non_zero_coverage.mean(),
-                           "Q1_nonzero_coverage" : non_zero_coverage.percentile(0.25),
-                           "Median_nonzero_coverage" : non_zero_coverage.percentile(0.5),
-                           "Q3_nonzero_coverage" : non_zero_coverage.percentile(0.75),
+                           "Q1_nonzero_coverage" : non_zero_coverage.quantile(0.25),
+                           "Median_nonzero_coverage" : non_zero_coverage.quantile(0.5),
+                           "Q3_nonzero_coverage" : non_zero_coverage.quantile(0.75),
                            }
         del non_zero_coverage
-
-        logging.info(Summary[sample])
 
         combined_cov[i,:] = Median_fold.values
         combined_counts[i,:] = Reads.values
@@ -137,10 +138,16 @@ with h5py.File(output.cov, 'w') as hdf_cov_file, h5py.File(output.counts, 'w') a
 
 
         logging.info(f"Read coverage file for sample {i+1} / {N_samples}")
-        current_mem_uage = measure_memory()
-        estimated_max_mem = (current_mem_uage- initial_mem_uage) /(i + 1) * (N_samples + 1) 
 
-        logging.info(f"Estimated max mem is {estimated_max_mem:5.0f} MB")
+
+        if i>5:
+            current_mem_uage = measure_memory()
+            estimated_max_mem = (current_mem_uage- initial_mem_uage) /(i + 1) * (N_samples + 1) +initial_mem_uage
+
+            logging.info(f"Estimated max mem is            {estimated_max_mem:7.0f} MB ")
+
+
+
 
 
 logging.info("All samples processed")
