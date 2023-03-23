@@ -1,6 +1,70 @@
 bin_quality_input_folder = "{sample}/binning/{binner}/bins"
 
 
+
+
+rule calculate_stats:
+    input:
+        bin_quality_input_folder,
+    output:
+        "{sample}/binning/{binner}/genome_stats.tsv",
+    threads: config["threads"]
+    params:
+        extension=".fasta"
+    run:
+        from utils.genome_stats import get_many_genome_stats
+
+        filenames = list(Path(input[0]).glob("*"+params.extension))
+
+        get_many_genome_stats(filenames, output[0], threads)
+
+
+
+rule combine_bin_stats:
+    input:
+        expand(
+            "{sample}/binning/{{binner}}/genome_stats.tsv",
+            sample=SAMPLES,
+        ),
+    output:
+        "Binning/{binner}/genome_stats.tsv"
+    params:
+        samples=SAMPLES,
+    log:
+        "logs/binning/{binner}/combine_stats.log",
+    run:
+
+        try:
+            from utils.io import pandas_concat
+
+            pandas_concat(
+            input,
+            output[0]
+            )
+
+        except Exception as e:
+
+            import traceback
+            with open(log[0],"w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Checkm2 ###
 
 
@@ -123,7 +187,8 @@ rule run_busco:
 ## Combine bin stats
 localrules:
     build_bin_report,
-    combine_bin_stats,
+    combine_checkm2,
+    combine_gunc
 
 
 
@@ -141,19 +206,35 @@ rule combine_gunc:
         samples=SAMPLES,
     log:
         "logs/binning/{binner}/combine_gunc.log",
-    script:
-        "../scripts/combine_gunc.py"
+    run:
+
+        try:
+            from utils.io import pandas_concat
+
+            pandas_concat(
+            input,
+            output[0]
+            )
+
+        except Exception as e:
+
+            import traceback
+            with open(log[0],"w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
 
 
 
-rule combine_bin_stats:
+
+rule combine_checkm2:
     input:
         completeness_files=expand(
             "{sample}/binning/{{binner}}/checkm2_report.tsv",
             sample=SAMPLES,
         )
     output:
-        bin_table="Binning/{binner}/checkm2_report.tsv",
+        bin_table="Binning/{binner}/checkm2_quality_report.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -205,46 +286,72 @@ rule get_bin_filenames:
 
         assert all(faa_filenames.index == fasta_filenames.index), "faa index and faa index are nt the same"
 
-        faa_filenames.name= "Proteins"
+        faa_filenames.columns= ["Proteins"]
 
         filenames= pd.concat((fasta_filenames,faa_filenames),axis=1)
 
         filenames.to_csv(output.filenames, sep="\t")
 
 
-rule calculate_stats:
+rule merge_bin_info:
     input:
-        rules.get_bin_filenames.output.filenames,
-    output:
-        "Binning/{binner}/genome_stats.tsv",
-    threads: config["threads"]
-    run:
-        from utils.genome_stats import get_many_genome_stats
-        import pandas as pd
-
-        filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
-        get_many_genome_stats(filenames, output[0], threads)
-
-rule merge_bin_stats:
-    input:
-        stats= "Binning/{binner}/genome_stats.tsv",
+        stats ="Binning/{binner}/genome_stats.tsv",
         gunc= "Binning/{binner}/gunc_report.tsv",
-        quality= "Binning/{binner}/checkm2_report.tsv"
+        quality= "Binning/{binner}/checkm2_quality_report.tsv"
     output:
-        "Binning/{binner}/quality_report.tsv"
+        "Binning/{binner}/combined_bin_info.tsv"
 
 
 
 rule build_bin_report:
     input:
-        bin_table="Binning/{binner}/quality_report.tsv",
+        bin_table = "Binning/{binner}/checkm2_quality_report.tsv"
     output:
         report="Binning/{binner}/report.html",
     conda:
-        "%s/report.yaml" % CONDAENV
+        "../envs/report.yaml"
     log:
         "logs/binning/report_{binner}.log",
     script:
         "../report/bin_report.py"
 
 
+
+localrules:
+    all_contigs2bins,
+
+
+rule all_contigs2bins:
+    input:
+        expand(
+            "{sample}/binning/{{binner}}/cluster_attribution.tsv",
+            sample=SAMPLES,
+        ),
+    output:
+        temp("Binning/{binner}/contigs2bins.tsv.gz"),
+    run:
+        from utils.io import cat_files
+
+        cat_files(input, output[0], gzip=True)
+
+
+
+
+
+rule quality_filter_bins:
+    input:
+        paths=rules.get_bin_filenames.output.filenames,
+        stats ="Binning/{binner}/genome_stats.tsv",
+        gunc= "Binning/{binner}/gunc_report.tsv",
+        quality= "Binning/{binner}/checkm2_quality_report.tsv"
+    output:
+        info="Binning/{binner}/filtered_bin_info.tsv",
+        paths=temp("Binning/{binner}/filtered_bins_paths.txt"),
+        quality_for_derep=temp("Binning/{binner}/filtered_quality.csv"),
+    threads: 1
+    log:
+        "logs/Binning/{binner}/filter_bins.log",
+    params:
+        filter_criteria=config["genome_filter_criteria"],
+    script:
+        "../scripts/filter_genomes.py"

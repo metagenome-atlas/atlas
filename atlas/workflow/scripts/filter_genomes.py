@@ -58,6 +58,17 @@ Q = Q.query(filter_criteria)
 logging.info(f"Retain {Q.shape[0]} genomes from {n_all_bins}")
 
 
+## GUNC
+
+gunc = pd.read_table(snakemake.input.gunc,index_col=0)
+gunc= gunc.loc[Q.index]
+
+bad_genomes= gunc.index[gunc["pass.GUNC"]==False]
+logging.info( f"{len(bad_genomes)} Don't pass gunc filtering" )
+
+Q.drop(bad_genomes, inplace=True)
+
+
 if Q.shape[0] == 0:
 
     logging.error(
@@ -65,8 +76,8 @@ if Q.shape[0] == 0:
     )
     exit(1)
 
-
-Q.to_csv(snakemake.output.quality, sep="\t")
+#output Q together with quality
+Q.to_csv(snakemake.output.info, sep="\t")
 
 
 # output quality for derepliation
@@ -84,5 +95,5 @@ D.to_csv(snakemake.output.quality_for_derep)
 
 F = pd.read_table(snakemake.input.paths, index_col=0).squeeze()
 
-F = F.loc[Q.index]
+F = F.loc[Q.index].iloc[:,0]
 F.to_csv(snakemake.output.paths, index=False, header=False)
