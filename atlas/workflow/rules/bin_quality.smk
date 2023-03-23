@@ -41,9 +41,7 @@ rule run_checkm2:
         ";\n"
         " cp {params.dir}/quality_report.tsv {output.table} 2>> {log[0]} ; "
         " mv {params.dir}/protein_files {output.faa} 2>> {log[0]} ; "
-        ' echo "\n\ncheckm2 log:\n\n" >> {log[0]}'
-        " cat {log[1]} >> {log[0]} ;\n"
-        " rm -rf {params.dir} 2>> {log[0]} "
+
 
 
 
