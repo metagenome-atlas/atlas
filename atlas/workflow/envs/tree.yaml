@@ -4,4 +4,3 @@ channels:
     - defaults
 dependencies:
     - ete3=3.1.2
-    - fasttree=2.1.8
