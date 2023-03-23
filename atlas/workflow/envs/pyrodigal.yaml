@@ -1,0 +1,8 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - python =3.10
+    - pyrodigal =2.1
+    - biopython =1.81
