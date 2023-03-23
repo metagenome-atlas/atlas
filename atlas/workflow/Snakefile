@@ -268,7 +268,7 @@ def get_gene_catalog_input():
     annotations_requested = config.get("gene_annotations", [])
 
     try:
-        annotations_files = ["Genecatalog/counts/median_coverage.parquet"] + [
+        annotations_files = ["Genecatalog/counts/median_coverage.h5"] + [
             annotation_file_names[key] for key in annotations_requested
         ]
 

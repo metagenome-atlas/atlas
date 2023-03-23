@@ -300,9 +300,11 @@ rule pileup_Genecatalog:
 rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
+        info = "Genecatalog/counts/sequence_infos.tsv"
     output:
-        "Genecatalog/counts/median_coverage.parquet",
-        "Genecatalog/counts/Nmapped_reads.parquet",
+        cov="Genecatalog/counts/median_coverage.h5",
+        counts="Genecatalog/counts/Nmapped_reads.h5",
+        summary="Genecatalog/counts/gene_coverage_stats.tsv"
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     params:
