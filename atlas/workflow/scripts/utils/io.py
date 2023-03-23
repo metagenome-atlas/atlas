@@ -16,7 +16,7 @@ def simplify_path(path, remove_gz=True):
     path = Path(path)
 
     name = path.stem
-    ext = path.sufix
+    ext = path.suffix
 
     if remove_gz & (ext == ".gz"):
         name = Path(name).stem
@@ -29,7 +29,7 @@ def simply_open(filename, mode="r", *args, **kwargs):
 
     filename = Path(filename)
 
-    if filename.sufix==".gz":
+    if filename.suffix==".gz":
 
         # To read file in textmode
         if mode in ["r", "a", "w", "x"]:
