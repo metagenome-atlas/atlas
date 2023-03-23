@@ -3,7 +3,8 @@ channels:
 - bioconda
 - defaults
 dependencies:
-- python=3.11
+- python=3.10
 - pandas=1.5
 - h5py=3.8
+- psutil=5.9
 - biom-format >=2.1.14, <2.2
