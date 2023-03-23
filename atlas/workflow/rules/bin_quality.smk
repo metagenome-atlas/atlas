@@ -11,16 +11,13 @@ rule run_checkm2:
         fasta_dir=bin_quality_input_folder,
         db=rules.checkm2_download_db.output,
     output:
-        dir=directory("{sample}/binning/{binner}/checkm2"),
         table = "{sample}/binning/{binner}/checkm2_report.tsv",
         faa=directory("{sample}/binning/{binner}/faa"),
     params:
-        outdir=lambda wc, output: Path(output[0]).parent,
         lowmem=" --lowmem " if config["mem"] < 10 else "",
+        dir = lambda wc, output: Path(output.table).parent/"checkm2"
     conda:
         "../envs/checkm2.yaml"
-    shadow:
-        "minimal"
     threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/checkm2.log",
@@ -39,11 +36,14 @@ rule run_checkm2:
         " -x .fasta "
         " --tmpdir {resources.tmpdir} "
         " --input {input.fasta_dir} "
-        " --output-directory {output.dir} "
+        " --output-directory {params.dir} "
         " &> {log[0]} "
         ";\n"
-        " cp {output.dir}/quality_report.tsv {output.table} 2>> {log[0]} ; "
-        " mv {output.dir}/protein_files {output.faa} 2>> {log[0]} ; "
+        " cp {params.dir}/quality_report.tsv {output.table} 2>> {log[0]} ; "
+        " mv {params.dir}/protein_files {output.faa} 2>> {log[0]} ; "
+        ' echo "\n\ncheckm2 log:\n\n" >> {log[0]}'
+        " cat {log[1]} >> {log[0]} ;\n"
+        " rm -rf {params.dir} 2>> {log[0]} "
 
 
 
@@ -57,26 +57,28 @@ rule run_gunc:
         fasta_dir= "{sample}/binning/{binner}/faa"
     output:
         table="{sample}/binning/{binner}/gunc_output.tsv",
-        folder=directory("{sample}/binning/{binner}/gunc")
+        folder=directory("{sample}/binning/{binner}/gunc"),
+    params:
+        extension=".faa"
     conda:
         "../envs/gunc.yaml"
     threads: config["threads"]
     log:
         "{sample}/logs/binning/{binner}/gunc.log",
-    benchmark:
-        "logs/benchmarks/gunc/{sample}_{binner}.tsv"
     resources:
         time=int(config["runtime"]["default"]),
         mem_mb=config["mem"],
     shell:
+        " mkdir {output.folder} 2> {log}"
+        " ;\n"
         " gunc run "
         " --threads {threads} "
         " --gene_calls "
         " --db_file {input.db} "
         " --input_dir {input.fasta_dir} "
         " --temp_dir {resources.tmpdir} "
-        " --file_suffix .fasta "
-        " --out_dir {output.folder} &> {log} "
+        " --file_suffix {params.extension} "
+        " --out_dir {output.folder} &>> {log} "
         " ;\n "
         " cp {output.folder}/*.tsv {output.table} 2>> {log}"
 
@@ -118,44 +120,6 @@ rule run_busco:
 
 '''
 # fetch also output/logs/busco.log
-
-
-##### checkM  #########
-rule run_checkm:
-    input:
-        touched_output="logs/checkm_init.txt",
-        bins=bin_quality_input_folder,  # actualy path to fastas
-    output:
-        completeness="{sample}/binning/{binner}/bin_quality/checkm.tsv",
-        taxonomy="{sample}/binning/{binner}/bin_quality/checkm_taxonomy.tsv",
-    params:
-        tmp_output_dir=lambda wc: f"{config['tmpdir']}/checkm/{wc.sample}_{wc.binner}",
-        extension="fasta",
-    conda:
-        "../envs/checkm.yaml"
-    threads: config["threads"]
-    log:
-        "{sample}/logs/binning/{binner}/checkm.log",
-    benchmark:
-        "logs/benchmarks/checkm_lineage_wf/{sample}_{binner}.tsv"
-    resources:
-        time=config["runtime"]["long"],
-        mem=config["large_mem"],
-    shell:
-        " checkm lineage_wf "
-        " --file {params.completeness} "
-        " --tab_table "
-        " --extension {params.extension} "
-        " --threads {threads} "
-        " {input.bins} "
-        " {params.tmp_output_dir} &> {log} "
-        " ;\n"
-        " checkm tree_qa "
-        " {params.tmp_output_dir} "
-        " --out_format 2 "
-        " --file {output.taxonomy} "
-        " --tab_table "
-        " &>> {log}"
 
 
 ## Combine bin stats
@@ -241,7 +205,7 @@ rule get_bin_filenames:
         fasta_filenames= get_list_of_files(input.dirs,"*.f*")
         faa_filenames= get_list_of_files(input.protein_dirs,"*.faa")
 
-        assert faa_filenames.index == fasta_filenames.index, "faa index and faa index are nt the same"
+        assert all(faa_filenames.index == fasta_filenames.index), "faa index and faa index are nt the same"
 
         faa_filenames.name= "Proteins"
 
