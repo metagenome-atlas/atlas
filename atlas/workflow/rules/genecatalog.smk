@@ -309,6 +309,8 @@ rule combine_gene_coverages:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     params:
         samples=SAMPLES,
+    conda:
+        "../envs/hdf.yaml"
     threads: 1
     resources:
         mem=config["large_mem"],
