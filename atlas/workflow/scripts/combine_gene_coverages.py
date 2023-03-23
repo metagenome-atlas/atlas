@@ -114,7 +114,7 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 
 
         # get summary statistics
-        logging.info("Extract Summary statistics")
+        logging.debug("Extract Summary statistics")
         non_zero_coverage= Median_fold.loc[Median_fold>0]
         
         Summary[sample] = {"Sum_coverage" : Median_fold.sum(), 
@@ -139,9 +139,9 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 
         logging.info(f"Read coverage file for sample {i+1} / {N_samples}")
 
-
+        current_mem_uage = measure_memory()
         if i>5:
-            current_mem_uage = measure_memory()
+            
             estimated_max_mem = (current_mem_uage- initial_mem_uage) /(i + 1) * (N_samples + 1) +initial_mem_uage
 
             logging.info(f"Estimated max mem is            {estimated_max_mem:7.0f} MB ")
