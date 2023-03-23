@@ -183,6 +183,56 @@ This rule produces the following output file for the whole dataset.
 
 
 
+Since version 2.15 the output of the counts are stored in a hdf file.
+
+You can open the hdf file in R or python as following:
+
+  
+..code: python
+
+  import h5py
+
+  filename = "path/to/atlas_dir/Genecatalog/counts/median_coverage_genomes.h5"
+
+  with h5py.File(filename, 'r') as hdf_file:
+
+      data_matrix = hdf_file['data'][:]
+      sample_names = hdf_file['data'].attrs['sample_names'].astype(str)
+
+
+..code: R
+
+  library(rhdf5)
+
+
+  filename = "path/to/atlas_dir/Genecatalog/counts/median_coverage_genomes.h5"
+
+  data <- h5read(filename, "data")
+
+  attributes= h5readAttributes(filename, "data")
+
+  colnames(data) <- attributes$sample_names
+
+
+You don't need to load the full data. You could only select genes with annotations.
+You can use the file ``Genecatalog/counts/gene_coverage_stats.tsv`` To normalize the counts.
+
+
+.. seealso:: See in Atlas Tutorial
+
+
+Before version 2.15 the output of the counts were stored in a parquet file. The parquet file can be opended easily with ``pandas.read_parquet`` or ``arrow::read_parquet```.
+
+      
+
+
+
+  
+
+
+
+
+
 
 
 All
