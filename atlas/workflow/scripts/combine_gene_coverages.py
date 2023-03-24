@@ -41,7 +41,7 @@ def measure_memory(write_log_entry=True):
     mem_uage = psutil.Process().memory_info().rss / (1024 * 1024)
 
     if write_log_entry:
-        logging.info(f"The process is currelnty using {mem_uage: 7.0f} MB of RAM")
+        logging.info(f"The process is currently using {mem_uage: 7.0f} MB of RAM")
 
     return mem_uage
 

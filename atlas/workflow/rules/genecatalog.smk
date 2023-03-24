@@ -313,7 +313,8 @@ rule combine_gene_coverages:
         "../envs/hdf.yaml"
     threads: 1
     resources:
-        mem=config["large_mem"],
+        mem=config["mem"],
+        time_min=config["runtime"]["long"]*60
     script:
         "../scripts/combine_gene_coverages.py"
 
@@ -385,7 +386,7 @@ rule eggNOG_annotation:
     shadow:
         "minimal"
     conda:
-        "%s/eggNOG.yaml" % CONDAENV
+        "../ennvs/eggNOG.yaml"
     log:
         "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log",
     shell:
