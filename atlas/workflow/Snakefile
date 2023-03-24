@@ -347,7 +347,7 @@ rule binning:
             binner=config["final_binner"],
             sample=SAMPLES,
         ),
-        expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
+        expand("Binning/{binner}/report.html", binner=config["final_binner"]),
         "finished_assembly",
     output:
         temp(touch("finished_binning")),
