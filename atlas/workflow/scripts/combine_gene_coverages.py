@@ -53,15 +53,22 @@ N_samples = len(snakemake.input.covstats)
 
 logging.info("Read gene info")
 
-gene_info= pd.read_table(snakemake.input.info, index_col=0)
+gene_info= pd.read_table(snakemake.input.info)
+
+# Gene name is only first part of first column
+gene_info.index=gene_info["#Name"].str.split(" ",n=1,expand=True)[0]
+gene_info.index.name= "GeneName"
+gene_info.drop("#Name",axis=1,inplace=True)
+
+
+# Sort 
 gene_info.sort_index(inplace=True)
 N_genes= gene_info.shape[0]
+
+gene_info[["Samples_nz_coverage","Samples_nz_counts","Sum_coverage","Max_coverage"]]=0
+
+ 
 #gene_list= gene_info.index
-
-del gene_info
-gc.collect()
-
-measure_memory()
 
 
 
@@ -90,7 +97,11 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 
     for i,sample in enumerate(snakemake.params.samples):
 
+
+        logging.info(f"Read coverage file for sample {i+1} / {N_samples}")
         sample_cov_file = snakemake.input.covstats[i]
+
+        
 
         data = read_pileup_coverage(sample_cov_file, coverage_measure="Median_fold")
 
@@ -113,21 +124,21 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
         gc.collect()
 
 
-        # get summary statistics
+        # get summary statistics per sample
         logging.debug("Extract Summary statistics")
-        non_zero_coverage= Median_fold.loc[Median_fold>0]
         
         Summary[sample] = {"Sum_coverage" : Median_fold.sum(), 
                            "Total_counts" : Reads.sum(), 
-                           "Non_zero_counts"   : (Reads>0).sum(),
-                           "Non_zero_coverage"   : non_zero_coverage.shape[0],
-                           "Max_coverage" : Median_fold.max(),
-                           "Average_nonzero_coverage" : non_zero_coverage.mean(),
-                           "Q1_nonzero_coverage" : non_zero_coverage.quantile(0.25),
-                           "Median_nonzero_coverage" : non_zero_coverage.quantile(0.5),
-                           "Q3_nonzero_coverage" : non_zero_coverage.quantile(0.75),
+                           "Genes_nz_counts"   : (Reads>0).sum(),
+                           "Genes_nz_coverage"   : (Median_fold>0).sum()
                            }
-        del non_zero_coverage
+
+        # get gene wise stats
+        gene_info["Samples_nz_counts"] += (Reads>0)*1 
+        gene_info["Samples_nz_coverage"] += (Median_fold>0)*1 
+        gene_info["Sum_coverage"] += Median_fold
+
+        gene_info["Max_coverage"] = np.fmax(gene_info["Max_coverage"],Median_fold)
 
         combined_cov[i,:] = Median_fold.values
         combined_counts[i,:] = Reads.values
@@ -137,7 +148,7 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
         gc.collect()
 
 
-        logging.info(f"Read coverage file for sample {i+1} / {N_samples}")
+        
 
         current_mem_uage = measure_memory()
         if i>5:
@@ -154,4 +165,17 @@ logging.info("All samples processed")
 gc.collect()
 
 logging.info("Save Summary")
-pd.DataFrame(Summary).to_csv(snakemake.output.summary,sep='\t')
+pd.DataFrame(Summary).to_csv(snakemake.output.sample_info,sep='\t')
+
+
+logging.info("Save gene Summary")
+
+# downcast 
+for col in gene_info.columns:
+
+    if (col == "GC") or (col=="Sum_coverage"):
+        gene_info[col] = pd.to_numeric(gene_info[col], downcast="float")
+    else:
+        gene_info[col] = pd.to_numeric(gene_info[col], downcast="integer")
+
+gene_info.to_parquet(snakemake.output.gene_info)

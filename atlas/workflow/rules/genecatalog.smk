@@ -212,7 +212,7 @@ rule get_genecatalog_seq_info:
     input:
         "Genecatalog/gene_catalog.fna",
     output:
-        "Genecatalog/counts/sequence_infos.tsv",
+        temp("Genecatalog/counts/sequence_infos.tsv"),
     log:
         "logs/Genecatalog/get_seq_info.log",
     conda:
@@ -229,7 +229,7 @@ rule index_genecatalog:
     input:
         "Genecatalog/gene_catalog.fna",
     output:
-        "ref/Genecatalog.mmi",
+        temp("ref/Genecatalog.mmi"),
     log:
         "logs/Genecatalog/alignment/index.log",
     params:
@@ -296,6 +296,16 @@ rule pileup_Genecatalog:
         " -Xmx{resources.java_mem}G "
         " 2> {log} "
 
+def get_combine_cov_time(wildcards):
+
+    estimated_time = 1.5 * len(SAMPLES) + 20
+
+    config_time= config["runtime"]["long"]*60
+
+    if config_time < estimated_time:
+        logger.error(f"For rule combine_gene_coverages we estimate 1.5 min/ per sample = {estimated_time/60:.1f} h. "
+                    "You provided to little. \n Increase time in config file: \nruntime:\n  long\n.")
+        raise Exception("Not long enough runtime provided. ")
 
 rule combine_gene_coverages:
     input:
@@ -304,7 +314,8 @@ rule combine_gene_coverages:
     output:
         cov="Genecatalog/counts/median_coverage.h5",
         counts="Genecatalog/counts/Nmapped_reads.h5",
-        summary="Genecatalog/counts/gene_coverage_stats.tsv"
+        sample_info="Genecatalog/counts/sample_coverage_stats.tsv",
+        gene_info= "Genecatalog/counts/gene_coverage_stats.parquet"
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     params:
@@ -313,8 +324,8 @@ rule combine_gene_coverages:
         "../envs/hdf.yaml"
     threads: 1
     resources:
-        mem=config["mem"],
-        time_min=config["runtime"]["long"]*60
+        mem=config["simplejob_mem"],
+        time_min= get_combine_cov_time
     script:
         "../scripts/combine_gene_coverages.py"
 
@@ -386,7 +397,7 @@ rule eggNOG_annotation:
     shadow:
         "minimal"
     conda:
-        "../ennvs/eggNOG.yaml"
+        "../envs/eggNOG.yaml"
     log:
         "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log",
     shell:
