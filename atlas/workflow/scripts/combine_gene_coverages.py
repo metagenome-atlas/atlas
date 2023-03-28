@@ -87,7 +87,8 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
     combined_cov.attrs['sample_names'] = sample_names
     combined_counts.attrs['sample_names'] = sample_names
     
-
+    gc.collect()
+    
     Summary= {}
 
 
@@ -120,7 +121,7 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 
         # delete interminate data and release mem
         del data
-        gc.collect()
+
 
 
         # get summary statistics per sample
@@ -150,11 +151,7 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
         
 
         current_mem_uage = measure_memory()
-        if i>5:
-            
-            estimated_max_mem = (current_mem_uage- initial_mem_uage) /(i + 1) * (N_samples + 1) +initial_mem_uage
 
-            logging.info(f"Estimated max mem is            {estimated_max_mem:7.0f} MB ")
 
 
 

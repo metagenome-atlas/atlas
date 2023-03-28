@@ -348,6 +348,8 @@ def get_combine_cov_time(wildcards):
                     "You provided to little. \n Increase time in config file: \nruntime:\n  long\n.")
         raise Exception("Not long enough runtime provided. ")
 
+    return config_time
+
 rule combine_gene_coverages:
     input:
         covstats=expand("Genecatalog/alignments/{sample}_coverage.parquet", sample=SAMPLES),
