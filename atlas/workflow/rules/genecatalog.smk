@@ -296,20 +296,61 @@ rule pileup_Genecatalog:
         " -Xmx{resources.java_mem}G "
         " 2> {log} "
 
+
+rule gene_pileup_as_parquet:
+    input:
+        cov= "Genecatalog/alignments/{sample}_coverage.tsv",
+        #rpkm = "Genecatalog/alignments/{sample}_rpkm.tsv"
+    output:
+        "Genecatalog/alignments/{sample}_coverage.parquet"
+    threads: 1
+    resources:
+        mem=config["simplejob_mem"],
+        time_min = config["runtime"]["simplejob"]
+    log:
+        "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log"
+    run:
+        try:
+            import pandas as pd
+            from utils.parsers_bbmap import read_pileup_coverage
+
+            data = read_pileup_coverage(input[0], coverage_measure="Median_fold",other_columns = ["Avg_fold","Covered_percent","Read_GC","Std_Dev"])
+            data.index.name="GeneName"
+            data.sort_index(inplace=True)
+
+            #rpkm = pd.read_csv(input[1],sep='\t',skiprows=4,usecols=["#Name","RPKM"],index_col=0).sort_index()
+
+
+            data.reset_index().to_parquet(output[0])
+
+
+
+        except Exception as e:
+
+            import traceback
+            with open(log[0],"w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
+
+
+
+
+
 def get_combine_cov_time(wildcards):
 
-    estimated_time = 1.5 * len(SAMPLES) + 20
+    estimated_time = 0.5 * len(SAMPLES) + 20
 
     config_time= config["runtime"]["long"]*60
 
     if config_time < estimated_time:
-        logger.error(f"For rule combine_gene_coverages we estimate 1.5 min/ per sample = {estimated_time/60:.1f} h. "
+        logger.error(f"For rule combine_gene_coverages we estimate 0.5 min/ per sample = {estimated_time/60:.1f} h. "
                     "You provided to little. \n Increase time in config file: \nruntime:\n  long\n.")
         raise Exception("Not long enough runtime provided. ")
 
 rule combine_gene_coverages:
     input:
-        covstats=expand("Genecatalog/alignments/{sample}_coverage.tsv", sample=SAMPLES),
+        covstats=expand("Genecatalog/alignments/{sample}_coverage.parquet", sample=SAMPLES),
         info = "Genecatalog/counts/sequence_infos.tsv"
     output:
         cov="Genecatalog/counts/median_coverage.h5",

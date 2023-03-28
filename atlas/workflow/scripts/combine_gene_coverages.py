@@ -32,7 +32,7 @@ sys.excepthook = handle_exception
 import numpy as np
 import pandas as pd
 import gc, os
-from utils.parsers_bbmap import read_pileup_coverage
+
 
 import h5py
 
@@ -103,19 +103,18 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 
         
 
-        data = read_pileup_coverage(sample_cov_file, coverage_measure="Median_fold")
+        data = pd.read_parquet(sample_cov_file, columns=["GeneName","Reads","Median_fold"]).set_index("GeneName")
 
-
-        
         assert data.shape[0] == N_genes, f"I only have {data.shape[0]} /{N_genes} in the file {sample_cov_file}"
 
         # genes are not sorted :-()
-        data.sort_index(inplace=True)
+        assert data.index.is_monotonic_increasing,f"data is not sorted by index in {sample_cov_file}"
 
         
 
         # downcast data 
-        Median_fold = pd.to_numeric(data.Median_fold, downcast="float")
+        # median is int
+        Median_fold = pd.to_numeric(data.Median_fold, downcast="integer")
         Reads= pd.to_numeric(data.Reads, downcast="integer")
         
 
@@ -173,9 +172,9 @@ logging.info("Save gene Summary")
 # downcast 
 for col in gene_info.columns:
 
-    if (col == "GC") or (col=="Sum_coverage"):
+    if col == "GC":
         gene_info[col] = pd.to_numeric(gene_info[col], downcast="float")
     else:
         gene_info[col] = pd.to_numeric(gene_info[col], downcast="integer")
 
-gene_info.to_parquet(snakemake.output.gene_info)
+gene_info.reset_index().to_parquet(snakemake.output.gene_info)
