@@ -223,6 +223,7 @@ def get_quality_controlled_reads(wildcards, include_se=False):
 
 include: "rules/download.smk"  # contains hard coded variables
 include: "rules/qc.smk"
+include: "rules/pre_assembly.smk"
 include: "rules/assemble.smk"
 include: "rules/binning.smk"
 include: "rules/genomes.smk"
