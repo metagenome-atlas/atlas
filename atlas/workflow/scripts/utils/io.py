@@ -1,7 +1,9 @@
-import os
+
 import gzip as gz
 
 import logging
+import os
+from pathlib import Path
 
 logger = logging.getLogger("io")
 
@@ -10,10 +12,14 @@ def simplify_path(path, remove_gz=True):
     """Removes dir and extension from a filepath.
     checks if file has an e
     """
-    name, ext = os.path.splitext(os.path.basename(path))
+
+    path = Path(path)
+
+    name = path.stem
+    ext = path.suffix
 
     if remove_gz & (ext == ".gz"):
-        name = os.path.splitext(name)[0]
+        name = Path(name).stem
 
     return name
 
@@ -21,7 +27,9 @@ def simplify_path(path, remove_gz=True):
 def simply_open(filename, mode="r", *args, **kwargs):
     """open file irrespective if gz compressed or not"""
 
-    if filename.endswith(".gz"):
+    filename = Path(filename)
+
+    if filename.suffix==".gz":
 
         # To read file in textmode
         if mode in ["r", "a", "w", "x"]:
@@ -64,6 +72,7 @@ def convert_percentages(df):
 def symlink_relative(files, input_dir, output_dir):
     """create symlink with and adjust for relative path"""
 
+
     input_dir_rel = os.path.relpath(input_dir, output_dir)
 
     for f in files:
@@ -102,10 +111,10 @@ def _pandas_concat_disck_based(
     index_col,
     read_arguments,
     save_arguments,
-    headers=None,
+    selected_headers=None,
 ):
 
-    """combine different tables but one after the other in disck based"""
+    """combine different tables but one after the other in disk based"""
 
     import pandas as pd
 
@@ -114,25 +123,25 @@ def _pandas_concat_disck_based(
     except ImportError:
         tqdm = tuple
 
-    if headers is not None:
+    if selected_headers is not None:
         try:
-            headers = list(headers)
+            selected_headers = list(selected_headers)
         except Exception as e:
-            raise Exception("headers should be a list-like") from e
+            raise Exception("selected_headers should be a list-like") from e
 
     else:
         # read all_headers
-        headers = set()
+        selected_headers = set()
         for file in input_tables:
 
-            head = pd.read_csv(
+            headers_of_file = pd.read_csv(
                 file, index_col=index_col, sep=sep, nrows=2, dtype=str, **read_arguments
             )
 
-            headers.update(list(head.columns))
+            selected_headers.update(list(headers_of_file.columns))
 
-        headers = list(headers)
-        logger.info(f"Infered folowing list of headers {headers}")
+        selected_headers = list(selected_headers)
+        logger.info(f"Infered folowing list of headers {selected_headers}")
 
     # parse one file after another
 
@@ -141,10 +150,10 @@ def _pandas_concat_disck_based(
 
         # read full table
         table = pd.read_csv(
-            file, index_col=index_col, sep=sep, dtype=str, **read_arguments
+            file, index_col=index_col, sep=sep, dtype=str,**read_arguments
         )
         # set to common header
-        table = table.reindex(headers, axis=1)
+        table = table.reindex(selected_headers, axis=1)
 
         if file == input_tables[0]:
             mode = "w"
@@ -168,7 +177,7 @@ def pandas_concat(
     save_arguments=None,
     concat_arguments=None,
     disk_based=False,
-    headers=None,
+    selected_headers=None, # only used in disk based, not passed to usecols
 ):
     """
     Uses pandas to read,concatenate and save tables using pandas.concat
@@ -200,12 +209,17 @@ def pandas_concat(
 
         assert axis == 0, "Can only append on axis= 0"
 
-        _pandas_concat_disck_based(headers=headers, **common_arrguments)
+        _pandas_concat_disck_based(selected_headers=selected_headers, **common_arrguments)
 
     else:
         # in memory concat
         if concat_arguments is None:
             concat_arguments = {}
+
+        if selected_headers is not None:
+            raise Exception("argument 'selected_headers' is not used in 'in memory' concat. Use read_arguments=dict(usecols=selected_headers) instead ")
+            
+
 
         _pandas_concat_in_memory(
             axis=axis, concat_arguments=concat_arguments, **common_arrguments

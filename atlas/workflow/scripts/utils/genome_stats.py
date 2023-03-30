@@ -5,7 +5,9 @@ from .io import simplify_path, simply_open
 from itertools import groupby
 import numpy as np
 import gzip as gz
+import logging
 
+logger = logging.getLogger(__file__)
 
 def verify_dna(sequence, is_upper):
 
@@ -84,6 +86,8 @@ def genome_stats(fasta_file, number_of_n_for_split=10):
         Length_contigs, N_contigs, _ = get_stats_from_lengths(contig_lengths)
 
     except Exception as e:
+        logger.critical(f"Error in calculating stats of {fasta_file}")
+        logger.critical(e)
         raise Exception(f"Error in calculating stats of {fasta_file}") from e
 
     return {

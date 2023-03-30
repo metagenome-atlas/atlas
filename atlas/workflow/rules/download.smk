@@ -129,6 +129,8 @@ rule download_atlas_files:
     output:
         f"{DBDIR}/{{filename}}",
     threads: 1
+    wildcard_constraints:
+        filename="[A-Za-z0-9_.]+"
     run:
         shell(
             "wget -O {output} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{wildcards.filename}' "

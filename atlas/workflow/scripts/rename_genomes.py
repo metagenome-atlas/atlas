@@ -126,7 +126,7 @@ def rename_quality(quality_in, quality_out, old2new_name):
 
 
 rename_quality(
-    quality_in=snakemake.input.genome_quality,
-    quality_out=snakemake.output.genome_quality,
+    quality_in=snakemake.input.genome_info,
+    quality_out=snakemake.output.genome_info,
     old2new_name=old2new_name,
 )

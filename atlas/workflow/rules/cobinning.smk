@@ -225,6 +225,8 @@ rule parse_vamb_output:
         fasta_extension=".fna",
         output_path=lambda wc: vamb_cluster_attribution_path,
         samples=SAMPLES,
+    conda:
+        "../envs/fasta.yaml"
     script:
         "../scripts/parse_vamb.py"
 

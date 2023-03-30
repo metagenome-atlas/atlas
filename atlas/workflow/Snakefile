@@ -221,6 +221,10 @@ def get_quality_controlled_reads(wildcards, include_se=False):
         )
 
 
+wildcard_constraints:
+    binner="[A-Za-z]+"
+
+
 include: "rules/download.smk"  # contains hard coded variables
 include: "rules/qc.smk"
 include: "rules/assemble.smk"
@@ -343,7 +347,7 @@ rule binning:
             binner=config["final_binner"],
             sample=SAMPLES,
         ),
-        expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
+        expand("Binning/{binner}/report.html", binner=config["final_binner"]),
         "finished_assembly",
     output:
         touch("finished_binning"),

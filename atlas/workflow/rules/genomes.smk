@@ -1,90 +1,5 @@
 
-localrules:
-    all_contigs2bins,
 
-
-rule all_contigs2bins:
-    input:
-        expand(
-            "{sample}/binning/{binner}/cluster_attribution.tsv",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        temp("genomes/clustering/all_contigs2bins.tsv.gz"),
-    run:
-        from utils.io import cat_files
-
-        cat_files(input, output[0], gzip=True)
-
-
-localrules:
-    filter_bins,
-
-
-localrules:
-    get_bin_filenames,
-
-
-rule get_bin_filenames:
-    input:
-        dirs=expand(
-            "{sample}/binning/{binner}/bins",
-            sample=SAMPLES,
-            binner=config["final_binner"],
-        ),
-    output:
-        filenames="genomes/filter/paths.tsv",
-    run:
-        import pandas as pd
-        from pathlib import Path
-        from utils import io
-
-        fasta_files = []
-
-
-        # searh for fasta files (.f*) in all bin folders
-        for dir in input.dirs:
-            dir = Path(dir)
-            fasta_files += list(dir.glob("*.f*"))
-
-        filenames = pd.DataFrame(fasta_files, columns=["Filename"])
-        filenames.index = filenames.Filename.apply(io.simplify_path)
-        filenames.index.name = "Bin"
-
-        filenames.to_csv(output.filenames, sep="\t")
-
-
-rule calculate_stats:
-    input:
-        rules.get_bin_filenames.output.filenames,
-    output:
-        "genomes/all_bins/genome_stats.tsv",
-    threads: config["threads"]
-    run:
-        from utils.genome_stats import get_many_genome_stats
-        import pandas as pd
-
-        filenames = pd.read_csv(input[0], sep="\t", index_col=0).squeeze()
-        get_many_genome_stats(filenames, output[0], threads)
-
-
-rule filter_bins:
-    input:
-        paths=rules.get_bin_filenames.output.filenames,
-        quality="reports/genomic_bins_{binner}.tsv".format(binner = config["final_binner"]),
-        stats="genomes/all_bins/genome_stats.tsv",
-    output:
-        quality="genomes/all_bins/filtered_quality.tsv",
-        paths=temp("genomes/all_bins/filtered_bins.txt"),
-        quality_for_derep=temp("genomes/all_bins/filtered_quality.csv"),
-    threads: 1
-    log:
-        "logs/genomes/filter_bins.log",
-    params:
-        filter_criteria=config["genome_filter_criteria"],
-    script:
-        "../scripts/filter_genomes.py"
 
 
 def get_greedy_drep_Arguments(wildcards):
@@ -94,7 +9,7 @@ def get_greedy_drep_Arguments(wildcards):
     if (type(use_greedy) == str) and use_greedy.strip().lower() == "auto":
 
         # count number of bins in file
-        bin_list = rules.filter_bins.output.paths
+        bin_list = "Binning/{binner}/filtered_bins_paths.txt".format(binner=config["final_binner"])
 
         n_bins = 0
         with open(bin_list) as f:
@@ -165,8 +80,8 @@ rule drep_compare:
 
 rule dereplicate:
     input:
-        paths="genomes/all_bins/filtered_bins.txt",
-        quality="genomes/all_bins/filtered_quality.csv",
+        paths="Binning/{binner}/filtered_bins_paths.txt".format(binner = config["final_binner"]),
+        quality="Binning/{binner}/filtered_quality.csv".format(binner = config["final_binner"]),
     output:
         genomes=temp(directory("genomes/Dereplication/dereplicated_genomes")),
         wdb="genomes/Dereplication/data_tables/Wdb.csv",
@@ -257,13 +172,13 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
-        genome_quality=f"reports/genomic_bins_{config['final_binner']}.tsv",
+        genome_info=f"Binning/{config['final_binner']}/filtered_bin_info.tsv",
     output:
         dir=directory("genomes/genomes"),
         mapfile_contigs="genomes/clustering/contig2genome.tsv",
         mapfile_old2mag="genomes/clustering/old2newID.tsv",
         mapfile_allbins2mag="genomes/clustering/allbins2genome.tsv",
-        genome_quality="genomes/genome_quality.tsv",
+        genome_info="genomes/genome_quality.tsv",
     params:
         rename_contigs=config["rename_mags_contigs"],
     shadow:
@@ -434,7 +349,7 @@ rule concat_genomes:
     input:
         genome_dir,
     output:
-        "genomes/all_contigs.fasta",
+        temp("genomes/all_contigs.fasta"),
     params:
         ext="fasta",
     shell:
@@ -445,7 +360,8 @@ if config["genome_aligner"] == "minimap":
 
     rule index_genomes:
         input:
-            target="genomes/all_contigs.fasta",
+            target=ancient("genomes/all_contigs.fasta"),
+            timestamp= genome_dir,
         output:
             "ref/genomes.mmi",
         log:
@@ -481,7 +397,8 @@ elif config["genome_aligner"] == "bwa":
 
     rule index_genomes:
         input:
-            "genomes/all_contigs.fasta",
+            ancient("genomes/all_contigs.fasta"),
+            timestamp= genome_dir,
         output:
             multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac"),
         log:
