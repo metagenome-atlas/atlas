@@ -406,12 +406,19 @@ for r in workflow.rules:
         r.resources["mem"] = config["mem"]
 
     # add time if ot present. Simple jobs use simple time
-    if not "time" in r.resources:
-        if r.resources["mem"] <= config["simplejob_mem"]:
-            r.resources["time"] = config["runtime"]["simplejob"]
+
+    if  "time_min" not in r.resources:
+
+        if "time" in r.resources:
+            r.resources["time_min"] = r.resources["time"] * 60
         else:
-            r.resources["time"] = config["runtime"]["default"]
+
+            if r.resources["mem"] <= config["simplejob_mem"]:
+                r.resources["time_min"] = config["runtime"]["simplejob"] *60
+            else:
+                r.resources["time_min"] = config["runtime"]["default"] *60
 
     # convert to new units
     r.resources["mem_mb"] = r.resources["mem"] * 1000
-    r.resources["time_min"] = r.resources["time"] * 60
+    if not "runtime" in r.resources:
+        r.resources["runtime"] = r.resources["time_min"] * 60

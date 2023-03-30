@@ -32,7 +32,9 @@ sys.excepthook = handle_exception
 import numpy as np
 import pandas as pd
 import gc, os
-from utils.parsers_bbmap import read_pileup_coverage
+
+
+import h5py
 
 import h5py
 
@@ -41,7 +43,7 @@ def measure_memory(write_log_entry=True):
     mem_uage = psutil.Process().memory_info().rss / (1024 * 1024)
 
     if write_log_entry:
-        logging.info(f"The process is currelnty using {mem_uage: 7.0f} MB of RAM")
+        logging.info(f"The process is currently using {mem_uage: 7.0f} MB of RAM")
 
     return mem_uage
 
@@ -53,15 +55,26 @@ N_samples = len(snakemake.input.covstats)
 
 logging.info("Read gene info")
 
+gene_info= pd.read_table(snakemake.input.info)
+
+# Gene name is only first part of first column
+gene_info.index=gene_info["#Name"].str.split(" ",n=1,expand=True)[0]
+gene_info.index.name= "GeneName"
+gene_info.drop("#Name",axis=1,inplace=True)
+
 gene_info= pd.read_table(snakemake.input.info, index_col=0)
 gene_info.sort_index(inplace=True)
 N_genes= gene_info.shape[0]
 #gene_list= gene_info.index
 
-del gene_info
-gc.collect()
+# Sort 
+gene_info.sort_index(inplace=True)
+N_genes= gene_info.shape[0]
 
-measure_memory()
+gene_info[["Samples_nz_coverage","Samples_nz_counts","Sum_coverage","Max_coverage"]]=0
+
+ 
+#gene_list= gene_info.index
 
 
 
@@ -80,7 +93,8 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
     combined_cov.attrs['sample_names'] = sample_names
     combined_counts.attrs['sample_names'] = sample_names
     
-
+    gc.collect()
+    
     Summary= {}
 
 
@@ -90,44 +104,47 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 
     for i,sample in enumerate(snakemake.params.samples):
 
+
+        logging.info(f"Read coverage file for sample {i+1} / {N_samples}")
         sample_cov_file = snakemake.input.covstats[i]
 
-        data = read_pileup_coverage(sample_cov_file, coverage_measure="Median_fold")
-
-
         
+
+        data = pd.read_parquet(sample_cov_file, columns=["GeneName","Reads","Median_fold"]).set_index("GeneName")
+
         assert data.shape[0] == N_genes, f"I only have {data.shape[0]} /{N_genes} in the file {sample_cov_file}"
 
         # genes are not sorted :-()
-        data.sort_index(inplace=True)
+        assert data.index.is_monotonic_increasing,f"data is not sorted by index in {sample_cov_file}"
 
         
 
         # downcast data 
-        Median_fold = pd.to_numeric(data.Median_fold, downcast="float")
+        # median is int
+        Median_fold = pd.to_numeric(data.Median_fold, downcast="integer")
         Reads= pd.to_numeric(data.Reads, downcast="integer")
         
 
         # delete interminate data and release mem
         del data
-        gc.collect()
 
 
-        # get summary statistics
+
+        # get summary statistics per sample
         logging.debug("Extract Summary statistics")
-        non_zero_coverage= Median_fold.loc[Median_fold>0]
         
         Summary[sample] = {"Sum_coverage" : Median_fold.sum(), 
                            "Total_counts" : Reads.sum(), 
-                           "Non_zero_counts"   : (Reads>0).sum(),
-                           "Non_zero_coverage"   : non_zero_coverage.shape[0],
-                           "Max_coverage" : Median_fold.max(),
-                           "Average_nonzero_coverage" : non_zero_coverage.mean(),
-                           "Q1_nonzero_coverage" : non_zero_coverage.quantile(0.25),
-                           "Median_nonzero_coverage" : non_zero_coverage.quantile(0.5),
-                           "Q3_nonzero_coverage" : non_zero_coverage.quantile(0.75),
+                           "Genes_nz_counts"   : (Reads>0).sum(),
+                           "Genes_nz_coverage"   : (Median_fold>0).sum()
                            }
-        del non_zero_coverage
+
+        # get gene wise stats
+        gene_info["Samples_nz_counts"] += (Reads>0)*1 
+        gene_info["Samples_nz_coverage"] += (Median_fold>0)*1 
+        gene_info["Sum_coverage"] += Median_fold
+
+        gene_info["Max_coverage"] = np.fmax(gene_info["Max_coverage"],Median_fold)
 
         combined_cov[i,:] = Median_fold.values
         combined_counts[i,:] = Reads.values
@@ -137,14 +154,10 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
         gc.collect()
 
 
-        logging.info(f"Read coverage file for sample {i+1} / {N_samples}")
+        
 
         current_mem_uage = measure_memory()
-        if i>5:
-            
-            estimated_max_mem = (current_mem_uage- initial_mem_uage) /(i + 1) * (N_samples + 1) +initial_mem_uage
 
-            logging.info(f"Estimated max mem is            {estimated_max_mem:7.0f} MB ")
 
 
 
@@ -153,5 +166,18 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 logging.info("All samples processed")
 gc.collect()
 
-logging.info("Save Summary")
-pd.DataFrame(Summary).to_csv(snakemake.output.summary,sep='\t')
+logging.info("Save sample Summary")
+pd.DataFrame(Summary).to_csv(snakemake.output.sample_info,sep='\t')
+
+
+logging.info("Save gene Summary")
+
+# downcast 
+for col in gene_info.columns:
+
+    if col == "GC":
+        gene_info[col] = pd.to_numeric(gene_info[col], downcast="float")
+    else:
+        gene_info[col] = pd.to_numeric(gene_info[col], downcast="integer")
+
+gene_info.reset_index().to_parquet(snakemake.output.gene_info)
