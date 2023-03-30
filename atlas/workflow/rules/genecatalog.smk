@@ -50,7 +50,6 @@ if config["genecatalog"]["source"] == "contigs":
             cat_files(input.fna, output.fna)
             cat_files(input.short, output.short)
 
-
 else:
 
     localrules:
@@ -175,14 +174,14 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             "logs/Genecatalog/clustering/generate_orf_info.log",
         script:
             "../scripts/generate_orf_info.py"
-# cluster genes with cd-hit-est
 
+
+# cluster genes with cd-hit-est
 
 
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
-
 
 else:
     raise Exception(
@@ -299,66 +298,68 @@ rule pileup_Genecatalog:
 
 rule gene_pileup_as_parquet:
     input:
-        cov= "Genecatalog/alignments/{sample}_coverage.tsv",
+        cov="Genecatalog/alignments/{sample}_coverage.tsv",
         #rpkm = "Genecatalog/alignments/{sample}_rpkm.tsv"
     output:
-        "Genecatalog/alignments/{sample}_coverage.parquet"
+        "Genecatalog/alignments/{sample}_coverage.parquet",
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time_min = config["runtime"]["simplejob"]
+        time_min=config["runtime"]["simplejob"],
     log:
-        "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log"
+        "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log",
     run:
         try:
             import pandas as pd
             from utils.parsers_bbmap import read_pileup_coverage
 
-            data = read_pileup_coverage(input[0], coverage_measure="Median_fold",other_columns = ["Avg_fold","Covered_percent","Read_GC","Std_Dev"])
-            data.index.name="GeneName"
+            data = read_pileup_coverage(
+                input[0],
+                coverage_measure="Median_fold",
+                other_columns=["Avg_fold", "Covered_percent", "Read_GC", "Std_Dev"],
+            )
+            data.index.name = "GeneName"
             data.sort_index(inplace=True)
 
-            #rpkm = pd.read_csv(input[1],sep='\t',skiprows=4,usecols=["#Name","RPKM"],index_col=0).sort_index()
-
+            # rpkm = pd.read_csv(input[1],sep='\t',skiprows=4,usecols=["#Name","RPKM"],index_col=0).sort_index()
 
             data.reset_index().to_parquet(output[0])
 
-
-
         except Exception as e:
-
             import traceback
-            with open(log[0],"w") as logfile:
+
+            with open(log[0], "w") as logfile:
                 traceback.print_exc(file=logfile)
 
             raise e
 
 
-
-
-
 def get_combine_cov_time():
+    estimated_time = (0.5 * len(SAMPLES) + 20) / 60
 
-    estimated_time = (0.5 * len(SAMPLES) + 20 )/60
-
-    config_time= config["runtime"]["long"]
+    config_time = config["runtime"]["long"]
 
     if config_time < estimated_time:
-        logger.error(f"For rule combine_gene_coverages we estimate 0.5 min/ per sample = {estimated_time:.1f} h. "
-                    "You provided to little. \n Increase time in config file: \nruntime:\n  long\n.")
+        logger.error(
+            f"For rule combine_gene_coverages we estimate 0.5 min/ per sample = {estimated_time:.1f} h. "
+            "You provided to little. \n Increase time in config file: \nruntime:\n  long\n."
+        )
         raise Exception("Not long enough runtime provided. ")
 
-    return config_time*60
+    return config_time * 60
+
 
 rule combine_gene_coverages:
     input:
-        covstats=expand("Genecatalog/alignments/{sample}_coverage.parquet", sample=SAMPLES),
-        info = "Genecatalog/counts/sequence_infos.tsv"
+        covstats=expand(
+            "Genecatalog/alignments/{sample}_coverage.parquet", sample=SAMPLES
+        ),
+        info="Genecatalog/counts/sequence_infos.tsv",
     output:
         cov="Genecatalog/counts/median_coverage.h5",
         counts="Genecatalog/counts/Nmapped_reads.h5",
         sample_info="Genecatalog/counts/sample_coverage_stats.tsv",
-        gene_info= "Genecatalog/counts/gene_coverage_stats.parquet"
+        gene_info="Genecatalog/counts/gene_coverage_stats.parquet",
     log:
         "logs/Genecatalog/counts/combine_gene_coverages.log",
     params:
@@ -368,7 +369,7 @@ rule combine_gene_coverages:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time_min= get_combine_cov_time()
+        time_min=get_combine_cov_time(),
     script:
         "../scripts/combine_gene_coverages.py"
 

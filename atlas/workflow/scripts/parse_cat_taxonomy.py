@@ -35,7 +35,6 @@ def main(taxonomy_file, tax_output):
 
 
 if __name__ == "__main__":
-
     try:
         main(snakemake.input[0], snakemake.output[0])
     except NameError:

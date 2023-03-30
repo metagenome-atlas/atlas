@@ -70,7 +70,6 @@ gc.collect()
 logging.info("Loading binned coverage")
 binCov = {}
 for i, cov_file in enumerate(snakemake.input.binned_coverage_files):
-
     sample = snakemake.params.samples[i]
 
     binCov[sample] = read_coverage_binned(cov_file)

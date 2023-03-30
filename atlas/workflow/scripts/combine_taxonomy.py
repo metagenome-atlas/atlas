@@ -44,7 +44,6 @@ N_taxonomy_files = len(taxonomy_files)
 logging.info(f"Found {N_taxonomy_files} gtdb taxonomy files.")
 
 if (0 == N_taxonomy_files) or (N_taxonomy_files > 2):
-
     raise Exception(
         f"Found {N_taxonomy_files} number of taxonomy files 'gtdbtk.*.summary.tsv' in {gtdb_classify_folder} expect 1 or 2."
     )

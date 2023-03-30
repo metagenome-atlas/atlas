@@ -2,7 +2,6 @@ DBDIR = config["database_dir"]
 
 
 def get_dram_config(wildcards):
-
     old_dram_path = f"{DBDIR}/Dram"
     if Path(old_dram_path).exists():
         logger.error(
@@ -89,7 +88,6 @@ rule DRAM_annotate:
 
 
 def get_all_dram(wildcards):
-
     all_genomes = get_all_genomes(wildcards)
 
     return expand(rules.DRAM_annotate.output.outdir, genome=all_genomes)
@@ -115,7 +113,6 @@ rule concat_annotations:
         from utils import io
 
         for i, annotation_file in enumerate(DRAM_ANNOTATON_FILES):
-
             input_files = [
                 os.path.join(dram_folder, annotation_file) for dram_folder in input
             ]

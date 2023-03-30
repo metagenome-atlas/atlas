@@ -45,7 +45,6 @@ from multiprocessing import Pool
 
 
 def predict_genes(genome, fasta, out_dir, log):
-
     fna = "{}/{}.fna".format(out_dir, genome)
     faa = "{}/{}.faa".format(out_dir, genome)
     gff = "{}/{}.gff".format(out_dir, genome)
@@ -90,7 +89,6 @@ def predict_genes_genomes(input_dir, out_dir, log, threads):
 
 
 if __name__ == "__main__":
-
     predict_genes_genomes(
         snakemake.input.dir,
         snakemake.output[0],

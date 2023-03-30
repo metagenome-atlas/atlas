@@ -89,7 +89,6 @@ os.makedirs(output_dir)
 
 with open(mapfile_contigs, "w") as out_contigs:
     for rep, row in mapping.loc[representatives].iterrows():
-
         fasta_in = row.Rep_path
         new_name = row.MAG
 
@@ -117,7 +116,6 @@ with open(mapfile_contigs, "w") as out_contigs:
 
 
 def rename_quality(quality_in, quality_out, old2new_name):
-
     Q = pd.read_csv(quality_in, index_col=0, sep="\t")
 
     Q = Q.loc[old2new_name.keys()].rename(index=old2new_name)

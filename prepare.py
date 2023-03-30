@@ -9,9 +9,7 @@ def get_sample_files(path, outfile="samples.tsv"):
     seen = set()
     for dir_name, sub_dirs, files in os.walk(os.path.abspath(path)):
         for fname in files:
-
             if ".fastq" in fname or ".fq" in fname:
-
                 sample_id = fname.split(".fastq")[0].split(".fq")[0]
 
                 sample_id = (
@@ -28,7 +26,6 @@ def get_sample_files(path, outfile="samples.tsv"):
                     continue
 
                 if "_R2" in fname or "_r2" in fname:
-
                     if "R2" in samples[sample_id]:
                         logging.error(
                             f"Duplicate sample {sample_id} was found after renaming; skipping... \n Samples: \n{samples}"

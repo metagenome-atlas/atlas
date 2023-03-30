@@ -53,7 +53,6 @@ def main(samples, completeness_files, taxonomy_files, bin_table):
 
 
 if __name__ == "__main__":
-
     main(
         samples=snakemake.params.samples,
         taxonomy_files=snakemake.input.taxonomy_files,

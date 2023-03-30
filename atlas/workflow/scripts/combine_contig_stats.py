@@ -78,7 +78,6 @@ def main(samples, contig_stats, gene_tables, mapping_logs, combined_stats):
 
 
 if __name__ == "__main__":
-
     main(
         samples=snakemake.params.samples,
         contig_stats=snakemake.input.contig_stats,

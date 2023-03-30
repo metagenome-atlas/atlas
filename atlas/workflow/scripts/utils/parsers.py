@@ -3,7 +3,6 @@ from warnings import warn
 
 
 def read_checkm_output(taxonomy_table, completness_table):
-
     c_df = pd.read_csv(completness_table, index_col=0, sep="\t")[
         ["Completeness", "Contamination", "Strain heterogeneity"]
     ]
@@ -27,7 +26,6 @@ def read_checkm_output(taxonomy_table, completness_table):
 def read_busco_output(
     completness_table, quality_score_formula="Completeness - 5*Contamination"
 ):
-
     df = pd.read_table(completness_table, index_col=0)
 
     df.eval(
@@ -50,7 +48,6 @@ def read_busco_output(
 def read_checkm2_output(
     completness_table, quality_score_formula="Completeness - 5*Contamination"
 ):
-
     df = pd.read_table(completness_table, index_col=0)
 
     if not "Completeness" in df.columns:

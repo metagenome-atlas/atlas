@@ -36,7 +36,6 @@ import pandas as pd
 fasta_files = glob(f"{snakemake.input[0]}/*{snakemake.params.extension}")
 
 if len(fasta_files) > 0:
-
     Bin_names = gen_names_for_range(
         N=len(fasta_files), prefix=f"{snakemake.wildcards.sample}_SemiBin_"
     )
@@ -53,7 +52,6 @@ if len(fasta_files) > 0:
     )
 
 else:
-
     logging.warning(
         f"No bins found in {snakemake.input[0]} add longest contig as bin to make atlas continue."
     )

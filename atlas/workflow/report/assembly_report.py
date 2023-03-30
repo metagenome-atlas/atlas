@@ -54,7 +54,6 @@ PLOT_PARAMS = dict(labels=labels)
 
 
 def make_plots(combined_stats):
-
     ## Make figures with PLOTLY
     # load and rename data
     df = pd.read_csv(combined_stats, sep="\t", index_col=0)

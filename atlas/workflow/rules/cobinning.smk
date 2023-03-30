@@ -50,15 +50,13 @@ rule combine_contigs:
         import gzip as gz
 
         with gz.open(output[0], "wt") as fout:
-
             for sample, input_fasta in zip(params.samples, input.fasta):
                 with open(input_fasta) as fin:
-
                     for line in fin:
                         # if line is a header add sample name
                         if line[0] == ">":
                             line = f">{sample}{params.seperator}" + line[1:]
-                        # write each line to the combined file
+                            # write each line to the combined file
                         fout.write(line)
 
 

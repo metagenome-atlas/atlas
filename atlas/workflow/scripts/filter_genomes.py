@@ -60,23 +60,22 @@ logging.info(f"Retain {Q.shape[0]} genomes from {n_all_bins}")
 
 ## GUNC
 
-gunc = pd.read_table(snakemake.input.gunc,index_col=0)
-gunc= gunc.loc[Q.index]
+gunc = pd.read_table(snakemake.input.gunc, index_col=0)
+gunc = gunc.loc[Q.index]
 
-bad_genomes= gunc.index[gunc["pass.GUNC"]==False]
-logging.info( f"{len(bad_genomes)} Don't pass gunc filtering" )
+bad_genomes = gunc.index[gunc["pass.GUNC"] == False]
+logging.info(f"{len(bad_genomes)} Don't pass gunc filtering")
 
 Q.drop(bad_genomes, inplace=True)
 
 
 if Q.shape[0] == 0:
-
     logging.error(
         f"No bins passed filtering criteria! Bad luck!. You might want to tweek the filtering criteria. Also check the {snakemake.input.quality}"
     )
     exit(1)
 
-#output Q together with quality
+# output Q together with quality
 Q.to_csv(snakemake.output.info, sep="\t")
 
 
@@ -95,5 +94,5 @@ D.to_csv(snakemake.output.quality_for_derep)
 
 F = pd.read_table(snakemake.input.paths, index_col=0).squeeze()
 
-F = F.loc[Q.index].iloc[:,0]
+F = F.loc[Q.index].iloc[:, 0]
 F.to_csv(snakemake.output.paths, index=False, header=False)

@@ -34,7 +34,6 @@ import ete3
 T = ete3.Tree(snakemake.input.tree, quoted_node_names=True, format=1)
 
 try:
-
     T.unroot()
     if len(T) > 2:
         T.set_outgroup(T.get_midpoint_outgroup())

@@ -1,15 +1,12 @@
-
-
-
-
 def get_greedy_drep_Arguments(wildcards):
     "Select greedy options of drep see: https://drep.readthedocs.io/en/latest/module_descriptions.html"
 
     use_greedy = config["genome_dereplication"]["greedy_clustering"]
     if (type(use_greedy) == str) and use_greedy.strip().lower() == "auto":
-
         # count number of bins in file
-        bin_list = "Binning/{binner}/filtered_bins_paths.txt".format(binner=config["final_binner"])
+        bin_list = "Binning/{binner}/filtered_bins_paths.txt".format(
+            binner=config["final_binner"]
+        )
 
         n_bins = 0
         with open(bin_list) as f:
@@ -19,17 +16,14 @@ def get_greedy_drep_Arguments(wildcards):
         use_greedy = n_bins > 10e3
 
         if use_greedy:
-
             logger.warning(
                 f"You have {n_bins} to be dereplicated. I will use greedy algorithms with single linkage."
             )
 
     if use_greedy:
-
         return " --multiround_primary_clustering --greedy_secondary_clustering "
 
     else:
-
         return ""
 
 
@@ -80,8 +74,12 @@ rule drep_compare:
 
 rule dereplicate:
     input:
-        paths="Binning/{binner}/filtered_bins_paths.txt".format(binner = config["final_binner"]),
-        quality="Binning/{binner}/filtered_quality.csv".format(binner = config["final_binner"]),
+        paths="Binning/{binner}/filtered_bins_paths.txt".format(
+            binner=config["final_binner"]
+        ),
+        quality="Binning/{binner}/filtered_quality.csv".format(
+            binner=config["final_binner"]
+        ),
     output:
         genomes=temp(directory("genomes/Dereplication/dereplicated_genomes")),
         wdb="genomes/Dereplication/data_tables/Wdb.csv",
@@ -158,7 +156,7 @@ rule parse_drep:
         for col in genome2cluster:
             genome2cluster[col + "_path"] = file_paths.loc[genome2cluster[col]].values
 
-        # expected output is inverted columns
+            # expected output is inverted columns
         genome2cluster[["Rep_path", "Bin_path"]].to_csv(
             output[0], sep="\t", index=False, header=False
         )
@@ -190,9 +188,7 @@ checkpoint rename_genomes:
 
 
 def get_genome_dir():
-
     if ("genome_dir" in config) and (config["genome_dir"] is not None):
-
         genome_dir = config["genome_dir"]
         assert os.path.exists(genome_dir), f"{genome_dir} Doesn't exists"
 
@@ -215,7 +211,6 @@ genome_dir = get_genome_dir()
 
 
 def get_all_genomes(wildcards):
-
     global genome_dir
 
     if genome_dir == "genomes/genomes":
@@ -248,13 +243,12 @@ rule get_contig2genomes:
 
         with open(output[0], "w") as out_contigs:
             for fasta in fasta_files:
-
                 bin_name, ext = os.path.splitext(os.path.split(fasta)[-1])
                 # if gz remove also fasta extension
                 if ext == ".gz":
                     bin_name = os.path.splitext(bin_name)[0]
 
-                # write names of contigs in mapping file
+                    # write names of contigs in mapping file
                 with open(fasta) as f:
                     for line in f:
                         if line[0] == ">":
@@ -326,8 +320,6 @@ rule all_prodigal:
         touch("genomes/annotations/genes/predicted"),
 
 
-
-
 ### Quantification
 
 
@@ -361,7 +353,7 @@ if config["genome_aligner"] == "minimap":
     rule index_genomes:
         input:
             target=ancient("genomes/all_contigs.fasta"),
-            timestamp= genome_dir,
+            timestamp=genome_dir,
         output:
             "ref/genomes.mmi",
         log:
@@ -392,13 +384,12 @@ if config["genome_aligner"] == "minimap":
         wrapper:
             "v1.19.0/bio/minimap2/aligner"
 
-
 elif config["genome_aligner"] == "bwa":
 
     rule index_genomes:
         input:
             ancient("genomes/all_contigs.fasta"),
-            timestamp= genome_dir,
+            timestamp=genome_dir,
         output:
             multiext("ref/genomes", ".amb", ".ann", ".bwt.2bit.64", ".pac"),
         log:
@@ -427,7 +418,6 @@ elif config["genome_aligner"] == "bwa":
             mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/bwa-mem2/mem"
-
 
 else:
     raise Exception(

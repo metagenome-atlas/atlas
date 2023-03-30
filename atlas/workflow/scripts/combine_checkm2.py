@@ -51,7 +51,6 @@ def main(samples, completeness_files, bin_table):
 
 
 if __name__ == "__main__":
-
     main(
         samples=snakemake.params.samples,
         completeness_files=snakemake.input.completeness_files,

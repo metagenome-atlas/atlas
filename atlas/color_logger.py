@@ -19,7 +19,6 @@ class ColorFormatter(logging.Formatter):
         self,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)",
     ):
-
         self.FORMATS = {
             logging.DEBUG: prefix + grey + format + reset,
             logging.INFO: prefix + green + format + reset,

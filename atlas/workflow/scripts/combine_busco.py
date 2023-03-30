@@ -52,7 +52,6 @@ def main(samples, completeness_files, bin_table):
     failed_genomes = df.index[df.Dataset.str.lower().str.contains("run failed")]
 
     if len(failed_genomes) > 0:
-
         logging.warn(
             "Following genomes didn't pass BUSCO. I ignore them, because "
             "I think theas means they are too bad to be quantified:\n"
@@ -65,7 +64,6 @@ def main(samples, completeness_files, bin_table):
 
 
 if __name__ == "__main__":
-
     main(
         samples=snakemake.params.samples,
         completeness_files=snakemake.input.completeness_files,

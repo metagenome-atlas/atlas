@@ -28,9 +28,7 @@ def main(jgi_file):
 
 
 if __name__ == "__main__":
-
     if "snakemake" in globals():
-
         with open(snakemake.log[0], "w") as log:
             sys.stderr = log
 
@@ -40,7 +38,6 @@ if __name__ == "__main__":
                 main(snakemake.input[0])
 
     else:
-
         import argparse
         import logging
 

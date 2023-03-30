@@ -63,7 +63,7 @@ rule classify:
     params:
         outdir=gtdb_dir,
         extension="fasta",
-        mashdir = Path(GTDBTK_DATA_PATH)/"mash_db"
+        mashdir=Path(GTDBTK_DATA_PATH) / "mash_db",
     shell:
         'export GTDBTK_DATA_PATH="{GTDBTK_DATA_PATH}" ; '
         "gtdbtk classify --genome_dir {input.genome_dir} --align_dir {params.outdir} "
@@ -86,7 +86,6 @@ rule combine_taxonomy:
         "../scripts/combine_taxonomy.py"
 
 
-
 rule build_tree:
     input:
         f"{gtdb_dir}/align/{{msa}}.user_msa.fasta.gz",
@@ -94,10 +93,10 @@ rule build_tree:
         temp("genomes/taxonomy/gtdb/{msa}.unrooted.tree"),
     log:
         "logs/genomes/tree/{msa}.log",
-        "logs/genomes/tree/{msa}.err"
+        "logs/genomes/tree/{msa}.err",
     threads: max(config["threads"], 3)
     params:
-        outdir = lambda wc, output: Path(output[0]).parent
+        outdir=lambda wc, output: Path(output[0]).parent,
     conda:
         "../envs/gtdbtk.yaml"
     shell:
@@ -115,7 +114,7 @@ localrules:
 
 rule root_tree:
     input:
-        tree= rules.build_tree.output[0],
+        tree=rules.build_tree.output[0],
     wildcard_constraints:
         msa="((?!unrooted).)*",
     output:

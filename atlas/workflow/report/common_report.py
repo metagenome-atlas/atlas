@@ -25,7 +25,6 @@ def make_html(
     css_file=os.path.join(reports_dir, "report.css"),
     wildcards={},
 ):
-
     html_template = open(html_template_file).read()
     css_content = open(css_file).read()
 

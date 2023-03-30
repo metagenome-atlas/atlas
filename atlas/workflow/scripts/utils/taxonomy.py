@@ -37,7 +37,6 @@ def tax2table(Taxonomy_Series, split_character=";", remove_prefix=False):
 
 
 def load_checkm_tax(taxonomy_file, remove_prefix=False):
-
     D = pd.read_table(taxonomy_file, index_col=0)
 
     checkmTax = tax2table(D["Taxonomy (contained)"], remove_prefix=remove_prefix)
@@ -46,7 +45,6 @@ def load_checkm_tax(taxonomy_file, remove_prefix=False):
 
 
 def load_gtdb_tax(taxonomy_file, remove_prefix=False):
-
     D = pd.read_table(taxonomy_file, index_col=0)
 
     Tax = tax2table(D["classification"], remove_prefix=remove_prefix)

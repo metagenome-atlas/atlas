@@ -42,9 +42,7 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
 
 
 if __name__ == "__main__":
-
     if "snakemake" not in globals():
-
         p = argparse.ArgumentParser()
         p.add_argument("--cluster-attribution")
         p.add_argument("--contigs")
@@ -52,7 +50,6 @@ if __name__ == "__main__":
         args = vars(p.parse_args())
         get_fasta_of_bins(**args)
     else:
-
         with open(snakemake.log[0], "w") as log:
             sys.stderr = sys.stdout = log
 

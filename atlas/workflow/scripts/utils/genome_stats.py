@@ -9,8 +9,8 @@ import logging
 
 logger = logging.getLogger(__file__)
 
-def verify_dna(sequence, is_upper):
 
+def verify_dna(sequence, is_upper):
     if not is_upper:
         sequence = sequence.upper()
     letters_used = set(sequence)
@@ -26,7 +26,6 @@ def verify_dna(sequence, is_upper):
 
 
 def get_stats_from_lengths(lengths):
-
     sorted_lengths = sorted(lengths, reverse=True)
     csum = np.cumsum(sorted_lengths)
 
@@ -50,7 +49,6 @@ def genome_stats(fasta_file, number_of_n_for_split=10):
     """
 
     try:
-
         name = simplify_path(fasta_file)
 
         scaffold_lengths = []

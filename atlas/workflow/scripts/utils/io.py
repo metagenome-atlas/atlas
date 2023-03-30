@@ -1,4 +1,3 @@
-
 import gzip as gz
 
 import logging
@@ -29,8 +28,7 @@ def simply_open(filename, mode="r", *args, **kwargs):
 
     filename = Path(filename)
 
-    if filename.suffix==".gz":
-
+    if filename.suffix == ".gz":
         # To read file in textmode
         if mode in ["r", "a", "w", "x"]:
             mode += "t"
@@ -72,7 +70,6 @@ def convert_percentages(df):
 def symlink_relative(files, input_dir, output_dir):
     """create symlink with and adjust for relative path"""
 
-
     input_dir_rel = os.path.relpath(input_dir, output_dir)
 
     for f in files:
@@ -89,7 +86,6 @@ def _pandas_concat_in_memory(
     save_arguments,
     concat_arguments,
 ):
-
     import pandas as pd
 
     Tables = [
@@ -113,7 +109,6 @@ def _pandas_concat_disck_based(
     save_arguments,
     selected_headers=None,
 ):
-
     """combine different tables but one after the other in disk based"""
 
     import pandas as pd
@@ -133,7 +128,6 @@ def _pandas_concat_disck_based(
         # read all_headers
         selected_headers = set()
         for file in input_tables:
-
             headers_of_file = pd.read_csv(
                 file, index_col=index_col, sep=sep, nrows=2, dtype=str, **read_arguments
             )
@@ -147,10 +141,9 @@ def _pandas_concat_disck_based(
 
     logger.info("Read an append table by table")
     for file in tqdm(input_tables):
-
         # read full table
         table = pd.read_csv(
-            file, index_col=index_col, sep=sep, dtype=str,**read_arguments
+            file, index_col=index_col, sep=sep, dtype=str, **read_arguments
         )
         # set to common header
         table = table.reindex(selected_headers, axis=1)
@@ -177,7 +170,7 @@ def pandas_concat(
     save_arguments=None,
     concat_arguments=None,
     disk_based=False,
-    selected_headers=None, # only used in disk based, not passed to usecols
+    selected_headers=None,  # only used in disk based, not passed to usecols
 ):
     """
     Uses pandas to read,concatenate and save tables using pandas.concat
@@ -201,7 +194,6 @@ def pandas_concat(
     )
 
     if disk_based:
-
         if concat_arguments is not None:
             raise Exception(
                 f"cannot hanndle concat arguments by disck based append, got {concat_arguments}"
@@ -209,7 +201,9 @@ def pandas_concat(
 
         assert axis == 0, "Can only append on axis= 0"
 
-        _pandas_concat_disck_based(selected_headers=selected_headers, **common_arrguments)
+        _pandas_concat_disck_based(
+            selected_headers=selected_headers, **common_arrguments
+        )
 
     else:
         # in memory concat
@@ -217,9 +211,9 @@ def pandas_concat(
             concat_arguments = {}
 
         if selected_headers is not None:
-            raise Exception("argument 'selected_headers' is not used in 'in memory' concat. Use read_arguments=dict(usecols=selected_headers) instead ")
-            
-
+            raise Exception(
+                "argument 'selected_headers' is not used in 'in memory' concat. Use read_arguments=dict(usecols=selected_headers) instead "
+            )
 
         _pandas_concat_in_memory(
             axis=axis, concat_arguments=concat_arguments, **common_arrguments

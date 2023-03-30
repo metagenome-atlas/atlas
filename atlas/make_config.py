@@ -225,7 +225,6 @@ def make_config(
             f"Config file {config} already exists, I didn't dare to overwrite it. continue..."
         )
     else:
-
         with open(config, "w") as f:
             yaml.dump(conf, f)
         logger.info(

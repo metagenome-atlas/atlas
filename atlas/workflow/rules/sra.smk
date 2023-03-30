@@ -83,7 +83,6 @@ RunTable = None
 def get_runids_for_biosample(wildcards):
     global RunTable
     if RunTable is None:
-
         from atlas.init.parse_sra import load_and_validate_runinfo_table
 
         RunTable = load_and_validate_runinfo_table("RunInfo.tsv")
@@ -94,12 +93,10 @@ def get_runids_for_biosample(wildcards):
 
 
 def get_runs_for_biosample(wildcards):
-
     run_ids = get_runids_for_biosample(wildcards)
 
     ReadFiles = {}
     for fraction in SRA_read_fractions:
-
         if fraction == "":
             key = "se"
         else:
@@ -127,7 +124,6 @@ rule merge_runs_to_sample:
         from utils import io
 
         for i, fraction in enumerate(SRA_read_fractions):
-
             if fraction == "":
                 fraction = "se"
             io.cat_files(input[fraction], output[i])

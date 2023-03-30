@@ -130,7 +130,7 @@ rule download_atlas_files:
         f"{DBDIR}/{{filename}}",
     threads: 1
     wildcard_constraints:
-        filename="[A-Za-z0-9_.]+"
+        filename="[A-Za-z0-9_.]+",
     run:
         shell(
             "wget -O {output} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{wildcards.filename}' "
@@ -208,7 +208,6 @@ rule extract_gtdb:
         'tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log}; '
 
 
-
 rule checkm2_download_db:
     output:
         directory(f"{DBDIR}/CheckM2"),
@@ -222,7 +221,6 @@ rule checkm2_download_db:
     shell:
         " checkm2 database --download --path {output} "
         " &>> {log}"
-
 
 
 rule download_gunc:

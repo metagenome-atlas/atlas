@@ -150,7 +150,6 @@ rule get_metabat_depth_file:
 
 
 def get_metabat_sensitivity():
-
     if config["metabat"]["sensitivity"] == "sensitive":
         return 500
     else:
@@ -270,7 +269,6 @@ rule get_unique_cluster_attribution:
         new_d = d.map(map_cluster_ids)
         new_d.dropna(inplace=True)
         if new_d.shape[0] == 0:
-
             logger.warning(
                 f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
                 "I add longest contig to make the pipline continue"

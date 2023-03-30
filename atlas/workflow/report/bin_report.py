@@ -42,7 +42,6 @@ from utils.taxonomy import tax2table
 
 
 def make_plots(bin_table):
-
     div = {}
 
     div["input_file"] = bin_table
@@ -51,7 +50,6 @@ def make_plots(bin_table):
     df = pd.read_table(bin_table)
 
     if snakemake.config["bin_quality_asesser"].lower() == "busco":
-
         df["Bin Id"] = df["Input_file"].str.replace(".fasta", "", regex=False)
 
         logging.info("No taxonomic information available, use busco Dataset")
@@ -65,7 +63,6 @@ def make_plots(bin_table):
         size_name = None
 
     elif snakemake.config["bin_quality_asesser"].lower() == "checkm":
-
         df = df.join(
             tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA")
         )
@@ -75,7 +72,6 @@ def make_plots(bin_table):
         hover_data = ["genus"]
 
     elif snakemake.config["bin_quality_asesser"].lower() == "checkm2":
-
         df["Bin Id"] = df.index
 
         lineage_name = "Translation_Table_Used"

@@ -31,7 +31,6 @@ def parse_comments(file, comment="#", sep="\t", expect_one_value=True):
 
 
 def read_coverage_binned(covarage_binned_file):
-
     binned_coverage = pd.read_csv(
         covarage_binned_file,
         sep="\t",
@@ -89,7 +88,6 @@ def combine_coverages(coverage_files, sample_names, coverage_measure="Median_fol
     assert len(coverage_files) == len(sample_names)
 
     for i in range(len(coverage_files)):
-
         sample = sample_names[i]
 
         data = read_pileup_coverage(
@@ -191,7 +189,6 @@ def parse_pileup_log_file(log_file):
     parsed = {}
 
     with open(log_file) as f:
-
         # drop first tree lines with contain log info
         for i in range(3):
             f.readline()

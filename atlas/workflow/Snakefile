@@ -79,7 +79,6 @@ def io_params_for_tadpole(io, key="in"):
 
 
 def input_params_for_bbwrap(input):
-
     if len(input) == 3:
         return f"in1={input[0]},{input[2]} in2={input[1]},null"
     else:
@@ -92,6 +91,8 @@ def input_params_for_bbwrap(input):
 TMPDIR = get_temp_dir(config)
 SAMPLES = sampleTable.index.values
 SKIP_QC = False
+
+
 # GROUPS = sampleTable.BinGroup.unique()
 def get_alls_samples_of_group(wildcards):
     group_of_sample = sampleTable.loc[wildcards.sample, "BinGroup"]
@@ -127,7 +128,6 @@ else:
 
 
 if (len(colum_headers_raw) == 0) and (len(colum_headers_QC) == 0):
-
     raise IOError(
         "Either raw reas or QC reads need to be in the sample table. "
         "I din't find any columnns with 'Reads_raw_<fraction>' or 'Reads_QC_<fraction>'  "
@@ -212,7 +212,6 @@ def get_quality_controlled_reads(wildcards, include_se=False):
         return get_files_from_sampleTable(wildcards.sample, QC_Headers)
 
     except FileNotInSampleTableException:
-
         # return files as named by atlas pipeline
         return expand(
             "{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
@@ -222,7 +221,7 @@ def get_quality_controlled_reads(wildcards, include_se=False):
 
 
 wildcard_constraints:
-    binner="[A-Za-z]+"
+    binner="[A-Za-z]+",
 
 
 include: "rules/download.smk"  # contains hard coded variables
@@ -260,7 +259,6 @@ rule all:
 
 
 def get_gene_catalog_input():
-
     annotation_file_names = {
         "eggNOG": "Genecatalog/annotations/eggNog.tsv.gz",
         "single_copy": expand(
@@ -277,7 +275,6 @@ def get_gene_catalog_input():
         ]
 
     except Exception as e:
-
         raise IOError(
             "Error in gene_annotations requested, check config file 'gene_annotations' "
         ) from e
@@ -297,7 +294,6 @@ rule genecatalog:
 
 
 def get_genome_annotations():
-
     annotation_file_names = {
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",
         "gtdb_taxonomy": "genomes/taxonomy/gtdb_taxonomy.tsv",
@@ -314,7 +310,6 @@ def get_genome_annotations():
         ]
 
     except Exception as e:
-
         raise IOError(
             "Error in annotations requested, check config file 'annotations' "
         ) from e
@@ -407,16 +402,14 @@ for r in workflow.rules:
 
     # add time if ot present. Simple jobs use simple time
 
-    if  "time_min" not in r.resources:
-
+    if "time_min" not in r.resources:
         if "time" in r.resources:
             r.resources["time_min"] = r.resources["time"] * 60
         else:
-
             if r.resources["mem"] <= config["simplejob_mem"]:
-                r.resources["time_min"] = config["runtime"]["simplejob"] *60
+                r.resources["time_min"] = config["runtime"]["simplejob"] * 60
             else:
-                r.resources["time_min"] = config["runtime"]["default"] *60
+                r.resources["time_min"] = config["runtime"]["default"] * 60
 
     # convert to new units
     r.resources["mem_mb"] = r.resources["mem"] * 1000

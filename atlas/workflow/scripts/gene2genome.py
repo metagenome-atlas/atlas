@@ -36,7 +36,6 @@ from utils import gene_scripts
 # if MAGs are renamed I need to obtain the old contig names
 # otherwise not
 if snakemake.params.renamed_contigs:
-
     contigs2bins = pd.read_csv(
         snakemake.input.contigs2bins, index_col=0, squeeze=False, sep="\t", header=None
     )

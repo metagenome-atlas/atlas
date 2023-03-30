@@ -79,11 +79,9 @@ def get_stats_from_zips(zips, samples):
 
 
 def get_pe_read_quality_plot(df, quality_range, color_range):
-
     fig = subplots.make_subplots(cols=2)
 
     for i, sample in enumerate(df["mean_1"].columns):
-
         fig.append_trace(
             go.Scatter(
                 x=df.index,
@@ -121,11 +119,9 @@ def get_pe_read_quality_plot(df, quality_range, color_range):
 
 
 def draw_se_read_quality(df, quality_range, color_range):
-
     fig = subplots.make_subplots(cols=1)
 
     for i, sample in enumerate(df.columns):
-
         fig.append_trace(
             go.Scatter(
                 x=df.index,
@@ -149,7 +145,6 @@ def draw_se_read_quality(df, quality_range, color_range):
 def make_plots(
     samples, zipfiles_QC, read_counts, read_length, min_quality, insert_size_stats
 ):
-
     div = {}
 
     ## Quality along read
@@ -172,7 +167,6 @@ def make_plots(
     # create plots if paired or not
 
     if paired:
-
         div["quality_QC"] = get_pe_read_quality_plot(
             Quality_QC_pe, quality_range, color_range
         ).to_html(**HTML_PARAMS)
@@ -182,7 +176,6 @@ def make_plots(
     #     ).to_html(**HTML_PARAMS)
 
     else:
-
         div["quality_QC"] = draw_se_read_quality(
             Quality_QC_se, quality_range, color_range
         ).to_html(**HTML_PARAMS)
@@ -203,7 +196,6 @@ def make_plots(
     data_qc = df.query('Step=="QC"')
 
     for var in ["Total_Reads", "Total_Bases"]:
-
         fig = px.strip(data_qc, y=var, **PLOT_PARAMS)
         fig.update_yaxes(range=(0, data_qc[var].max() * 1.1))
         div[var] = fig.to_html(**HTML_PARAMS)
@@ -242,7 +234,6 @@ def make_plots(
             "Insert"
         ] = "<p>Insert size information is not available for single end reads.</p>"
     else:
-
         data_insert = pd.read_table(insert_size_stats, index_col=0)
         data_insert.index.name = "Sample"
 
