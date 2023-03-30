@@ -289,7 +289,7 @@ rule genecatalog:
         get_gene_catalog_input(),
         # ,
     output:
-        temp(touch("finished_genecatalog")),
+        touch("finished_genecatalog"),
 
 
 def get_genome_annotations():
@@ -327,7 +327,7 @@ rule genomes:
         *get_genome_annotations(),
         "finished_binning",
     output:
-        temp(touch("finished_genomes")),
+        touch("finished_genomes"),
 
 
 rule quantify_genomes:
@@ -346,7 +346,7 @@ rule binning:
         expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
         "finished_assembly",
     output:
-        temp(touch("finished_binning")),
+        touch("finished_binning"),
 
 
 rule assembly_one_sample:
@@ -366,7 +366,7 @@ rule assembly:
         "reports/assembly_report.html",
         "finished_QC",
     output:
-        temp(touch("finished_assembly")),
+        touch("finished_assembly"),
 
 
 rule qc:
@@ -380,7 +380,7 @@ rule qc:
         ),
         report="reports/QC_report.html",
     output:
-        temp(touch("finished_QC")),
+        touch("finished_QC"),
 
 
 # overwrite commands in rules/download.snakefile

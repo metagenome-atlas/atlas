@@ -204,8 +204,7 @@ rule extract_gtdb:
         "logs/download/gtdbtk_untar.log",
     shell:
         'tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log}; '
-        'echo "Set the GTDBTK_DATA_PATH environment variable to {GTDBTK_DATA_PATH} " >> {log}; '
-        "conda env config vars set GTDBTK_DATA_PATH={GTDBTK_DATA_PATH} "
+
 
 
 rule checkm2_download_db:

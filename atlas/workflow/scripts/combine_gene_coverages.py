@@ -36,6 +36,8 @@ import gc, os
 
 import h5py
 
+import h5py
+
 import psutil
 def measure_memory(write_log_entry=True):
     mem_uage = psutil.Process().memory_info().rss / (1024 * 1024)
@@ -60,6 +62,10 @@ gene_info.index=gene_info["#Name"].str.split(" ",n=1,expand=True)[0]
 gene_info.index.name= "GeneName"
 gene_info.drop("#Name",axis=1,inplace=True)
 
+gene_info= pd.read_table(snakemake.input.info, index_col=0)
+gene_info.sort_index(inplace=True)
+N_genes= gene_info.shape[0]
+#gene_list= gene_info.index
 
 # Sort 
 gene_info.sort_index(inplace=True)
