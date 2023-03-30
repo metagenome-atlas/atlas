@@ -160,7 +160,7 @@ with h5py.File(snakemake.output.cov, 'w') as hdf_cov_file, h5py.File(snakemake.o
 logging.info("All samples processed")
 gc.collect()
 
-logging.info("Save Summary")
+logging.info("Save sample Summary")
 pd.DataFrame(Summary).to_csv(snakemake.output.sample_info,sep='\t')
 
 
