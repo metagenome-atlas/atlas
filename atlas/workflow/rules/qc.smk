@@ -44,6 +44,7 @@ else:
     PROCESSED_STEPS = ["raw"]
 
     def get_input_fastq(wildcards):
+
         if not config.get("interleaved_fastqs", False):
             Raw_Headers = ["Reads_raw_" + f for f in RAW_INPUT_FRACTIONS]
         else:
@@ -60,6 +61,7 @@ else:
                 f"Searched for qc reads for inexisitng sample. wildcards: {wildcards}"
             )
         else:
+
             return get_files_from_sampleTable(wildcards.sample, Raw_Headers)
 
 
@@ -140,6 +142,7 @@ rule get_read_stats:
 
 
         def get_read_stats(fraction, params_in):
+
             subfolder = os.path.join(params.folder, fraction)
             tmp_file = os.path.join(subfolder, "read_stats.tmp")
             shell(
@@ -162,6 +165,7 @@ rule get_read_stats:
             if pos == -1:
                 raise Exception("Didn't find read number in file:\n\n" + content)
             else:
+
                 content[pos:].split()[1:4]
                 # Input:    123 reads   1234 bases
                 n_reads, _, n_bases = content[pos:].split()[1:4]
@@ -173,56 +177,56 @@ rule get_read_stats:
         if PAIRED_END:
             n_reads_pe, n_bases_pe = get_read_stats(
                 "pe", "in1={0} in2={1}".format(*input)
+            )
+            n_reads_pe = n_reads_pe / 2
+            headers = [
+                "Sample",
+                "Step",
+                "Total_Reads",
+                "Total_Bases",
+                "Reads_pe",
+                "Bases_pe",
+                "Reads_se",
+                "Bases_se",
+                "Timestamp",
+            ]
+
+            if os.path.exists(params.single_end_file):
+                n_reads_se, n_bases_se = get_read_stats(
+                    "se", "in=" + params.single_end_file
                 )
-                n_reads_pe = n_reads_pe / 2
-                headers = [
-                    "Sample",
-                    "Step",
-                    "Total_Reads",
-                    "Total_Bases",
-                    "Reads_pe",
-                    "Bases_pe",
-                    "Reads_se",
-                    "Bases_se",
-                    "Timestamp",
-                ]
-
-                if os.path.exists(params.single_end_file):
-                    n_reads_se, n_bases_se = get_read_stats(
-                        "se", "in=" + params.single_end_file
-                    )
-                else:
-                    n_reads_se, n_bases_se = 0, 0
-
-                values = [
-                    n_reads_pe + n_reads_se,
-                    n_bases_pe + n_bases_se,
-                    n_reads_pe,
-                    n_bases_pe,
-                    n_reads_se,
-                    n_bases_se,
-                ]
             else:
-                headers = [
-                    "Sample",
-                    "Step",
-                    "Total_Reads",
-                    "Total_Bases",
-                    "Reads",
-                    "Bases",
-                    "Timestamp",
-                ]
-                values = 2 * get_read_stats("", "in=" + input[0])
+                n_reads_se, n_bases_se = 0, 0
 
-            with open(output.read_counts, "w") as f:
-                f.write("\t".join(headers) + "\n")
-                f.write(
-                    "\t".join(
-                        [wildcards.sample, wildcards.step]
-                        + [str(v) for v in values]
-                        + [timestamp]
-                    )
-                + "\n"
+            values = [
+                n_reads_pe + n_reads_se,
+                n_bases_pe + n_bases_se,
+                n_reads_pe,
+                n_bases_pe,
+                n_reads_se,
+                n_bases_se,
+            ]
+        else:
+            headers = [
+                "Sample",
+                "Step",
+                "Total_Reads",
+                "Total_Bases",
+                "Reads",
+                "Bases",
+                "Timestamp",
+            ]
+            values = 2 * get_read_stats("", "in=" + input[0])
+
+        with open(output.read_counts, "w") as f:
+            f.write("\t".join(headers) + "\n")
+            f.write(
+                "\t".join(
+                    [wildcards.sample, wildcards.step]
+                    + [str(v) for v in values]
+                    + [timestamp]
+                )
+        + "\n"
             )
 
         shutil.make_archive(params.folder, "zip", params.folder)
@@ -230,6 +234,7 @@ rule get_read_stats:
 
 
 if not SKIP_QC:
+
     if config.get("deduplicate", True):
         PROCESSED_STEPS.append("deduplicated")
 
@@ -283,6 +288,7 @@ if not SKIP_QC:
                     -Xmx{resources.java_mem}G 2> {log}
                 """
 
+
     PROCESSED_STEPS.append("filtered")
 
     rule apply_quality_filter:
@@ -307,8 +313,8 @@ if not SKIP_QC:
         params:
             ref=(
                 "ref=%s" % config.get("preprocess_adapters")
-                if config.get("preprocess_adapters")
-                else ""
+            if config.get("preprocess_adapters")
+            else ""
             ),
             mink=(
                 ""
@@ -400,6 +406,7 @@ if not SKIP_QC:
                 pigz=t unpigz=t \
                 -Xmx{resources.java_mem}G 2> {log}
             """
+
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -501,6 +508,7 @@ if not SKIP_QC:
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
+
     PROCESSED_STEPS.append("QC")
 
     localrules:
@@ -523,6 +531,7 @@ if not SKIP_QC:
             import pandas as pd
 
             for i in range(len(MULTIFILE_FRACTIONS)):
+
                 with open(output[i], "wb") as outFile:
                     with open(input.clean_reads[i], "rb") as infile1:
                         shutil.copyfileobj(infile1, outFile)
@@ -530,13 +539,14 @@ if not SKIP_QC:
                             with open(input.rrna_reads[i], "rb") as infile2:
                                 shutil.copyfileobj(infile2, outFile)
 
-                        # append to sample table
+            # append to sample table
             sample_table = load_sample_table(params.sample_table)
             sample_table.loc[
                 wildcards.sample,
                 [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
             ] = output
             sample_table.to_csv(params.sample_table, sep="\t")
+
 
 
 
@@ -582,6 +592,7 @@ if PAIRED_END:
 
             readlength.sh {params.inputs} out={output.read_length} 2> {log}
             """
+
 
 else:
 
@@ -635,6 +646,7 @@ rule combine_read_length_stats:
 
 
 
+
 # rule combine_cardinality:
 #     input:
 #         expand("{sample}/sequence_quality_control/read_stats/QC_cardinality.txt",sample=SAMPLES),
@@ -685,6 +697,7 @@ if PAIRED_END:
                 stats[sample] = data
 
             stats.T.to_csv(output[0], sep="\t")
+
 
 
 
