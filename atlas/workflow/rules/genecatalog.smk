@@ -337,18 +337,18 @@ rule gene_pileup_as_parquet:
 
 
 
-def get_combine_cov_time(wildcards):
+def get_combine_cov_time():
 
-    estimated_time = 0.5 * len(SAMPLES) + 20
+    estimated_time = (0.5 * len(SAMPLES) + 20 )/60
 
-    config_time= config["runtime"]["long"]*60
+    config_time= config["runtime"]["long"]
 
     if config_time < estimated_time:
-        logger.error(f"For rule combine_gene_coverages we estimate 0.5 min/ per sample = {estimated_time/60:.1f} h. "
+        logger.error(f"For rule combine_gene_coverages we estimate 0.5 min/ per sample = {estimated_time:.1f} h. "
                     "You provided to little. \n Increase time in config file: \nruntime:\n  long\n.")
         raise Exception("Not long enough runtime provided. ")
 
-    return config_time
+    return config_time*60
 
 rule combine_gene_coverages:
     input:
@@ -368,7 +368,7 @@ rule combine_gene_coverages:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time_min= get_combine_cov_time
+        time_min= get_combine_cov_time()
     script:
         "../scripts/combine_gene_coverages.py"
 
