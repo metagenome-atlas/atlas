@@ -6,13 +6,13 @@ dependencies:
   - python >=3.8, < 3.11
   - mamba
   - bbmap >= 39.01, <40
-  - snakemake-minimal >= 7.18.1, <7.19
+  - snakemake-minimal >= 7.18.1, <7.26
   - pygments
   - networkx
   - graphviz
-  - pandas >=1.2, <1.5
+  - pandas >=1.2, <1.6
   - pyarrow # for parquet reading
   - click >=7
   - ruamel.yaml >=0.17
   - cookiecutter
-  - pathlib
+
