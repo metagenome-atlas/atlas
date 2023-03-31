@@ -27,9 +27,10 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=["atlas"],
+    package_dir={'atlas': 'cli'},
     package_data={
         "": [
-            "CLI/*",
+            "cli/*",
             "workflow/*",
         ]
     },
@@ -37,6 +38,6 @@ setup(
     include_package_data=True,
     install_requires=[],
     # install via conda: click, pandas, pyyaml, snakemake
-    entry_points={"console_scripts": ["atlas = CLI.atlas:cli"]},
+    entry_points={"console_scripts": ["atlas = cli.atlas:cli"]},
     classifiers=["Topic :: Scientific/Engineering :: Bio-Informatics"],
 )

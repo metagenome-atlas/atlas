@@ -1,10 +1,11 @@
+#import utils
 import snakemake
 from . import _version
-import utils
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "workflow", "scripts"))
+sys.path.append(os.path.join(os.path.dirname(
+    __file__), "../workflow", "scripts"))
 
 
 TAX_LEVELS = ["superkingdom", "phylum", "class",
