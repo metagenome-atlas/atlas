@@ -1,11 +1,14 @@
-import os, sys
+import snakemake
+from . import _version
+import utils
+import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "workflow", "scripts"))
 
-import utils
 
-
-TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
+TAX_LEVELS = ["superkingdom", "phylum", "class",
+              "order", "family", "genus", "species"]
 BLAST6 = [
     "qseqid",
     "sseqid",
@@ -21,8 +24,5 @@ BLAST6 = [
     "bitscore",
 ]
 
-from . import _version
 
-import snakemake
-
-__version__ = _version.get_versions()["version"] + f" Snakemake {snakemake.__version__}"
+__version__ = _version.get_versions()["version"]

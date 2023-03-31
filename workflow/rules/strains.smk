@@ -75,6 +75,4 @@ rule instrain_compare:
 #                         [--clusterAlg {ward,single,complete,average,weighted,median,centroid}]
 
 
-rule strains:
-    input:
-        "strains/comparison",
+

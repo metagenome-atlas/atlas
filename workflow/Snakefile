@@ -293,6 +293,11 @@ rule genecatalog:
         touch("finished_genecatalog"),
 
 
+rule strains:
+    input:
+        "strains/comparison",
+
+
 def get_genome_annotations():
     annotation_file_names = {
         "gtdb_tree": "genomes/tree/finished_gtdb_trees",

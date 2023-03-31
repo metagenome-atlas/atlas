@@ -1,11 +1,9 @@
-import io
-from os.path import dirname, join
 from setuptools import setup
 import versioneer  # script in directory
 
-__author__ = "Joe Brown, Silas Kieser"
+__author__ = "Silas Kieser, Joe Brown"
 __copyright__ = "Copyright 2021, Silas Kieser"
-__email__ = "brwnjm@gmail.com, silas.kieser@gmail.com"
+__email__ = "silas.kieser@gmail.com, brwnjm@gmail.com"
 __license__ = "BSD-3"
 
 # read the contents of your README file
@@ -31,13 +29,14 @@ setup(
     packages=["atlas"],
     package_data={
         "": [
-            "atlas/*",
+            "CLI/*",
+            "workflow/*",
         ]
     },
     data_files=[(".", ["README.md", "LICENSE.txt"])],
     include_package_data=True,
     install_requires=[],
     # install via conda: click, pandas, pyyaml, snakemake
-    entry_points={"console_scripts": ["atlas = atlas.atlas:cli"]},
+    entry_points={"console_scripts": ["atlas = CLI.atlas:cli"]},
     classifiers=["Topic :: Scientific/Engineering :: Bio-Informatics"],
 )

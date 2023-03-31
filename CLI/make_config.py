@@ -1,14 +1,13 @@
+from .default_values import *
+from snakemake.utils import update_config as snakemake_update_config
+from snakemake.io import load_configfile
+import tempfile
+import sys
+import os
+import multiprocessing
 import logging
 
 logger = logging.getLogger(__file__)
-
-import multiprocessing
-import os
-import sys
-import tempfile
-from snakemake.io import load_configfile
-from snakemake.utils import update_config as snakemake_update_config
-from .default_values import *
 
 
 def make_default_config():
@@ -65,7 +64,8 @@ def make_default_config():
     config["error_correction_lowdepth_fraction"] = 0.5
     config["error_correction_minimum_kmer_depth"] = 1
     config["error_correction_aggressive"] = False
-    config["error_correction_minprob"] = 0.5  # for memory issues only , I think
+    # for memory issues only , I think
+    config["error_correction_minprob"] = 0.5
 
     config["merge_pairs_before_assembly"] = True
     config["merging_k"] = MERGING_K
@@ -161,7 +161,8 @@ def make_default_config():
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
     config["rename_mags_contigs"] = True
 
-    config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simplejob": 1}
+    config["runtime"] = {"default": 5,
+                         "assembly": 24, "long": 12, "simplejob": 1}
 
     return config
 
@@ -175,7 +176,7 @@ def make_config(
     config="config.yaml",
 ):
     """
-    Reads template config file with comments from ./template_config.yaml
+    Reads template config file with comments from ../workflow/config/template_config.yaml
     updates it by the parameters provided.
 
     Args:
@@ -193,7 +194,8 @@ def make_config(
     # yaml.default_flow_style = False
 
     template_conf_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "template_config.yaml"
+        os.path.dirname(os.path.abspath(__file__)
+                        ), "../workflow/config/template_config.yaml"
     )
 
     with open(template_conf_file) as template_config:
@@ -247,10 +249,6 @@ def update_config(config):
     And made changes if necessary.
 
     """
-
-    # in old version java_mem was used, new is mem
-    if ("java_mem" in config) and (not ("mem" in config)):
-        config["mem"] = config["java_mem"]
 
     # get default values and update them with values specified in config file
     default_config = make_default_config()

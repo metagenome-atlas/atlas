@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from .color_logger import logger
 
 import multiprocessing
@@ -68,14 +69,14 @@ cli.add_command(run_init)
 cli.add_command(run_init_sra)
 
 
-def get_snakefile(file="workflow/Snakefile"):
+def get_snakefile(file="../workflow/Snakefile"):
     sf = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
     if not os.path.exists(sf):
         sys.exit("Unable to locate the Snakemake workflow file; tried %s" % sf)
     return sf
 
 
-## QC command
+# QC command
 
 
 @cli.command(
@@ -86,7 +87,8 @@ def get_snakefile(file="workflow/Snakefile"):
 @click.argument(
     "workflow",
     type=click.Choice(
-        ["qc", "assembly", "binning", "genomes", "genecatalog", "None", "all"]
+        ["qc", "assembly", "binning", "genomes", "genecatalog",
+            "strains", "quantify_genomes", "None", "all"]
     ),
     #    show_default=True,
     #    help="Execute only subworkflow.",
@@ -245,7 +247,8 @@ def run_download(db_dir, jobs, snakemake_args):
         jobs=jobs,
         db_dir=db_dir,
         conda_prefix=os.path.join(db_dir, "conda_envs"),
-        add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
+        add_args="" if snakemake_args and snakemake_args[0].startswith(
+            "-") else "--",
         args=" ".join(snakemake_args),
     )
     logger.debug("Executing: " + cmd)
