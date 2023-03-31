@@ -53,7 +53,7 @@ for binner in SemiBin vamb DASTool ; do
 
 done
 
-
+atlas run quantify_genomes -w $WD  --dryrun $@
 #
 
 echo "
