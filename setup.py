@@ -30,7 +30,7 @@ setup(
     package_dir={'atlas': 'cli'},
     package_data={
         "": [
-            "cli/*",
+            "CLI/*",
             "workflow/*",
         ]
     },
