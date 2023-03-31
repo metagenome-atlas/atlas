@@ -69,7 +69,7 @@ cli.add_command(run_init)
 cli.add_command(run_init_sra)
 
 
-def get_snakefile(file="../workflow/Snakefile"):
+def get_snakefile(file="workflow/Snakefile"):
     sf = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
     if not os.path.exists(sf):
         sys.exit("Unable to locate the Snakemake workflow file; tried %s" % sf)
@@ -243,7 +243,7 @@ def run_download(db_dir, jobs, snakemake_args):
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(
-        snakefile=get_snakefile("../workflow/rules/download.smk"),
+        snakefile=get_snakefile("workflow/rules/download.smk"),
         jobs=jobs,
         db_dir=db_dir,
         conda_prefix=os.path.join(db_dir, "conda_envs"),
