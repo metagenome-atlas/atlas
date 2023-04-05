@@ -35,7 +35,7 @@ Example config file
 ===================
 
 
-.. include:: ../../config/template_config.yaml
+.. include:: ../../workflow/config/template_config.yaml
   :code:
 
 

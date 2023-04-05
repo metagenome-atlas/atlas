@@ -176,7 +176,7 @@ def make_config(
     config="config.yaml",
 ):
     """
-    Reads template config file with comments from ../config/template_config.yaml
+    Reads template config file with comments from ../workflow/config/template_config.yaml
     updates it by the parameters provided.
 
     Args:
@@ -195,7 +195,7 @@ def make_config(
 
     template_conf_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)
-                        ), "../config/template_config.yaml"
+                        ), "../workflow/config/template_config.yaml"
     )
 
     with open(template_conf_file) as template_config:
