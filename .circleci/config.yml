@@ -45,9 +45,7 @@ jobs:
           name: Install atlas
           command: |
               source activate ./atlasenv
-              python -m pip install . --no-deps -vv
-              conda list
-              atlas --help
+              pip install . --no-deps -vv
               atlas --version
       - run:
           name: short test
