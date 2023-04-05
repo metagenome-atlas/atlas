@@ -26,9 +26,12 @@ setup(
     description="ATLAS - workflows for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=["atlas","atlas.init"],
-    data_files=[(".", ["README.md", "LICENSE.txt","versioneer.py"])],
+    packages=["workflow"],
+    py_modules=["atlas"],
+    data_files=[(".", ["README.md", "LICENSE.txt"])],
+    include_package_data=True,
     install_requires=[],
+    # install via conda: click, pandas, pyyaml, snakemake
     entry_points={"console_scripts": ["atlas = atlas.atlas:cli"]},
     classifiers=["Topic :: Scientific/Engineering :: Bio-Informatics"],
 )
