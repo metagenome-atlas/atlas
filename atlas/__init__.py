@@ -2,7 +2,16 @@ import snakemake
 from . import _version
 import os
 
-from .workflow.scripts import utils
+def import_utils():
+
+    import sys
+
+    sys.path.append(os.path.join(os.path.dirname(
+        __file__), "workflow", "scripts"))
+    # now we can import the utils
+    import utils
+
+import_utils()
 
 
 TAX_LEVELS = ["superkingdom", "phylum", "class",

@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 import versioneer  # script in directory
 
 __author__ = "Silas Kieser, Joe Brown"
@@ -26,7 +26,12 @@ setup(
     description="ATLAS - workflows for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=["atlas","atlas.init","atlas.workflow.scripts.utils"],
+    packages=["atlas","atlas.init"],
+    package_data={
+        "": [
+            "workflow",
+        ]
+    },
     data_files=[(".", ["README.md", "LICENSE.txt"])],
     include_package_data=True,
     install_requires=[],
