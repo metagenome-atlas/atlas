@@ -45,7 +45,7 @@ jobs:
           name: Install atlas
           command: |
               source activate ./atlasenv
-              pip install .
+              python setup.py install
               conda list
               atlas --help
               atlas --version
