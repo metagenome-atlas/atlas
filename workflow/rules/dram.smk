@@ -95,8 +95,6 @@ def get_all_dram(wildcards):
 
 DRAM_ANNOTATON_FILES = ["annotations.tsv", "rrnas.tsv", "trnas.tsv"]
 
-DRAM_ANNOTATON_FILES = ["annotations.tsv", "rrnas.tsv", "trnas.tsv"]
-
 
 localrules:
     concat_annotations,
