@@ -3,3 +3,4 @@ channels:
   - bioconda
 dependencies:
   - dram >=1.4, <1.5
+  - pandas >=1.5, <2
