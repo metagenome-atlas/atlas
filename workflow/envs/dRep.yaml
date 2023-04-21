@@ -8,4 +8,4 @@ dependencies:
     - mash>=2
     - prodigal=2.6.3
     - fastani=1.33
-    - drep>=3.4 , <4
+    - drep>=3.4.3 , <4
