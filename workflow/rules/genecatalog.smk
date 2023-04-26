@@ -545,17 +545,76 @@ checkpoint gene_subsets:
         "../scripts/split_genecatalog.py"
 
 
-def combine_genecatalog_annotations_input(wildcards):
+
+
+
+### dram
+
+
+rule DRAM_annotate_genecatalog:
+    input:
+        faa="Genecatalog/subsets/genes/{subset}.faa",
+        flag=rules.DRAM_set_db_loc.output,
+    output:
+        outdir=directory("Intermediate/genecatalog/annotation/dram/{subset}"),
+    threads: config["simplejob_threads"]
+    resources:
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["default"],
+    conda:
+        "../envs/dram.yaml"
+    params:
+        extra=config.get("dram_extra", ""),
+    log:
+        "logs/genecatalog/annotation/dram/{subset}.log",
+    shell:
+        " DRAM.py annotate_genes "
+        " --input_fasta {input.faa}"
+        " --output_dir {output.outdir} "
+        " --threads {threads} "
+        " {params.extra} "
+        " --verbose &> {log}"
+
+
+
+
+def get_subset_names(wildcards):
+
     dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
-    (Subset_names,) = glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
+    subset_names = glob_wildcards(Path(dir_for_subsets)/ "{subset}.faa").subset
+
+    return subset_names
+
+
+def combine_genecatalog_dram_input(wildcards):
+    
+    all_subsets = get_subset_names(wildcards)
+    
     return expand(
-        "Genecatalog/subsets/genes/{subset}.emapper.annotations", subset=Subset_names
+        rules.DRAM_annotate_genecatalog.output.outdir, subset=all_subsets
+    )
+
+
+
+rule combine_dram_genecatalog_annotations:
+    input:
+        combine_genecatalog_dram_input,
+
+
+
+### eggnog
+
+def combine_eggnog_annotations(wildcards):
+    all_subsets = get_subset_names(wildcards)
+
+    return expand(
+        "Genecatalog/subsets/genes/{subset}.emapper.annotations", subset=all_subsets
     )
 
 
 rule combine_egg_nogg_annotations:
     input:
-        combine_genecatalog_annotations_input,
+        combine_eggnog_annotations,
     output:
         "Genecatalog/annotations/eggNog.tsv.gz",
     run:

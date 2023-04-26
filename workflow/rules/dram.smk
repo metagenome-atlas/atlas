@@ -87,6 +87,13 @@ rule DRAM_annotate:
         #" --checkm_quality {input.checkm} "
 
 
+
+
+
+
+
+
+
 def get_all_dram(wildcards):
     all_genomes = get_all_genomes(wildcards)
 
