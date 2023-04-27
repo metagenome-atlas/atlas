@@ -26,7 +26,7 @@ setup(
     description="ATLAS - workflows for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=["atlas","atlas.init"],
+    packages=["atlas", "atlas.init"],
     package_data={
         "": [
             "workflow",

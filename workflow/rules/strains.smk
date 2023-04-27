@@ -73,6 +73,3 @@ rule instrain_compare:
 #                         [--group_length GROUP_LENGTH] [--force_compress]
 #                         [-ani ANI_THRESHOLD] [-cov COVERAGE_TRESHOLD]
 #                         [--clusterAlg {ward,single,complete,average,weighted,median,centroid}]
-
-
-

@@ -161,8 +161,7 @@ def make_default_config():
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
     config["rename_mags_contigs"] = True
 
-    config["runtime"] = {"default": 5,
-                         "assembly": 24, "long": 12, "simplejob": 1}
+    config["runtime"] = {"default": 5, "assembly": 24, "long": 12, "simplejob": 1}
 
     return config
 
@@ -194,8 +193,8 @@ def make_config(
     # yaml.default_flow_style = False
 
     template_conf_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)
-                        ), "../workflow/config/template_config.yaml"
+        os.path.dirname(os.path.abspath(__file__)),
+        "../workflow/config/template_config.yaml",
     )
 
     with open(template_conf_file) as template_config:

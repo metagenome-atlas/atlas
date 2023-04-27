@@ -5,8 +5,7 @@ import os
 from .workflow.scripts import utils
 
 
-TAX_LEVELS = ["superkingdom", "phylum", "class",
-              "order", "family", "genus", "species"]
+TAX_LEVELS = ["superkingdom", "phylum", "class", "order", "family", "genus", "species"]
 BLAST6 = [
     "qseqid",
     "sseqid",
