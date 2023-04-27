@@ -545,7 +545,7 @@ rule combine_egg_nogg_annotations:
 rule DRAM_annotate_genecatalog:
     input:
         faa="Intermediate/genecatalog/subsets/{subset}.faa",
-        flag=rules.DRAM_set_db_loc.output,
+        config=rules.dram_download.output.config,
     output:
         annotations= temp("Intermediate/genecatalog/annotation/dram/{subset}/annotations.tsv"),
         genes= temp("Intermediate/genecatalog/annotation/dram/{subset}/genes.faa"),
@@ -561,15 +561,18 @@ rule DRAM_annotate_genecatalog:
         outdir = lambda wc, output: Path(output[0]).parent
     log:
         "logs/Genecatalog/annotation/dram/{subset}.log",
-        "Intermediate/genecatalog/annotation/dram/{subset}/annotate.log"
+        "logs/Genecatalog/annotation/dram/{subset}.stdout"
     shell:
-        " rm -rf {params.outdir} &> {log};\n"
+        " rm -rf {params.outdir} &> {log[1]};"
+        "\n"
         " DRAM.py annotate_genes "
         " --input_faa {input.faa}"
+        " --config_loc {input.config} "
         " --output_dir {params.outdir} "
         " --threads {threads} "
         " {params.extra} "
-        " --verbose &>> {log[0]}"
+        " --log_file_path {log[0]} "
+        " --verbose &>> {log[1]}"
 
 
 def combine_genecatalog_dram_input(wildcards):
@@ -586,7 +589,7 @@ rule combine_dram_genecatalog_annotations:
     input:
         combine_genecatalog_dram_input,
     output:
-        "Genecatalog/annotations/dram.parq"
+        "Genecatalog/annotations/dram.parquet"
     resources:
         time=config["runtime"]["default"],
     log:
