@@ -22,6 +22,10 @@ genome_dereplication:
 genome_aligner: "minimap"
 
 bin_quality_asesser: checkm2          #[ checkm2, busco, cehckm]
-gunc_database: "progenomes"  # progenomes or gtdb
+
 
 semibin_train_extra: ""
+
+
+filter_chimieric_bins: true
+gunc_database: "progenomes"  # progenomes or gtdb
