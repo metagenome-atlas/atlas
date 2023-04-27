@@ -687,7 +687,9 @@ rule combine_dram_genecatalog_annotations:
 
 rule gene2genome:
     input:
-        contigs2bins="Binning/{binner}/contigs2bins.tsv.gz".format(binner=config["final_binner"]),
+        contigs2bins="Binning/{binner}/contigs2bins.tsv.gz".format(
+            binner=config["final_binner"]
+        ),
         contigs2mags="genomes/clustering/contig2genome.tsv",
         old2newID="genomes/clustering/old2newID.tsv",
         orf_info="Genecatalog/clustering/orf_info.parquet",
