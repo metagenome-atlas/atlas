@@ -503,7 +503,7 @@ rule eggNOG_annotation:
 
 
 
-localrules: ombine_egg_nogg_annotations
+
 
 def combine_eggnog_annotations(wildcards):
     all_subsets = get_subset_names(wildcards)
@@ -517,26 +517,68 @@ rule combine_egg_nogg_annotations:
     input:
         combine_eggnog_annotations,
     output:
-        "Genecatalog/annotations/eggNog.tsv.gz",
+        "Genecatalog/annotations/eggNOG.parquet",
+    log:
+        "logs/genecatalog/annotation/eggNOG/combine.log"
+    resources:
+        time=config["runtime"]["default"],
     run:
-        import pandas as pd
 
-        # read input files one after the other
-        for i, annotation_table in enumerate(input):
-            D = pd.read_csv(annotation_table, header=None, sep="\t")
-            # Add headers, to verify size
-            D.columns = EGGNOG_HEADER
-            # appedn to output file, header only the first time
-            D.to_csv(
-                output[0],
-                sep="\t",
-                index=False,
-                header=(i == 0),
-                compression="gzip",
-                mode="a",
-            )
+        try:
+
+            import pandas as pd
+
+            Tables = [
+                pd.read_csv(file, index_col=None,header=None, sep='\t')
+                for file in input
+            ]
 
 
+            combined = pd.concat(Tables, axis=0)
+            
+            del Tables
+
+            combined.columns = EGGNOG_HEADER
+
+ 
+ #           combined.sort_values("Gene",inplace=True)
+
+            combined.to_parquet(output[0], index=False)
+        except Exception as e:
+
+            import traceback
+            with open(log[0],"w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
+## Temporary
+rule convert_eggNOG_tsv2parquet:
+    input:
+        "Genecatalog/annotations/eggNog.tsv.gz"
+    output:
+        "Genecatalog/annotations/eggNOG.parquet"
+    resources:
+        time=config["runtime"]["default"],
+    log:
+        "logs/genecatalog/annotation/eggNOG/tsv2parquet.log"
+    run:
+        try: 
+            import pandas as pd
+
+            df = pd.read_table(input[0], index_col=None)
+
+            df.to_parquet(output[0],index=False)
+
+        except Exception as e:
+
+            import traceback
+            with open(log[0],"w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
+
+
+ruleorder: convert_eggNOG_tsv2parquet > combine_egg_nogg_annotations 
 
 ##############################################
 ### DRAM
