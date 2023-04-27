@@ -87,8 +87,17 @@ def get_snakefile(file="workflow/Snakefile"):
 @click.argument(
     "workflow",
     type=click.Choice(
-        ["qc", "assembly", "binning", "genomes", "genecatalog",
-            "strains", "quantify_genomes", "None", "all"]
+        [
+            "qc",
+            "assembly",
+            "binning",
+            "genomes",
+            "genecatalog",
+            "strains",
+            "quantify_genomes",
+            "None",
+            "all",
+        ]
     ),
     #    show_default=True,
     #    help="Execute only subworkflow.",
@@ -247,8 +256,7 @@ def run_download(db_dir, jobs, snakemake_args):
         jobs=jobs,
         db_dir=db_dir,
         conda_prefix=os.path.join(db_dir, "conda_envs"),
-        add_args="" if snakemake_args and snakemake_args[0].startswith(
-            "-") else "--",
+        add_args="" if snakemake_args and snakemake_args[0].startswith("-") else "--",
         args=" ".join(snakemake_args),
     )
     logger.debug("Executing: " + cmd)
