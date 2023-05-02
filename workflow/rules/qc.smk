@@ -173,18 +173,18 @@ if not SKIP_QC:
                 mem=config["mem"],
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
-                """
-                clumpify.sh "
-                    {params.inputs} "
-                    {params.outputs} "
-                    overwrite=true"
-                    dedupe=t "
-                    dupesubs={params.dupesubs} "
-                    optical={params.only_optical}"
-                    threads={threads} "
-                    pigz=t unpigz=t "
-                    -Xmx{resources.java_mem}G 2> {log}
-                """
+                "clumpify.sh "
+                " {params.inputs} "
+                " {params.outputs} "
+                " overwrite=true"
+                " dedupe=t "
+                " dupesubs={params.dupesubs} "
+                " optical={params.only_optical}"
+                " threads={threads} "
+                " pigz=t unpigz=t "
+                " -Xmx{resources.java_mem}G"
+                " 2> {log}"
+                
 
     PROCESSED_STEPS.append("filtered")
 
@@ -279,30 +279,30 @@ if not SKIP_QC:
             mem=config["mem"],
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
-            """
-            bbduk.sh {params.inputs} "
-                {params.ref} "
-                interleaved={params.interleaved} "
-                {params.outputs} "
-                stats={output.stats} "
-                overwrite=true "
-                qout=33 "
-                trd=t "
-                {params.hdist} "
-                {params.k} "
-                {params.ktrim} "
-                {params.mink} "
-                trimq={params.trimq} "
-                qtrim={params.qtrim} "
-                threads={threads} "
-                minlength={params.minlength} "
-                maxns={params.maxns} "
-                minbasefrequency={params.minbasefrequency} "
-                ecco={params.error_correction_pe} "
-                prealloc={params.prealloc} "
-                pigz=t unpigz=t "
-                -Xmx{resources.java_mem}G 2> {log}
-            """
+            " bbduk.sh {params.inputs} "
+            " {params.ref} "
+            " interleaved={params.interleaved} "
+            " {params.outputs} "
+            " stats={output.stats} "
+            " overwrite=true "
+            " qout=33 "
+            " trd=t "
+            " {params.hdist} "
+            " {params.k} "
+            " {params.ktrim} "
+            " {params.mink} "
+            " trimq={params.trimq} "
+            " qtrim={params.qtrim} "
+            " threads={threads} "
+            " minlength={params.minlength} "
+            " maxns={params.maxns} "
+            " minbasefrequency={params.minbasefrequency} "
+            " ecco={params.error_correction_pe} "
+            " prealloc={params.prealloc} "
+            " pigz=t unpigz=t "
+            " -Xmx{resources.java_mem}G "
+            " 2> {log}"
+
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -330,10 +330,14 @@ if not SKIP_QC:
                     ]
                 ),
             shell:
-                """
-                bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} "
-                    threads={threads} k={params.k} local=t 2> {log}
-                """
+                "bbsplit.sh"
+                " -Xmx{resources.java_mem}G "
+                " {params.refs_in} "
+                " threads={threads}"
+                " k={params.k}"
+                " local=t "
+                " 2> {log}"
+                
 
         rule run_decontamination:
             input:
@@ -383,24 +387,24 @@ if not SKIP_QC:
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 """
-                if [ "{params.paired}" = true ] ; then
-                    bbsplit.sh in1={input[0]} in2={input[1]} "
-                        outu1={output[0]} outu2={output[1]} "
-                        basename="{params.contaminant_folder}/%_R#.fastq.gz" "
-                        maxindel={params.maxindel} minratio={params.minratio} "
+                if [{params.paired}" = true ] ; then
+                    bbsplit.sh in1={input[0]} in2={input[1]}
+                        outu1={output[0]} outu2={output[1]}
+                        basename="{params.contaminant_folder}/%_R#.fastq.gz"
+                        maxindel={params.maxindel} minratio={params.minratio}
                         minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"
-                        threads={threads} k={params.k} local=t "
-                        pigz=t unpigz=t ziplevel=9 "
+                        threads={threads} k={params.k} local=t
+                        pigz=t unpigz=t ziplevel=9
                         -Xmx{resources.java_mem}G 2> {log}
                 fi
 
-                bbsplit.sh in={params.input_single}  "
-                    outu={params.output_single} "
-                    basename="{params.contaminant_folder}/%_se.fastq.gz" "
-                    maxindel={params.maxindel} minratio={params.minratio} "
-                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append "
-                    interleaved=f threads={threads} k={params.k} local=t "
-                    pigz=t unpigz=t ziplevel=9 "
+                bbsplit.sh in={params.input_single} 
+                    outu={params.output_single}
+                    basename="{params.contaminant_folder}/%_se.fastq.gz"
+                    maxindel={params.maxindel} minratio={params.minratio}
+                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append
+                    interleaved=f threads={threads} k={params.k} local=t
+                    pigz=t unpigz=t ziplevel=9
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
@@ -461,7 +465,7 @@ if PAIRED_END:
             mem=config["mem"],
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "../envs/required_packages.yaml"
         log:
             "{sample}/logs/QC/stats/calculate_insert_size.log",
         params:
@@ -472,13 +476,13 @@ if PAIRED_END:
             inputs=lambda wc, input: io_params_for_tadpole(input),
         shell:
             """
-            bbmerge.sh -Xmx{resources.java_mem}G threads={threads} "
-                {params.inputs} "
-                {params.flags} k={params.kmer} "
-                extend2={params.extend2} "
-                ihist={output.ihist} merge=f "
-                mininsert0=35 minoverlap0=8 "
-                prealloc=t prefilter=t "
+            bbmerge.sh -Xmx{resources.java_mem}G threads={threads}
+                {params.inputs}
+                {params.flags} k={params.kmer}
+                extend2={params.extend2}
+                ihist={output.ihist} merge=f
+                mininsert0=35 minoverlap0=8
+                prealloc=t prefilter=t
                 minprob={params.minprob} 2> {log}
 
             readlength.sh {params.inputs} out={output.read_length} 2> {log}
@@ -500,7 +504,7 @@ else:
             mem=config["simplejob_mem"],
             java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "../envs/required_packages.yaml"
         log:
             "{sample}/logs/QC/stats/calculate_read_length.log",
         shell:
