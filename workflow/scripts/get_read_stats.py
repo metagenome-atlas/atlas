@@ -36,12 +36,11 @@ import shutil
 import os
 
 
-
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%X")
 
 
 def get_read_stats(fraction, params_in):
-    " get read stats by running reformat.sh"
+    "get read stats by running reformat.sh"
 
     from snakemake.shell import shell
 
@@ -75,13 +74,13 @@ def get_read_stats(fraction, params_in):
     return int(n_reads), int(n_bases)
 
 
-if len(snakemake.input) >=2:
+if len(snakemake.input) >= 2:
     n_reads_pe, n_bases_pe = get_read_stats(
         "pe", "in1={0} in2={1}".format(*snakemake.input)
     )
-    
+
     n_reads_pe = n_reads_pe / 2
-    
+
     headers = [
         "Sample",
         "Step",
@@ -125,12 +124,10 @@ with open(snakemake.output.read_counts, "w") as f:
     f.write("\t".join(headers) + "\n")
     f.write(
         "\t".join(
-            [wildcards.sample, wildcards.step]
-            + [str(v) for v in values]
-            + [timestamp]
+            [wildcards.sample, wildcards.step] + [str(v) for v in values] + [timestamp]
         )
-    + "\n"
-)
+        + "\n"
+    )
 
 shutil.make_archive(snakemake.params.folder, "zip", snakemake.params.folder)
 shutil.rmtree(snakemake.params.folder)
