@@ -261,7 +261,7 @@ rule all:
 def get_gene_catalog_input():
     annotation_file_names = {
         "eggNOG": "Genecatalog/annotations/eggNOG.parquet",
-        "dram": "Genecatalog/annotations/dram.parquet",
+        "dram": "Genecatalog/annotations/dram",
         "single_copy": expand(
             "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
             domain=["bacteria", "archaea"],

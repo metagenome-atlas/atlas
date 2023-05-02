@@ -631,7 +631,7 @@ rule combine_dram_genecatalog_annotations:
     input:
         combine_genecatalog_dram_input,
     output:
-        "Genecatalog/annotations/dram.parquet"
+        directory("Genecatalog/annotations/dram")
     resources:
         time=config["runtime"]["default"],
     log:
@@ -639,34 +639,58 @@ rule combine_dram_genecatalog_annotations:
     run:
 
         try:
-
+            import numpy as np
             import pandas as pd
-
-            Tables = [
-                pd.read_csv(file, index_col=0, sep='\t')
-                for file in input
-            ]
+            from collections import defaultdict
 
 
-            combined = pd.concat(Tables, axis=0)
-            
-            del Tables
+            db_columns={}
+            db_columns["kegg"]= ["ko_id", "kegg_hit"]
+            db_columns["peptidase"]= ["peptidase_id","peptidase_family","peptidase_hit","peptidase_RBH","peptidase_identity","peptidase_bitScore","peptidase_eVal"]
+            db_columns["pfam"]= ["pfam_hits"]
+            db_columns["cazy"]= ["cazy_ids","cazy_hits","cazy_subfam_ec","cazy_best_hit"]
+            #db_columns["heme"]= ["heme_regulatory_motif_count"]
+
+            Tables = defaultdict(list)
 
 
+            for file in input:
+                df = pd.read_csv(file, index_col=0, sep='\t')
+                
 
-            # subset info is irrelevant
-            combined.drop("fasta",axis=1,inplace=True)
+                #drop un-annotated genes
+                df = df.query("rank!='E'")
+               
+                
+                # change index from 'subset1_Gene111' ->  simply 'Gene111'
+                # Gene name to nr
+                df.index = df.index.str.split('_',n=1,expand=True).get_level_values(1).str[len("Gene"):].astype(np.int8)
+                df.index.name= "GeneNr"
 
-            # change index from 'subset1_Gene111' ->  simply 'Gene111'
-            
-            combined.insert(0,"Gene", combined.index.str.split('_',n=1,expand=True).get_level_values(1) )
-
-            combined.sort_values("Gene",inplace=True)
+                #df.drop(["Gene","rank","fasta"],axis=1,inplace=True)
 
 
+                # select columns, drop na rows and append to list
+                for db in db_columns:
+                    cols = db_columns[db]
+
+                    if not df.columns.intersection(cols).empty:
+                        
+                        Tables[db].append( df[cols].dropna(axis=0,how="all") )
 
 
-            combined.to_parquet(output[0])
+                del df
+                        
+            out_dir = Path(output[0])
+            out_dir.mkdir()
+                 
+            for db in Tables:
+
+                combined = pd.concat(Tables[db], axis=0)
+                combined.sort_index(inplace=True)
+                
+                combined.to_parquet( out_dir / (db+".parquet") )
+
         except Exception as e:
 
             import traceback
