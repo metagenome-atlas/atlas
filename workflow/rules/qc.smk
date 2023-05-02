@@ -102,6 +102,9 @@ rule initialize_qc:
         " 2> {log}"
 
 
+
+
+
 rule get_read_stats:
     input:
         expand(
@@ -128,7 +131,7 @@ rule get_read_stats:
             "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
         ),
     script:
-        "scripts/get_read_stats.py"
+        "../scripts/get_read_stats.py"
   
 
 
@@ -387,24 +390,24 @@ if not SKIP_QC:
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 """
-                if [{params.paired}" = true ] ; then
-                    bbsplit.sh in1={input[0]} in2={input[1]}
-                        outu1={output[0]} outu2={output[1]}
-                        basename="{params.contaminant_folder}/%_R#.fastq.gz"
-                        maxindel={params.maxindel} minratio={params.minratio}
-                        minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}"
-                        threads={threads} k={params.k} local=t
-                        pigz=t unpigz=t ziplevel=9
+                if [ "{params.paired}" = true ] ; then
+                    bbsplit.sh in1={input[0]} in2={input[1]} \
+                        outu1={output[0]} outu2={output[1]} \
+                        basename="{params.contaminant_folder}/%_R#.fastq.gz" \
+                        maxindel={params.maxindel} minratio={params.minratio} \
+                        minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} \
+                        threads={threads} k={params.k} local=t \
+                        pigz=t unpigz=t ziplevel=9 \
                         -Xmx{resources.java_mem}G 2> {log}
                 fi
 
-                bbsplit.sh in={params.input_single} 
-                    outu={params.output_single}
-                    basename="{params.contaminant_folder}/%_se.fastq.gz"
-                    maxindel={params.maxindel} minratio={params.minratio}
-                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append
-                    interleaved=f threads={threads} k={params.k} local=t
-                    pigz=t unpigz=t ziplevel=9
+                bbsplit.sh in={params.input_single}  \
+                    outu={params.output_single} \
+                    basename="{params.contaminant_folder}/%_se.fastq.gz" \
+                    maxindel={params.maxindel} minratio={params.minratio} \
+                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append=t \
+                    interleaved=f threads={threads} k={params.k} local=t \
+                    pigz=t unpigz=t ziplevel=9 \
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
@@ -476,16 +479,16 @@ if PAIRED_END:
             inputs=lambda wc, input: io_params_for_tadpole(input),
         shell:
             """
-            bbmerge.sh -Xmx{resources.java_mem}G threads={threads}
-                {params.inputs}
-                {params.flags} k={params.kmer}
-                extend2={params.extend2}
-                ihist={output.ihist} merge=f
-                mininsert0=35 minoverlap0=8
-                prealloc=t prefilter=t
+            bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
+                {params.inputs} \
+                {params.flags} k={params.kmer} \
+                extend2={params.extend2} \
+                ihist={output.ihist} merge=f \
+                mininsert0=35 minoverlap0=8 \
+                prealloc=t prefilter=t \
                 minprob={params.minprob} 2> {log}
 
-            readlength.sh {params.inputs} out={output.read_length} 2> {log}
+            readlength.sh {params.inputs} out={output.read_length} 2>> {log}
             """
 
 else:

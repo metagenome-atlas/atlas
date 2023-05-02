@@ -2,8 +2,10 @@
 import os, sys
 import logging, traceback
 
+
+
 logging.basicConfig(
-    filename=snakemake.log[0],
+    filename=snakemake.log[0],#,
     level=logging.INFO,
     format="%(asctime)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -39,6 +41,8 @@ import os
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%X")
 
 
+
+
 def get_read_stats(fraction, params_in):
     "get read stats by running reformat.sh"
 
@@ -47,7 +51,7 @@ def get_read_stats(fraction, params_in):
     subfolder = os.path.join(snakemake.params.folder, fraction)
     tmp_file = os.path.join(subfolder, "read_stats.tmp")
     shell(
-        f" mkdir -p {subfolder} 2> {log} "
+        f" mkdir -p {subfolder} 2>> {snakemake.log[0]} "
         " ; "
         f" reformat.sh {params_in} "
         f" bhist={subfolder}/base_hist.txt "
@@ -56,10 +60,10 @@ def get_read_stats(fraction, params_in):
         f" gchist={subfolder}/gc_hist.txt "
         " gcbins=auto "
         f" bqhist={subfolder}/boxplot_quality.txt "
-        f" threads={threads} "
+        f" threads={snakemake.threads} "
         " overwrite=true "
-        f" -Xmx{resources.java_mem}G "
-        f" 2> >(tee -a {log} {tmp_file} ) "
+        f" -Xmx{snakemake.resources.java_mem}G "
+        f" 2> >(tee -a {snakemake.log[0]} {tmp_file} ) "
     )
     content = open(tmp_file).read()
     pos = content.find("Input:")
@@ -124,7 +128,7 @@ with open(snakemake.output.read_counts, "w") as f:
     f.write("\t".join(headers) + "\n")
     f.write(
         "\t".join(
-            [wildcards.sample, wildcards.step] + [str(v) for v in values] + [timestamp]
+            [snakemake.wildcards.sample, snakemake.wildcards.step] + [str(v) for v in values] + [timestamp]
         )
         + "\n"
     )
