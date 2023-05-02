@@ -595,7 +595,7 @@ rule DRAM_annotate_genecatalog:
     threads: config["simplejob_threads"]
     resources:
         mem=config["simplejob_mem"],
-        time=config["runtime"]["default"],
+        time=config["runtime"]["long"],
     conda:
         "../envs/dram.yaml"
     params:
@@ -603,9 +603,9 @@ rule DRAM_annotate_genecatalog:
         outdir = lambda wc, output: Path(output[0]).parent
     log:
         "logs/Genecatalog/annotation/dram/{subset}.log",
-        "logs/Genecatalog/annotation/dram/{subset}.stdout"
+        "logs/Genecatalog/annotation/dram/{subset}.logfile"
     shell:
-        " rm -rf {params.outdir} &> {log[1]};"
+        " rm -rf {params.outdir} &> {log[0]};"
         "\n"
         " DRAM.py annotate_genes "
         " --input_faa {input.faa}"
@@ -613,8 +613,8 @@ rule DRAM_annotate_genecatalog:
         " --output_dir {params.outdir} "
         " --threads {threads} "
         " {params.extra} "
-        " --log_file_path {log[0]} "
-        " --verbose &>> {log[1]}"
+        " --log_file_path {log[1]} "
+        " --verbose &>> {log[0]}"
 
 
 def combine_genecatalog_dram_input(wildcards):
