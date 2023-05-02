@@ -435,11 +435,9 @@ if not SKIP_QC:
 
                         # append to sample table
             sample_table = load_sample_table(params.sample_table)
-            sample_table.loc[
-                wildcards.sample,
-                [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
-            ] = output
-            sample_table.to_csv(params.sample_table, sep=""t")
+            qc_header = [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS]
+            sample_table.loc[wildcards.sample,qc_header] = output
+            sample_table.to_csv(params.sample_table, sep="\t")
 
 
 
@@ -534,7 +532,7 @@ rule combine_read_length_stats:
             ]
             stats[sample] = data
 
-        stats.to_csv(output[0], sep=""t")
+        stats.to_csv(output[0], sep="\t")
 
 
 
@@ -587,7 +585,7 @@ if PAIRED_END:
                 ]
                 stats[sample] = data
 
-            stats.T.to_csv(output[0], sep=""t")
+            stats.T.to_csv(output[0], sep="\t")
 
 
 
@@ -609,9 +607,9 @@ rule write_read_counts:
 
         all_read_counts = pd.DataFrame()
         for read_stats_file in input.read_count_files:
-            d = pd.read_csv(read_stats_file, index_col=[0, 1], sep=""t")
+            d = pd.read_csv(read_stats_file, index_col=[0, 1], sep="\t")
             all_read_counts = all_read_counts.append(d)
-        all_read_counts.to_csv(output.read_stats, sep=""t")
+        all_read_counts.to_csv(output.read_stats, sep="\t")
 
 
 rule combine_read_counts:
@@ -628,10 +626,10 @@ rule combine_read_counts:
         stats = pd.DataFrame()
 
         for f in input:
-            d = pd.read_csv(f, index_col=[0, 1], sep=""t")
+            d = pd.read_csv(f, index_col=[0, 1], sep="\t")
             stats = stats.append(d)
 
-        stats.to_csv(output[0], sep=""t")
+        stats.to_csv(output[0], sep="\t")
 
 
 rule finalize_sample_qc:
