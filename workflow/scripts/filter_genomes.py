@@ -60,13 +60,17 @@ logging.info(f"Retain {Q.shape[0]} genomes from {n_all_bins}")
 
 ## GUNC
 
-gunc = pd.read_table(snakemake.input.gunc, index_col=0)
-gunc = gunc.loc[Q.index]
+if hasattr(snakemake.input, "gunc"):
 
-bad_genomes = gunc.index[gunc["pass.GUNC"] == False]
-logging.info(f"{len(bad_genomes)} Don't pass gunc filtering")
+    gunc = pd.read_table(snakemake.input.gunc, index_col=0)
+    gunc = gunc.loc[Q.index]
 
-Q.drop(bad_genomes, inplace=True)
+    bad_genomes = gunc.index[gunc["pass.GUNC"] == False]
+    logging.info(f"{len(bad_genomes)} Don't pass gunc filtering")
+
+    Q.drop(bad_genomes, inplace=True)
+else:
+    logging.info(" Don't filter based on gunc")
 
 
 if Q.shape[0] == 0:
