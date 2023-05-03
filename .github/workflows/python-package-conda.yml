@@ -10,7 +10,7 @@ jobs:
     defaults:
       run:
         shell: bash -el {0} # use default shell
-        
+
     steps:
 
       - name: Checkout
@@ -36,13 +36,13 @@ jobs:
           environment-file: atlasenv.yml
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
+
       - name: Install atlas
         run: |
            echo "You are using env '$CONDA_PREFIX'"
            python -m pip install . --no-deps -vv
       - name: Test atlas
         run: |
-          
           atlas --help
           atlas --version
       - name: Import atlas
