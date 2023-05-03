@@ -229,11 +229,11 @@ include: "rules/qc.smk"
 include: "rules/assemble.smk"
 include: "rules/binning.smk"
 include: "rules/genomes.smk"
+include: "rules/dram.smk"
 include: "rules/genecatalog.smk"
 include: "rules/sra.smk"
 include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
-include: "rules/dram.smk"
 include: "rules/strains.smk"
 
 
@@ -260,7 +260,8 @@ rule all:
 
 def get_gene_catalog_input():
     annotation_file_names = {
-        "eggNOG": "Genecatalog/annotations/eggNog.tsv.gz",
+        "eggNOG": "Genecatalog/annotations/eggNOG.parquet",
+        "dram": "Genecatalog/annotations/dram",
         "single_copy": expand(
             "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
             domain=["bacteria", "archaea"],
@@ -288,7 +289,6 @@ rule genecatalog:
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/clustering/orf_info.parquet",
         get_gene_catalog_input(),
-        # ,
     output:
         touch("finished_genecatalog"),
 

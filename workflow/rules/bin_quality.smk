@@ -261,15 +261,15 @@ rule get_bin_filenames:
         filenames.to_csv(output.filenames, sep="\t")
 
         """
-rule merge_bin_info:
-    input:
-        stats ="Binning/{binner}/genome_stats.tsv",
-        gunc= "Binning/{binner}/gunc_report.tsv",
-        quality= "Binning/{binner}/checkm2_quality_report.tsv"
-    output:
-        "Binning/{binner}/combined_bin_info.tsv"
+        rule merge_bin_info:
+            input:
+                stats ="Binning/{binner}/genome_stats.tsv",
+                gunc= "Binning/{binner}/gunc_report.tsv",
+                quality= "Binning/{binner}/checkm2_quality_report.tsv"
+            output:
+                "Binning/{binner}/combined_bin_info.tsv"
 
-"""
+        """
 
 
 rule build_bin_report:

@@ -156,7 +156,7 @@ rule parse_drep:
         for col in genome2cluster:
             genome2cluster[col + "_path"] = file_paths.loc[genome2cluster[col]].values
 
-            # expected output is inverted columns
+        # expected output is inverted columns
         genome2cluster[["Rep_path", "Bin_path"]].to_csv(
             output[0], sep="\t", index=False, header=False
         )
@@ -248,7 +248,7 @@ rule get_contig2genomes:
                 if ext == ".gz":
                     bin_name = os.path.splitext(bin_name)[0]
 
-                    # write names of contigs in mapping file
+                # write names of contigs in mapping file
                 with open(fasta) as f:
                     for line in f:
                         if line[0] == ">":
@@ -384,6 +384,7 @@ if config["genome_aligner"] == "minimap":
         wrapper:
             "v1.19.0/bio/minimap2/aligner"
 
+
 elif config["genome_aligner"] == "bwa":
 
     rule index_genomes:
@@ -418,6 +419,7 @@ elif config["genome_aligner"] == "bwa":
             mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/bwa-mem2/mem"
+
 
 else:
     raise Exception(

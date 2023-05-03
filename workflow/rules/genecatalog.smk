@@ -50,6 +50,7 @@ if config["genecatalog"]["source"] == "contigs":
             cat_files(input.fna, output.fna)
             cat_files(input.short, output.short)
 
+
 else:
 
     localrules:
@@ -174,14 +175,14 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             "logs/Genecatalog/clustering/generate_orf_info.log",
         script:
             "../scripts/generate_orf_info.py"
-
-
 # cluster genes with cd-hit-est
+
 
 
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
+
 
 else:
     raise Exception(
@@ -382,6 +383,46 @@ rule combine_gene_coverages:
 # Mapped reads:                           1071071
 
 
+# Temporary
+# move old subset folder to new
+old_subset_folder = Path("Genecatalog/subsets/genes")
+new_subset_folder = "Intermediate/genecatalog/subsets"
+if old_subset_folder.exists():
+
+    logger.info(f"I move {old_subset_folder} to {new_subset_folder}")
+
+    import shutil
+
+    shutil.move(old_subset_folder, new_subset_folder)
+
+
+localrules:
+    gene_subsets,
+
+
+checkpoint gene_subsets:
+    input:
+        "Genecatalog/gene_catalog.faa",
+    output:
+        directory("Intermediate/genecatalog/subsets"),
+    params:
+        subset_size=config["genecatalog"]["SubsetSize"],
+    conda:
+        "../envs/sequence_utils.yaml"
+    log:
+        "logs/Genecatalog/clustering/split_genecatalog.log",
+    script:
+        "../scripts/split_genecatalog.py"
+
+
+def get_subset_names(wildcards):
+
+    dir_for_subsets = Path(checkpoints.gene_subsets.get(**wildcards).output[0])
+    subset_names = glob_wildcards(str(dir_for_subsets / "{subset}.faa")).subset
+
+    return subset_names
+
+
 ###########
 ## EGG NOG
 ##########
@@ -394,21 +435,23 @@ rule combine_gene_coverages:
 rule eggNOG_homology_search:
     input:
         eggnog_db_files=get_eggnog_db_file(),
-        faa="{folder}/{prefix}.faa",
+        faa="Intermediate/genecatalog/subsets/{subset}.faa",
     output:
-        temp("{folder}/{prefix}.emapper.seed_orthologs"),
+        temp(
+            "Intermediate/genecatalog/annotation/eggNOG/{subset}.emapper.seed_orthologs"
+        ),
     params:
         data_dir=EGGNOG_DIR,
-        prefix="{folder}/{prefix}",
+        prefix=lambda wc, output: output[0].replace(".emapper.seed_orthologs", ""),
     resources:
         mem=config["mem"],
     threads: config["threads"]
     shadow:
         "minimal"
     conda:
-        "%s/eggNOG.yaml" % CONDAENV
+        "../envs/eggNOG.yaml"
     log:
-        "{folder}/logs/{prefix}/eggNOG_homology_search_diamond.log",
+        "logs/genecatalog/annotation/eggnog/{subset}_homology_search_diamond.log",
     shell:
         """
         emapper.py -m diamond --no_annot --no_file_comments \
@@ -428,12 +471,12 @@ rule eggNOG_annotation:
         eggnog_db_files=get_eggnog_db_file(),
         seed=rules.eggNOG_homology_search.output,
     output:
-        temp("{folder}/{prefix}.emapper.annotations"),
+        temp("Intermediate/genecatalog/annotation/eggNOG/{subset}.emapper.annotations"),
     params:
         data_dir=(
             config["virtual_disk"] if config["eggNOG_use_virtual_disk"] else EGGNOG_DIR
         ),
-        prefix="{folder}/{prefix}",
+        prefix=lambda wc, output: output[0].replace(".emapper.annotations", ""),
         copyto_shm="t" if config["eggNOG_use_virtual_disk"] else "f",
     threads: config.get("threads", 1)
     resources:
@@ -443,7 +486,7 @@ rule eggNOG_annotation:
     conda:
         "../envs/eggNOG.yaml"
     log:
-        "{folder}/logs/{prefix}/eggNOG_annotate_hits_table.log",
+        "logs/genecatalog/annotation/eggnog/{subset}_annotate_hits_table.log",
     shell:
         """
 
@@ -458,123 +501,140 @@ rule eggNOG_annotation:
         """
 
 
-#
-# localrules: get_Genecatalog_annotations
-# rule get_Genecatalog_annotations:
-#     input:
-#         Genecatalog= 'Genecatalog/gene_catalog.fna".fna',
-#         eggNOG= expand('{sample}/annotation/eggNOG.tsv',sample=SAMPLES),
-#         refseq= expand('{sample}/annotation/refseq/{sample}_tax_assignments.tsv',sample=SAMPLES),
-#         scg= expand("Genecatalog/annotation/single_copy_genes_{domain}.tsv",domain=['bacteria','archaea'])
-#     output:
-#         annotations= "Genecatalog/annotations.tsv",
-#     run:
-#         import pandas as pd
-#
-#         gene_ids=[]
-#         with open(input.Genecatalog) as fasta_file:
-#             for line in fasta_file:
-#                 if line[0]=='>':
-#                     gene_ids.append(line[1:].strip().split()[0])
-#
-#         eggNOG=pd.DataFrame()
-#         for annotation_file in input.eggNOG:
-#             eggNOG=eggNOG.append(pd.read_csv(annotation_file, index_col=0,sep='\t'))
-#
-#         refseq=pd.DataFrame()
-#         for annotation_file in input.refseq:
-#             refseq=refseq.append(pd.read_csv(annotation_file, index_col=1,sep='\t'))
-#
-#         scg=pd.DataFrame()
-#         for annotation_file in input.scg:
-#             d= pd.read_csv(annotation_file, index_col=0,header=None,sep='\t')
-#             d.columns = 'scg_'+ os.path.splitext(annotation_file)[0].split('_')[-1] # bacteria or archaea
-#             scg=scg.append(d)
-#
-#
-#         annotations= refseq.join(eggNOG).join(scg).loc[gene_ids]
-#         annotations.to_csv(output.annotations,sep='\t')
+def combine_eggnog_annotations(wildcards):
+    all_subsets = get_subset_names(wildcards)
 
-
-rule predict_single_copy_genes:
-    input:
-        "Genecatalog/gene_catalog.faa",
-    output:
-        "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
-    params:
-        script_dir=os.path.dirname(os.path.abspath(workflow.snakefile)),
-        key=lambda wc: wc.domain[:3],  #bac for bacteria, #arc for archaea
-    conda:
-        "%s/DASTool.yaml" % CONDAENV  # needs pearl
-    log:
-        "logs/Genecatalog/annotation/predict_single_copy_genes_{domain}.log",
-    shadow:
-        "shallow"
-    threads: config["threads"]
-    shell:
-        " DIR=$(dirname $(readlink -f $(which DAS_Tool))) "
-        ";"
-        " ruby {params.script_dir}/rules/scg_blank_diamond.rb diamond"
-        " {input} "
-        " $DIR\/db/{params.key}.all.faa "
-        " $DIR\/db/{params.key}.scg.faa "
-        " $DIR\/db/{params.key}.scg.lookup "
-        " {threads} "
-        " 2> {log} "
-        " ; "
-        " mv {input[0]}.scg {output}"
-
-
-localrules:
-    gene_subsets,
-    combine_egg_nogg_annotations,
-
-
-checkpoint gene_subsets:
-    input:
-        "Genecatalog/gene_catalog.faa",
-    output:
-        directory("Genecatalog/subsets/genes"),
-    params:
-        subset_size=config["genecatalog"]["SubsetSize"],
-    conda:
-        "../envs/sequence_utils.yaml"
-    log:
-        "logs/Genecatalog/clustering/split_genecatalog.log",
-    script:
-        "../scripts/split_genecatalog.py"
-
-
-def combine_genecatalog_annotations_input(wildcards):
-    dir_for_subsets = checkpoints.gene_subsets.get(**wildcards).output[0]
-    (Subset_names,) = glob_wildcards(os.path.join(dir_for_subsets, "{subset}.faa"))
-    return expand(
-        "Genecatalog/subsets/genes/{subset}.emapper.annotations", subset=Subset_names
-    )
+    return expand(rules.eggNOG_annotation.output[0], subset=all_subsets)
 
 
 rule combine_egg_nogg_annotations:
     input:
-        combine_genecatalog_annotations_input,
+        combine_eggnog_annotations,
     output:
-        "Genecatalog/annotations/eggNog.tsv.gz",
+        "Genecatalog/annotations/eggNOG.parquet",
+    log:
+        "logs/genecatalog/annotation/eggNOG/combine.log",
+    resources:
+        time=config["runtime"]["default"],
     run:
-        import pandas as pd
+        try:
 
-        # read input files one after the other
-        for i, annotation_table in enumerate(input):
-            D = pd.read_csv(annotation_table, header=None, sep="\t")
-            # Add headers, to verify size
-            D.columns = EGGNOG_HEADER
-            # appedn to output file, header only the first time
-            D.to_csv(
-                output[0],
-                sep="\t",
-                index=False,
-                header=(i == 0),
-                compression="gzip",
-                mode="a",
-            )
+            import pandas as pd
+
+            Tables = [
+                pd.read_csv(file, index_col=None, header=None, sep="\t")
+                for file in input
+            ]
+
+            combined = pd.concat(Tables, axis=0)
+
+            del Tables
+
+            combined.columns = EGGNOG_HEADER
+
+            #           combined.sort_values("Gene",inplace=True)
+
+            combined.to_parquet(output[0], index=False)
+        except Exception as e:
+
+            import traceback
+
+            with open(log[0], "w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
+
+
+## Temporary
+rule convert_eggNOG_tsv2parquet:
+    input:
+        "Genecatalog/annotations/eggNog.tsv.gz",
+    output:
+        "Genecatalog/annotations/eggNOG.parquet",
+    resources:
+        time=config["runtime"]["default"],
+    log:
+        "logs/genecatalog/annotation/eggNOG/tsv2parquet.log",
+    run:
+        try:
+            import pandas as pd
+
+            df = pd.read_table(input[0], index_col=None)
+
+            df.to_parquet(output[0], index=False)
+
+        except Exception as e:
+
+            import traceback
+
+            with open(log[0], "w") as logfile:
+                traceback.print_exc(file=logfile)
+
+            raise e
+
+
+ruleorder: convert_eggNOG_tsv2parquet > combine_egg_nogg_annotations
+
+
+##############################################
+### DRAM
+###############################################
+
+
+rule DRAM_annotate_genecatalog:
+    input:
+        faa="Intermediate/genecatalog/subsets/{subset}.faa",
+        config=rules.dram_download.output.config,
+    output:
+        annotations=temp(
+            "Intermediate/genecatalog/annotation/dram/{subset}/annotations.tsv"
+        ),
+        genes=temp("Intermediate/genecatalog/annotation/dram/{subset}/genes.faa"),
+    threads: config["simplejob_threads"]
+    resources:
+        mem=config["simplejob_mem"],
+        time=config["runtime"]["long"],
+    conda:
+        "../envs/dram.yaml"
+    params:
+        extra=config.get("dram_extra", ""),
+        outdir=lambda wc, output: Path(output[0]).parent,
+    log:
+        "logs/Genecatalog/annotation/dram/{subset}.log",
+        "logs/Genecatalog/annotation/dram/{subset}.logfile",
+    shell:
+        " rm -rf {params.outdir} &> {log[0]};"
+        "\n"
+        " DRAM.py annotate_genes "
+        " --input_faa {input.faa}"
+        " --config_loc {input.config} "
+        " --output_dir {params.outdir} "
+        " --threads {threads} "
+        " {params.extra} "
+        " --log_file_path {log[1]} "
+        " --verbose &>> {log[0]}"
+
+
+def combine_genecatalog_dram_input(wildcards):
+
+    all_subsets = get_subset_names(wildcards)
+
+    return expand(
+        rules.DRAM_annotate_genecatalog.output.annotations, subset=all_subsets
+    )
+
+
+rule combine_dram_genecatalog_annotations:
+    input:
+        combine_genecatalog_dram_input,
+    output:
+        directory("Genecatalog/annotations/dram"),
+    resources:
+        time=config["runtime"]["default"],
+    log:
+        "logs/genecatalog/annotation/dram/combine.log",
+    script:
+        "../scripts/combine_dram_gene_annotations.py"
 
 
 rule gene2genome:
@@ -638,3 +698,30 @@ rule gene2genome:
 #         canopy -i {input} -o {output.cluster} -c {output.profile} -n {threads} --canopy_size_stats_file {log} {params.canopy_params} 2> {log}
 #
 #         """
+rule predict_single_copy_genes:
+    input:
+        "Genecatalog/gene_catalog.faa",
+    output:
+        "Genecatalog/annotation/single_copy_genes_{domain}.tsv",
+    params:
+        script_dir=os.path.dirname(os.path.abspath(workflow.snakefile)),
+        key=lambda wc: wc.domain[:3],  #bac for bacteria, #arc for archaea
+    conda:
+        "%s/DASTool.yaml" % CONDAENV  # needs pearl
+    log:
+        "logs/Genecatalog/annotation/predict_single_copy_genes_{domain}.log",
+    shadow:
+        "shallow"
+    threads: config["threads"]
+    shell:
+        " DIR=$(dirname $(readlink -f $(which DAS_Tool))) "
+        ";"
+        " ruby {params.script_dir}/rules/scg_blank_diamond.rb diamond"
+        " {input} "
+        " $DIR\/db/{params.key}.all.faa "
+        " $DIR\/db/{params.key}.scg.faa "
+        " $DIR\/db/{params.key}.scg.lookup "
+        " {threads} "
+        " 2> {log} "
+        " ; "
+        " mv {input[0]}.scg {output}"
