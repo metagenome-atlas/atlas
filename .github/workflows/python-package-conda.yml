@@ -18,7 +18,9 @@ jobs:
           mamba-version: "*"
           channels: conda-forge,bioconda,defaults
           channel-priority: true
-    
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        
       - name: Get Date
         id: get-date
         run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
