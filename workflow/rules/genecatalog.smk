@@ -391,10 +391,9 @@ if old_subset_folder.exists():
 
     logger.info(f"I move {old_subset_folder} to {new_subset_folder}")
 
-
     import shutil
 
-    shutil.move(old_subset_folder,new_subset_folder)    
+    shutil.move(old_subset_folder, new_subset_folder)
 
 
 localrules:
@@ -416,13 +415,13 @@ checkpoint gene_subsets:
         "../scripts/split_genecatalog.py"
 
 
-
 def get_subset_names(wildcards):
 
     dir_for_subsets = Path(checkpoints.gene_subsets.get(**wildcards).output[0])
-    subset_names = glob_wildcards(str(dir_for_subsets/ "{subset}.faa")).subset
+    subset_names = glob_wildcards(str(dir_for_subsets / "{subset}.faa")).subset
 
     return subset_names
+
 
 ###########
 ## EGG NOG
@@ -438,17 +437,19 @@ rule eggNOG_homology_search:
         eggnog_db_files=get_eggnog_db_file(),
         faa="Intermediate/genecatalog/subsets/{subset}.faa",
     output:
-        temp("Intermediate/genecatalog/annotation/eggNOG/{subset}.emapper.seed_orthologs"),
+        temp(
+            "Intermediate/genecatalog/annotation/eggNOG/{subset}.emapper.seed_orthologs"
+        ),
     params:
         data_dir=EGGNOG_DIR,
-        prefix= lambda wc, output: output[0].replace(".emapper.seed_orthologs", ""),
+        prefix=lambda wc, output: output[0].replace(".emapper.seed_orthologs", ""),
     resources:
         mem=config["mem"],
     threads: config["threads"]
     shadow:
         "minimal"
     conda:
-        "../envs/eggNOG.yaml" 
+        "../envs/eggNOG.yaml"
     log:
         "logs/genecatalog/annotation/eggnog/{subset}_homology_search_diamond.log",
     shell:
@@ -475,7 +476,7 @@ rule eggNOG_annotation:
         data_dir=(
             config["virtual_disk"] if config["eggNOG_use_virtual_disk"] else EGGNOG_DIR
         ),
-        prefix= lambda wc, output: output[0].replace(".emapper.annotations", ""),
+        prefix=lambda wc, output: output[0].replace(".emapper.annotations", ""),
         copyto_shm="t" if config["eggNOG_use_virtual_disk"] else "f",
     threads: config.get("threads", 1)
     resources:
@@ -485,7 +486,7 @@ rule eggNOG_annotation:
     conda:
         "../envs/eggNOG.yaml"
     log:
-         "logs/genecatalog/annotation/eggnog/{subset}_annotate_hits_table.log",
+        "logs/genecatalog/annotation/eggnog/{subset}_annotate_hits_table.log",
     shell:
         """
 
@@ -500,18 +501,10 @@ rule eggNOG_annotation:
         """
 
 
-
-
-
-
-
-
 def combine_eggnog_annotations(wildcards):
     all_subsets = get_subset_names(wildcards)
 
-    return expand(
-        rules.eggNOG_annotation.output[0], subset=all_subsets
-    )
+    return expand(rules.eggNOG_annotation.output[0], subset=all_subsets)
 
 
 rule combine_egg_nogg_annotations:
@@ -520,79 +513,83 @@ rule combine_egg_nogg_annotations:
     output:
         "Genecatalog/annotations/eggNOG.parquet",
     log:
-        "logs/genecatalog/annotation/eggNOG/combine.log"
+        "logs/genecatalog/annotation/eggNOG/combine.log",
     resources:
         time=config["runtime"]["default"],
     run:
-
         try:
 
             import pandas as pd
 
             Tables = [
-                pd.read_csv(file, index_col=None,header=None, sep='\t')
+                pd.read_csv(file, index_col=None, header=None, sep="\t")
                 for file in input
             ]
 
-
             combined = pd.concat(Tables, axis=0)
-            
+
             del Tables
 
             combined.columns = EGGNOG_HEADER
 
- 
- #           combined.sort_values("Gene",inplace=True)
+            #           combined.sort_values("Gene",inplace=True)
 
             combined.to_parquet(output[0], index=False)
         except Exception as e:
 
             import traceback
-            with open(log[0],"w") as logfile:
+
+            with open(log[0], "w") as logfile:
                 traceback.print_exc(file=logfile)
 
             raise e
+
+
 ## Temporary
 rule convert_eggNOG_tsv2parquet:
     input:
-        "Genecatalog/annotations/eggNog.tsv.gz"
+        "Genecatalog/annotations/eggNog.tsv.gz",
     output:
-        "Genecatalog/annotations/eggNOG.parquet"
+        "Genecatalog/annotations/eggNOG.parquet",
     resources:
         time=config["runtime"]["default"],
     log:
-        "logs/genecatalog/annotation/eggNOG/tsv2parquet.log"
+        "logs/genecatalog/annotation/eggNOG/tsv2parquet.log",
     run:
-        try: 
+        try:
             import pandas as pd
 
             df = pd.read_table(input[0], index_col=None)
 
-            df.to_parquet(output[0],index=False)
+            df.to_parquet(output[0], index=False)
 
         except Exception as e:
 
             import traceback
-            with open(log[0],"w") as logfile:
+
+            with open(log[0], "w") as logfile:
                 traceback.print_exc(file=logfile)
 
             raise e
 
 
-ruleorder: convert_eggNOG_tsv2parquet > combine_egg_nogg_annotations 
+ruleorder: convert_eggNOG_tsv2parquet > combine_egg_nogg_annotations
+
 
 ##############################################
 ### DRAM
 ###############################################
+
 
 rule DRAM_annotate_genecatalog:
     input:
         faa="Intermediate/genecatalog/subsets/{subset}.faa",
         config=rules.dram_download.output.config,
     output:
-        annotations= temp("Intermediate/genecatalog/annotation/dram/{subset}/annotations.tsv"),
-        genes= temp("Intermediate/genecatalog/annotation/dram/{subset}/genes.faa"),
-
+        annotations=temp(
+            "Intermediate/genecatalog/annotation/dram/{subset}/annotations.tsv"
+        ),
+        genes=temp("Intermediate/genecatalog/annotation/dram/{subset}/genes.faa"),
     threads: config["simplejob_threads"]
     resources:
         mem=config["simplejob_mem"],
@@ -601,10 +598,10 @@ rule DRAM_annotate_genecatalog:
         "../envs/dram.yaml"
     params:
         extra=config.get("dram_extra", ""),
-        outdir = lambda wc, output: Path(output[0]).parent
+        outdir=lambda wc, output: Path(output[0]).parent,
     log:
         "logs/Genecatalog/annotation/dram/{subset}.log",
-        "logs/Genecatalog/annotation/dram/{subset}.logfile"
+        "logs/Genecatalog/annotation/dram/{subset}.logfile",
     shell:
         " rm -rf {params.outdir} &> {log[0]};"
         "\n"
@@ -619,96 +616,25 @@ rule DRAM_annotate_genecatalog:
 
 
 def combine_genecatalog_dram_input(wildcards):
-    
+
     all_subsets = get_subset_names(wildcards)
-    
+
     return expand(
         rules.DRAM_annotate_genecatalog.output.annotations, subset=all_subsets
     )
-
 
 
 rule combine_dram_genecatalog_annotations:
     input:
         combine_genecatalog_dram_input,
     output:
-        directory("Genecatalog/annotations/dram")
+        directory("Genecatalog/annotations/dram"),
     resources:
         time=config["runtime"]["default"],
     log:
-        "logs/genecatalog/annotation/dram/combine.log"
-    run:
-
-        try:
-            import numpy as np
-            import pandas as pd
-            from collections import defaultdict
-
-            db_columns={}
-            db_columns["kegg"]= ["ko_id", "kegg_hit"]
-            db_columns["peptidase"]= ["peptidase_id","peptidase_family","peptidase_hit","peptidase_RBH","peptidase_identity","peptidase_bitScore","peptidase_eVal"]
-            db_columns["pfam"]= ["pfam_hits"]
-            db_columns["cazy"]= ["cazy_ids","cazy_hits","cazy_subfam_ec","cazy_best_hit"]
-            #db_columns["heme"]= ["heme_regulatory_motif_count"]
-
-            Tables = defaultdict(list)
-
-
-            for file in input:
-                df = pd.read_csv(file, index_col=0, sep='\t')
-                
-
-                #drop un-annotated genes
-                df = df.query("rank!='E'")
-               
-                
-                # change index from 'subset1_Gene111' ->  simply 'Gene111'
-                # Gene name to nr
-                df.index = df.index.str.split('_',n=1,expand=True).get_level_values(1).str[len("Gene"):].astype(np.int64)
-                df.index.name= "GeneNr"
-
-                #df.drop(["Gene","rank","fasta"],axis=1,inplace=True)
-
-
-                # select columns, drop na rows and append to list
-                for db in db_columns:
-                    cols = db_columns[db]
-
-                    if not df.columns.intersection(cols).empty:
-                        
-                        Tables[db].append( df[cols].dropna(axis=0,how="all") )
-
-
-                del df
-                        
-            out_dir = Path(output[0])
-            out_dir.mkdir()
-                 
-            for db in Tables:
-
-
-                combined = pd.concat(Tables[db], axis=0)
-
-                combined.sort_index(inplace=True)
-                
-                combined.reset_index().to_parquet( out_dir / (db+".parquet") )
-
-        except Exception as e:
-
-            import traceback
-            with open(log[0],"w") as logfile:
-                traceback.print_exc(file=logfile)
-
-            raise e
-
-
-
-
-
-
-
-
-
+        "logs/genecatalog/annotation/dram/combine.log",
+    script:
+        "../scripts/combine_dram_gene_annotations.py"
 
 
 rule gene2genome:
@@ -799,4 +725,3 @@ rule predict_single_copy_genes:
         " 2> {log} "
         " ; "
         " mv {input[0]}.scg {output}"
-

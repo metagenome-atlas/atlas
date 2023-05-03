@@ -289,7 +289,6 @@ rule genecatalog:
         "Genecatalog/gene_catalog.faa",
         "Genecatalog/clustering/orf_info.parquet",
         get_gene_catalog_input(),
-
     output:
         touch("finished_genecatalog"),
 
