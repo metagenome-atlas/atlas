@@ -643,7 +643,6 @@ rule combine_dram_genecatalog_annotations:
             import pandas as pd
             from collections import defaultdict
 
-
             db_columns={}
             db_columns["kegg"]= ["ko_id", "kegg_hit"]
             db_columns["peptidase"]= ["peptidase_id","peptidase_family","peptidase_hit","peptidase_RBH","peptidase_identity","peptidase_bitScore","peptidase_eVal"]
@@ -664,7 +663,7 @@ rule combine_dram_genecatalog_annotations:
                 
                 # change index from 'subset1_Gene111' ->  simply 'Gene111'
                 # Gene name to nr
-                df.index = df.index.str.split('_',n=1,expand=True).get_level_values(1).str[len("Gene"):].astype(np.int8)
+                df.index = df.index.str.split('_',n=1,expand=True).get_level_values(1).str[len("Gene"):].astype(np.int64)
                 df.index.name= "GeneNr"
 
                 #df.drop(["Gene","rank","fasta"],axis=1,inplace=True)
@@ -686,10 +685,12 @@ rule combine_dram_genecatalog_annotations:
                  
             for db in Tables:
 
+
                 combined = pd.concat(Tables[db], axis=0)
+
                 combined.sort_index(inplace=True)
                 
-                combined.to_parquet( out_dir / (db+".parquet") )
+                combined.reset_index().to_parquet( out_dir / (db+".parquet") )
 
         except Exception as e:
 
