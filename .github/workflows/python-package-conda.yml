@@ -9,43 +9,29 @@ jobs:
       max-parallel: 5
 
     steps:
-      - name: Setup Minicaonda with mamba
-        uses: conda-incubator/setup-miniconda@v2
+
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        
+      - name: Setup_conda_and_cache
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('atlasenv.yml') }}
+      - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: atlasenv
           use-mamba: true
           python-version: 3.11
           mamba-version: "*"
           channels: conda-forge,bioconda,defaults
-          channel-priority: true
-      - name: Checkout
-        uses: actions/checkout@v3.5.2
-        
-      - name: Get Date
-        id: get-date
-        run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Cache Conda env
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.CONDA }}/envs
-          key:
-            conda-${{ runner.os }}--${{ runner.arch }}--${{
-            steps.get-date.outputs.today }}-${{
-            hashFiles('atlasenv.yml') }}-${{ env.CACHE_NUMBER
-            }}
-        env:
-          # Increase this value to reset cache if atlasenv.yml has not changed
-          CACHE_NUMBER: 0
-        id: cache
-    
-      - name: Update environment
-        run: |
-          ls -l . ;
-          pwd ;
-          mamba env update -n atlasenv -f atlasenv.yml
-        if: steps.cache.outputs.cache-hit != 'true'
+          environment-file: atlasenv.yml
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
 
       - name: Install atlas
         run: |
