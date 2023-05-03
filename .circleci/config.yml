@@ -151,7 +151,8 @@ jobs:
           name: run test
           command: |
             source activate ./atlasenv
-            ./test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+            
+            test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
       - store_artifacts:
           path: test_ci/logs
           destination: logs
@@ -173,7 +174,8 @@ jobs:
           name: init
           command: |
             source activate ./atlasenv
-            atlas init --db-dir $DATABASE_DIR --threads $N_THREADS --working-dir wd test/reads/test
+
+            atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir "wd" 
       - run:
           name: run qc
           command: |
