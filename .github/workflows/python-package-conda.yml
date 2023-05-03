@@ -40,12 +40,14 @@ jobs:
     
       - name: Update environment
         run:
+          ls -l
+          pwd
           mamba env update -n atlasenv -f atlasenv.yml
         if: steps.cache.outputs.cache-hit != 'true'
 
       - name: Install atlas
         run: |
-          pip install -vvv .
+           python -m pip install . --no-deps -vv
       - name: Test atlas
         run: |
           atlas --help
