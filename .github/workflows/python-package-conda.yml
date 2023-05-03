@@ -39,9 +39,9 @@ jobs:
         id: cache
     
       - name: Update environment
-        run:
-          ls -l
-          pwd
+        run: |
+          ls -l . ;
+          pwd ;
           mamba env update -n atlasenv -f atlasenv.yml
         if: steps.cache.outputs.cache-hit != 'true'
 
