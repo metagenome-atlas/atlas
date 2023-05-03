@@ -49,3 +49,7 @@ jobs:
         run: |
           python -c "from atlas import utils"
 
+      - name: Dryrun
+        run: |
+          test/dryrun.sh
+
