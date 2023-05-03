@@ -88,7 +88,6 @@ rule initialize_qc:
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "reformat.sh "
         " {params.inputs} "
@@ -98,7 +97,7 @@ rule initialize_qc:
         " overwrite=true "
         " verifypaired={params.verifypaired} "
         " threads={threads} "
-        " -Xmx{resources.java_mem}G "
+        f" -Xmx{int(resources.java_mem * JAVA_MEM_FRACTION)}G "
         " 2> {log}"
 
 
@@ -170,7 +169,6 @@ if not SKIP_QC:
             threads: config.get("threads", 1)
             resources:
                 mem=config["mem"],
-                java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 "clumpify.sh "
                 " {params.inputs} "
@@ -181,7 +179,7 @@ if not SKIP_QC:
                 " optical={params.only_optical}"
                 " threads={threads} "
                 " pigz=t unpigz=t "
-                " -Xmx{resources.java_mem}G"
+                 f" -Xmx{int(resources.java_mem * JAVA_MEM_FRACTION)}G "
                 " 2> {log}"
 
 
@@ -276,7 +274,6 @@ if not SKIP_QC:
         threads: config.get("threads", 1)
         resources:
             mem=config["mem"],
-            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
             " bbduk.sh {params.inputs} "
             " {params.ref} "
@@ -299,7 +296,7 @@ if not SKIP_QC:
             " ecco={params.error_correction_pe} "
             " prealloc={params.prealloc} "
             " pigz=t unpigz=t "
-            " -Xmx{resources.java_mem}G "
+            f" -Xmx{int(resources.java_mem * JAVA_MEM_FRACTION)}G "
             " 2> {log}"
 
 
@@ -315,7 +312,6 @@ if not SKIP_QC:
             threads: config.get("threads", 1)
             resources:
                 mem=config["mem"],
-                java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             log:
                 "logs/QC/build_decontamination_db.log",
             conda:
@@ -330,7 +326,7 @@ if not SKIP_QC:
                 ),
             shell:
                 "bbsplit.sh"
-                " -Xmx{resources.java_mem}G "
+                f" -Xmx{int(resources.java_mem * JAVA_MEM_FRACTION)}G "
                 " {params.refs_in} "
                 " threads={threads}"
                 " k={params.k}"
@@ -463,7 +459,6 @@ if PAIRED_END:
         threads: config.get("simplejob_threads", 1)
         resources:
             mem=config["mem"],
-            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         conda:
             "../envs/required_packages.yaml"
         log:
@@ -475,16 +470,17 @@ if PAIRED_END:
             minprob=config.get("bbmerge_minprob", "0.8"),
             inputs=lambda wc, input: io_params_for_tadpole(input),
         shell:
+            " bbmerge.sh "
+            f" -Xmx{int(resources.java_mem * JAVA_MEM_FRACTION)}G "
+            " threads={threads} "
+            " {params.inputs} "
+            " {params.flags} k={params.kmer} "
+            " extend2={params.extend2} "
+            " ihist={output.ihist} merge=f "
+            " mininsert0=35 minoverlap0=8 "
+            " prealloc=t prefilter=t "
+            " minprob={params.minprob} 2> {log} \n  "
             """
-            bbmerge.sh -Xmx{resources.java_mem}G threads={threads} \
-                {params.inputs} \
-                {params.flags} k={params.kmer} \
-                extend2={params.extend2} \
-                ihist={output.ihist} merge=f \
-                mininsert0=35 minoverlap0=8 \
-                prealloc=t prefilter=t \
-                minprob={params.minprob} 2> {log}
-
             readlength.sh {params.inputs} out={output.read_length} 2>> {log}
             """
 
@@ -503,7 +499,6 @@ else:
         threads: config.get("simplejob_threads", 1)
         resources:
             mem=config["simplejob_mem"],
-            java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         conda:
             "../envs/required_packages.yaml"
         log:
