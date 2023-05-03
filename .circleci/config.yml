@@ -140,7 +140,7 @@ jobs:
 
 
 
-  assembly:
+  qc_and_assembly:
     <<: *defaults
     environment:
       N_THREADS: 2
@@ -150,10 +150,14 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
-          name: test qc
+          name: init
           command: |
             source activate ./atlasenv
-            atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w test/Test_assembly example_data/reads/test
+            atlas init example_data/reads/test --db-dir $DATABASE_DIR  --threads $N_THREADS -w test/Test_assembly
+      - run:
+          name: run qc
+          command: |
+            source activate ./atlasenv
             atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 -w test/Test_assembly
       - run:
           name: test assembly
@@ -255,13 +259,16 @@ workflows:
           requires:
             - build_and_dryrun
       - get_example_data
-      - assembly:
+      - qc_and_assembly:
           requires:
             - build_and_dryrun
             - get_example_data
       - binning:
           requires:
-            - assembly
+            - qc_and_assembly
+      - genecatalog:
+          requires:
+            - qc_and_assembly
       # - getenvs:
       #     requires:
       #       - build_and_dryrun
