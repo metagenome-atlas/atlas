@@ -49,9 +49,12 @@ jobs:
 
       - name: Install atlas
         run: |
+           conda activate atlasenv
+           conda list 
            python -m pip install . --no-deps -vv
       - name: Test atlas
         run: |
+          
           atlas --help
           atlas --version
       - name: Import atlas
