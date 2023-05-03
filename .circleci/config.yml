@@ -81,12 +81,12 @@ jobs:
           name: Init
           command: |
             source activate ./atlasenv
-            atlas init --db-dir $DATABASE_DIR --threads 1 -w test/Getenvs test/reads/empty
+            atlas init --db-dir $DATABASE_DIR --threads 1 --working-dir test/Getenvs test/reads/empty
       - run:
           name: install environements
           command: |
             source activate ./atlasenv
-            atlas run all -w test/Getenvs --conda-create-envs-only --cores all
+            atlas run all --working-dir test/Getenvs --conda-create-envs-only --cores all
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
@@ -95,7 +95,7 @@ jobs:
       #     name: download checkm data
       #     command: |
       #         source activate ./atlasenv
-      #         atlas run None -w test/Getenvs logs/checkm_init.txt
+      #         atlas run None --working-dir test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/
@@ -153,10 +153,10 @@ jobs:
             source activate ./atlasenv
             ./test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
       - store_artifacts:
-          path: test/Test_assembly/logs
+          path: test_ci/logs
           destination: logs
       - store_artifacts:
-          path: test/Test_assembly/Streptococcus/logs
+          path: test_ci/Streptococcus/logs
           destination: sample_logs
 
 
@@ -173,27 +173,27 @@ jobs:
           name: init
           command: |
             source activate ./atlasenv
-            atlas init "example_data/reads/test" --db-dir $DATABASE_DIR -w test/Test_assembly
+            atlas init --db-dir $DATABASE_DIR --threads $N_THREADS --working-dir wd test/reads/test
       - run:
           name: run qc
           command: |
             source activate ./atlasenv
-            atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 -w test/Test_assembly
+            atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
       - run:
           name: test assembly
           command: |
             source activate ./atlasenv
-            atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 -w test/Test_assembly 
+            atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd 
       - store_artifacts:
-          path: test/Test_assembly/logs
+          path: wd/logs
           destination: logs
       - store_artifacts:
-          path: test/Test_assembly/Streptococcus/logs
+          path: wd/Streptococcus/logs
           destination: sample_logs
       - persist_to_workspace:
           root: /root/project
           paths:
-            - test/Test_assembly
+            - wd
 
   genecatalog:
     <<: *defaults
@@ -208,13 +208,13 @@ jobs:
           name: run genecatalog
           command: |
             source activate ./atlasenv
-            WD='test/Test_assembly'
-            atlas run genecatalog --omit-from combine_egg_nogg_annotations  -w $WD --resources mem=$MEM java_mem=$MEM--jobs=$N_THREADS --restart-times=2 
+            WD='wd'
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --resources mem=$MEM java_mem=$MEM--jobs=$N_THREADS --restart-times=2 
       - store_artifacts:
-          path: test/Test_assembly/logs
+          path: wd/logs
           destination: genecatalog_logs
       - store_artifacts:
-          path: test/Test_assembly/Streptococcus/logs
+          path: wd/Streptococcus/logs
           destination: genecatalog_sample_logs
   binning:
     <<: *defaults
@@ -229,18 +229,18 @@ jobs:
           name: run binning
           command: |
             source activate ./atlasenv
-            WD='test/Test_assembly'
-            atlas run binning -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat
+            WD='wd'
+            atlas run binning --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat
 
       - store_test_results:
-          path: test/Test_assembly/Binning/metabat/bin_report.html
+          path: wd/Binning/metabat/bin_report.html
 
 
       - store_artifacts:
-          path: test/Test_assembly/logs
+          path: wd/logs
           destination: binning_logs
       - store_artifacts:
-          path: test/Test_assembly/Streptococcus/logs
+          path: wd/Streptococcus/logs
           destination: binning_logs/sample
 
   #

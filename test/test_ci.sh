@@ -12,7 +12,7 @@ atlas --version
 
 
 databaseDir="databases"
-WD='test/Test_assembly'
+WD='test_ci'
 reads_dir="example_data/reads/test"
 
 
