@@ -9,28 +9,48 @@ jobs:
       max-parallel: 5
 
     steps:
-    - uses: actions/checkout@v3
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        python-version: 3.11
-        mamba-version: "*"
-        channels: conda-forge,bioconda,defaults
-        channel-priority: true
-        activate-environment: atlasenv
-        environment-file: atlasenv.yml
-    - shell: bash -el {0}
-      run: |
-        conda info
-          
-          
-    - name: Install atlas
-      run: |
-        pip install . -vvv
-    - name: Test atlas
-      run: |
-        atlas --help
-        atlas --version
-    - name: Import atlas
-      run: |
-        python -c "from atlas import utils"
-        
+      - name: Setup Minicaonda with mamba
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: atlasenv
+          use-mamba: true
+          python-version: 3.11
+          mamba-version: "*"
+          channels: conda-forge,bioconda,defaults
+          channel-priority: true
+    
+      - name: Get Date
+        id: get-date
+        run: echo "today=$(/bin/date -u '+%Y%m%d')" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Cache Conda env
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CONDA }}/envs
+          key:
+            conda-${{ runner.os }}--${{ runner.arch }}--${{
+            steps.get-date.outputs.today }}-${{
+            hashFiles('atlasenv.yml') }}-${{ env.CACHE_NUMBER
+            }}
+        env:
+          # Increase this value to reset cache if atlasenv.yml has not changed
+          CACHE_NUMBER: 0
+        id: cache
+    
+      - name: Update environment
+        run:
+          mamba env update -n atlasenv -f atlasenv.yml
+        if: steps.cache.outputs.cache-hit != 'true'
+
+      - name: Install atlas
+        run: |
+          pip install -vvv .
+      - name: Test atlas
+        run: |
+          atlas --help
+          atlas --version
+      - name: Import atlas
+        run: |
+          python -c "from atlas import utils"
+
