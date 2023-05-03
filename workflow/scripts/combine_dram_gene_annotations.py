@@ -51,7 +51,7 @@ db_columns = {
 
 Tables = defaultdict(list)
 
-for file in snakemke.input:
+for file in snakemake.input:
     df = pd.read_csv(file, index_col=0, sep="\t")
 
     # drop un-annotated genes
