@@ -50,6 +50,7 @@ if config["genecatalog"]["source"] == "contigs":
             cat_files(input.fna, output.fna)
             cat_files(input.short, output.short)
 
+
 else:
 
     localrules:
@@ -174,14 +175,14 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             "logs/Genecatalog/clustering/generate_orf_info.log",
         script:
             "../scripts/generate_orf_info.py"
-
-
 # cluster genes with cd-hit-est
+
 
 
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
+
 
 else:
     raise Exception(

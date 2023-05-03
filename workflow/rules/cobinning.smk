@@ -56,7 +56,7 @@ rule combine_contigs:
                         # if line is a header add sample name
                         if line[0] == ">":
                             line = f">{sample}{params.seperator}" + line[1:]
-                            # write each line to the combined file
+                        # write each line to the combined file
                         fout.write(line)
 
 
