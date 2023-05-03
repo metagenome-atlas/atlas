@@ -279,17 +279,16 @@ workflows:
           requires:
             - build_and_dryrun
       - get_example_data
-      - run_test
+
+      - run_test:
           requires:
             - build_and_dryrun
             - get_example_data
             
-      # - qc_and_assembly:
-      #     requires:
-      #       - build_and_dryrun
-      #       - get_example_data
-
-  
+      - qc_and_assembly:
+          requires:
+            - build_and_dryrun
+            - get_example_data
 
       # - binning:
       #     requires:
