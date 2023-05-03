@@ -90,21 +90,22 @@ rule initialize_qc:
         mem=config["simplejob_mem"],
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
-        """
-        reformat.sh {params.inputs} \
-            interleaved={params.interleaved} \
-            {params.outputs} \
-            {params.extra} \
-            overwrite=true \
-            verifypaired={params.verifypaired} \
-            threads={threads} \
-            -Xmx{resources.java_mem}G 2> {log}
-        """
+        "reformat.sh "
+        " {params.inputs} "
+        " interleaved={params.interleaved} "
+        " {params.outputs} "
+        " {params.extra} "
+        " overwrite=true "
+        " verifypaired={params.verifypaired} "
+        " threads={threads} "
+        " -Xmx{resources.java_mem}G "
+        " 2> {log}"
+
+
+
 
 
 rule get_read_stats:
-    # TODO: remove run block in favor of script or alternate cli
-    # see http://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#snakefiles-external-scripts
     input:
         expand(
             "{{sample}}/sequence_quality_control/{{sample}}_{{step}}_{fraction}.fastq.gz",
@@ -129,104 +130,9 @@ rule get_read_stats:
         single_end_file=(
             "{sample}/sequence_quality_control/{sample}_{step}_se.fastq.gz"
         ),
-    run:
-        import datetime
-        import shutil
-        import sys
-
-        sys.stderr = open(log[0], "w")
-
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%X")
-
-
-        def get_read_stats(fraction, params_in):
-            subfolder = os.path.join(params.folder, fraction)
-            tmp_file = os.path.join(subfolder, "read_stats.tmp")
-            shell(
-                f" mkdir -p {subfolder} 2> {log} "
-                " ; "
-                f" reformat.sh {params_in} "
-                f" bhist={subfolder}/base_hist.txt "
-                f" qhist={subfolder}/quality_by_pos.txt "
-                f" lhist={subfolder}/readlength.txt "
-                f" gchist={subfolder}/gc_hist.txt "
-                " gcbins=auto "
-                f" bqhist={subfolder}/boxplot_quality.txt "
-                f" threads={threads} "
-                " overwrite=true "
-                f" -Xmx{resources.java_mem}G "
-                f" 2> >(tee -a {log} {tmp_file} ) "
-            )
-            content = open(tmp_file).read()
-            pos = content.find("Input:")
-            if pos == -1:
-                raise Exception("Didn't find read number in file:\n\n" + content)
-            else:
-                content[pos:].split()[1:4]
-                # Input:    123 reads   1234 bases
-                n_reads, _, n_bases = content[pos:].split()[1:4]
-
-                os.remove(tmp_file)
-            return int(n_reads), int(n_bases)
-
-
-        if PAIRED_END:
-            n_reads_pe, n_bases_pe = get_read_stats(
-                "pe", "in1={0} in2={1}".format(*input)
-                )
-                n_reads_pe = n_reads_pe / 2
-                headers = [
-                    "Sample",
-                    "Step",
-                    "Total_Reads",
-                    "Total_Bases",
-                    "Reads_pe",
-                    "Bases_pe",
-                    "Reads_se",
-                    "Bases_se",
-                    "Timestamp",
-                ]
-
-                if os.path.exists(params.single_end_file):
-                    n_reads_se, n_bases_se = get_read_stats(
-                        "se", "in=" + params.single_end_file
-                    )
-                else:
-                    n_reads_se, n_bases_se = 0, 0
-
-                values = [
-                    n_reads_pe + n_reads_se,
-                    n_bases_pe + n_bases_se,
-                    n_reads_pe,
-                    n_bases_pe,
-                    n_reads_se,
-                    n_bases_se,
-                ]
-            else:
-                headers = [
-                    "Sample",
-                    "Step",
-                    "Total_Reads",
-                    "Total_Bases",
-                    "Reads",
-                    "Bases",
-                    "Timestamp",
-                ]
-                values = 2 * get_read_stats("", "in=" + input[0])
-
-            with open(output.read_counts, "w") as f:
-                f.write("\t".join(headers) + "\n")
-                f.write(
-                    "\t".join(
-                        [wildcards.sample, wildcards.step]
-                        + [str(v) for v in values]
-                        + [timestamp]
-                    )
-                + "\n"
-            )
-
-        shutil.make_archive(params.folder, "zip", params.folder)
-        shutil.rmtree(params.folder)
+    script:
+        "../scripts/get_read_stats.py"
+  
 
 
 if not SKIP_QC:
@@ -270,18 +176,18 @@ if not SKIP_QC:
                 mem=config["mem"],
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
-                """
-                clumpify.sh \
-                    {params.inputs} \
-                    {params.outputs} \
-                    overwrite=true\
-                    dedupe=t \
-                    dupesubs={params.dupesubs} \
-                    optical={params.only_optical}\
-                    threads={threads} \
-                    pigz=t unpigz=t \
-                    -Xmx{resources.java_mem}G 2> {log}
-                """
+                "clumpify.sh "
+                " {params.inputs} "
+                " {params.outputs} "
+                " overwrite=true"
+                " dedupe=t "
+                " dupesubs={params.dupesubs} "
+                " optical={params.only_optical}"
+                " threads={threads} "
+                " pigz=t unpigz=t "
+                " -Xmx{resources.java_mem}G"
+                " 2> {log}"
+                
 
     PROCESSED_STEPS.append("filtered")
 
@@ -376,30 +282,30 @@ if not SKIP_QC:
             mem=config["mem"],
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
-            """
-            bbduk.sh {params.inputs} \
-                {params.ref} \
-                interleaved={params.interleaved} \
-                {params.outputs} \
-                stats={output.stats} \
-                overwrite=true \
-                qout=33 \
-                trd=t \
-                {params.hdist} \
-                {params.k} \
-                {params.ktrim} \
-                {params.mink} \
-                trimq={params.trimq} \
-                qtrim={params.qtrim} \
-                threads={threads} \
-                minlength={params.minlength} \
-                maxns={params.maxns} \
-                minbasefrequency={params.minbasefrequency} \
-                ecco={params.error_correction_pe} \
-                prealloc={params.prealloc} \
-                pigz=t unpigz=t \
-                -Xmx{resources.java_mem}G 2> {log}
-            """
+            " bbduk.sh {params.inputs} "
+            " {params.ref} "
+            " interleaved={params.interleaved} "
+            " {params.outputs} "
+            " stats={output.stats} "
+            " overwrite=true "
+            " qout=33 "
+            " trd=t "
+            " {params.hdist} "
+            " {params.k} "
+            " {params.ktrim} "
+            " {params.mink} "
+            " trimq={params.trimq} "
+            " qtrim={params.qtrim} "
+            " threads={threads} "
+            " minlength={params.minlength} "
+            " maxns={params.maxns} "
+            " minbasefrequency={params.minbasefrequency} "
+            " ecco={params.error_correction_pe} "
+            " prealloc={params.prealloc} "
+            " pigz=t unpigz=t "
+            " -Xmx{resources.java_mem}G "
+            " 2> {log}"
+
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -427,10 +333,14 @@ if not SKIP_QC:
                     ]
                 ),
             shell:
-                """
-                bbsplit.sh -Xmx{resources.java_mem}G {params.refs_in} \
-                    threads={threads} k={params.k} local=t 2> {log}
-                """
+                "bbsplit.sh"
+                " -Xmx{resources.java_mem}G "
+                " {params.refs_in} "
+                " threads={threads}"
+                " k={params.k}"
+                " local=t "
+                " 2> {log}"
+                
 
         rule run_decontamination:
             input:
@@ -485,7 +395,7 @@ if not SKIP_QC:
                         outu1={output[0]} outu2={output[1]} \
                         basename="{params.contaminant_folder}/%_R#.fastq.gz" \
                         maxindel={params.maxindel} minratio={params.minratio} \
-                        minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats}\
+                        minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} \
                         threads={threads} k={params.k} local=t \
                         pigz=t unpigz=t ziplevel=9 \
                         -Xmx{resources.java_mem}G 2> {log}
@@ -495,7 +405,7 @@ if not SKIP_QC:
                     outu={params.output_single} \
                     basename="{params.contaminant_folder}/%_se.fastq.gz" \
                     maxindel={params.maxindel} minratio={params.minratio} \
-                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append \
+                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append=t \
                     interleaved=f threads={threads} k={params.k} local=t \
                     pigz=t unpigz=t ziplevel=9 \
                     -Xmx{resources.java_mem}G 2>> {log}
@@ -532,10 +442,8 @@ if not SKIP_QC:
 
                         # append to sample table
             sample_table = load_sample_table(params.sample_table)
-            sample_table.loc[
-                wildcards.sample,
-                [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS],
-            ] = output
+            qc_header = [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS]
+            sample_table.loc[wildcards.sample,qc_header] = output
             sample_table.to_csv(params.sample_table, sep="\t")
 
 
@@ -560,7 +468,7 @@ if PAIRED_END:
             mem=config["mem"],
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "../envs/required_packages.yaml"
         log:
             "{sample}/logs/QC/stats/calculate_insert_size.log",
         params:
@@ -580,7 +488,7 @@ if PAIRED_END:
                 prealloc=t prefilter=t \
                 minprob={params.minprob} 2> {log}
 
-            readlength.sh {params.inputs} out={output.read_length} 2> {log}
+            readlength.sh {params.inputs} out={output.read_length} 2>> {log}
             """
 
 else:
@@ -599,7 +507,7 @@ else:
             mem=config["simplejob_mem"],
             java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "../envs/required_packages.yaml"
         log:
             "{sample}/logs/QC/stats/calculate_read_length.log",
         shell:
@@ -653,7 +561,7 @@ rule combine_read_length_stats:
 
 #             stats.loc[sample]=cardinality
 
-#         stats.to_csv(output[0],sep='\t')
+#         stats.to_csv(output[0],sep='"t')
 
 
 if PAIRED_END:

@@ -783,7 +783,6 @@ rule get_contigs_from_gene_names:
                         gene_idx += 1
 
 
-
 localrules:
     build_assembly_report,
     combine_contig_stats,
