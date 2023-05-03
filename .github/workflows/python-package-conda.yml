@@ -7,7 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 5
-
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
     steps:
       - name: Setup Minicaonda with mamba
         uses: conda-incubator/setup-miniconda@v2
@@ -42,23 +44,18 @@ jobs:
     
       - name: Update environment
         run: |
-          ls -l . ;
-          pwd ;
           mamba env update -n atlasenv -f atlasenv.yml
         if: steps.cache.outputs.cache-hit != 'true'
 
       - name: Install atlas
         run: |
-           source activate atlasenv
-           conda list 
+           echo "You are using env '$CONDA_PREFIX'"
            python -m pip install . --no-deps -vv
       - name: Test atlas
         run: |
-          source activate atlasenv
           atlas --help
           atlas --version
       - name: Import atlas
         run: |
-          source activate atlasenv
           python -c "from atlas import utils"
 
