@@ -209,6 +209,7 @@ annotations:
 
 gene_annotations:
   - eggNOG
+  # - dram
 
 ########################
 # Gene catalog
