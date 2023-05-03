@@ -3,9 +3,8 @@ import os, sys
 import logging, traceback
 
 
-
 logging.basicConfig(
-    filename=snakemake.log[0],#,
+    filename=snakemake.log[0],
     level=logging.INFO,
     format="%(asctime)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -39,8 +38,6 @@ import os
 
 
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%X")
-
-
 
 
 def get_read_stats(fraction, params_in):
@@ -128,7 +125,9 @@ with open(snakemake.output.read_counts, "w") as f:
     f.write("\t".join(headers) + "\n")
     f.write(
         "\t".join(
-            [snakemake.wildcards.sample, snakemake.wildcards.step] + [str(v) for v in values] + [timestamp]
+            [snakemake.wildcards.sample, snakemake.wildcards.step]
+            + [str(v) for v in values]
+            + [timestamp]
         )
         + "\n"
     )
