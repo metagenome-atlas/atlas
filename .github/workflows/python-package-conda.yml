@@ -10,18 +10,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: mamba-org/setup-micromamba@v1
+    - uses: conda-incubator/setup-miniconda@v2
       with:
-        micromamba-version: '1.3.1-0'
+        python-version: 3.11
+        mamba-version: "*"
+        channels: conda-forge,bioconda,defaults
+        channel-priority: true
+        activate-environment: atlasenv
         environment-file: atlasenv.yml
-        environment-name: atlasenv
-        init-shell: >-
-          bash
-        cache-environment: true
-        post-cleanup: 'all'
+    - shell: bash -el {0}
+      run: |
+        conda info
+          
+          
     - name: Install atlas
       run: |
-        python setup.py install
+        pip install . -vvv
     - name: Test atlas
       run: |
         atlas --help
