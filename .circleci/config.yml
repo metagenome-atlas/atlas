@@ -138,6 +138,26 @@ jobs:
           paths:
             - example_data
 
+  run_test:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: run test
+          command: |
+            source activate ./atlasenv
+            ./test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_artifacts:
+          path: test/Test_assembly/logs
+          destination: logs
+      - store_artifacts:
+          path: test/Test_assembly/Streptococcus/logs
+          destination: sample_logs
 
 
   qc_and_assembly:
@@ -153,7 +173,7 @@ jobs:
           name: init
           command: |
             source activate ./atlasenv
-            atlas init example_data/reads/test --db-dir $DATABASE_DIR  --threads $N_THREADS -w test/Test_assembly
+            atlas init "example_data/reads/test" --db-dir $DATABASE_DIR -w test/Test_assembly
       - run:
           name: run qc
           command: |
@@ -259,16 +279,22 @@ workflows:
           requires:
             - build_and_dryrun
       - get_example_data
-      - qc_and_assembly:
+      # - qc_and_assembly:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
+
+      - run_test
           requires:
-            - build_and_dryrun
-            - get_example_data
-      - binning:
-          requires:
-            - qc_and_assembly
-      - genecatalog:
-          requires:
-            - qc_and_assembly
+          - build_and_dryrun
+          - get_example_data    
+
+      # - binning:
+      #     requires:
+      #       - qc_and_assembly
+      # - genecatalog:
+      #     requires:
+      #       - qc_and_assembly
       # - getenvs:
       #     requires:
       #       - build_and_dryrun
