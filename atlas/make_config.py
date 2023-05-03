@@ -194,7 +194,7 @@ def make_config(
 
     template_conf_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        "../workflow/config/template_config.yaml",
+        "workflow/config/template_config.yaml",
     )
 
     with open(template_conf_file) as template_config:
