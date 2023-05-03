@@ -103,20 +103,7 @@ jobs:
             - databases
 
 
-  sra_init:
-    <<: *defaults
-    environment:
-      N_THREADS: 1
-      MEM: 2
-    resource_class: medium
-    steps:
-      - attach_workspace:
-          at: /root/project/
-      - run:
-          name: Test sra download
-          command: |
-              source activate ./atlasenv
-              test/test_sra.sh --dryrun
+
 
 
   genome_quantify:
@@ -151,6 +138,8 @@ jobs:
           paths:
             - example_data
 
+
+
   assembly:
     <<: *defaults
     environment:
@@ -161,16 +150,26 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
+          name: test qc
+          command: |
+            source activate ./atlasenv
+            atlas init --db-dir $DATABASE_DIR --threads $N_THREADS -w test/Test_assembly example_data/reads/test
+            atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 -w test/Test_assembly
+      - run:
           name: test assembly
           command: |
             source activate ./atlasenv
-            test/test_assembly.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 
+            atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 -w test/Test_assembly 
       - store_artifacts:
           path: test/Test_assembly/logs
-          destination: assembly_logs
+          destination: logs
       - store_artifacts:
           path: test/Test_assembly/Streptococcus/logs
-          destination: assembly_sample_logs
+          destination: sample_logs
+      - persist_to_workspace:
+          root: /root/project
+          paths:
+            - test/Test_assembly
 
   genecatalog:
     <<: *defaults
@@ -187,7 +186,12 @@ jobs:
             source activate ./atlasenv
             WD='test/Test_assembly'
             atlas run genecatalog --omit-from combine_egg_nogg_annotations  -w $WD --resources mem=$MEM java_mem=$MEM--jobs=$N_THREADS --restart-times=2 
-
+      - store_artifacts:
+          path: test/Test_assembly/logs
+          destination: genecatalog_logs
+      - store_artifacts:
+          path: test/Test_assembly/Streptococcus/logs
+          destination: genecatalog_sample_logs
   binning:
     <<: *defaults
     environment:
@@ -205,10 +209,15 @@ jobs:
             atlas run binning -w $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat
 
       - store_test_results:
-          path: test/Test_assembly/reports/bin_report_metabat.html
+          path: test/Test_assembly/Binning/metabat/bin_report.html
+
+
       - store_artifacts:
-          path: test/Test_assembly/reports/bin_report_metabat.html
-          destination: bin_report
+          path: test/Test_assembly/logs
+          destination: binning_logs
+      - store_artifacts:
+          path: test/Test_assembly/Streptococcus/logs
+          destination: binning_logs/sample
 
   #
   #
