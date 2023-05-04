@@ -402,8 +402,16 @@ onerror:
 ### pepulate resources for rules that don't have
 
 for r in workflow.rules:
-    if not "mem" in r.resources:
-        r.resources["mem"] = config["mem"]
+    if not "mem_mb" in r.resources:
+
+        if "mem" in r.resources:
+            r.resources["mem_mb"] = r.resources["mem"] * 1000
+        else:
+            r.resources["mem_mb"] = config["mem"]*1000
+
+    # snakemake has a new name for that
+    if not "mem_mib" in r.resources:
+        r.resources["mem_mib"] = r.resources["mem_mb"]
 
     # add time if ot present. Simple jobs use simple time
 
@@ -411,12 +419,8 @@ for r in workflow.rules:
         if "time" in r.resources:
             r.resources["time_min"] = r.resources["time"] * 60
         else:
-            if r.resources["mem"] <= config["simplejob_mem"]:
-                r.resources["time_min"] = config["runtime"]["simplejob"] * 60
-            else:
-                r.resources["time_min"] = config["runtime"]["default"] * 60
+            r.resources["time_min"] = config["runtime"]["default"] * 60
 
-    # convert to new units
-    r.resources["mem_mb"] = r.resources["mem"] * 1000
+
     if not "runtime" in r.resources:
-        r.resources["runtime"] = r.resources["time_min"] * 60
+        r.resources["runtime"] = r.resources["time_min"]
