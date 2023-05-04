@@ -248,7 +248,7 @@ rule concat_all_reads:
     threads:
         1
     resources:
-        mem_mb=config["simplejob_mem"] * 1000,
+        mem_mb=500
     shell:
         "cat {input} > {output} 2> {log}"
     
@@ -261,10 +261,9 @@ rule align_reads_to_Genecatalog:
         temp("Genecatalog/alignments/{sample}.bam"),
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
-    threads: config["threads"]
+    threads: config["threads"]-1
     resources:
-        mem=config["mem"],
-        mem_mb=config["mem"] * 1000,
+        mem_mb=config["mem"] * 1000 -502,
     params:
         extra="-x sr --split-prefix {sample}_split_ ",
         sort="coordinate",
