@@ -175,7 +175,7 @@ jobs:
           command: |
             source activate ./atlasenv
 
-            atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir "wd" 
+            atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --interleaved-fastq --threads "$N_THREADS" --working-dir "wd" 
       - run:
           name: run qc
           command: |
