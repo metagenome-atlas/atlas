@@ -183,12 +183,28 @@ This rule produces the following output file for the whole dataset.
 
 
 
-Since version 2.15 the output of the counts are stored in a hdf file.
+Since version 2.15 the output of the quantification are stored in 2 hdf-files`in the folder ``Genecatalog/counts/``:	
+  - ``median_coverage.h5``
+  - ``Nmapped_reads.h5.fna``
+
+Together with the statistics per gene and per sample.
+  - ``gene_coverage_stats.parquet``
+  - ``sample_coverage_stats.tsv``
+
+
+
+The hdf only contains a matrix of abundances or counts under the name ``data``. The sample names are stored as attributes.
+The gene names (e.g. ``Gene00001``) are simply the row number.
+
+
+
+
+
 
 You can open the hdf file in R or python as following:
 
   
-..code: python
+.. code-block:: python
 
   import h5py
 
@@ -200,7 +216,7 @@ You can open the hdf file in R or python as following:
       sample_names = hdf_file['data'].attrs['sample_names'].astype(str)
 
 
-..code: R
+.. code-block:: R
 
   library(rhdf5)
 
@@ -214,16 +230,93 @@ You can open the hdf file in R or python as following:
   colnames(data) <- attributes$sample_names
 
 
-You don't need to load the full data. You could only select genes with annotations.
-You can use the file ``Genecatalog/counts/gene_coverage_stats.tsv`` To normalize the counts.
+You don't need to load the full data.
+You could only select a subset of genes, e.g. the genes with annotations, or genes that are not singletons.
+To find out which gene is a singleton or not you can use the file ``gene_coverage_stats.parquet``
 
+
+.. code-block:: R
+
+  library(rhdf5)
+  library(dplyr)
+  library(tibble)
+
+  # read only subset of data
+  indexes_of_genes_to_load = c(2,5,100,150) # e.g. genes with annotations
+  abundance_file <- file.path(atlas_dir,"Genecatalog/counts/median_coverage.h5")
+ 
+
+  # get dimension of data
+
+  h5overview=h5ls(abundance_file)
+  dim= h5overview[1,"dim"] %>% stringr::str_split(" x ",simplify=T) %>% as.numeric
+  cat("Load ",length(indexes_of_genes_to_load), " out of ", dim[1] , " genes\n")
+
+
+  data <- h5read(file = abundance_file, name = "data", 
+                  index = list(indexes_of_genes_to_load, NULL))
+
+  # add sample names
+  attributes= h5readAttributes(abundance_file, "data")
+  colnames(data) <- attributes$sample_names
+
+
+  # add gene names (e.g. Gene00001) as rownames
+  gene_names = paste0("Gene", formatC(format="d",indexes_of_genes_to_load,flag="0",width=ceiling(log10(max(dim[1])))))
+  rownames(data) <- gene_names
+
+
+  data[1:5,1:5]
+
+If you do this you can use the information in the file ``Genecatalog/counts/sample_coverage_stats.tsv`` to normalize the counts.
+
+Here is the R code to calculate the gene copies per million (analogous to transcript per million) for the subset of genes.
+
+.. code-block:: R
+
+  # Load gene stats per sample
+  gene_stats_file = file.path(atlas_dir,"Genecatalog/counts/sample_coverage_stats.tsv") 
+
+  gene_stats <- read.table(gene_stats_file,sep='\t',header=T,row.names=1)
+
+  gene_stats <- t(gene_stats) # might be transposed, sample names should be index
+
+  head(gene_stats)
+
+  # calculate copies per million
+  total_covarage <- gene_stats[colnames(data)  ,"Sum_coverage"] 
+
+  # gives wrong results
+  #gene_gcpm<- data / total_covarage *1e6 
+
+  gene_gcpm<- data %*% diag(1/total_covarage) *1e6 
+  colnames(gene_gcpm) <- colnames(data)
+
+  gene_gcpm[1:5,1:5]
 
 .. seealso:: See in Atlas Tutorial
 
 
-Before version 2.15 the output of the counts were stored in a parquet file. The parquet file can be opended easily with ``pandas.read_parquet`` or ``arrow::read_parquet```.
+Before version 2.15 the output of the counts were stored in a parquet file.
+The parquet file can be opended easily with ``pandas.read_parquet`` or ``arrow::read_parquet```.
+However you need to load the full data into memory.
 
-      
+.. code-block:: R
+
+  parquet_file <- file.path(atlas_dir,"Genecatalog/counts/median_coverage.parquet")
+  gene_abundances<- arrow::read_parquet(parquet_file)
+
+  # transform tibble to a matrix
+  gene_matrix= as.matrix(gene_abundances[,-1])
+  rownames(gene_matrix) <- gene_abundances$GeneNr 
+
+
+  #calculate copies per million
+  gene_gcpm= gene_matrix/ colSums(gene_matrix) *1e6
+
+
+  gene_gcpm[1:5,1:5]
+
 
 
 
