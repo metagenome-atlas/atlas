@@ -294,15 +294,15 @@ workflows:
             - build_and_dryrun
             - get_example_data
 
-      # - binning:
-      #     requires:
-      #       - qc_and_assembly
-      # - genecatalog:
-      #     requires:
-      #       - qc_and_assembly
-      # - getenvs:
-      #     requires:
-      #       - build_and_dryrun
+      - binning:
+          requires:
+            - qc_and_assembly
+      - genecatalog:
+          requires:
+            - qc_and_assembly
+      - getenvs:
+          requires:
+            - build_and_dryrun
             
       # - sra_init:
       #     requires:
