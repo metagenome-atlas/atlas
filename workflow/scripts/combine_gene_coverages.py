@@ -161,7 +161,7 @@ logging.info("All samples processed")
 gc.collect()
 
 logging.info("Save sample Summary")
-pd.DataFrame(Summary).to_csv(snakemake.output.sample_info, sep="\t")
+pd.DataFrame(Summary).T.to_csv(snakemake.output.sample_info, sep="\t")
 
 
 logging.info("Save gene Summary")
