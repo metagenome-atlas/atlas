@@ -242,13 +242,13 @@ rule concat_all_reads:
     input:
         lambda wc: get_quality_controlled_reads(wc, include_se=True),
     output:
-        pipe("Intermediate/genecatalog/alignments/{sample}.fastq.gz")
+        temp("Intermediate/genecatalog/alignments/{sample}.fastq.gz")
     log:
         "logs/Genecatalog/alignment/concat_reads/{sample}.log"
     threads:
         1
     resources:
-        mem_mb=config["simplejob_mem"] * 1000,
+        mem_mb=300
     shell:
         "cat {input} > {output} 2> {log}"
     
@@ -263,7 +263,6 @@ rule align_reads_to_Genecatalog:
         "logs/Genecatalog/alignment/{sample}_map.log",
     threads: config["threads"]
     resources:
-        mem=config["mem"],
         mem_mb=config["mem"] * 1000,
     params:
         extra="-x sr --split-prefix {sample}_split_ ",
