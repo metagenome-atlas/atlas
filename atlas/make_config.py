@@ -105,7 +105,7 @@ def make_default_config():
     config["contig_min_id"] = CONTIG_MIN_ID
     config["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
     config["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
-
+    config["minimum_map_quality"] = MINIMUM_MAP_QUALITY
     config["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     config["bin_quality_asesser"] = "checkm"
