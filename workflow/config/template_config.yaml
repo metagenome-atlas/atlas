@@ -151,6 +151,7 @@ contig_min_id: 0.9
 contig_map_paired_only: true
 contig_max_distance_between_pairs: 1000
 maximum_counted_map_sites: 10
+minimum_map_quality: 0
 
 ########################
 # Binning
