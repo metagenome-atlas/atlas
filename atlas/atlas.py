@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from .color_logger import logger
 
 import multiprocessing
@@ -21,7 +22,6 @@ def handle_max_mem(max_mem, profile):
     "For numbers <1 it's the fraction of available memory."
 
     if profile is not None:
-
         if max_mem is not None:
             logger.info(
                 "Memory requirements are handled by the profile, I ignore max-mem argument."
@@ -38,7 +38,6 @@ def handle_max_mem(max_mem, profile):
         if max_mem is None:
             max_mem = 0.95
         if max_mem > 1:
-
             if max_mem > max_system_memory:
                 logger.critical(
                     f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB"
@@ -46,7 +45,6 @@ def handle_max_mem(max_mem, profile):
                 sys.exit(1)
 
         else:
-
             max_mem = max_mem * max_system_memory
 
         # specify max_mem_string including java mem and max mem
@@ -78,7 +76,7 @@ def get_snakefile(file="workflow/Snakefile"):
     return sf
 
 
-## QC command
+# QC command
 
 
 @cli.command(
@@ -89,7 +87,17 @@ def get_snakefile(file="workflow/Snakefile"):
 @click.argument(
     "workflow",
     type=click.Choice(
-        ["qc", "assembly", "binning", "genomes", "genecatalog", "None", "all"]
+        [
+            "qc",
+            "assembly",
+            "binning",
+            "genomes",
+            "genecatalog",
+            "strains",
+            "quantify_genomes",
+            "None",
+            "all",
+        ]
     ),
     #    show_default=True,
     #    help="Execute only subworkflow.",
@@ -206,6 +214,7 @@ def run_workflow(
 
 
 ################### Download function #################
+
 
 # Download
 @cli.command(

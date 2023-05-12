@@ -8,7 +8,6 @@ logger = logging.getLogger(__file__)
 
 
 def validate_sample_table(sampleTable):
-
     Expected_Headers = ["BinGroup"] + ADDITIONAL_SAMPLEFILE_HEADERS
     for h in Expected_Headers:
         if not (h in sampleTable.columns):
@@ -41,7 +40,6 @@ def validate_sample_table(sampleTable):
 
 
 def load_sample_table(sample_table="samples.tsv"):
-
     sampleTable = pd.read_csv(sample_table, index_col=0, sep="\t")
     validate_sample_table(sampleTable)
     return sampleTable

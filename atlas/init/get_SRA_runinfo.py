@@ -288,7 +288,6 @@ class SRAUtils:
 
 
 def get_runtable_from_ids(identifiers, output_file="SRA_runtable.tsv", overwrite=False):
-
     if type(identifiers) == str:
         identifiers = [identifiers]
 
@@ -318,7 +317,6 @@ def get_runtable_from_ids(identifiers, output_file="SRA_runtable.tsv", overwrite
 
 
 def parse_arguments_from_terminal():
-
     ## Comand line interface
     import argparse
 
@@ -363,5 +361,4 @@ def parse_arguments_from_terminal():
 
 
 if __name__ == "__main__":
-
     get_runtable_from_ids(*parse_arguments_from_terminal())

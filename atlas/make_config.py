@@ -1,14 +1,13 @@
+from .default_values import *
+from snakemake.utils import update_config as snakemake_update_config
+from snakemake.io import load_configfile
+import tempfile
+import sys
+import os
+import multiprocessing
 import logging
 
 logger = logging.getLogger(__file__)
-
-import multiprocessing
-import os
-import sys
-import tempfile
-from snakemake.io import load_configfile
-from snakemake.utils import update_config as snakemake_update_config
-from .default_values import *
 
 
 def make_default_config():
@@ -65,7 +64,8 @@ def make_default_config():
     config["error_correction_lowdepth_fraction"] = 0.5
     config["error_correction_minimum_kmer_depth"] = 1
     config["error_correction_aggressive"] = False
-    config["error_correction_minprob"] = 0.5  # for memory issues only , I think
+    # for memory issues only , I think
+    config["error_correction_minprob"] = 0.5
 
     config["merge_pairs_before_assembly"] = True
     config["merging_k"] = MERGING_K
@@ -105,7 +105,7 @@ def make_default_config():
     config["contig_min_id"] = CONTIG_MIN_ID
     config["contig_map_paired_only"] = CONTIG_MAP_PAIRED_ONLY
     config["contig_max_distance_between_pairs"] = CONTIG_MAX_DISTANCE_BETWEEN_PAIRS
-
+    config["minimum_map_quality"] = MINIMUM_MAP_QUALITY
     config["maximum_counted_map_sites"] = MAXIMUM_COUNTED_MAP_SITES
 
     config["bin_quality_asesser"] = "checkm"
@@ -175,7 +175,7 @@ def make_config(
     config="config.yaml",
 ):
     """
-    Reads template config file with comments from ./template_config.yaml
+    Reads template config file with comments from ../workflow/config/template_config.yaml
     updates it by the parameters provided.
 
     Args:
@@ -193,7 +193,8 @@ def make_config(
     # yaml.default_flow_style = False
 
     template_conf_file = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "template_config.yaml"
+        os.path.dirname(os.path.abspath(__file__)),
+        "workflow/config/template_config.yaml",
     )
 
     with open(template_conf_file) as template_config:
@@ -225,7 +226,6 @@ def make_config(
             f"Config file {config} already exists, I didn't dare to overwrite it. continue..."
         )
     else:
-
         with open(config, "w") as f:
             yaml.dump(conf, f)
         logger.info(
@@ -248,10 +248,6 @@ def update_config(config):
     And made changes if necessary.
 
     """
-
-    # in old version java_mem was used, new is mem
-    if ("java_mem" in config) and (not ("mem" in config)):
-        config["mem"] = config["java_mem"]
 
     # get default values and update them with values specified in config file
     default_config = make_default_config()

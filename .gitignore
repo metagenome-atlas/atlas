@@ -39,6 +39,7 @@ test/*
 .test/*
 test/*
 !test/dryrun.sh
+!test/test_ci.sh
 !test/test_assembly.sh
 !test/test_binning.sh
 !test/test_sra.sh

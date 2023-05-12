@@ -14,7 +14,6 @@ Expected_library_values = {
 
 
 def load_and_validate_runinfo_table(path):
-
     RunTable = pd.read_csv(path, sep="\t", index_col=0)
 
     # validate sra table
@@ -30,7 +29,6 @@ def load_and_validate_runinfo_table(path):
     ]
     for header in Expected_headers:
         if not header in RunTable.columns:
-
             logger.error(f"Didn't found expected header {header}")
             format_error = True
 
@@ -54,7 +52,6 @@ def load_and_validate_runinfo_table(path):
 
 
 def filter_runinfo(RunTable, ignore_paired=False):
-
     logger.info(
         f"Start with {RunTable.shape[0]} runs from {RunTable.BioSample.unique().shape[0]} samples"
     )
@@ -62,7 +59,6 @@ def filter_runinfo(RunTable, ignore_paired=False):
     # Filter out reads that are not metagenomics
 
     for key in ["LibrarySource"]:
-
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
         RunTable = RunTable.loc[RunTable[key] == Expected_library_values[key]]
@@ -70,7 +66,6 @@ def filter_runinfo(RunTable, ignore_paired=False):
         Difference = Nruns_before - RunTable.shape[0]
 
         if Difference > 0:
-
             logger.info(
                 f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
                 f"Select only runs {key} == {Expected_library_values[key]}, "
@@ -78,11 +73,9 @@ def filter_runinfo(RunTable, ignore_paired=False):
             )
 
     for key in ["LibrarySelection", "LibraryStrategy"]:
-
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
         if any(RunTable[key] != Expected_library_values[key]):
-
             logger.warning(
                 f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
                 f"Usually I expect {key} == {Expected_library_values[key]} "
@@ -91,7 +84,6 @@ def filter_runinfo(RunTable, ignore_paired=False):
     # Handle single end reads if mixed
 
     if ("PAIRED" in RunTable.LibraryLayout) and ("SINGLE" in RunTable.LibraryLayout):
-
         N_library_layout = RunTable.LibraryLayout.value_counts()
 
         logger.info(
@@ -104,7 +96,6 @@ def filter_runinfo(RunTable, ignore_paired=False):
             RunTable = RunTable.query("LibraryLayout == 'SINGLE'")
 
         else:
-
             logger.warn(f"I drop {N_library_layout['SINGLE']} single end libraries")
 
             RunTable = RunTable.query("LibraryLayout == 'PAIRED'")
@@ -134,7 +125,6 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
 
 def validate_merging_runinfo(path):
-
     RunTable = load_and_validate_runinfo_table(path)
 
     # If each run is from a different biosample, merging is not necessary
@@ -159,7 +149,6 @@ def validate_merging_runinfo(path):
     # Warn if samples are not identical for the follwing columns
     Expected_same_values = ["Experiment", "Model", "LibraryName"]
     for key in Expected_same_values:
-
         problematic_samples = []
         for sample, df in RunTable.groupby("BioSample"):
             if not all(df[key] == df[key].iloc[0]):

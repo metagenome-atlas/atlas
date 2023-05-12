@@ -1,0 +1,55 @@
+name: Python Package using Conda
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        
+      - name: Setup_conda_and_cache
+        uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if etc/example-environment.yml has not changed
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('atlasenv.yml') }}
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: atlasenv
+          use-mamba: true
+          python-version: 3.11
+          mamba-version: "*"
+          channels: conda-forge,bioconda,defaults
+          environment-file: atlasenv.yml
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+
+
+      - name: Install atlas
+        run: |
+           echo "You are using env '$CONDA_PREFIX'"
+           python -m pip install . --no-deps -vv
+      - name: Test atlas
+        run: |
+          atlas --help
+          atlas --version
+      - name: Import atlas
+        run: |
+          python -c "from atlas import utils"
+
+      - name: Dryrun
+        run: |
+          test/dryrun.sh
+
