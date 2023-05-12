@@ -64,7 +64,6 @@ gene_info.index = gene_info["#Name"].str.split(" ", n=1, expand=True)[0]
 gene_info.index.name = "GeneName"
 gene_info.drop("#Name", axis=1, inplace=True)
 
-gene_info = pd.read_table(snakemake.input.info, index_col=0)
 gene_info.sort_index(inplace=True)
 N_genes = gene_info.shape[0]
 # gene_list= gene_info.index
@@ -162,7 +161,7 @@ logging.info("All samples processed")
 gc.collect()
 
 logging.info("Save sample Summary")
-pd.DataFrame(Summary).to_csv(snakemake.output.sample_info, sep="\t")
+pd.DataFrame(Summary).T.to_csv(snakemake.output.sample_info, sep="\t")
 
 
 logging.info("Save gene Summary")

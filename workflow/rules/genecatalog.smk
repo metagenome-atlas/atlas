@@ -278,6 +278,8 @@ rule pileup_Genecatalog:
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
+    params:
+        minmapq=config["minimum_map_quality"]
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
@@ -292,6 +294,7 @@ rule pileup_Genecatalog:
         " covstats={output.covstats} "
         " rpkm={output.rpkm} "
         " secondary=t "
+        " minmapq={params.minmapq} "
         " -Xmx{resources.java_mem}G "
         " 2> {log} "
 

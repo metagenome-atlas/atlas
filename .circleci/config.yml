@@ -213,7 +213,7 @@ jobs:
           command: |
             source activate ./atlasenv
             WD='wd'
-            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --resources mem=$MEM java_mem=$MEM--jobs=$N_THREADS --restart-times=2 
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 
       - store_artifacts:
           path: wd/logs
           destination: genecatalog_logs
@@ -234,7 +234,7 @@ jobs:
           command: |
             source activate ./atlasenv
             WD='wd'
-            atlas run binning --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat
+            atlas run binning --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat --omit-from checkm2_download_db
 
       - store_test_results:
           path: wd/Binning/metabat/bin_report.html
