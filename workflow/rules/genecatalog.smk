@@ -227,7 +227,7 @@ rule get_genecatalog_seq_info:
 
 rule index_genecatalog:
     input:
-        "Genecatalog/gene_catalog.fna",
+        target="Genecatalog/gene_catalog.fna",
     output:
         temp("ref/Genecatalog.mmi"),
     log:
@@ -235,7 +235,7 @@ rule index_genecatalog:
     params:
         index_size="12G",
     wrapper:
-        "v1.19.0/bio/bwa-mem2/index"
+        "v1.19.0/bio/minimap2/index"
 
 
 rule concat_all_reads:
@@ -255,8 +255,8 @@ rule concat_all_reads:
 
 rule align_reads_to_Genecatalog:
     input:
-        mmi=rules.index_genecatalog.output,
-        reads= rules.concat_all_reads.output[0]
+        target=rules.index_genecatalog.output,
+        query= rules.concat_all_reads.output[0]
     output:
         temp("Genecatalog/alignments/{sample}.bam"),
     log:
