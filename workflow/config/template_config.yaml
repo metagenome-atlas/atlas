@@ -207,14 +207,12 @@ annotations:
   - gtdb_tree
   - gtdb_taxonomy
   - genes
- # - kegg_modules
- # - dram
+  - kegg_modules
+  - dram
 
 
 
-gene_annotations:
-  - eggNOG
-  # - dram
+
 
 ########################
 # Gene catalog
@@ -227,6 +225,10 @@ genecatalog:
   coverage: 0.9
   extra: " "
   SubsetSize: 500000
+
+gene_annotations:
+  - eggNOG
+  # - dram
 
 eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation
 virtual_disk: "/dev/shm"         # But you need 37G extra ram
