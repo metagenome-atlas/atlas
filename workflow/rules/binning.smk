@@ -34,7 +34,6 @@ rule pileup_for_binning:
         " threads={threads} "
         " -Xmx{resources.java_mem}G "
         " covstats={output.covstats} "
-        " minmapq={params.minmapq} "
         " secondary={params.pileup_secondary} "
         " 2> {log} "
 
