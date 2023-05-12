@@ -151,6 +151,7 @@ contig_min_id: 0.9
 contig_map_paired_only: true
 contig_max_distance_between_pairs: 1000
 maximum_counted_map_sites: 10
+minimum_map_quality: 0
 
 ########################
 # Binning
@@ -206,14 +207,12 @@ annotations:
   - gtdb_tree
   - gtdb_taxonomy
   - genes
- # - kegg_modules
- # - dram
+  - kegg_modules
+  - dram
 
 
 
-gene_annotations:
-  - eggNOG
-  # - dram
+
 
 ########################
 # Gene catalog
@@ -226,6 +225,10 @@ genecatalog:
   coverage: 0.9
   extra: " "
   SubsetSize: 500000
+
+gene_annotations:
+  - eggNOG
+  # - dram
 
 eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation
 virtual_disk: "/dev/shm"         # But you need 37G extra ram

@@ -558,6 +558,7 @@ if config["filter_contigs"]:
             covstats="{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
         params:
             pileup_secondary="t",
+            minmapq=config["minimum_map_quality"]
         log:
             "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log",
         conda:
@@ -572,6 +573,7 @@ if config["filter_contigs"]:
             " -Xmx{resources.java_mem}G "
             " covstats={output.covstats} "
             " concise=t "
+            " minmapq={params.minmapq} "
             " secondary={params.pileup_secondary} "
             " 2> {log}"
 
@@ -675,6 +677,7 @@ rule pileup_contigs_sample:
             if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS)
             else "f"
         ),
+        minmapq=config["minimum_map_quality"]
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
@@ -694,6 +697,7 @@ rule pileup_contigs_sample:
         " covstats={output.covstats} "
         " hist={output.covhist} "
         " concise=t "
+        " minmapq={params.minmapq} "
         " secondary={params.pileup_secondary} "
         " bincov={output.bincov} "
         " 2> {log} "

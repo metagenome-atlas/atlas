@@ -8,7 +8,9 @@ set -exuo pipefail
 
 atlas --version
 
-
+# get test reads
+#wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
+#tar -xzf test_reads.tar.gz 
 
 
 databaseDir="databases"
@@ -18,7 +20,7 @@ reads_dir="example_data/reads/test"
 
 rm -f $WD/samples.tsv
 #
-atlas init --db-dir $databaseDir  -w $WD $reads_dir
+atlas init --db-dir --interleaved-fastq $databaseDir  -w $WD $reads_dir
 
 atlas run -w $WD qc  $@
 
@@ -37,13 +39,13 @@ atlas run genecatalog --omit-from combine_egg_nogg_annotations combine_dram_gene
 
 echo "\n\nFinished genecatalog\n\n"
 
-atlas run genomes -w $WD $@
+# atlas run genomes -w $WD $@
 
-echo "\n\nFinished genomes\n\n"
+# echo "\n\nFinished genomes\n\n"
 
-atlas run all -w $WD $@
+# atlas run all -w $WD $@
 
-echo "\n\nFinished all\n\n"
+# echo "\n\nFinished all\n\n"
 
 
 

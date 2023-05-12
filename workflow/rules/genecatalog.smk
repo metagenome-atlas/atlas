@@ -227,50 +227,49 @@ rule get_genecatalog_seq_info:
 
 rule index_genecatalog:
     input:
-        "Genecatalog/gene_catalog.fna",
+        target="Genecatalog/gene_catalog.fna",
     output:
         temp("ref/Genecatalog.mmi"),
     log:
         "logs/Genecatalog/alignment/index.log",
     params:
         index_size="12G",
-    threads: 3
-    resources:
-        mem=config["mem"],
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        " minimap2 "
-        " -I {params.index_size} "
-        " -t {threads} "
-        " -d {output} "
-        " {input} 2> {log} "
+    wrapper:
+        "v1.19.0/bio/minimap2/index"
 
+
+rule concat_all_reads:
+    input:
+        lambda wc: get_quality_controlled_reads(wc, include_se=True),
+    output:
+        temp("Intermediate/genecatalog/alignments/{sample}.fastq.gz")
+    log:
+        "logs/Genecatalog/alignment/concat_reads/{sample}.log"
+    threads:
+        1
+    resources:
+        mem_mb=300
+    shell:
+        "cat {input} > {output} 2> {log}"
+    
 
 rule align_reads_to_Genecatalog:
     input:
-        mmi=rules.index_genecatalog.output,
-        reads=lambda wc: get_quality_controlled_reads(wc, include_se=True),
+        target=rules.index_genecatalog.output,
+        query= rules.concat_all_reads.output[0]
     output:
         temp("Genecatalog/alignments/{sample}.bam"),
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     threads: config["threads"]
     resources:
-        mem=config["mem"],
         mem_mb=config["mem"] * 1000,
-    conda:
-        "../envs/minimap.yaml"
-    shell:
-        " (cat {input.reads} | "
-        " minimap2 "
-        " -t {threads} "
-        "-a "
-        "-x sr "
-        " {input.mmi} "
-        " - "
-        " | samtools view -b "
-        " > {output} ) 2>{log}"
+    params:
+        extra="-x sr --split-prefix {sample}_split_ ",
+        sort="coordinate",
+    wrapper:
+        "v1.19.0/bio/minimap2/aligner"
+
 
 
 rule pileup_Genecatalog:
@@ -279,6 +278,8 @@ rule pileup_Genecatalog:
     output:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
+    params:
+        minmapq=config["minimum_map_quality"]
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
@@ -293,6 +294,7 @@ rule pileup_Genecatalog:
         " covstats={output.covstats} "
         " rpkm={output.rpkm} "
         " secondary=t "
+        " minmapq={params.minmapq} "
         " -Xmx{resources.java_mem}G "
         " 2> {log} "
 

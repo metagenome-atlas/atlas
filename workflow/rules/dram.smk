@@ -93,7 +93,7 @@ def get_all_dram(wildcards):
     return expand(rules.DRAM_annotate.output.outdir, genome=all_genomes)
 
 
-DRAM_ANNOTATON_FILES = ["annotations.tsv", "rrnas.tsv", "trnas.tsv"]
+DRAM_ANNOTATON_FILES = ["annotations.tsv"]
 
 
 localrules:
@@ -137,8 +137,6 @@ rule DRAM_destill:
     shell:
         " DRAM.py distill "
         " --input_file {input[0]}"
-        " --rrna_path {input[1]}"
-        " --trna_path {input[2]}"
         " --output_dir {output} "
         "  &> {log}"
 
