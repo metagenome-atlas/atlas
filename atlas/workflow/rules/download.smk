@@ -26,7 +26,7 @@ CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
 CAT_DIR = os.path.join(DBDIR, "CAT")
 CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
 EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V5")
-GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V07")
+GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V08")
 CONDAENV = "../envs"
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
