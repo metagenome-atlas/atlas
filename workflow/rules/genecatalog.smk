@@ -235,7 +235,7 @@ rule index_genecatalog:
     params:
         index_size="12G",
     wrapper:
-        "v1.19.0/bio/bwa-mem2/index"
+        "v1.19.0/bio/minimap2/index"
 
 
 rule concat_all_reads:
