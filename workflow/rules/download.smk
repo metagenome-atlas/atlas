@@ -5,7 +5,7 @@ import os
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
 
-GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release207/207.0/auxillary_files/gtdbtk_r207_v2_data.tar.gz"
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release214/214.0/auxillary_files/gtdbtk_r214_data.tar.gz"
 
 
 def md5(fname):
