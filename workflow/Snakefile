@@ -228,6 +228,7 @@ include: "rules/download.smk"  # contains hard coded variables
 include: "rules/qc.smk"
 include: "rules/assemble.smk"
 include: "rules/binning.smk"
+include: "rules/derep.smk"
 include: "rules/genomes.smk"
 include: "rules/dram.smk"
 include: "rules/genecatalog.smk"
