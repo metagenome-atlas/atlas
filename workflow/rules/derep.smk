@@ -1,7 +1,7 @@
 
 
 
-rule skani:
+rule run_skani:
     input:
         paths="Binning/{binner}/filtered_bins_paths.txt"
     output:
@@ -28,4 +28,7 @@ rule skani:
         " &> {log} "
 
 
+rule skani:
+    input:
+        "Intermediate/dereplication/{binner}_distance_matrix.txt".format(binner=config["final_binner"]),
 
