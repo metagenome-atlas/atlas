@@ -2,5 +2,5 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - dram >=1.4, <1.5
+  - dram >=1.4.6.6.6.6.6.6, <1.5
   - pandas >=1.5, <2
