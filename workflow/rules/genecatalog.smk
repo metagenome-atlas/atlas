@@ -308,7 +308,7 @@ rule gene_pileup_as_parquet:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time_min=config["runtime"]["simplejob"],
+        time_min=config["runtime"]["simplejob"]*60,
     log:
         "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log",
     run:
