@@ -60,6 +60,7 @@ rule DRAM_annotate:
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
         flag=rules.DRAM_set_db_loc.output,
+        config=f"{DBDIR}/DRAM/DRAM.config",
     output:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["simplejob_threads"]
@@ -77,6 +78,7 @@ rule DRAM_annotate:
         "logs/benchmarks/dram/run_dram/{genome}.tsv"
     shell:
         " DRAM.py annotate "
+        " --config_loc {input.config} "
         " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
         " --threads {threads} "
@@ -124,6 +126,7 @@ rule DRAM_destill:
     input:
         rules.concat_annotations.output,
         flag=rules.DRAM_set_db_loc.output,
+        config=f"{DBDIR}/DRAM/DRAM.config",
     output:
         outdir=directory("genomes/annotations/dram/distil"),
     threads: 1
@@ -136,6 +139,7 @@ rule DRAM_destill:
         "logs/dram/distil.log",
     shell:
         " DRAM.py distill "
+        " --config_loc {input.config} "
         " --input_file {input[0]}"
         " --output_dir {output} "
         "  &> {log}"
@@ -144,6 +148,7 @@ rule DRAM_destill:
 rule get_all_modules:
     input:
         "genomes/annotations/dram/annotations.tsv",
+        f"{DBDIR}/DRAM/DRAM.config",
     output:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1

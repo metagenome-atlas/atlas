@@ -43,7 +43,7 @@ annotations = pd.read_csv(annotation_file, sep="\t", index_col=0)
 
 
 # get db_locs and read in dbs
-database_handler = DatabaseHandler(logger=logging)
+database_handler = DatabaseHandler(logger=logging, config_loc=snakemake.input[1])
 
 
 if "module_step_form" not in database_handler.config["dram_sheets"]:
