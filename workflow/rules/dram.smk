@@ -40,18 +40,6 @@ localrules:
     DRAM_set_db_loc,
 
 
-rule DRAM_set_db_loc:
-    input:
-        get_dram_config,
-    output:
-        touch(f"{DBDIR}/DRAM/dram_config_imported"),
-    threads: 1
-    conda:
-        "../envs/dram.yaml"
-    log:
-        "logs/dram/set_db_loc.log",
-    shell:
-        "DRAM-setup.py import_config --config_loc {input} &> {log}"
 
 
 rule DRAM_annotate:
@@ -59,8 +47,7 @@ rule DRAM_annotate:
         fasta="genomes/genomes/{genome}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
-        flag=rules.DRAM_set_db_loc.output,
-        config=f"{DBDIR}/DRAM/DRAM.config",
+        config= get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["simplejob_threads"]
@@ -126,7 +113,7 @@ rule DRAM_destill:
     input:
         rules.concat_annotations.output,
         flag=rules.DRAM_set_db_loc.output,
-        config=f"{DBDIR}/DRAM/DRAM.config",
+        config=get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/distil"),
     threads: 1
@@ -148,7 +135,7 @@ rule DRAM_destill:
 rule get_all_modules:
     input:
         annotations = "genomes/annotations/dram/annotations.tsv",
-        config = f"{DBDIR}/DRAM/DRAM.config",
+        config = get_dram_config,
     output:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1
