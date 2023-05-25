@@ -33,7 +33,7 @@ sys.excepthook = handle_exception
 
 import pandas as pd
 
-annotation_file = snakemake.input[0]
+annotation_file = snakemake.input.annotations
 module_output_table = snakemake.output[0]
 
 from mag_annotator.database_handler import DatabaseHandler
@@ -43,7 +43,7 @@ annotations = pd.read_csv(annotation_file, sep="\t", index_col=0)
 
 
 # get db_locs and read in dbs
-database_handler = DatabaseHandler(logger=logging, config_loc=snakemake.input[1])
+database_handler = DatabaseHandler(logger=logging, config_loc=snakemake.input.config)
 
 
 if "module_step_form" not in database_handler.config["dram_sheets"]:
