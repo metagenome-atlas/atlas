@@ -36,8 +36,6 @@ rule dram_download:
         " DRAM-setup.py export_config --output_file {output.config}"
 
 
-localrules:
-    DRAM_set_db_loc,
 
 
 
@@ -112,7 +110,6 @@ rule concat_annotations:
 rule DRAM_destill:
     input:
         rules.concat_annotations.output,
-        flag=rules.DRAM_set_db_loc.output,
         config=get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/distil"),
