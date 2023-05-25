@@ -586,7 +586,7 @@ ruleorder: convert_eggNOG_tsv2parquet > combine_egg_nogg_annotations
 rule DRAM_annotate_genecatalog:
     input:
         faa="Intermediate/genecatalog/subsets/{subset}.faa",
-        config=rules.dram_download.output.config,
+        config=get_dram_config,
     output:
         annotations=temp(
             "Intermediate/genecatalog/annotation/dram/{subset}/annotations.tsv"
