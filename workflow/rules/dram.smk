@@ -147,8 +147,8 @@ rule DRAM_destill:
 
 rule get_all_modules:
     input:
-        "genomes/annotations/dram/annotations.tsv",
-        f"{DBDIR}/DRAM/DRAM.config",
+        annotations = "genomes/annotations/dram/annotations.tsv",
+        config = f"{DBDIR}/DRAM/DRAM.config",
     output:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1
