@@ -533,6 +533,8 @@ rule combine_egg_nogg_annotations:
             del Tables
 
             combined.columns = EGGNOG_HEADER
+            combined['Seed_evalue'] = combined['Seed_evalue'].astype('bytes')
+            combined['Seed_Score'] = combined['Seed_Score'].astype('bytes')
 
             #           combined.sort_values("Gene",inplace=True)
 
