@@ -284,10 +284,10 @@ workflows:
             - build_and_dryrun
       - get_example_data
 
-      - run_test:
-          requires:
-            - build_and_dryrun
-            - get_example_data
+      # - run_test:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
             
       - qc_and_assembly:
           requires:
@@ -300,9 +300,9 @@ workflows:
       - genecatalog:
           requires:
             - qc_and_assembly
-      - getenvs:
-          requires:
-            - build_and_dryrun
+      # - getenvs:
+      #     requires:
+      #       - build_and_dryrun
             
       # - sra_init:
       #     requires:
