@@ -2,9 +2,6 @@ import hashlib
 import os
 
 
-
-
-
 # this values are incuded in the snakefile
 DBDIR = os.path.realpath(config["database_dir"])
 CHECKMDIR = os.path.join(DBDIR, "checkm")
@@ -22,7 +19,8 @@ CONDAENV = "../envs"
 
 GTDB_VERSION = "V08_R214"
 GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release214/214.0/auxillary_files/gtdbtk_r214_data.tar.gz"
-GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_"+GTDB_VERSION)
+GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_" + GTDB_VERSION)
+
 
 def md5(fname):
     # https://stackoverflow.com/questions/3431825/generating-an-md5-checksum-of-a-file
@@ -33,8 +31,6 @@ def md5(fname):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
-
-
 
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file

@@ -36,16 +36,12 @@ rule dram_download:
         " DRAM-setup.py export_config --output_file {output.config}"
 
 
-
-
-
-
 rule DRAM_annotate:
     input:
         fasta="genomes/genomes/{genome}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
-        config= get_dram_config,
+        config=get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["simplejob_threads"]
@@ -131,8 +127,8 @@ rule DRAM_destill:
 
 rule get_all_modules:
     input:
-        annotations = "genomes/annotations/dram/annotations.tsv",
-        config = get_dram_config,
+        annotations="genomes/annotations/dram/annotations.tsv",
+        config=get_dram_config,
     output:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1

@@ -305,26 +305,28 @@ rule all_contigs2bins:
 
 def quality_filter_bins_input(wildcards):
     "Specify input files for quality_filter_bins rule"
-    
 
-    input_files= dict(paths=rules.get_bin_filenames.output.filenames,
+    input_files = dict(
+        paths=rules.get_bin_filenames.output.filenames,
         stats="Binning/{binner}/genome_stats.tsv",
         quality="Binning/{binner}/checkm2_quality_report.tsv",
-        gunc = "Binning/{binner}/gunc_report.tsv"
-        )
+        gunc="Binning/{binner}/gunc_report.tsv",
+    )
 
     # check if gunc is in config file
-    filter_chimieric_bins= config["filter_chimieric_bins"]
-    assert type(filter_chimieric_bins)==bool, f"filter_chimieric_bins in config file must be a boolean, got {filter_chimieric_bins}"
+    filter_chimieric_bins = config["filter_chimieric_bins"]
+    assert (
+        type(filter_chimieric_bins) == bool
+    ), f"filter_chimieric_bins in config file must be a boolean, got {filter_chimieric_bins}"
     if not filter_chimieric_bins:
         del input_files["gunc"]
-    
+
     # replace wildcards
     for key in input_files:
-        input_files[key]=input_files[key].format(binner=wildcards.binner)
+        input_files[key] = input_files[key].format(binner=wildcards.binner)
 
     return input_files
-    
+
 
 rule quality_filter_bins:
     input:

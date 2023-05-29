@@ -88,7 +88,7 @@ rule initialize_qc:
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        java_mem = int( config["simplejob_mem"] * JAVA_MEM_FRACTION)
+        java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "reformat.sh "
         " {params.inputs} "
@@ -170,7 +170,7 @@ if not SKIP_QC:
             threads: config.get("threads", 1)
             resources:
                 mem=config["mem"],
-                java_mem = int(config["mem"]*JAVA_MEM_FRACTION)
+                java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 "clumpify.sh "
                 " {params.inputs} "
@@ -276,7 +276,7 @@ if not SKIP_QC:
         threads: config.get("threads", 1)
         resources:
             mem=config["mem"],
-            java_mem = int(config["mem"]*JAVA_MEM_FRACTION)
+            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
             " bbduk.sh {params.inputs} "
             " {params.ref} "
@@ -315,7 +315,7 @@ if not SKIP_QC:
             threads: config.get("threads", 1)
             resources:
                 mem=config["mem"],
-                java_mem = int(config["mem"]*JAVA_MEM_FRACTION)
+                java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             log:
                 "logs/QC/build_decontamination_db.log",
             conda:
@@ -463,7 +463,7 @@ if PAIRED_END:
         threads: config.get("simplejob_threads", 1)
         resources:
             mem=config["mem"],
-            java_mem = int(config["mem"]*JAVA_MEM_FRACTION)
+            java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         conda:
             "../envs/required_packages.yaml"
         log:

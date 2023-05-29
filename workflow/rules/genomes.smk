@@ -482,7 +482,7 @@ rule pileup_MAGs:
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
         orf="genomes/alignments/orf_coverage/{sample}.tsv.gz",
     params:
-        minmapq=config["minimum_map_quality"]
+        minmapq=config["minimum_map_quality"],
     log:
         "logs/genomes/alignments/pilup_{sample}.log",
     conda:
