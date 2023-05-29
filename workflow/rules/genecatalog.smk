@@ -533,6 +533,8 @@ rule combine_egg_nogg_annotations:
             del Tables
 
             combined.columns = EGGNOG_HEADER
+            combined['Seed_evalue'] = combined['Seed_evalue'].astype('bytes')
+            combined['Seed_Score'] = combined['Seed_Score'].astype('bytes')
 
             #           combined.sort_values("Gene",inplace=True)
 
@@ -586,7 +588,7 @@ ruleorder: convert_eggNOG_tsv2parquet > combine_egg_nogg_annotations
 rule DRAM_annotate_genecatalog:
     input:
         faa="Intermediate/genecatalog/subsets/{subset}.faa",
-        config=rules.dram_download.output.config,
+        config=get_dram_config,
     output:
         annotations=temp(
             "Intermediate/genecatalog/annotation/dram/{subset}/annotations.tsv"
