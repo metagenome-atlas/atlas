@@ -2,9 +2,7 @@ import hashlib
 import os
 
 
-ZENODO_ARCHIVE = "1134890"
-EGGNOG_VERSION = "5"
-EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V" + EGGNOG_VERSION)
+
 
 
 # this values are incuded in the snakefile
@@ -16,7 +14,9 @@ CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
 GUNCDIR = os.path.join(DBDIR, "gunc_database")
 BUSCODIR = os.path.join(DBDIR, "busco_lineages")
 
-
+ZENODO_ARCHIVE = "1134890"
+EGGNOG_VERSION = "5"
+EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V" + EGGNOG_VERSION)
 
 CONDAENV = "../envs"
 
