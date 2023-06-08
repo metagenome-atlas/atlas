@@ -3,20 +3,19 @@
 
 rule run_skani:
     input:
-        paths="Binning/{binner}/filtered_bins_paths.txt"
+        paths="Binning/{binner}/filtered_bins_paths.txt",
     output:
-        temp("Intermediate/dereplication/{binner}_distance_matrix.txt")
+        temp("Intermediate/dereplication/{binner}_distance_matrix.txt"),
     log:
-        "logs/binning/{binner}/dereplication/skani_calculation.log"
+        "logs/binning/{binner}/dereplication/skani_calculation.log",
     resources:
-        mem_mb= config["mem"]*1000 ,
+        mem_mb=config["mem"] * 1000,
         time_min=60 * config["runtime"]["default"],
     params:
         #preset= "medium", # fast, medium or slow
-        min_af=config["genome_dereplication"]["overlap"]*100,
-        extra=""
-    threads:
-        config["threads"],
+        min_af=config["genome_dereplication"]["overlap"] * 100,
+        extra="",
+    threads: config["threads"]
     conda:
         "../envs/skani.yaml"
     shell:
@@ -32,39 +31,40 @@ rule run_skani:
         " &> {log} "
 
 
-
 rule skani_2_parquet:
     input:
-        rules.run_skani.output
+        rules.run_skani.output,
     output:
-        "Binning/{binner}/genome_similarities.parquet"
+        "Binning/{binner}/genome_similarities.parquet",
     resources:
-        mem_mb= config["mem"]*1000 ,
+        mem_mb=config["mem"] * 1000,
         time_min=60 * config["runtime"]["simplejob"],
     log:
-        "logs/binning/{binner}/dereplication/skani_2_parquet.log"
-    threads: 
-        1
+        "logs/binning/{binner}/dereplication/skani_2_parquet.log",
+    threads: 1
     run:
-
         try:
             import pandas as pd
 
             from utils.genome_dists import skani_column_dtypes
 
-
             import pandas as pd
+
             df = pd.read_table(input[0])
 
             from utils.io import simplify_path
 
-            df = pd.read_table(input[0], usecols=list(skani_column_dtypes.keys()), dtype=skani_column_dtypes)
+            df = pd.read_table(
+                input[0],
+                usecols=list(skani_column_dtypes.keys()),
+                dtype=skani_column_dtypes,
+            )
 
             df["Ref"] = df.Ref_file.cat.rename_categories(simplify_path)
             df["Query"] = df.Query_file.cat.rename_categories(simplify_path)
 
             df.to_parquet(output[0])
-        
+
         except Exception as e:
             import traceback
 
@@ -72,32 +72,30 @@ rule skani_2_parquet:
                 traceback.print_exc(file=logfile)
 
             raise e
-        
+
 
 rule cluster_species:
     input:
-        dist= "Binning/{binner}/genome_similarities.parquet",
-        bin_info = "Binning/{binner}/filtered_bin_info.tsv"
+        dist="Binning/{binner}/genome_similarities.parquet",
+        bin_info="Binning/{binner}/filtered_bin_info.tsv",
     params:
-        linkage_method = "average",
-        pre_cluster_threshold = 0.925,
-        threshold = config["genome_dereplication"]["ANI"]
+        linkage_method="average",
+        pre_cluster_threshold=0.925,
+        threshold=config["genome_dereplication"]["ANI"],
     conda:
         "../envs/species_clustering.yaml"
     log:
-        "logs/binning/{binner}/dereplication/species_clustering.log"
+        "logs/binning/{binner}/dereplication/species_clustering.log",
     output:
-        cluster_file = "Binning/{binner}/bins2species.tsv"
+        cluster_file="Binning/{binner}/bins2species.tsv",
     script:
         "../scripts/cluster_species.py"
 
 
-
-
 rule build_bin_report:
     input:
-        bin_info = "Binning/{binner}/filtered_bin_info.tsv",
-        bins2species = "Binning/{binner}/bins2species.tsv" 
+        bin_info="Binning/{binner}/filtered_bin_info.tsv",
+        bins2species="Binning/{binner}/bins2species.tsv",
     output:
         report="Binning/{binner}/report.html",
     conda:

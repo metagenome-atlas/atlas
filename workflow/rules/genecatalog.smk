@@ -242,21 +242,20 @@ rule concat_all_reads:
     input:
         lambda wc: get_quality_controlled_reads(wc, include_se=True),
     output:
-        temp("Intermediate/genecatalog/alignments/{sample}.fastq.gz")
+        temp("Intermediate/genecatalog/alignments/{sample}.fastq.gz"),
     log:
-        "logs/Genecatalog/alignment/concat_reads/{sample}.log"
-    threads:
-        1
+        "logs/Genecatalog/alignment/concat_reads/{sample}.log",
+    threads: 1
     resources:
-        mem_mb=300
+        mem_mb=300,
     shell:
         "cat {input} > {output} 2> {log}"
-    
+
 
 rule align_reads_to_Genecatalog:
     input:
         target=rules.index_genecatalog.output,
-        query= rules.concat_all_reads.output[0]
+        query=rules.concat_all_reads.output[0],
     output:
         temp("Genecatalog/alignments/{sample}.bam"),
     log:
@@ -271,7 +270,6 @@ rule align_reads_to_Genecatalog:
         "v1.19.0/bio/minimap2/aligner"
 
 
-
 rule pileup_Genecatalog:
     input:
         bam=rules.align_reads_to_Genecatalog.output,
@@ -279,7 +277,7 @@ rule pileup_Genecatalog:
         covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
         rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
     params:
-        minmapq=config["minimum_map_quality"]
+        minmapq=config["minimum_map_quality"],
     log:
         "logs/Genecatalog/alignment/{sample}_pileup.log",
     conda:
@@ -308,7 +306,7 @@ rule gene_pileup_as_parquet:
     threads: 1
     resources:
         mem=config["simplejob_mem"],
-        time_min=config["runtime"]["simplejob"]*60,
+        time_min=config["runtime"]["simplejob"] * 60,
     log:
         "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log",
     run:

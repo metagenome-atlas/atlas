@@ -348,7 +348,9 @@ rule binning:
             binner=config["final_binner"],
             sample=SAMPLES,
         ),
-        "Binning/{binner}/genome_similarities.parquet".format(binner=config["final_binner"]),
+        "Binning/{binner}/genome_similarities.parquet".format(
+            binner=config["final_binner"]
+        ),
         "Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"]),
         expand("Binning/{binner}/report.html", binner=config["final_binner"]),
         "finished_assembly",
@@ -410,7 +412,7 @@ for r in workflow.rules:
         if "mem" in r.resources:
             r.resources["mem_mb"] = r.resources["mem"] * 1000
         else:
-            r.resources["mem_mb"] = config["mem"]*1000
+            r.resources["mem_mb"] = config["mem"] * 1000
 
     # snakemake has a new name for that
     if not "mem_mib" in r.resources:
@@ -423,7 +425,6 @@ for r in workflow.rules:
             r.resources["time_min"] = r.resources["time"] * 60
         else:
             r.resources["time_min"] = config["runtime"]["default"] * 60
-
 
     if not "runtime" in r.resources:
         r.resources["runtime"] = r.resources["time_min"]

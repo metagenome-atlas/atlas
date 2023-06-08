@@ -6,8 +6,10 @@ localrules:
 
 checkpoint rename_genomes:
     input:
-        paths= "Binning/{binner}/paths.tsv".format(binner=config["final_binner"]),
-        mapping_file="Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"]),
+        paths="Binning/{binner}/paths.tsv".format(binner=config["final_binner"]),
+        mapping_file="Binning/{binner}/bins2species.tsv".format(
+            binner=config["final_binner"]
+        ),
         genome_info=f"Binning/{config['final_binner']}/filtered_bin_info.tsv",
     output:
         dir=directory("genomes/genomes"),
@@ -320,7 +322,7 @@ rule pileup_MAGs:
         bincov=temp("genomes/alignments/coverage_binned/{sample}.tsv.gz"),
         orf="genomes/alignments/orf_coverage/{sample}.tsv.gz",
     params:
-        minmapq=config["minimum_map_quality"]
+        minmapq=config["minimum_map_quality"],
     log:
         "logs/genomes/alignments/pilup_{sample}.log",
     conda:

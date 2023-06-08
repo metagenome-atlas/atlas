@@ -18,7 +18,7 @@ rule pileup_for_binning:
             if config.get("count_multi_mapped_reads", CONTIG_COUNT_MULTI_MAPPED_READS)
             else "f"
         ),
-        minmapq=config["minimum_map_quality"]
+        minmapq=config["minimum_map_quality"],
     log:
         "{sample}/logs/binning/calculate_coverage/pileup_reads_from_{sample_reads}_to_filtered_contigs.log",  # this file is udes for assembly report
     conda:
