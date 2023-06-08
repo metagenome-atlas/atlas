@@ -63,12 +63,12 @@ def make_plots(bin_info):
 
     # Bin Id  Completeness    completeness_general    Contamination   completeness_specific   completeness_model_used translation_table_used  coding_density  contig_n50      average_gene_length      genome_size     gc_content      total_coding_sequences  additional_notes        quality_score   sample  Ambigious_bases Length_contigs  Length_scaffolds N50     N_contigs       N_scaffolds     logN50
     hover_data = [
-        "completeness_model_used",
-        "coding_density",
+        "Completeness_Model_Used",
+        "Coding_Density",
         "N50",
-        "gc_content",
+        "GC_Content",
     ]
-    size_name = "genome_size"
+    size_name = "Genome_Size"
 
     lineage_name = "Species"
 
@@ -96,7 +96,7 @@ def make_plots(bin_info):
     logging.info("plot  by sample")
     fig = px.strip(
         data_frame=df,
-        y="quality_score",
+        y="Quality_score",
         x="sample",
         color=lineage_name,
         hover_data=hover_data,
@@ -109,7 +109,7 @@ def make_plots(bin_info):
     logging.info("plot by species")
     fig = px.strip(
         data_frame=df,
-        y="quality_score",
+        y="Quality_score",
         x=lineage_name,
         hover_data=hover_data,
         hover_name="Bin Id",
