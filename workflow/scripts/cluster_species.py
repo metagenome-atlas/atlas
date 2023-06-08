@@ -68,13 +68,6 @@ gd.verify_expected_range(min_aligned_fraction, 0.1, 0.95, "min_aligned_fraction"
 
 # load quality
 Q = pd.read_csv(snakemake.input.bin_info, sep="\t", index_col=0)
-# calculate quality score
-logging.info("use quality score defined in bin info table")
-quality_score = Q.quality_score
-
-assert (
-    not quality_score.isnull().any()
-), "I have NA quality values for thq quality score, it seems not all of the values defined in the quality_score_formula are presentfor all entries in tables/Genome_quality.tsv "
 
 logging.info("Load distances")
 M = gd.load_skani(snakemake.input.dist)
@@ -94,14 +87,44 @@ if hasattr(G, "selfloop_edges"):
 # prepare table for species number
 mag2Species = pd.DataFrame(index=Q.index, columns=["SpeciesNr", "Species"])
 mag2Species.index.name = "genome"
+genomes_to_drop = []
 
 last_species_nr = 0
+
 
 n_pre_clusters = nx.connected.number_connected_components(G)
 logging.info(f"Found {n_pre_clusters} pre-clusters, itterate over them.")
 logging.debug(f"Cluster with threshold {threshold} and {linkage_method}-linkage method")
 for i, cc in enumerate(nx.connected_components(G)):
     logging.info(f"Precluster {i+1}/{n_pre_clusters} with {len(cc)} genomes")
+
+    Qcc = Q.loc[list(cc)]
+
+    freq = Qcc["completeness_model_used"].value_counts()
+    if freq.shape[0] > 1:
+        logging.info("Not all genomes use the same completeness model.")
+
+        logging.info(freq)
+
+    # check translation table
+    freq = Qcc["translation_table_used"].value_counts()
+
+    if freq.shape[0] > 1:
+        logging.info(
+            "Not all genomes use the same translation table,"
+            "drop genomes that don't use main translation table."
+        )
+        logging.info(freq)
+
+        main_tranlation_table = freq.index[0]
+
+        drop_genomes = Qcc.query(
+            "translation_table_used != @main_tranlation_table"
+        ).index
+
+        cc = cc - set(drop_genomes)
+        genomes_to_drop += list(drop_genomes)
+        logging.info(f"Drop {len(drop_genomes) } genomes, keep ({len(cc)})")
 
     Mcc = M.loc[
         (M.index.levels[0].intersection(cc), M.index.levels[1].intersection(cc)),
@@ -116,6 +139,9 @@ for i, cc in enumerate(nx.connected_components(G)):
     # enter values of labels to species table
     mag2Species.loc[labels.index, "SpeciesNr"] = labels + last_species_nr
     last_species_nr = mag2Species.SpeciesNr.max()
+
+
+mag2Species.drop(genomes_to_drop, inplace=True)
 
 
 missing_species = mag2Species.SpeciesNr.isnull()
@@ -135,6 +161,17 @@ logging.info(f"Identified { mag2Species.SpeciesNr.max()} species in total")
 n_leading_zeros = len(str(mag2Species.SpeciesNr.max()))
 format_int = "sp{:0" + str(n_leading_zeros) + "d}"
 mag2Species["Species"] = mag2Species.SpeciesNr.apply(format_int.format)
+
+
+# calculate quality score
+Q.drop(genomes_to_drop, inplace=True)
+
+logging.info("use quality score defined in bin info table")
+quality_score = Q.quality_score
+
+assert (
+    not quality_score.isnull().any()
+), "I have NA quality values for thq quality score, it seems not all of the values defined in the quality_score_formula are presentfor all entries in tables/Genome_quality.tsv "
 
 
 # select representative
