@@ -55,9 +55,7 @@ rule skani_2_parquet:
                 "ANI_95_percentile": float,
             }  # Ref_name        Query_name
 
-
             import pandas as pd
-
 
             import pandas as pd
 
