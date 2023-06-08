@@ -100,14 +100,14 @@ for i, cc in enumerate(nx.connected_components(G)):
 
     Qcc = Q.loc[list(cc)]
 
-    freq = Qcc["completeness_model_used"].value_counts()
+    freq = Qcc["Completeness_Model_Used"].value_counts()
     if freq.shape[0] > 1:
         logging.info("Not all genomes use the same completeness model.")
 
         logging.info(freq)
 
     # check translation table
-    freq = Qcc["translation_table_used"].value_counts()
+    freq = Qcc["Translation_Table_Used"].value_counts()
 
     if freq.shape[0] > 1:
         logging.info(
@@ -119,7 +119,7 @@ for i, cc in enumerate(nx.connected_components(G)):
         main_tranlation_table = freq.index[0]
 
         drop_genomes = Qcc.query(
-            "translation_table_used != @main_tranlation_table"
+            "Translation_Table_Used != @main_tranlation_table"
         ).index
 
         cc = cc - set(drop_genomes)
@@ -169,7 +169,7 @@ mag2Species["Species"] = mag2Species.SpeciesNr.apply(format_int.format)
 Q.drop(genomes_to_drop, inplace=True)
 
 logging.info("use quality score defined in bin info table")
-quality_score = Q.quality_score
+quality_score = Q.Quality_score
 
 assert (
     not quality_score.isnull().any()

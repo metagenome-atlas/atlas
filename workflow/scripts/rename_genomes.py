@@ -33,8 +33,6 @@ sys.excepthook = handle_exception
 # start
 
 
-from snakemake.io import glob_wildcards
-
 from atlas import utils
 import pandas as pd
 
