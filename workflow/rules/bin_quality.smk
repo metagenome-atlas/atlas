@@ -260,29 +260,8 @@ rule get_bin_filenames:
 
         filenames.to_csv(output.filenames, sep="\t")
 
-        """
-        rule merge_bin_info:
-            input:
-                stats ="Binning/{binner}/genome_stats.tsv",
-                gunc= "Binning/{binner}/gunc_report.tsv",
-                quality= "Binning/{binner}/checkm2_quality_report.tsv"
-            output:
-                "Binning/{binner}/combined_bin_info.tsv"
-
-        """
 
 
-rule build_bin_report:
-    input:
-        bin_table="Binning/{binner}/checkm2_quality_report.tsv",
-    output:
-        report="Binning/{binner}/report.html",
-    conda:
-        "../envs/report.yaml"
-    log:
-        "logs/binning/report_{binner}.log",
-    script:
-        "../report/bin_report.py"
 
 
 localrules:
@@ -332,7 +311,6 @@ rule quality_filter_bins:
     output:
         info="Binning/{binner}/filtered_bin_info.tsv",
         paths=temp("Binning/{binner}/filtered_bins_paths.txt"),
-        quality_for_derep=temp("Binning/{binner}/filtered_quality.csv"),
     threads: 1
     log:
         "logs/Binning/{binner}/filter_bins.log",

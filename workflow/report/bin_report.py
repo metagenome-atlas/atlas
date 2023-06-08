@@ -41,58 +41,44 @@ import plotly.express as px
 from utils.taxonomy import tax2table
 
 
-def make_plots(bin_table):
+def make_plots(bin_info):
     div = {}
 
-    div["input_file"] = bin_table
+    div["input_file"] = bin_info
 
     # Prepare data
-    df = pd.read_table(bin_table)
+    df = pd.read_table(bin_info)
+    df.index = df["Bin Id"]  # need it also as column
 
-    if snakemake.config["bin_quality_asesser"].lower() == "busco":
-        df["Bin Id"] = df["Input_file"].str.replace(".fasta", "", regex=False)
+    # add species info
+    bin2species = pd.read_table(snakemake.input.bins2species, index_col=0)
 
-        logging.info("No taxonomic information available, use busco Dataset")
+    logging.info(df.head())
 
-        lineage_name = "Dataset"
-        hover_data = [
-            "Scores_archaea_odb10",
-            "Scores_bacteria_odb10",
-            "Scores_eukaryota_odb10",
-        ]
-        size_name = None
+    logging.info(bin2species.head())
 
-    elif snakemake.config["bin_quality_asesser"].lower() == "checkm":
-        df = df.join(
-            tax2table(df["Taxonomy (contained)"], remove_prefix=True).fillna("NA")
-        )
+    df = df.join(bin2species)
 
-        lineage_name = "phylum"
-        size_name = "Genome size (Mbp)"
-        hover_data = ["genus"]
+    logging.info(df.describe())
 
-    elif snakemake.config["bin_quality_asesser"].lower() == "checkm2":
-        df["Bin Id"] = df.index
+    # Bin Id  Completeness    completeness_general    Contamination   completeness_specific   completeness_model_used translation_table_used  coding_density  contig_n50      average_gene_length      genome_size     gc_content      total_coding_sequences  additional_notes        quality_score   sample  Ambigious_bases Length_contigs  Length_scaffolds N50     N_contigs       N_scaffolds     logN50
+    hover_data = [
+        "completeness_model_used",
+        "coding_density",
+        "N50",
+        "gc_content",
+    ]
+    size_name = "genome_size"
 
-        lineage_name = "Translation_Table_Used"
-        hover_data = [
-            "Completeness_Model_Used",
-            "Coding_Density",
-            "Contig_N50",
-            "GC_Content",
-            "Additional_Notes",
-        ]
-        size_name = "Genome_Size"
-    else:
-        raise Exception(f"bin_quality_asesser in the config file not understood")
-
-    df.index = df["Bin Id"]
+    lineage_name = "Species"
 
     div[
         "QualityScore"
     ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
 
     # 2D plot
+
+    logging.info("make 2d plot")
     fig = px.scatter(
         data_frame=df,
         y="Completeness",
@@ -107,10 +93,11 @@ def make_plots(bin_table):
     div["2D"] = fig.to_html(**HTML_PARAMS)
 
     ## By sample
+    logging.info("plot  by sample")
     fig = px.strip(
         data_frame=df,
-        y="Quality_score",
-        x="Sample",
+        y="quality_score",
+        x="sample",
         color=lineage_name,
         hover_data=hover_data,
         hover_name="Bin Id",
@@ -118,10 +105,11 @@ def make_plots(bin_table):
     fig.update_yaxes(range=(50, 102))
     div["bySample"] = fig.to_html(**HTML_PARAMS)
 
-    # By Phylum
+    # By species
+    logging.info("plot by species")
     fig = px.strip(
         data_frame=df,
-        y="Quality_score",
+        y="quality_score",
         x=lineage_name,
         hover_data=hover_data,
         hover_name="Bin Id",
@@ -135,7 +123,7 @@ def make_plots(bin_table):
 # main
 
 
-div = make_plots(bin_table=snakemake.input.bin_table)
+div = make_plots(bin_info=snakemake.input.bin_info)
 
 
 make_html(

@@ -94,3 +94,15 @@ rule cluster_species:
 
 
 
+rule build_bin_report:
+    input:
+        bin_info = "Binning/{binner}/filtered_bin_info.tsv",
+        bins2species = "Binning/{binner}/bins2species.tsv" 
+    output:
+        report="Binning/{binner}/report.html",
+    conda:
+        "../envs/report.yaml"
+    log:
+        "logs/binning/report_{binner}.log",
+    script:
+        "../report/bin_report.py"
