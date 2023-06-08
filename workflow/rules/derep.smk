@@ -92,8 +92,5 @@ rule cluster_species:
         "../scripts/cluster_species.py"
 
 
-rule skani:
-    input:
-        "Binning/{binner}/genome_similarities.parquet".format(binner=config["final_binner"]),
-        "Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"])
+
 

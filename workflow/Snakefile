@@ -348,6 +348,8 @@ rule binning:
             binner=config["final_binner"],
             sample=SAMPLES,
         ),
+        "Binning/{binner}/genome_similarities.parquet".format(binner=config["final_binner"]),
+        "Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"]),
         expand("Binning/{binner}/report.html", binner=config["final_binner"]),
         "finished_assembly",
     output:

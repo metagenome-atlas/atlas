@@ -1,3 +1,5 @@
+"""
+
 def get_greedy_drep_Arguments(wildcards):
     "Select greedy options of drep see: https://drep.readthedocs.io/en/latest/module_descriptions.html"
 
@@ -39,37 +41,6 @@ def get_drep_ani(wildcards):
         ani = ani / 100
     return ani
 
-
-"""
-rule drep_compare:
-    input:
-        paths="genomes/all_bins/filtered_bins.txt",
-    output:
-        tables="genomes/Dereplication/data_tables/Cdb.csv",
-        bdb="genomes/Dereplication/data_tables/Bdb.csv",
-    threads: config["threads"]
-    log:
-        "logs/genomes/drep_compare.log",
-    conda:
-        "../envs/dRep.yaml"
-    params:
-        ANI=get_drep_ani,
-        overlap=config["genome_dereplication"]["overlap"],
-        greedy_options=get_greedy_drep_Arguments,
-        working_dir=lambda wc, output: Path(output[0]).parent.parent,
-    shell:
-        " rm -r {params.working_dir} 2> {log}"
-        ";"
-        " dRep compare "
-        " --genomes {input.paths} "
-        " --S_ani {params.ANI} "
-        " --S_algorithm fastANI "
-        " --cov_thresh {params.overlap} "
-        " --processors {threads} "
-        " {params.greedy_options} "
-        " {params.working_dir} "
-        " &>> {log} "
-"""
 
 
 rule dereplicate:
@@ -162,6 +133,7 @@ rule parse_drep:
         )
 
 
+
 localrules:
     rename_genomes,
 
@@ -170,6 +142,32 @@ checkpoint rename_genomes:
     input:
         genomes="genomes/Dereplication/dereplicated_genomes",
         mapping_file="genomes/clustering/allbins2genome_oldname.tsv",
+        genome_info=f"Binning/{config['final_binner']}/filtered_bin_info.tsv",
+    output:
+        dir=directory("genomes/genomes"),
+        mapfile_contigs="genomes/clustering/contig2genome.tsv",
+        mapfile_old2mag="genomes/clustering/old2newID.tsv",
+        mapfile_allbins2mag="genomes/clustering/allbins2genome.tsv",
+        genome_info="genomes/genome_quality.tsv",
+    params:
+        rename_contigs=config["rename_mags_contigs"],
+    shadow:
+        "shallow"
+    log:
+        "logs/genomes/rename_genomes.log",
+    script:
+        "../scripts/rename_genomes.py"
+
+"""
+
+localrules:
+    rename_genomes,
+
+
+checkpoint rename_genomes:
+    input:
+        paths= "Binning/{binner}/paths.tsv".format(binner=config["final_binner"]),
+        mapping_file="Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"]),
         genome_info=f"Binning/{config['final_binner']}/filtered_bin_info.tsv",
     output:
         dir=directory("genomes/genomes"),

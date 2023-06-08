@@ -89,7 +89,7 @@ mag2Species = pd.DataFrame(index=Q.index, columns=["SpeciesNr", "Species"])
 mag2Species.index.name = "genome"
 genomes_to_drop = []
 
-last_species_nr = 0
+last_species_nr = 1  # start at 1
 
 
 n_pre_clusters = nx.connected.number_connected_components(G)
@@ -155,7 +155,9 @@ mag2Species.loc[missing_species, "SpeciesNr"] = (
     np.arange(last_species_nr, last_species_nr + N_missing_species) + 1
 )
 
-logging.info(f"Identified { mag2Species.SpeciesNr.max()} species in total")
+
+n_species = mag2Species.SpeciesNr.unique().shape[0]
+logging.info(f"Identified {n_species } species in total")
 
 # create propper species names
 n_leading_zeros = len(str(mag2Species.SpeciesNr.max()))
@@ -176,7 +178,7 @@ assert (
 
 # select representative
 logging.info("Select representative")
-mag2Species["Representative_Species"] = gd.best_genome_from_table(
+mag2Species["Representative"] = gd.best_genome_from_table(
     mag2Species.Species, quality_score
 )
 

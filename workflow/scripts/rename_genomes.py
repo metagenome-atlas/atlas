@@ -38,25 +38,14 @@ from snakemake.io import glob_wildcards
 from atlas import utils
 import pandas as pd
 
-
-# load mapping file  with old names
-# tsv with format
-# path/to/rep.fasta path/to/bin.fasta
-
+# Bin     Filename        Proteins
+paths = pd.read_csv(snakemake.input.paths, sep="\t", index_col=0).Filename
+# genome  SpeciesNr       Species Representative
 mapping = pd.read_csv(
-    snakemake.input.mapping_file, sep="\t", usecols=[0, 1], header=None
-)
-mapping.columns = ["Rep_path", "Bin_path"]
-
-assert (
-    mapping.Bin_path.is_unique
-), "The second column of {snakemake.input.mapping_file} should be unique"
-
-# go from path to id
-mapping[["Representative", "Bin"]] = mapping.applymap(
-    lambda x: os.path.basename(x).replace(".fasta", "")
-)
-mapping.set_index("Bin", inplace=True)
+    snakemake.input.mapping_file,
+    sep="\t",
+    index_col=0,
+).squeeze()
 
 
 # standardize names of representatives
@@ -78,8 +67,8 @@ old2new = mapping.loc[representatives, "MAG"]
 old2new.index.name = "Representative"
 old2new.to_csv(snakemake.output.mapfile_old2mag, sep="\t", header=True)
 
-#### Write genomes and contig to genome mapping file
 
+#### Write genomes and contig to genome mapping file
 output_dir = snakemake.output.dir
 mapfile_contigs = snakemake.output.mapfile_contigs
 rename_contigs = snakemake.params.rename_contigs
@@ -88,11 +77,11 @@ rename_contigs = snakemake.params.rename_contigs
 os.makedirs(output_dir)
 
 with open(mapfile_contigs, "w") as out_contigs:
-    for rep, row in mapping.loc[representatives].iterrows():
-        fasta_in = row.Rep_path
-        new_name = row.MAG
+    for rep in representatives:
+        fasta_in = paths.loc[rep]
+        new_name = old2new.loc[rep]
 
-        fasta_out = os.path.join(output_dir, f"{row.MAG}.fasta")
+        fasta_out = os.path.join(output_dir, f"{new_name}.fasta")
 
         # write names of contigs in mapping file
         with open(fasta_in) as ffi, open(fasta_out, "w") as ffo:
@@ -103,18 +92,19 @@ with open(mapfile_contigs, "w") as out_contigs:
                     Nseq += 1
 
                     if rename_contigs:
-                        new_header = f"{row.MAG}_{Nseq}"
+                        new_header = f"{new_name}_{Nseq}"
                     else:
                         new_header = line[1:].strip().split()[0]
 
                     # write to contig to mapping file
-                    out_contigs.write(f"{new_header}\t{row.MAG}\n")
+                    out_contigs.write(f"{new_header}\t{new_name}\n")
                     # write to fasta file
                     ffo.write(f">{new_header}\n")
                 else:
                     ffo.write(line)
 
 
+# rename quality
 def rename_quality(quality_in, quality_out, old2new_name):
     Q = pd.read_csv(quality_in, index_col=0, sep="\t")
 
