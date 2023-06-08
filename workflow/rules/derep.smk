@@ -44,9 +44,20 @@ rule skani_2_parquet:
     threads: 1
     run:
         try:
+
+            skani_column_dtypes = {
+                "Ref_file": "category",
+                "Query_file": "category",
+                "ANI": float,
+                "Align_fraction_ref": float,
+                "Align_fraction_query": float,
+                "ANI_5_percentile": float,
+                "ANI_95_percentile": float,
+            }  # Ref_name        Query_name
+
+
             import pandas as pd
 
-            from utils.genome_dists import skani_column_dtypes
 
             import pandas as pd
 

@@ -8,16 +8,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-skani_column_dtypes = {
-    "Ref_file": "category",
-    "Query_file": "category",
-    "ANI": float,
-    "Align_fraction_ref": float,
-    "Align_fraction_query": float,
-    "ANI_5_percentile": float,
-    "ANI_95_percentile": float,
-}  # Ref_name        Query_name
-
 
 def verify_expected_range(value, min_range, max_range, name="value"):
     if (value < min_range) or (value > max_range):
