@@ -97,7 +97,7 @@ def make_plots(bin_info):
     fig = px.strip(
         data_frame=df,
         y="Quality_score",
-        x="sample",
+        x="Sample",
         color=lineage_name,
         hover_data=hover_data,
         hover_name="Bin Id",
