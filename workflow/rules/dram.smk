@@ -36,30 +36,12 @@ rule dram_download:
         " DRAM-setup.py export_config --output_file {output.config}"
 
 
-localrules:
-    DRAM_set_db_loc,
-
-
-rule DRAM_set_db_loc:
-    input:
-        get_dram_config,
-    output:
-        touch(f"{DBDIR}/DRAM/dram_config_imported"),
-    threads: 1
-    conda:
-        "../envs/dram.yaml"
-    log:
-        "logs/dram/set_db_loc.log",
-    shell:
-        "DRAM-setup.py import_config --config_loc {input} &> {log}"
-
-
 rule DRAM_annotate:
     input:
         fasta="genomes/genomes/{genome}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
-        flag=rules.DRAM_set_db_loc.output,
+        config=get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["simplejob_threads"]
@@ -77,6 +59,7 @@ rule DRAM_annotate:
         "logs/benchmarks/dram/run_dram/{genome}.tsv"
     shell:
         " DRAM.py annotate "
+        " --config_loc {input.config} "
         " --input_fasta {input.fasta}"
         " --output_dir {output.outdir} "
         " --threads {threads} "
@@ -123,7 +106,7 @@ rule concat_annotations:
 rule DRAM_destill:
     input:
         rules.concat_annotations.output,
-        flag=rules.DRAM_set_db_loc.output,
+        config=get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/distil"),
     threads: 1
@@ -136,6 +119,7 @@ rule DRAM_destill:
         "logs/dram/distil.log",
     shell:
         " DRAM.py distill "
+        " --config_loc {input.config} "
         " --input_file {input[0]}"
         " --output_dir {output} "
         "  &> {log}"
@@ -143,7 +127,8 @@ rule DRAM_destill:
 
 rule get_all_modules:
     input:
-        "genomes/annotations/dram/annotations.tsv",
+        annotations="genomes/annotations/dram/annotations.tsv",
+        config=get_dram_config,
     output:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1
