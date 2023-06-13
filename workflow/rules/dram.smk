@@ -11,6 +11,11 @@ def get_dram_config(wildcards):
     return config.get("dram_config_file", f"{DBDIR}/DRAM/DRAM.config")
 
 
+localrules:
+    dram_download,
+    concat_annotations,
+
+
 rule dram_download:
     output:
         dbdir=directory(f"{DBDIR}/DRAM/db/"),
@@ -77,10 +82,6 @@ def get_all_dram(wildcards):
 
 
 DRAM_ANNOTATON_FILES = ["annotations.tsv"]
-
-
-localrules:
-    concat_annotations,
 
 
 rule concat_annotations:
