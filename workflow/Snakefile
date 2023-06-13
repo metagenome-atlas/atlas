@@ -291,7 +291,7 @@ rule genecatalog:
         "Genecatalog/clustering/orf_info.parquet",
         get_gene_catalog_input(),
     output:
-        touch("finished_genecatalog"),
+        temp(touch("finished_genecatalog")),
 
 
 rule strains:
@@ -332,7 +332,7 @@ rule genomes:
         *get_genome_annotations(),
         "finished_binning",
     output:
-        touch("finished_genomes"),
+        temp(touch("finished_genomes")),
 
 
 rule quantify_genomes:
@@ -355,7 +355,7 @@ rule binning:
         expand("Binning/{binner}/report.html", binner=config["final_binner"]),
         "finished_assembly",
     output:
-        touch("finished_binning"),
+        temp(touch("finished_binning")),
 
 
 rule assembly_one_sample:
