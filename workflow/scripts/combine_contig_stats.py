@@ -33,25 +33,33 @@ from utils.parsers_bbmap import parse_pileup_log_file
 
 
 def parse_map_stats(sample_data, out_tsv):
-    stats_df = pd.DataFrame()
+    sample_stats = {}
     for sample in sample_data.keys():
         df = pd.read_csv(sample_data[sample]["contig_stats"], sep="\t")
+
         assert df.shape[0] == 1, "Assumed only one row in file {}; found {}".format(
             sample_data[sample]["contig_stats"], df.iloc[0]
         )
-        df = df.iloc[0]
-        df.name = sample
+
+        # n genes
         genes_df = pd.read_csv(sample_data[sample]["gene_table"], index_col=0, sep="\t")
         df["N_Predicted_Genes"] = genes_df.shape[0]
 
+        # mappingt stats
         mapping_stats = parse_pileup_log_file(sample_data[sample]["mapping_log"])
-
         df["Assembled_Reads"] = mapping_stats["Mapped reads"]
         df["Percent_Assembled_Reads"] = mapping_stats["Percent mapped"]
 
-        stats_df = stats_df.append(df)
+        logging.info(f"Stats for sample {sample}\n{df}")
+
+        sample_stats[sample] = df
+
+    stats_df = pd.concat(sample_stats, axis=0)
+    stats_df.index = stats_df.index.get_level_values(0)
+    # remove contig stats and keep only scaffold stats
     stats_df = stats_df.loc[:, ~stats_df.columns.str.startswith("scaf_")]
     stats_df.columns = stats_df.columns.str.replace("ctg_", "")
+    # save
     stats_df.to_csv(out_tsv, sep="\t")
     return stats_df
 
