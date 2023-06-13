@@ -610,17 +610,15 @@ rule write_read_counts:
     output:
         read_stats="{sample}/sequence_quality_control/read_stats/read_counts.tsv",
     run:
-
-
         from utils.io import pandas_concat
 
         pandas_concat(
-                        list(input.read_count_files),
-                        output.read_stats,
-                        sep="\t",
-                        index_col=[0,1],
-                        axis=0
-                    )
+            list(input.read_count_files),
+            output.read_stats,
+            sep="\t",
+            index_col=[0, 1],
+            axis=0,
+        )
 
 
 rule combine_read_counts:
@@ -634,15 +632,7 @@ rule combine_read_counts:
     run:
         from utils.io import pandas_concat
 
-        pandas_concat(
-                        list(input),
-                        output[0],
-                        sep="\t",
-                        index_col=[0,1],
-                        axis=0
-                    )
-
-
+        pandas_concat(list(input), output[0], sep="\t", index_col=[0, 1], axis=0)
 
 
 rule finalize_sample_qc:
