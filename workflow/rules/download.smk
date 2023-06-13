@@ -98,6 +98,7 @@ localrules:
     download_eggNOG_files,
     download_atlas_files,
     download_checkm_data,
+    download_gunc,
 
 
 ruleorder: download_eggNOG_files > download_atlas_files
