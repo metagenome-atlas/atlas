@@ -96,17 +96,18 @@ rule cluster_species:
     log:
         "logs/binning/{binner}/dereplication/species_clustering.log",
     output:
-        cluster_file="Binning/{binner}/bins2species.tsv",
+        bin_info="Binning/{binner}/bin_info.tsv",
+        bins2species = "Binning/{binner}/bins2species.tsv",
     script:
         "../scripts/cluster_species.py"
 
 
 rule build_bin_report:
     input:
-        bin_info="Binning/{binner}/filtered_bin_info.tsv",
+        bin_info="Binning/{binner}/bin_info.tsv",
         bins2species="Binning/{binner}/bins2species.tsv",
     output:
-        report="Binning/{binner}/report.html",
+        report="reports/bin_report_{binner}.html",
     conda:
         "../envs/report.yaml"
     log:

@@ -343,16 +343,12 @@ rule quantify_genomes:
 
 rule binning:
     input:
-        expand(
-            "{sample}/binning/{binner}/cluster_attribution.tsv",
-            binner=config["final_binner"],
-            sample=SAMPLES,
-        ),
         "Binning/{binner}/genome_similarities.parquet".format(
             binner=config["final_binner"]
         ),
         "Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"]),
-        expand("Binning/{binner}/report.html", binner=config["final_binner"]),
+        "Binning/{binner}/bin_info.tsv".format(binner=config["final_binner"]),
+        expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
         "finished_assembly",
     output:
         temp(touch("finished_binning")),

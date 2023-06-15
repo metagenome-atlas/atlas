@@ -308,7 +308,7 @@ rule quality_filter_bins:
     input:
         unpack(quality_filter_bins_input),
     output:
-        info="Binning/{binner}/filtered_bin_info.tsv",
+        info=temp("Binning/{binner}/filtered_bin_info.tsv"),
         paths=temp("Binning/{binner}/filtered_bins_paths.txt"),
     threads: 1
     log:

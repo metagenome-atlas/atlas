@@ -34,8 +34,6 @@ sys.excepthook = handle_exception
 
 import pandas as pd
 
-import scipy.spatial as sp
-import scipy.cluster.hierarchy as hc
 import numpy as np
 from utils import genome_dist as gd
 import networkx as nx
@@ -68,6 +66,8 @@ gd.verify_expected_range(min_aligned_fraction, 0.1, 0.95, "min_aligned_fraction"
 
 # load quality
 Q = pd.read_csv(snakemake.input.bin_info, sep="\t", index_col=0)
+Q.Additional_Notes = Q.Additional_Notes.fillna("").astype(str)
+
 
 logging.info("Load distances")
 M = gd.load_skani(snakemake.input.dist)
@@ -100,12 +100,6 @@ for i, cc in enumerate(nx.connected_components(G)):
 
     Qcc = Q.loc[list(cc)]
 
-    freq = Qcc["Completeness_Model_Used"].value_counts()
-    if freq.shape[0] > 1:
-        logging.info("Not all genomes use the same completeness model.")
-
-        logging.info(freq)
-
     # check translation table
     freq = Qcc["Translation_Table_Used"].value_counts()
 
@@ -123,33 +117,109 @@ for i, cc in enumerate(nx.connected_components(G)):
         ).index
 
         cc = cc - set(drop_genomes)
+        Qcc = Qcc.loc[list(cc)]
         genomes_to_drop += list(drop_genomes)
         logging.info(f"Drop {len(drop_genomes) } genomes, keep ({len(cc)})")
 
-    Mcc = M.loc[
-        (M.index.levels[0].intersection(cc), M.index.levels[1].intersection(cc)),
-    ]
+    ## Check that the same completeness model is used for all
 
-    labels = gd.group_species_linkage(
-        Mcc.ANI, threshold=threshold, linkage_method=linkage_method
-    )
+    freq = Qcc["Completeness_Model_Used"].value_counts()
+    if freq.shape[0] > 1:
+        logging.info(
+            "Not all genomes use the same completeness model. Recalibrate completeness."
+        )
 
-    logging.debug(f"Got {labels.max()} species cluster for this pre-cluster.")
+        logging.info(freq)
 
-    # enter values of labels to species table
-    mag2Species.loc[labels.index, "SpeciesNr"] = labels + last_species_nr
-    last_species_nr = mag2Species.SpeciesNr.max()
+        # genomes that don't use specific model
+        non_specific = Qcc.index[
+            ~Qcc.Completeness_Model_Used.str.contains("Specific Model")
+        ]
+
+        logging.debug(
+            f"{len(non_specific)} genomes use general completeness model. Recalibrate completeness and quality score to use lower value"
+        )
+
+        logging.debug(
+            Qcc.loc[
+                non_specific,
+                ["Completeness_General", "Completeness_Specific", "Contamination"],
+            ]
+        )
+
+        Qcc.loc[non_specific, "Completeness"] = Qcc.loc[
+            non_specific,
+            [
+                "Completeness_General",
+                "Completeness_Specific",
+            ],
+        ].min(axis=1)
+
+        # add note
+        Q.loc[
+            non_specific, "Additional_Notes"
+        ] += "Completeness was re-calibrated based on Completeness model used in all genomes of the species."
+
+        # transfer to main quality
+        Q.loc[list(cc), "Completeness"] = Qcc.loc[list(cc), "Completeness"]
+
+        # drop low quality genomes
+
+        logging.info("Drop low quality genomes acording to filtercriteria")
+
+        try:
+            filter_criteria = snakemake.config["genome_filter_criteria"]
+            drop_genomes = Qcc.index.difference(Qcc.query(filter_criteria).index)
+
+        except Exception as e:
+            logging.error("Cannot filter low quality genomes")
+            logging.exception(e)
+
+            drop_genomes = []
+
+        if len(drop_genomes) > 0:
+            cc = cc - set(drop_genomes)
+            logging.info(
+                f"Drop {len(drop_genomes) } with too low quality genomes, keep {len(cc)}"
+            )
+
+            Qcc = Qcc.loc[list(cc)]
+            genomes_to_drop += list(drop_genomes)
+
+    if len(cc) <= 1:
+        logging.info(
+            "I am left with {len(cc)} genomes in this pre-cluster. No need to cluster."
+        )
+    else:
+        # subset dist matrix
+        Mcc = M.loc[
+            (M.index.levels[0].intersection(cc), M.index.levels[1].intersection(cc)),
+        ]
+
+        # Cluster species
+        labels = gd.group_species_linkage(
+            Mcc.ANI, threshold=threshold, linkage_method=linkage_method
+        )
+
+        logging.debug(f"Got {labels.max()} species cluster for this pre-cluster.")
+
+        # enter values of labels to species table
+        mag2Species.loc[labels.index, "SpeciesNr"] = labels + last_species_nr
+        last_species_nr = mag2Species.SpeciesNr.max()
 
 
 mag2Species.drop(genomes_to_drop, inplace=True)
+Q.drop(genomes_to_drop, inplace=True)
 
 
-missing_species = mag2Species.SpeciesNr.isnull()
-N_missing_species = sum(missing_species)
+missing_species = mag2Species.index[mag2Species.SpeciesNr.isnull()]
+N_missing_species = len(missing_species)
 
 logging.info(
-    f"{N_missing_species} genomes were not part of a pre-cluster and are singletons."
+    f"{N_missing_species} genomes were not part of a pre-cluster and are singleton-species."
 )
+
+Q.loc[missing_species, "Additional_Notes"] += " Singleton species"
 
 mag2Species.loc[missing_species, "SpeciesNr"] = (
     np.arange(last_species_nr, last_species_nr + N_missing_species) + 1
@@ -166,9 +236,11 @@ mag2Species["Species"] = mag2Species.SpeciesNr.apply(format_int.format)
 
 
 # calculate quality score
-Q.drop(genomes_to_drop, inplace=True)
 
-logging.info("use quality score defined in bin info table")
+
+logging.info("Define Quality score defined as Completeness - 5x Contamination")
+# recalulate quality score as some completeness might be recalibrated.
+Q.eval("Quality_score = Completeness - 5* Contamination", inplace=True)
 quality_score = Q.Quality_score
 
 assert (
@@ -182,7 +254,7 @@ mag2Species["Representative"] = gd.best_genome_from_table(
     mag2Species.Species, quality_score
 )
 
-mag2Species.to_csv(snakemake.output.cluster_file, sep="\t")
+mag2Species.to_csv(snakemake.output.bins2species, sep="\t")
 
-# Q= Q.join(mag2Species)
-# Q.to_csv(snakemake.input.genome_info,sep='\t')
+# mag2Species = mag2Species.join(Q)
+Q.to_csv(snakemake.output.bin_info, sep="\t")

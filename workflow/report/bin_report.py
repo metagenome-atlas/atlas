@@ -44,20 +44,38 @@ from utils.taxonomy import tax2table
 def make_plots(bin_info):
     div = {}
 
-    div["input_file"] = bin_info
+    div["input_file"] = f"{bin_info} and {snakemake.input.bins2species}"
 
     # Prepare data
-    df = pd.read_table(bin_info)
-    df.index = df["Bin Id"]  # need it also as column
+    df = pd.read_table(bin_info, index_col=0)
+    df["Bin Id"] = df.index  # need it also as column
 
     # add species info
     bin2species = pd.read_table(snakemake.input.bins2species, index_col=0)
+    df = df.join(bin2species)
 
     logging.info(df.head())
 
     logging.info(bin2species.head())
 
-    df = df.join(bin2species)
+    # calculate number of genomes/bins
+    st = pd.DataFrame(columns=["Bins", "Species"])
+
+    def add_stats(name, d):
+        st.loc[name, "Bins"] = d.shape[0]
+        st.loc[name, "Species"] = d.Representative.unique().shape[0]
+
+    add_stats("All", df)
+
+    df.eval("Quality_score = Completeness - 5* Contamination", inplace=True)
+    div[
+        "QualityScore"
+    ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
+    add_stats("Quality score >50 ", df.query("Quality_score>50"))
+    add_stats("Good quality", df.query("Completeness>90 & Contamination <5"))
+    add_stats("Quality score >90 ", df.query("Quality_score>90"))
+
+    div["table"] = st.to_html()
 
     logging.info(df.describe())
 
@@ -71,10 +89,6 @@ def make_plots(bin_info):
     size_name = "Genome_Size"
 
     lineage_name = "Species"
-
-    div[
-        "QualityScore"
-    ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
 
     # 2D plot
 
@@ -92,6 +106,22 @@ def make_plots(bin_info):
     fig.update_xaxes(range=(-0.2, 10.1))
     div["2D"] = fig.to_html(**HTML_PARAMS)
 
+    # 2D plot
+
+    logging.info("make 2d plot species")
+    fig = px.scatter(
+        data_frame=df.loc[df.Representative.unique()],
+        y="Completeness",
+        x="Contamination",
+        color=lineage_name,
+        size=size_name,
+        hover_data=hover_data,
+        hover_name="Bin Id",
+    )
+    fig.update_yaxes(range=(50, 102))
+    fig.update_xaxes(range=(-0.2, 10.1))
+    div["2Dsp"] = fig.to_html(**HTML_PARAMS)
+
     ## By sample
     logging.info("plot  by sample")
     fig = px.strip(
@@ -105,17 +135,17 @@ def make_plots(bin_info):
     fig.update_yaxes(range=(50, 102))
     div["bySample"] = fig.to_html(**HTML_PARAMS)
 
-    # By species
-    logging.info("plot by species")
-    fig = px.strip(
-        data_frame=df,
-        y="Quality_score",
-        x=lineage_name,
-        hover_data=hover_data,
-        hover_name="Bin Id",
-    )
-    fig.update_yaxes(range=(50, 102))
-    div["byPhylum"] = fig.to_html(**HTML_PARAMS)
+    # # By species
+    # logging.info("plot by species")
+    # fig = px.strip(
+    #     data_frame=df,
+    #     y="Quality_score",
+    #     x=lineage_name,
+    #     hover_data=hover_data,
+    #     hover_name="Bin Id",
+    # )
+    # fig.update_yaxes(range=(50, 102))
+    # div["byPhylum"] = fig.to_html(**HTML_PARAMS)
 
     return div
 
