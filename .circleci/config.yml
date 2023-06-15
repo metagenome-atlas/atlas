@@ -209,6 +209,26 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
+          name: Create tabal of envs
+          command: |
+            tar cf genecatalog.envs.tar workflow/envs/sequence_utils.yaml workflow/envs/fasta.yaml workflow/envs/mmseqs.yaml workflow/envs/hdf.yaml  workflow/envs/required_packages.yaml 
+            
+      - restore_cache:
+          key: genecatalog-env-{{ checksum "genecatalog.envs.tar" }}
+          
+         
+      - run:
+         name: create conda genecatalog
+         command: |
+            source activate ./atlasenv
+            WD='wd'
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --conda-create-envs-only
+      - save_cache:
+          key: genecatalog-env-{{ checksum "genecatalog.envs.tar" }}
+          paths:
+            - databases            
+            
+      - run:
           name: run genecatalog
           command: |
             source activate ./atlasenv
