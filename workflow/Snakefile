@@ -16,7 +16,7 @@ import utils
 
 # add default config
 # comand line adds user config
-configfile: os.path.join(workflow_folder, "config", "default_config.yaml")
+configfile: os.path.join(workflow_folder, "..","config", "default_config.yaml")
 
 
 # add defualt values from python (TODO: replace this)
