@@ -24,7 +24,7 @@ rule combine_bin_stats:
             sample=SAMPLES,
         ),
     output:
-        "Binning/{binner}/genome_stats.tsv",
+        "Binning/{binner}/raw_bins/genome_stats.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -172,7 +172,7 @@ rule combine_gunc:
             sample=SAMPLES,
         ),
     output:
-        bin_table="Binning/{binner}/gunc_report.tsv",
+        bin_table="Binning/{binner}/raw_bins/gunc_report.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -199,7 +199,7 @@ rule combine_checkm2:
             sample=SAMPLES,
         ),
     output:
-        bin_table="Binning/{binner}/checkm2_quality_report.tsv",
+        bin_table="Binning/{binner}/raw_bins/checkm2_quality_report.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -223,7 +223,7 @@ rule get_bin_filenames:
             sample=SAMPLES,
         ),
     output:
-        filenames="Binning/{binner}/paths.tsv",
+        filenames="Binning/{binner}/raw_bins/paths.tsv",
     run:
         import pandas as pd
         from pathlib import Path
@@ -284,9 +284,9 @@ def quality_filter_bins_input(wildcards):
 
     input_files = dict(
         paths=rules.get_bin_filenames.output.filenames,
-        stats="Binning/{binner}/genome_stats.tsv",
-        quality="Binning/{binner}/checkm2_quality_report.tsv",
-        gunc="Binning/{binner}/gunc_report.tsv",
+        stats="Binning/{binner}/raw_bins/genome_stats.tsv",
+        quality="Binning/{binner}/raw_bins/checkm2_quality_report.tsv",
+        gunc="Binning/{binner}/raw_bins/gunc_report.tsv",
     )
 
     # check if gunc is in config file
