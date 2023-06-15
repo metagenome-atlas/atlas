@@ -97,7 +97,7 @@ rule cluster_species:
         "logs/binning/{binner}/dereplication/species_clustering.log",
     output:
         bin_info="Binning/{binner}/bin_info.tsv",
-        bins2species = "Binning/{binner}/bins2species.tsv",
+        bins2species="Binning/{binner}/bins2species.tsv",
     script:
         "../scripts/cluster_species.py"
 
