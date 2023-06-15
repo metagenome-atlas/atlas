@@ -37,13 +37,11 @@ from utils import gene_scripts
 # otherwise not
 if snakemake.params.renamed_contigs:
     contigs2bins = pd.read_csv(
-        snakemake.input.contigs2bins, index_col=0, squeeze=False, sep="\t", header=None
+        snakemake.input.contigs2bins, index_col=0, sep="\t", header=None
     )
 
     contigs2bins.columns = ["Bin"]
-    old2newID = pd.read_csv(
-        snakemake.input.old2newID, index_col=0, squeeze=True, sep="\t"
-    )
+    old2newID = pd.read_csv(snakemake.input.old2newID, index_col=0, sep="\t").squeeze()
 
     contigs2genome = contigs2bins.join(old2newID, on="Bin").dropna().drop("Bin", axis=1)
 else:

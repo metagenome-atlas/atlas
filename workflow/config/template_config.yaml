@@ -189,13 +189,6 @@ gunc_database: "progenomes"  # 'progenomes' or 'gtdb'
 genome_dereplication:
   ANI: 0.95                     ## Genome dreplication threshold 0.95 is more or less species
   overlap: 0.2                  # See more on https://drep.readthedocs.io/en/latest/module_descriptions.html
-  greedy_clustering: "auto"     # Add options for greedy clustering 'auto' when using more than 5k bins
-  score:
-    completeness: 1
-    contamination: 5
-    N50: 0.5
-    length: 0
-    centrality: 1
 
 rename_mags_contigs: true        #Rename contigs of representative MAGs
 
