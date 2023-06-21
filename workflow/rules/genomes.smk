@@ -6,7 +6,9 @@ localrules:
 
 checkpoint rename_genomes:
     input:
-        paths="Binning/{binner}/raw_bins/paths.tsv".format(binner=config["final_binner"]),
+        paths="Binning/{binner}/raw_bins/paths.tsv".format(
+            binner=config["final_binner"]
+        ),
         mapping_file="Binning/{binner}/bins2species.tsv".format(
             binner=config["final_binner"]
         ),
