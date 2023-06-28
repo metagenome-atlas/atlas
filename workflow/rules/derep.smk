@@ -24,8 +24,6 @@ rule run_skani:
         " -l {input.paths} "
         " -o {output} "
         " -t {threads} "
-        " --trace "
-        " --robust "
         " --sparse --ci "
         " --min-af {params.min_af} "
         " &> {log} "
