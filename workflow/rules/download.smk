@@ -189,7 +189,7 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        " wget {GTDB_DATA_URL} -O {output} &> {log} "
+        " wget --no-check-certificate {GTDB_DATA_URL} -O {output} &> {log} "
 
 
 rule extract_gtdb:
