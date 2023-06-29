@@ -16,7 +16,7 @@ import utils
 
 # add default config
 # comand line adds user config
-configfile: os.path.join(workflow_folder, "config", "default_config.yaml")
+configfile: os.path.join(workflow_folder, "..", "config", "default_config.yaml")
 
 
 # add defualt values from python (TODO: replace this)
@@ -228,6 +228,7 @@ include: "rules/download.smk"  # contains hard coded variables
 include: "rules/qc.smk"
 include: "rules/assemble.smk"
 include: "rules/binning.smk"
+include: "rules/derep.smk"
 include: "rules/genomes.smk"
 include: "rules/dram.smk"
 include: "rules/genecatalog.smk"
@@ -290,7 +291,7 @@ rule genecatalog:
         "Genecatalog/clustering/orf_info.parquet",
         get_gene_catalog_input(),
     output:
-        touch("finished_genecatalog"),
+        temp(touch("finished_genecatalog")),
 
 
 rule strains:
@@ -331,7 +332,7 @@ rule genomes:
         *get_genome_annotations(),
         "finished_binning",
     output:
-        touch("finished_genomes"),
+        temp(touch("finished_genomes")),
 
 
 rule quantify_genomes:
@@ -342,15 +343,15 @@ rule quantify_genomes:
 
 rule binning:
     input:
-        expand(
-            "{sample}/binning/{binner}/cluster_attribution.tsv",
-            binner=config["final_binner"],
-            sample=SAMPLES,
+        "Binning/{binner}/genome_similarities.parquet".format(
+            binner=config["final_binner"]
         ),
-        expand("Binning/{binner}/report.html", binner=config["final_binner"]),
+        "Binning/{binner}/bins2species.tsv".format(binner=config["final_binner"]),
+        "Binning/{binner}/bin_info.tsv".format(binner=config["final_binner"]),
+        expand("reports/bin_report_{binner}.html", binner=config["final_binner"]),
         "finished_assembly",
     output:
-        touch("finished_binning"),
+        temp(touch("finished_binning")),
 
 
 rule assembly_one_sample:
@@ -407,7 +408,7 @@ for r in workflow.rules:
         if "mem" in r.resources:
             r.resources["mem_mb"] = r.resources["mem"] * 1000
         else:
-            r.resources["mem_mb"] = config["mem"]*1000
+            r.resources["mem_mb"] = config["mem"] * 1000
 
     # snakemake has a new name for that
     if not "mem_mib" in r.resources:
@@ -420,7 +421,6 @@ for r in workflow.rules:
             r.resources["time_min"] = r.resources["time"] * 60
         else:
             r.resources["time_min"] = config["runtime"]["default"] * 60
-
 
     if not "runtime" in r.resources:
         r.resources["runtime"] = r.resources["time_min"]

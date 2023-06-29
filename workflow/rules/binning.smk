@@ -246,7 +246,7 @@ rule get_unique_cluster_attribution:
         import numpy as np
 
 
-        d = pd.read_csv(input[0], index_col=0, squeeze=True, header=None, sep="\t")
+        d = pd.read_csv(input[0], index_col=0, header=None, sep="\t").squeeze()
 
         assert (
             type(d) == pd.Series

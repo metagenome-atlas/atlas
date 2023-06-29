@@ -24,7 +24,7 @@ rule combine_bin_stats:
             sample=SAMPLES,
         ),
     output:
-        "Binning/{binner}/genome_stats.tsv",
+        "Binning/{binner}/raw_bins/genome_stats.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -172,7 +172,7 @@ rule combine_gunc:
             sample=SAMPLES,
         ),
     output:
-        bin_table="Binning/{binner}/gunc_report.tsv",
+        bin_table="Binning/{binner}/raw_bins/gunc_report.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -199,7 +199,7 @@ rule combine_checkm2:
             sample=SAMPLES,
         ),
     output:
-        bin_table="Binning/{binner}/checkm2_quality_report.tsv",
+        bin_table="Binning/{binner}/raw_bins/checkm2_quality_report.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -223,7 +223,7 @@ rule get_bin_filenames:
             sample=SAMPLES,
         ),
     output:
-        filenames="Binning/{binner}/paths.tsv",
+        filenames="Binning/{binner}/raw_bins/paths.tsv",
     run:
         import pandas as pd
         from pathlib import Path
@@ -260,30 +260,6 @@ rule get_bin_filenames:
 
         filenames.to_csv(output.filenames, sep="\t")
 
-        """
-        rule merge_bin_info:
-            input:
-                stats ="Binning/{binner}/genome_stats.tsv",
-                gunc= "Binning/{binner}/gunc_report.tsv",
-                quality= "Binning/{binner}/checkm2_quality_report.tsv"
-            output:
-                "Binning/{binner}/combined_bin_info.tsv"
-
-        """
-
-
-rule build_bin_report:
-    input:
-        bin_table="Binning/{binner}/checkm2_quality_report.tsv",
-    output:
-        report="Binning/{binner}/report.html",
-    conda:
-        "../envs/report.yaml"
-    log:
-        "logs/binning/report_{binner}.log",
-    script:
-        "../report/bin_report.py"
-
 
 localrules:
     all_contigs2bins,
@@ -305,34 +281,35 @@ rule all_contigs2bins:
 
 def quality_filter_bins_input(wildcards):
     "Specify input files for quality_filter_bins rule"
-    
 
-    input_files= dict(paths=rules.get_bin_filenames.output.filenames,
-        stats="Binning/{binner}/genome_stats.tsv",
-        quality="Binning/{binner}/checkm2_quality_report.tsv",
-        gunc = "Binning/{binner}/gunc_report.tsv"
-        )
+    input_files = dict(
+        paths=rules.get_bin_filenames.output.filenames,
+        stats="Binning/{binner}/raw_bins/genome_stats.tsv",
+        quality="Binning/{binner}/raw_bins/checkm2_quality_report.tsv",
+        gunc="Binning/{binner}/raw_bins/gunc_report.tsv",
+    )
 
     # check if gunc is in config file
-    filter_chimieric_bins= config["filter_chimieric_bins"]
-    assert type(filter_chimieric_bins)==bool, f"filter_chimieric_bins in config file must be a boolean, got {filter_chimieric_bins}"
+    filter_chimieric_bins = config["filter_chimieric_bins"]
+    assert (
+        type(filter_chimieric_bins) == bool
+    ), f"filter_chimieric_bins in config file must be a boolean, got {filter_chimieric_bins}"
     if not filter_chimieric_bins:
         del input_files["gunc"]
-    
+
     # replace wildcards
     for key in input_files:
-        input_files[key]=input_files[key].format(binner=wildcards.binner)
+        input_files[key] = input_files[key].format(binner=wildcards.binner)
 
     return input_files
-    
+
 
 rule quality_filter_bins:
     input:
         unpack(quality_filter_bins_input),
     output:
-        info="Binning/{binner}/filtered_bin_info.tsv",
+        info=temp("Binning/{binner}/filtered_bin_info.tsv"),
         paths=temp("Binning/{binner}/filtered_bins_paths.txt"),
-        quality_for_derep=temp("Binning/{binner}/filtered_quality.csv"),
     threads: 1
     log:
         "logs/Binning/{binner}/filter_bins.log",

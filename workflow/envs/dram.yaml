@@ -2,5 +2,5 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - dram >=1.4.6, <1.5
-  - pandas >=1.5, <2
+  - dram >= 1.4.6, <1.5 #Shold define all correct verrsions See https://github.com/bioconda/bioconda-recipes/pull/41518
+

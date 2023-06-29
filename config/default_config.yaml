@@ -1,8 +1,7 @@
 ## use just in time compilation for bbmap
 usejni: false
 
-gene_annotations:
-  - dram
+gene_annotations: []
 
 genome_filter_criteria: "(Completeness-5*Contamination >50 ) & (Length_scaffolds >=50000) & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
 exclude_unplacable_genomes: false

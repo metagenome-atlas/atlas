@@ -2,10 +2,24 @@ import hashlib
 import os
 
 
+# this values are incuded in the snakefile
+DBDIR = os.path.realpath(config["database_dir"])
+CHECKMDIR = os.path.join(DBDIR, "checkm")
+CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
+CAT_DIR = os.path.join(DBDIR, "CAT")
+CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
+GUNCDIR = os.path.join(DBDIR, "gunc_database")
+BUSCODIR = os.path.join(DBDIR, "busco_lineages")
+
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
+EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V" + EGGNOG_VERSION)
 
+CONDAENV = "../envs"
+
+GTDB_VERSION = "V08_R214"
 GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release214/214.0/auxillary_files/gtdbtk_r214_data.tar.gz"
+GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_" + GTDB_VERSION)
 
 
 def md5(fname):
@@ -18,21 +32,6 @@ def md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-
-# this values are incuded in the snakefile
-DBDIR = os.path.realpath(config["database_dir"])
-CHECKMDIR = os.path.join(DBDIR, "checkm")
-CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
-CAT_DIR = os.path.join(DBDIR, "CAT")
-CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
-EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V5")
-
-GUNCDIR = os.path.join(DBDIR, "gunc_database")
-BUSCODIR = os.path.join(DBDIR, "busco_lineages")
-
-GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_V07")
-
-CONDAENV = "../envs"
 
 # note: saving OG_fasta.tar.gz in order to not create secondary "success" file
 FILES = {
@@ -99,6 +98,7 @@ localrules:
     download_eggNOG_files,
     download_atlas_files,
     download_checkm_data,
+    download_gunc,
 
 
 ruleorder: download_eggNOG_files > download_atlas_files
@@ -189,7 +189,7 @@ rule download_gtdb:
     log:
         "logs/download/gtdbtk.log",
     shell:
-        " wget {GTDB_DATA_URL} -O {output} &> {log} "
+        " wget --no-check-certificate {GTDB_DATA_URL} -O {output} &> {log} "
 
 
 rule extract_gtdb:

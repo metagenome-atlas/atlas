@@ -61,7 +61,6 @@ logging.info(f"Retain {Q.shape[0]} genomes from {n_all_bins}")
 ## GUNC
 
 if hasattr(snakemake.input, "gunc"):
-
     gunc = pd.read_table(snakemake.input.gunc, index_col=0)
     gunc = gunc.loc[Q.index]
 
@@ -83,18 +82,7 @@ if Q.shape[0] == 0:
 Q.to_csv(snakemake.output.info, sep="\t")
 
 
-# output quality for derepliation
-D = Q.copy()
-
-D.index.name = "genome"
-
-D.columns = D.columns.str.lower()
-# fasta extension is needed even if otherwise stated https://github.com/MrOlm/drep/issues/169
-D.index += ".fasta"
-D = D[["completeness", "contamination"]]
-D.to_csv(snakemake.output.quality_for_derep)
-
-# filter path genomes
+# filter path genomes for skani
 
 F = pd.read_table(snakemake.input.paths, index_col=0).squeeze()
 

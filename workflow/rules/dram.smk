@@ -11,6 +11,11 @@ def get_dram_config(wildcards):
     return config.get("dram_config_file", f"{DBDIR}/DRAM/DRAM.config")
 
 
+localrules:
+    dram_download,
+    concat_annotations,
+
+
 rule dram_download:
     output:
         dbdir=directory(f"{DBDIR}/DRAM/db/"),
@@ -36,16 +41,12 @@ rule dram_download:
         " DRAM-setup.py export_config --output_file {output.config}"
 
 
-
-
-
-
 rule DRAM_annotate:
     input:
         fasta="genomes/genomes/{genome}.fasta",
         #checkm= "genomes/checkm/completeness.tsv",
         #gtdb_dir= "genomes/taxonomy/gtdb/classify",
-        config= get_dram_config,
+        config=get_dram_config,
     output:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["simplejob_threads"]
@@ -81,10 +82,6 @@ def get_all_dram(wildcards):
 
 
 DRAM_ANNOTATON_FILES = ["annotations.tsv"]
-
-
-localrules:
-    concat_annotations,
 
 
 rule concat_annotations:
@@ -131,8 +128,8 @@ rule DRAM_destill:
 
 rule get_all_modules:
     input:
-        annotations = "genomes/annotations/dram/annotations.tsv",
-        config = get_dram_config,
+        annotations="genomes/annotations/dram/annotations.tsv",
+        config=get_dram_config,
     output:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1

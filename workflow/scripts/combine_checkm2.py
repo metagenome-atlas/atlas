@@ -39,13 +39,15 @@ def main(samples, completeness_files, bin_table):
     sample_data = {}
     div = {}
 
-    df = pd.DataFrame()
+    df_list = []
 
     for i, sample in enumerate(samples):
         sample_data = read_checkm2_output(completness_table=completeness_files[i])
         sample_data["Sample"] = sample
 
-        df = df.append(sample_data)
+        df_list.append(sample_data)
+
+    df = pd.concat(df_list, axis=0)
 
     df.to_csv(bin_table, sep="\t")
 

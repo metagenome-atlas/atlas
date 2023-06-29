@@ -3,7 +3,8 @@
 [![Anaconda-Server Badge](https://anaconda.org/bioconda/metagenome-atlas/badges/latest_release_relative_date.svg)](https://anaconda.org/bioconda/metagenome-atlas)
 [![Bioconda](https://img.shields.io/conda/dn/bioconda/metagenome-atlas.svg?label=Bioconda )](https://anaconda.org/bioconda/metagenome-atlas)
 [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
-[![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd)
+![Mastodon Follow](https://img.shields.io/mastodon/follow/109273833677404282?domain=https%3A%2F%2Fmstdn.science&style=social)
+<!--[![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd) -->
 
 
 Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It handles all steps from QC, Assembly, Binning, to Annotation.

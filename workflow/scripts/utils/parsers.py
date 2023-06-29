@@ -77,13 +77,17 @@ def load_quality(quality_file):
         warn("Found fasta extension in index. I remove them")
         Q.index = Q.index.str.split(".fa", expand=True).to_frame()[0]
 
-    Q.columns = Q.columns.str.lower()
+    # Q.columns = Q.columns.str.lower()
 
     necessary_columns = ["Completeness", "Contamination"]
 
     # rename lower and uppercase to necessary_columns
     Q = Q.rename(
-        columns={fun(s): s for s in necessary_columns for fun in (str.lower, str.upper)}
+        columns={
+            fun(s[0]) + s[1:]: s
+            for s in necessary_columns
+            for fun in (str.lower, str.upper)
+        }
     )
 
     if Q.columns.isin(necessary_columns).sum() != len(necessary_columns):
