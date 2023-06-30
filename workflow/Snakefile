@@ -359,7 +359,6 @@ rule assembly_one_sample:
         "{sample}/{sample}_contigs.fasta",
         "{sample}/sequence_alignment/{sample}.bam",
         "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-        "{sample}/assembly/contig_stats/prefilter_contig_stats.txt",
         "{sample}/assembly/contig_stats/final_contig_stats.txt",
     output:
         touch("{sample}/finished_assembly"),
