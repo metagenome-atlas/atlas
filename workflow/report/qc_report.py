@@ -193,17 +193,23 @@ def make_plots(
     except KeyError:
         pass
 
-    data_qc = df.query('Step=="QC"')
+    data_qc = df.query('Step=="QC"').reset_index()
 
     for var in ["Total_Reads", "Total_Bases"]:
-        fig = px.strip(data_qc, y=var, **PLOT_PARAMS)
+        fig = px.strip(data_qc, y=var, hover_data=["Sample", var], **PLOT_PARAMS)
         fig.update_yaxes(range=(0, data_qc[var].max() * 1.1))
         div[var] = fig.to_html(**HTML_PARAMS)
 
     ## reads plot across different steps
 
     total_reads = df.Total_Reads.unstack()
-    fig = px.bar(data_frame=total_reads, barmode="group", labels={"value": "Reads"})
+
+    fig = px.bar(
+        data_frame=total_reads,
+        barmode="group",
+        labels={"value": "Reads"},
+        category_orders={"Step": ["raw", "deduplicated", "filtered", "QC"]},
+    )
 
     fig.update_yaxes(title="Number of reads")
     fig.update_xaxes(tickangle=45)

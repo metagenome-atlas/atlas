@@ -494,13 +494,13 @@ rule rename_contigs:
 
 rule calculate_contigs_stats:
     input:
-        "{sample}/assembly/{sample}_{assembly_step}_contigs.fasta",
+        "{sample}/assembly/{sample}_contigs.fasta",
     output:
-        "{sample}/assembly/contig_stats/{assembly_step}_contig_stats.txt",
+        "{sample}/assembly/contig_stats/final_contig_stats.txt",
     conda:
         "../envs/required_packages.yaml"
     log:
-        "{sample}/logs/assembly/post_process/contig_stats_{assembly_step}.log",
+        "{sample}/logs/assembly/post_process/contig_stats_final.log",
     threads: 1
     resources:
         mem=1,
@@ -509,25 +509,6 @@ rule calculate_contigs_stats:
         "stats.sh in={input} format=3 out={output} &> {log}"
 
 
-rule combine_sample_contig_stats:
-    input:
-        expand(
-            "{{sample}}/assembly/contig_stats/{assembly_step}_contig_stats.txt",
-            assembly_step=["prefilter", "final"],
-        ),
-    output:
-        "{sample}/assembly/contig_stats.tsv",
-    run:
-        import os
-        import pandas as pd
-
-        c = pd.DataFrame()
-        for f in input:
-            df = pd.read_csv(f, sep="\t")
-            assembly_step = os.path.basename(f).replace("_contig_stats.txt", "")
-            c.loc[assembly_step]
-
-        c.to_csv(output[0], sep="\t")
 
 
 if config["filter_contigs"]:
