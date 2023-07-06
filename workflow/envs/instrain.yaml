@@ -4,3 +4,4 @@ channels:
 - defaults
 dependencies:
 - instrain =1.5.*
+- pandas>=1.5,<2.0
