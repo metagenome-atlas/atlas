@@ -1,6 +1,6 @@
 defaults: &defaults
   docker:
-    - image: mamba-org/micromamba
+    - image: condaforge/mambaforge
   environment:
     DATABASE_DIR: databases
 
