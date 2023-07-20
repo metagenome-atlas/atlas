@@ -67,7 +67,7 @@ rule run_checkm2:
         "logs/benchmarks/checkm2/{sample}_{binner}.tsv"
     resources:
         time=int(config["runtime"]["default"]),
-        mem_mb=config["mem"],
+        mem_mb=config["mem"] * 1000,
     shell:
         " checkm2 predict "
         " --threads {threads} "
@@ -103,7 +103,7 @@ rule run_gunc:
         "{sample}/logs/binning/{binner}/gunc.log",
     resources:
         time=int(config["runtime"]["default"]),
-        mem_mb=config["mem"],
+        mem_mb=config["mem"] * 1000,
     shell:
         " mkdir {output.folder} 2> {log}"
         " ;\n"
@@ -141,7 +141,7 @@ rule run_busco:
         "logs/benchmarks/busco/{sample}_{binner}.tsv"
     resources:
         time=int(config["runtime"]["default"]),
-        mem_mb=config["mem"],
+        mem_mb=config["mem"] * 1000,
     shell:
         " busco -i {input.fasta_dir} "
         " --auto-lineage-prok "
