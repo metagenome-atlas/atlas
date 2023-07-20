@@ -492,24 +492,6 @@ rule rename_contigs:
         " minscaf={params.minlength} &> {log} "
 
 
-rule calculate_contigs_stats:
-    input:
-        "{sample}/assembly/{sample}_contigs.fasta",
-    output:
-        "{sample}/assembly/contig_stats/final_contig_stats.txt",
-    conda:
-        "../envs/required_packages.yaml"
-    log:
-        "{sample}/logs/assembly/post_process/contig_stats_final.log",
-    threads: 1
-    resources:
-        mem=1,
-        time=config["runtime"]["simplejob"],
-    shell:
-        "stats.sh in={input} format=3 out={output} &> {log}"
-
-
-
 
 if config["filter_contigs"]:
 
@@ -621,6 +603,27 @@ rule finalize_contigs:
     threads: 1
     run:
         os.symlink(os.path.relpath(input[0], os.path.dirname(output[0])), output[0])
+
+
+
+
+rule calculate_contigs_stats:
+    input:
+        "{sample}/{sample}_contigs.fasta",
+    output:
+        "{sample}/assembly/contig_stats/final_contig_stats.txt",
+    conda:
+        "../envs/required_packages.yaml"
+    log:
+        "{sample}/logs/assembly/post_process/contig_stats_final.log",
+    threads: 1
+    resources:
+        mem=1,
+        time=config["runtime"]["simplejob"],
+    shell:
+        "stats.sh in={input} format=3 out={output} &> {log}"
+
+
 
 
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
