@@ -19,11 +19,12 @@ For real metagenomic data atlas should be run on a _linux_ sytem, with enough me
 
 
 
-You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+You need to install `anaconda <http://anaconda.org/>`_ or miniconda. 
+If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+Setting strict channel priority can prevent quite some annoyances.
 
 .. code-block:: bash
-
-    conda config --add channels defaults
+    conda config --set channel_priority strict
     conda config --add channels bioconda
     conda config --add channels conda-forge
 
