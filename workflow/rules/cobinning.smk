@@ -10,7 +10,7 @@ rule filter_contigs:
     input:
         "{sample}/{sample}_contigs.fasta",
     output:
-        temp("Cobinning/filtered_contigs/{sample}.fasta"),
+        temp("Intermediate/cobinning/filtered_contigs/{sample}.fasta"),
     params:
         min_length=config["cobining_min_contig_length"],
     log:
@@ -29,19 +29,36 @@ rule filter_contigs:
         " -Xmx{resources.java_mem}G 2> {log} "
 
 
-localrules:
-    combine_contigs,
+
+
+def get_filtered_contigs_of_bingroup(wildcards):
+
+
+    samples_of_group = sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+
+    if len(samples_of_group) <= 5:
+        raise ValueError(f"Bin group {wildcards.bingroup} has {len(samples_of_group)} less than 5 samples."
+                        "For cobinning we reccomend at least 5 samples per bin group."
+                        )
+
+    
+    return {
+        #Trigers rerun if contigs change
+        "flag": expand("{sample}/{sample}_contigs.fasta", sample=samples_of_group),
+        "fasta": ancient(expand(rules.filter_contigs.output[0], sample=samples_of_group)),
+    }
+
+
 
 
 rule combine_contigs:
     input:
-        #Trigers rerun if contigs change
-        flag=expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
-        fasta=ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
+        unpack(get_filtered_contigs_of_bingroup),
+
     output:
-        "Cobinning/combined_contigs.fasta.gz",
+        "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
-        "logs/cobinning/combine_contigs.log",
+        "logs/cobinning/{bingroup}/combine_contigs.log",
     params:
         seperator=config["cobinning_separator"],
         samples=SAMPLES,
@@ -64,16 +81,16 @@ rule minimap_index:
     input:
         contigs=rules.combine_contigs.output,
     output:
-        mmi=temp("Cobinning/combined_contigs.mmi"),
+        mmi=temp("Intermediate/cobinning/{bingroup}/combined_contigs.mmi"),
     params:
         index_size="12G",
     resources:
         mem=config["mem"],  # limited num of fatnodes (>200g)
     threads: 3
     log:
-        "logs/cobinning/vamb/index.log",
+        "logs/cobinning/{bingroup}/minimap_index.log",
     benchmark:
-        "logs/benchmarks/cobinning/mminimap_index.tsv"
+        "logs/benchmarks/cobinning/{bingroup}/mminimap_index.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -84,13 +101,13 @@ rule samtools_dict:
     input:
         contigs=rules.combine_contigs.output,
     output:
-        dict="Cobinning/combined_contigs.dict",
+        dict="Intermediate/cobinning/{bingroup}/combined_contigs.dict",
     resources:
         mem=config["simplejob_mem"],
         ttime=config["runtime"]["simplejob"],
     threads: 1
     log:
-        "logs/cobinning/samtools_dict.log",
+        "logs/cobinning/{bingroup}/samtools_dict.log",
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -100,17 +117,17 @@ rule samtools_dict:
 rule minimap:
     input:
         fq=get_quality_controlled_reads,
-        mmi="Cobinning/combined_contigs.mmi",
-        dict="Cobinning/combined_contigs.dict",
+        mmi="Intermediate/cobinning/{bingroup}/combined_contigs.mmi",
+        dict="Intermediate/cobinning/{bingroup}/combined_contigs.dict",
     output:
-        bam=temp("Cobinning/mapping/{sample}.unsorted.bam"),
+        bam=temp("Intermediate/cobinning/{bingroup}/bams/{sample}.unsorted.bam"),
     threads: config["threads"]
     resources:
         mem=config["mem"],
     log:
-        "logs/cobinning/mapping/{sample}.minimap.log",
+        "logs/cobinning/{bingroup}/mapping/minimap/{sample}.log",
     benchmark:
-        "logs/benchmarks/cobinning/mminimap/{sample}.tsv"
+        "logs/benchmarks/cobinning/{bingroup}/mminimap/{sample}.tsv"
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -122,17 +139,17 @@ ruleorder: sort_bam > minimap
 
 rule sort_bam:
     input:
-        "Cobinning/mapping/{sample}.unsorted.bam",
+        "Intermediate/cobinning/{bingroup}/bams/{sample}.unsorted.bam",
     output:
-        "Cobinning/mapping/{sample}.sorted.bam",
+        "Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam",
     params:
-        prefix="Cobinning/mapping/tmp.{sample}",
+        prefix="Intermediate/cobinning/{bingroup}/bams/tmp.{sample}",
     threads: 2
     resources:
         mem=config["simplejob_mem"],
         time=int(config["runtime"]["simplejob"]),
     log:
-        "logs/cobinning/mapping/{sample}.sortbam.log",
+        "logs/cobinning/{bingroup}/mapping/sortbam/{sample}.log",
     conda:
         "../envs/minimap.yaml"
     shell:
@@ -143,9 +160,9 @@ rule summarize_bam_contig_depths:
     input:
         bam=expand(rules.sort_bam.output, sample=SAMPLES),
     output:
-        "Cobinning/vamb/coverage.jgi.tsv",
+        "Intermediate/cobinning/{bingroup}/coverage.jgi.tsv",
     log:
-        "logs/cobinning/vamb/combine_coverage.log",
+        "logs/cobinning/{bingroup}/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
     threads: config["threads"]
@@ -163,11 +180,11 @@ localrules:
 
 rule convert_jgi2vamb_coverage:
     input:
-        "Cobinning/vamb/coverage.jgi.tsv",
+        rules.summarize_bam_contig_depths.output,
     output:
-        "Cobinning/vamb/coverage.tsv",
+        "Intermediate/cobinning/{bingroup}/coverage.tsv",
     log:
-        "logs/cobinning/vamb/convert_jgi2vamb_coverage.log",
+        "logs/cobinning/{bingroup}/convert_jgi2vamb_coverage.log",
     threads: 1
     script:
         "../scripts/convert_jgi2vamb_coverage.py"
@@ -175,10 +192,10 @@ rule convert_jgi2vamb_coverage:
 
 rule run_vamb:
     input:
-        coverage="Cobinning/vamb/coverage.tsv",
+        coverage= "Intermediate/cobinning/{bingroup}/coverage.tsv",
         fasta=rules.combine_contigs.output,
     output:
-        directory("Cobinning/vamb/clustering"),
+        directory("Intermediate/cobinning/vamb_{bingroup}"),
     conda:
         "../envs/vamb.yaml"
     threads: config["threads"]
@@ -186,9 +203,9 @@ rule run_vamb:
         mem=config["mem"],
         time=config["runtime"]["long"],
     log:
-        "logs/cobinning/vamb/run_vamb.log",
+        "logs/cobinning/run_vamb/{bingroup}.log",
     benchmark:
-        "logs/benchmarks/vamb/run_vamb.tsv"
+        "logs/benchmarks/run_vamb/{bingroup}.tsv"
     params:
         mincontig=config["cobining_min_contig_length"],  # min contig length for binning
         minfasta=config["cobining_min_bin_size"],  # min bin size for output
@@ -203,6 +220,7 @@ rule run_vamb:
         "2> {log}"
 
 
+
 vamb_cluster_attribution_path = "{sample}/binning/vamb/cluster_attribution.tsv"
 
 
@@ -212,10 +230,10 @@ localrules:
 
 rule parse_vamb_output:
     input:
-        rules.run_vamb.output,
+        expand(rules.run_vamb.output, bingroup = SampleTable.BinGroup.unique()),
     output:
         renamed_clusters="Cobinning/vamb/clusters.tsv.gz",
-        cluster_atributions=expand(vamb_cluster_attribution_path, sample=SAMPLES),
+        cluster_atributions= expand(vamb_cluster_attribution_path, sample=SAMPLES),
     log:
         "logs/cobinning/vamb_parse_output.log",
     params:
@@ -231,7 +249,7 @@ rule parse_vamb_output:
 
 rule vamb:
     input:
-        "Cobinning/vamb/clustering",
+        #"Cobinning/vamb/clustering",
         "Cobinning/vamb/clusters.tsv.gz",
         expand("{sample}/binning/vamb/cluster_attribution.tsv", sample=SAMPLES),
 
