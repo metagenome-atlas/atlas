@@ -49,7 +49,7 @@ def input_params_for_bbwrap(input):
 # if config.get("workflow") != "download":
 
 #    config = update_config_file_paths(config)
-TMPDIR = get_temp_dir(config)
+
 SAMPLES = sampleTable.index.values
 SKIP_QC = False
 
