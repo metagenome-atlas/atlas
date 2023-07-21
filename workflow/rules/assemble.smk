@@ -122,7 +122,6 @@ rule normalize_reads:
         mindepth=config["normalization_minimum_kmer_depth"],
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output.reads, key="out"),
-        tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
     log:
         "{sample}/logs/assembly/pre_process/normalization_{previous_steps}.log",
     benchmark:
@@ -136,7 +135,7 @@ rule normalize_reads:
     shell:
         " bbnorm.sh {params.inputs} "
         " {params.outputs} "
-        " {params.tmpdir} "
+        " tmpdir={resources.tmpdir} "
         " tossbadreads=t "
         " hist={output.histin} "
         " histout={output.histout} "
@@ -324,7 +323,7 @@ if config.get("assembler", "megahit") == "megahit":
 
             megahit \
             {params.inputs} \
-            --tmp-dir {TMPDIR} \
+            --tmp-dir {resources.tmpdir} \
             --num-cpu-threads {threads} \
             --k-min {params.k_min} \
             --k-max {params.k_max} \
