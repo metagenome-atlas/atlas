@@ -33,11 +33,9 @@ min_version("6.1")
 container: "docker://continuumio/miniconda3:4.4.10"
 
 
-
-
-
 wildcard_constraints:
     binner="[A-Za-z]+",
+
 
 include: "rules/sample_table.smk"
 include: "rules/download.smk"  # contains hard coded variables

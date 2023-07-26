@@ -491,7 +491,6 @@ rule rename_contigs:
         " minscaf={params.minlength} &> {log} "
 
 
-
 if config["filter_contigs"]:
 
     ruleorder: align_reads_to_prefilter_contigs > align_reads_to_final_contigs
@@ -604,8 +603,6 @@ rule finalize_contigs:
         os.symlink(os.path.relpath(input[0], os.path.dirname(output[0])), output[0])
 
 
-
-
 rule calculate_contigs_stats:
     input:
         "{sample}/{sample}_contigs.fasta",
@@ -621,8 +618,6 @@ rule calculate_contigs_stats:
         time=config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 out={output} &> {log}"
-
-
 
 
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"

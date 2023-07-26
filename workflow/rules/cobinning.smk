@@ -33,22 +33,24 @@ def get_samples_of_bingroup(wildcards):
 
     return sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
 
+
 def get_filtered_contigs_of_bingroup(wildcards):
 
     samples_of_group = get_samples_of_bingroup(wildcards)
-    
 
     if len(samples_of_group) <= 5:
-        raise ValueError(f"Bin group {wildcards.bingroup} has {len(samples_of_group)} less than 5 samples."
-                        "For cobinning we reccomend at least 5 samples per bin group."
-                        "Adapt the sample.tsv to set BinGroup of size [5- 1000]"
-                        )
+        raise ValueError(
+            f"Bin group {wildcards.bingroup} has {len(samples_of_group)} less than 5 samples."
+            "For cobinning we reccomend at least 5 samples per bin group."
+            "Adapt the sample.tsv to set BinGroup of size [5- 1000]"
+        )
 
-    
     return {
-        #Trigers rerun if contigs change
+        # Trigers rerun if contigs change
         "flag": expand("{sample}/{sample}_contigs.fasta", sample=samples_of_group),
-        "fasta": ancient(expand(rules.filter_contigs.output[0], sample=samples_of_group)),
+        "fasta": ancient(
+            expand(rules.filter_contigs.output[0], sample=samples_of_group)
+        ),
     }
 
 
@@ -56,13 +58,15 @@ def get_bams_of_bingroup(wildcards):
 
     samples_of_group = get_samples_of_bingroup(wildcards)
 
-    return expand("Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam", sample= samples_of_group)
+    return expand(
+        "Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam",
+        sample=samples_of_group,
+    )
 
 
 rule combine_contigs:
     input:
         unpack(get_filtered_contigs_of_bingroup),
-
     output:
         "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
@@ -166,7 +170,7 @@ rule sort_bam:
 
 rule summarize_bam_contig_depths:
     input:
-        bams= get_bams_of_bingroup,
+        bams=get_bams_of_bingroup,
     output:
         "Intermediate/cobinning/{bingroup}/coverage.jgi.tsv",
     log:
@@ -200,7 +204,7 @@ rule convert_jgi2vamb_coverage:
 
 rule run_vamb:
     input:
-        coverage= "Intermediate/cobinning/{bingroup}/coverage.tsv",
+        coverage="Intermediate/cobinning/{bingroup}/coverage.tsv",
         fasta=rules.combine_contigs.output,
     output:
         directory("Intermediate/cobinning/vamb_{bingroup}"),
@@ -228,7 +232,6 @@ rule run_vamb:
         "2> {log}"
 
 
-
 vamb_cluster_attribution_path = "{sample}/binning/vamb/cluster_attribution.tsv"
 
 
@@ -238,16 +241,16 @@ localrules:
 
 rule parse_vamb_output:
     input:
-        expand(rules.run_vamb.output, bingroup = sampleTable.BinGroup.unique()),
+        expand(rules.run_vamb.output, bingroup=sampleTable.BinGroup.unique()),
     output:
         renamed_clusters="Intermediate/cobinning/vamb_clusters.tsv.gz",
-        cluster_atributions= expand(vamb_cluster_attribution_path, sample=SAMPLES),
+        cluster_atributions=expand(vamb_cluster_attribution_path, sample=SAMPLES),
     log:
         "logs/cobinning/vamb_parse_output.log",
     params:
         separator=config["cobinning_separator"],
         fasta_extension=".fna",
-        output_path=lambda wc: vamb_cluster_attribution_path, # path with {sample} to replace
+        output_path=lambda wc: vamb_cluster_attribution_path,  # path with {sample} to replace
         samples=SAMPLES,
     conda:
         "../envs/fasta.yaml"

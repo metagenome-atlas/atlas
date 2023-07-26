@@ -1,9 +1,8 @@
-
-
-from atlas.sample_table import load_sample_table,validate_bingroup_size
+from atlas.sample_table import load_sample_table, validate_bingroup_size
 
 sampleTable = load_sample_table()
-validate_bingroup_size(sampleTable,config,logger)
+validate_bingroup_size(sampleTable, config, logger)
+
 
 def io_params_for_tadpole(io, key="in"):
     """This function generates the input flag needed for bbwrap/tadpole for all cases
@@ -183,4 +182,4 @@ def get_quality_controlled_reads(wildcards, include_se=False):
 
 
 def get_assembly(wildcards):
-    return "{sample}/assembly/{sample}_contigs.fasta".format(sample=wildcards.sample )
+    return "{sample}/assembly/{sample}_contigs.fasta".format(sample=wildcards.sample)

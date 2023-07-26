@@ -4,7 +4,7 @@ rule semibin_generate_data_multi:
         fasta=rules.combine_contigs.output,
         bams=get_bams_of_bingroup,
     output:
-        directory("Intermediate/cobinning/{bingroup}/semibin/data_multi")
+        directory("Intermediate/cobinning/{bingroup}/semibin/data_multi"),
         # expand(
         #     "Cobinning/SemiBin/samples/{sample}/{files}",
         #     sample=SAMPLES,
@@ -35,10 +35,10 @@ rule semibin_generate_data_multi:
 
 rule semibin_train:
     input:
-        flag = "{sample}/{sample}_contigs.fasta",
-        fasta_sample = rules.filter_contigs.output,
-        bams= get_bams_of_bingroup,
-        data_folder= rules.semibin_generate_data_multi.output[0],
+        flag="{sample}/{sample}_contigs.fasta",
+        fasta_sample=rules.filter_contigs.output,
+        bams=get_bams_of_bingroup,
+        data_folder=rules.semibin_generate_data_multi.output[0],
     output:
         "Intermediate/cobinning/{bingroup}/semibin/models/{sample}/model.h5",
     conda:
@@ -53,8 +53,14 @@ rule semibin_train:
         "logs/benchmarks/semibin/{bingroup}/train/{sample}.tsv"
     params:
         output_dir=lambda wc, output: os.path.dirname(output[0]),
-        data = lambda wc, input: Path(input.data_folder)/"samples"/wc.sample/"data.csv",
-        data_split = lambda wc, input: Path(input.data_folder)/"samples"/wc.sample/"data_split.csv",
+        data=lambda wc, input: Path(input.data_folder)
+        / "samples"
+        / wc.sample
+        / "data.csv",
+        data_split=lambda wc, input: Path(input.data_folder)
+        / "samples"
+        / wc.sample
+        / "data_split.csv",
         extra=config["semibin_train_extra"],
     shell:
         "SemiBin train_self "
@@ -69,23 +75,31 @@ rule semibin_train:
 def semibin_input(wildcards):
 
     bingroup_of_sample = sampleTable.loc[wildcards.sample, "bingroup"]
-    samples_of_bingroup = sampleTable.query(f'BinGroup=="{bingroup_of_sample}"').index.tolist()
-
+    samples_of_bingroup = sampleTable.query(
+        f'BinGroup=="{bingroup_of_sample}"'
+    ).index.tolist()
 
     return dict(
-        flag= "{sample}/{sample}_contigs.fasta",
-        fasta = rules.filter_contigs.output,
-        bams =lambda wc: expand(rules.sort_bam.output, sample= samples_of_bingroup),
-        data_folder = rules.semibin_generate_data_multi.output[0].format(bingroup=bingroup_of_sample),
-        model = rules.semibin_train.output[0].format(bingroup=bingroup_of_sample, sample=wildcards.sample),
+        flag="{sample}/{sample}_contigs.fasta",
+        fasta=rules.filter_contigs.output,
+        bams=lambda wc: expand(rules.sort_bam.output, sample=samples_of_bingroup),
+        data_folder=rules.semibin_generate_data_multi.output[0].format(
+            bingroup=bingroup_of_sample
+        ),
+        model=rules.semibin_train.output[0].format(
+            bingroup=bingroup_of_sample, sample=wildcards.sample
+        ),
     )
+
 
 rule run_semibin:
     input:
         unpack(semibin_input),
     output:
         # contains no info to bingroup
-        directory("Intermediate/cobinning/semibin_output/{sample}/output_recluster_bins/"),
+        directory(
+            "Intermediate/cobinning/semibin_output/{sample}/output_recluster_bins/"
+        ),
     conda:
         "../envs/semibin.yaml"
     threads: config["threads"]
@@ -97,8 +111,11 @@ rule run_semibin:
     benchmark:
         "logs/benchmarks/semibin/bin/{sample}.tsv"
     params:
-        output_dir= lambda wc, output: os.path.dirname(output[0]),
-        data = lambda wc, input: Path(input.data_folder)/"samples"/wc.sample/"data.csv",
+        output_dir=lambda wc, output: os.path.dirname(output[0]),
+        data=lambda wc, input: Path(input.data_folder)
+        / "samples"
+        / wc.sample
+        / "data.csv",
         min_bin_kbs=int(config["cobining_min_bin_size"] / 1000),
         extra=config["semibin_options"],
     shell:

@@ -51,9 +51,11 @@ for vamb_folder in list(snakemake.input):
 
     vamb_folder = Path(vamb_folder)
     # extract the bingroup name from the path
-    vamb_folder_name= vamb_folder.parts[-1]
-    assert vamb_folder_name.startswith("vamb_"), f"Folder {vamb_folder} does not start with vamb_"
-    bingroup = vamb_folder_name[len("vamb_"):]
+    vamb_folder_name = vamb_folder.parts[-1]
+    assert vamb_folder_name.startswith(
+        "vamb_"
+    ), f"Folder {vamb_folder} does not start with vamb_"
+    bingroup = vamb_folder_name[len("vamb_") :]
 
     logging.info(f"Parse vamb output for bingroup {bingroup}")
 
@@ -72,12 +74,10 @@ for vamb_folder in list(snakemake.input):
         if extension == fasta_extension:
             big_bins.append(bin_name)
 
-
     logging.info(
         f"Found {len(big_bins)} bins created by Vamb (above size limit)\n"
         f"E.g. {big_bins[:5]}"
     )
-
 
     logging.info(f"Load vamb cluster file {vamb_cluster_file}")
     clusters_contigs = pd.read_table(vamb_cluster_file, header=None)
@@ -88,14 +88,14 @@ for vamb_folder in list(snakemake.input):
     clusters.columns = ["Sample", "Contig"]
 
     # get number of BinID given by vamb, prefix with bingroup
-    clusters["BinID"] = bingroup + clusters_contigs.OriginalName.str.rsplit(
-        separator, n=1, expand=True
-    )[1]
+    clusters["BinID"] = (
+        bingroup
+        + clusters_contigs.OriginalName.str.rsplit(separator, n=1, expand=True)[1]
+    )
 
     # Add information if the bin is large enough
     clusters["OriginalName"] = clusters_contigs.OriginalName
     clusters["Large_enough"] = clusters.OriginalName.isin(big_bins)
-
 
     # Add information about the bingroup
     clusters["BinGroup"] = bingroup
@@ -106,20 +106,19 @@ for vamb_folder in list(snakemake.input):
 
 
 logging.info(f"Concatenate all clusters")
-clusters = pd.concat(all_clusters,axis=0)
-
-
+clusters = pd.concat(all_clusters, axis=0)
 
 
 logging.info(f"Write reformated table to {output_culsters}")
 clusters.to_csv(output_culsters, sep="\t", index=False)
 
 
-
-n_bins= clusters.query("Large_enough").groupby(["BinGroup", "Sample"])["BinId"].nunique()
-logging.info(f"Number of bins per sample and bingroup passing the size filter:\n{n_bins}")
-
-
+n_bins = (
+    clusters.query("Large_enough").groupby(["BinGroup", "Sample"])["BinId"].nunique()
+)
+logging.info(
+    f"Number of bins per sample and bingroup passing the size filter:\n{n_bins}"
+)
 
 
 clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinID
