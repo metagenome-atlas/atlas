@@ -33,9 +33,6 @@ min_version("6.1")
 container: "docker://continuumio/miniconda3:4.4.10"
 
 
-
-
-
 wildcard_constraints:
     binner="[A-Za-z]+",
 

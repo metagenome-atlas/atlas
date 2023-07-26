@@ -35,7 +35,7 @@ rule semibin_generate_data_multi:
 
 rule semibin_train:
     input:
-        flag = get_assembly,
+        flag=get_assembly,
         fasta_sample=rules.filter_contigs.output[0],
         bams=get_bams_of_bingroup,
         data_folder=rules.semibin_generate_data_multi.output[0],
@@ -79,15 +79,18 @@ def semibin_input(wildcards):
         f'BinGroup=="{bingroup_of_sample}"'
     ).index.tolist()
 
-    assert len(samples_of_bingroup)>1
+    assert len(samples_of_bingroup) > 1
 
-    mapping= dict(
+    mapping = dict(
         flag=get_assembly(wildcards),
         fasta=rules.filter_contigs.output[0].format(**wildcards),
-        bams= expand("Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam", sample=samples_of_bingroup, bingroup =bingroup_of_sample ),
-        data_folder=rules.semibin_generate_data_multi.output[0].format(
+        bams=expand(
+            "Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam",
+            sample=samples_of_bingroup,
             bingroup=bingroup_of_sample,
-            **wildcards
+        ),
+        data_folder=rules.semibin_generate_data_multi.output[0].format(
+            bingroup=bingroup_of_sample, **wildcards
         ),
         model=rules.semibin_train.output[0].format(
             bingroup=bingroup_of_sample, **wildcards
@@ -138,7 +141,9 @@ rule run_semibin:
 localrules:
     parse_semibin_output,
 
+
 ruleorder: parse_semibin_output > get_unique_cluster_attribution
+
 
 rule parse_semibin_output:
     input:
