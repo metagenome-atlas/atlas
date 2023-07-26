@@ -29,12 +29,14 @@ rule filter_contigs:
         " -Xmx{resources.java_mem}G 2> {log} "
 
 
+def get_samples_of_bingroup(wildcards):
 
+    return sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
 
 def get_filtered_contigs_of_bingroup(wildcards):
 
-
-    samples_of_group = sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+    samples_of_group = get_samples_of_bingroup(wildcards)
+    
 
     if len(samples_of_group) <= 5:
         raise ValueError(f"Bin group {wildcards.bingroup} has {len(samples_of_group)} less than 5 samples."
