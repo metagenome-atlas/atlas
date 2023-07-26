@@ -608,7 +608,7 @@ rule finalize_contigs:
 
 rule calculate_contigs_stats:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         "{sample}/assembly/contig_stats/final_contig_stats.txt",
     conda:
@@ -648,7 +648,7 @@ rule align_reads_to_final_contigs:
 
 rule pileup_contigs_sample:
     input:
-        fasta="{sample}/{sample}_contigs.fasta",
+        fasta=get_assembly,
         bam="{sample}/sequence_alignment/{sample}.bam",
     output:
         covhist="{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
@@ -702,7 +702,7 @@ rule create_bam_index:
 
 rule predict_genes:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         fna="{sample}/annotation/predicted_genes/{sample}.fna",
         faa="{sample}/annotation/predicted_genes/{sample}.faa",

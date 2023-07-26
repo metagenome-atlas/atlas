@@ -8,7 +8,7 @@ localrules:
 
 rule filter_contigs:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         temp("Cobinning/filtered_contigs/{sample}.fasta"),
     params:
@@ -36,7 +36,7 @@ localrules:
 rule combine_contigs:
     input:
         #Trigers rerun if contigs change
-        flag=expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES),
+        flag=expand("{sample}/{sample}_contigs.fasta", sample=SAMPLES), #TODO: this shoule be adapted using function get_assemblies
         fasta=ancient(expand(rules.filter_contigs.output[0], sample=SAMPLES)),
     output:
         "Cobinning/combined_contigs.fasta.gz",

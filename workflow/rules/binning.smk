@@ -1,14 +1,12 @@
 from glob import glob
 
-BINNING_CONTIGS = "{sample}/{sample}_contigs.fasta"
-
 
 include: "bin_quality.smk"
 
 
 rule pileup_for_binning:
     input:
-        fasta=BINNING_CONTIGS,
+        fasta=get_assembly,
         bam="{sample}/sequence_alignment/{sample_reads}.bam",
     output:
         covstats="{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
@@ -79,7 +77,7 @@ rule combine_coverages:
 rule run_concoct:
     input:
         coverage="{sample}/binning/coverage/combined_coverage.tsv",
-        fasta=BINNING_CONTIGS,
+        fasta=get_assembly,
     output:
         "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(
             config["concoct"]["min_contig_length"]
@@ -159,7 +157,7 @@ def get_metabat_sensitivity():
 rule metabat:
     input:
         depth_file=rules.get_metabat_depth_file.output,
-        contigs=BINNING_CONTIGS,
+        contigs=get_assembly,
     output:
         "{sample}/binning/metabat/cluster_attribution.tmp",
     params:
@@ -190,7 +188,7 @@ rule metabat:
 
 rule maxbin:
     input:
-        fasta=BINNING_CONTIGS,
+        fasta=get_assembly,
         abund="{sample}/binning/coverage/{sample}_coverage.txt",
     output:
         directory("{sample}/binning/maxbin/intermediate_files"),
@@ -307,7 +305,7 @@ rule get_maxbin_cluster_attribution:
 rule get_bins:
     input:
         cluster_attribution="{sample}/binning/{binner}/cluster_attribution.tsv",
-        contigs=BINNING_CONTIGS,
+        contigs=get_assembly,
     output:
         directory("{sample}/binning/{binner}/bins"),
     conda:
@@ -337,7 +335,7 @@ rule run_das_tool:
             "{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
             binner=config["binner"],
         ),
-        contigs=BINNING_CONTIGS,
+        contigs=get_assembly,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
         "{sample}/binning/DASTool/{sample}_DASTool_summary.tsv",

@@ -34,7 +34,7 @@ rule semibin_generate_data_multi:
 
 rule semibin_train:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
         fasta=rules.filter_contigs.output,
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
@@ -66,7 +66,7 @@ rule semibin_train:
 
 rule run_semibin:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
         fasta=rules.filter_contigs.output,
         bams=expand(rules.sort_bam.output, sample=SAMPLES),
         data="Cobinning/SemiBin/samples/{sample}/data.csv",
