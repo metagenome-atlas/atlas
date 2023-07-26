@@ -203,6 +203,10 @@ rule qc:
     output:
         touch("finished_QC"),
 
+rule screen:
+    input:
+        "QC/screen/sketch_comparison.tsv.gz"
+
 
 # overwrite commands in rules/download.snakefile
 onsuccess:
