@@ -182,4 +182,17 @@ def get_quality_controlled_reads(wildcards, include_se=False):
 
 
 def get_assembly(wildcards):
-    return "{sample}/assembly/{sample}_contigs.fasta".format(sample=wildcards.sample)
+    """
+    Returns Assembly file for a given sample.
+
+    """
+
+    Header= "Assembly"
+    try:
+        return get_files_from_sampleTable(wildcards.sample, Header)
+
+    except FileNotInSampleTableException:
+        # return files as named by atlas pipeline
+
+        return "{sample}/assembly/{sample}_contigs.fasta".format(sample=wildcards.sample )
+
