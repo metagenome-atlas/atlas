@@ -173,6 +173,7 @@ def make_config(
     data_type="metagenome",
     interleaved_fastq=False,
     config="config.yaml",
+    binner="vamb",
 ):
     """
     Reads template config file with comments from ../workflow/config/template_config.yaml
@@ -232,6 +233,8 @@ def make_config(
             "Configuration file written to %s\n"
             "        You may want to edit it using any text editor." % config
         )
+
+    conf["final_binner"] = binner
 
 
 def validate_config(config, workflow):

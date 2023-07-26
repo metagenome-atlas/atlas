@@ -156,12 +156,7 @@ minimum_map_quality: 0
 # Binning
 ########################
 
-final_binner: DASTool             # [SemiBin, DASTool, vamb, maxbin]
-
-binner:                           # If DASTool is used as final_binner, use predictions of this binners
-  - metabat
-  - maxbin
-#  - vamb
+final_binner: vamb             # [SemiBin, vamb, metabat, DASTool]
 
 
 metabat:

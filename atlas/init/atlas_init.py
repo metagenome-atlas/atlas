@@ -64,7 +64,14 @@ def prepare_sample_table_for_atlas(
     for h in Headers:
         sample_table[h] = np.nan
 
-    sample_table["BinGroup"] = sample_table.index
+    sample_table["BinGroup"] = "All"
+
+    if sample_table.shape[0] >=50:
+        logger.warning(
+            "You have more than 50 samples in your sample table. "
+            "You should consider to split your samples into multiple BinGroups"
+            "For this modify the 'BinGroup' column in your sample table"
+        )
 
     validate_sample_table(sample_table)
 
@@ -146,6 +153,22 @@ def run_init(
     os.makedirs(working_dir, exist_ok=True)
     os.makedirs(db_dir, exist_ok=True)
 
+    sample_table = get_samples_from_fastq(path_to_fastq)
+
+    prepare_sample_table_for_atlas(
+        sample_table,
+        reads_are_QC=skip_qc,
+        outfile=os.path.join(working_dir, "samples.tsv"),
+    )
+
+    if sample_table.shape[0] <=5:
+        logger.warning("You don't have many samples in your dataset. "
+                       "I set 'metabat' as binner"
+                       )
+        binner = "metabat"
+    else:
+        binner = "vamb"
+
     make_config(
         db_dir,
         threads,
@@ -153,13 +176,7 @@ def run_init(
         data_type,
         interleaved_fastq,
         os.path.join(working_dir, "config.yaml"),
-    )
-    sample_table = get_samples_from_fastq(path_to_fastq)
-
-    prepare_sample_table_for_atlas(
-        sample_table,
-        reads_are_QC=skip_qc,
-        outfile=os.path.join(working_dir, "samples.tsv"),
+        binner= binner
     )
 
 
