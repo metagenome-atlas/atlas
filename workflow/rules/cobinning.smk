@@ -233,14 +233,14 @@ rule parse_vamb_output:
     input:
         expand(rules.run_vamb.output, bingroup = SampleTable.BinGroup.unique()),
     output:
-        renamed_clusters="Cobinning/vamb/clusters.tsv.gz",
+        renamed_clusters="Intermediate/cobinning/vamb_clusters.tsv.gz",
         cluster_atributions= expand(vamb_cluster_attribution_path, sample=SAMPLES),
     log:
         "logs/cobinning/vamb_parse_output.log",
     params:
         separator=config["cobinning_separator"],
         fasta_extension=".fna",
-        output_path=lambda wc: vamb_cluster_attribution_path,
+        output_path=lambda wc: vamb_cluster_attribution_path, # path with {sample} to replace
         samples=SAMPLES,
     conda:
         "../envs/fasta.yaml"
@@ -250,8 +250,7 @@ rule parse_vamb_output:
 
 rule vamb:
     input:
-        #"Cobinning/vamb/clustering",
-        "Cobinning/vamb/clusters.tsv.gz",
+        "Intermediate/cobinning/vamb_clusters.tsv.gz",
         expand("{sample}/binning/vamb/cluster_attribution.tsv", sample=SAMPLES),
 
 

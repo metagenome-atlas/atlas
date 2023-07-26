@@ -29,58 +29,98 @@ sys.excepthook = handle_exception
 
 
 import pandas as pd
+from pathlib import Path
 from utils.utils import gen_names_for_range
 from utils.fasta import parse_fasta_headers
 
-bin_dir = os.path.join(snakemake.input[0], "bins")
+
 fasta_extension = snakemake.params.fasta_extension
 separator = snakemake.params.separator
 
+# path with {sample} to replace
 cluster_output_path = snakemake.params.output_path
 
-vamb_cluster_file = os.path.join(snakemake.input[0], "clusters.tsv")
+
+# cluster.tsv.gz file for all samples of all bingroups
 output_culsters = snakemake.output.renamed_clusters
 
 
-big_bins = []
+all_clusters = []
 
-for file in os.listdir(bin_dir):
-    bin_name, extension = os.path.splitext(file)
+for vamb_folder in list(snakemake.input):
 
-    logging.debug(f"Found file {bin_name} with extension {extension}")
+    vamb_folder = Path(vamb_folder)
+    # extract the bingroup name from the path
+    vamb_folder_name= vamb_folder.parts[-1]
+    assert vamb_folder_name.startswith("vamb_"), f"Folder {vamb_folder} does not start with vamb_"
+    bingroup = vamb_folder_name[len("vamb_"):]
 
-    if extension == fasta_extension:
-        big_bins.append(bin_name)
+    logging.info(f"Parse vamb output for bingroup {bingroup}")
+
+    # path to the bins folder
+    bin_dir = vamb_folder / "bins"
+    vamb_cluster_file = vamb_folder / "clusters.tsv"
+
+    # Get a list of binds that are big enough. Not all bins in the vamb_cluster_file, pass the size filter
+    big_bins = []
+
+    for file in os.listdir(bin_dir):
+        bin_name, extension = os.path.splitext(file)
+
+        logging.debug(f"Found file {bin_name} with extension {extension}")
+
+        if extension == fasta_extension:
+            big_bins.append(bin_name)
 
 
-logging.info(
-    f"Found {len(big_bins)} bins created by Vamb (above size limit)\n"
-    f"E.g. {big_bins[:5]}"
-)
+    logging.info(
+        f"Found {len(big_bins)} bins created by Vamb (above size limit)\n"
+        f"E.g. {big_bins[:5]}"
+    )
 
 
-logging.info(f"Load vamb cluster file {vamb_cluster_file}")
-clusters_contigs = pd.read_table(vamb_cluster_file, header=None)
+    logging.info(f"Load vamb cluster file {vamb_cluster_file}")
+    clusters_contigs = pd.read_table(vamb_cluster_file, header=None)
+    clusters_contigs.columns = ["OriginalName", "Contig"]
 
-clusters_contigs.columns = ["OriginalName", "Contig"]
+    # split contigs by separator. This is mainly done for compatibility with SemiBin
+    clusters = clusters_contigs.Contig.str.rsplit(separator, n=1, expand=True)
+    clusters.columns = ["Sample", "Contig"]
+
+    # get number of BinID given by vamb, prefix with bingroup
+    clusters["BinID"] = bingroup + clusters_contigs.OriginalName.str.rsplit(
+        separator, n=1, expand=True
+    )[1]
+
+    # Add information if the bin is large enough
+    clusters["OriginalName"] = clusters_contigs.OriginalName
+    clusters["Large_enough"] = clusters.OriginalName.isin(big_bins)
 
 
-clusters = clusters_contigs.Contig.str.rsplit(separator, n=1, expand=True)
-clusters.columns = ["Sample", "Contig"]
+    # Add information about the bingroup
+    clusters["BinGroup"] = bingroup
 
-clusters["BinID"] = clusters_contigs.OriginalName.str.rsplit(
-    separator, n=1, expand=True
-)[1]
-clusters["OriginalName"] = clusters_contigs.OriginalName
+    all_clusters.append(clusters)
 
-clusters["Large_enough"] = clusters.OriginalName.isin(big_bins)
+    del clusters_contigs
 
-del clusters_contigs
+
+logging.info(f"Concatenate all clusters")
+clusters = pd.concat(all_clusters,axis=0)
+
+
+
 
 logging.info(f"Write reformated table to {output_culsters}")
 clusters.to_csv(output_culsters, sep="\t", index=False)
 
-clusters = clusters.query("Large_enough")
+
+
+n_bins= clusters.query("Large_enough").groupby(["BinGroup", "Sample"])["BinId"].nunique()
+logging.info(f"Number of bins per sample and bingroup passing the size filter:\n{n_bins}")
+
+
+
 
 clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinID
 
