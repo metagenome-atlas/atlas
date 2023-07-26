@@ -1,11 +1,9 @@
-import io
-from os.path import dirname, join
 from setuptools import setup
 import versioneer  # script in directory
 
-__author__ = "Joe Brown, Silas Kieser"
+__author__ = "Silas Kieser, Joe Brown"
 __copyright__ = "Copyright 2021, Silas Kieser"
-__email__ = "brwnjm@gmail.com, silas.kieser@gmail.com"
+__email__ = "silas.kieser@gmail.com, brwnjm@gmail.com"
 __license__ = "BSD-3"
 
 # read the contents of your README file
@@ -28,10 +26,10 @@ setup(
     description="ATLAS - workflows for assembly, annotation, and genomic binning of metagenomic and metatranscriptomic data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=["atlas"],
+    packages=["atlas", "atlas.init"],
     package_data={
         "": [
-            "atlas/*",
+            "workflow",
         ]
     },
     data_files=[(".", ["README.md", "LICENSE.txt"])],

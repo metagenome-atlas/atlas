@@ -20,7 +20,6 @@ def splitext_ignore_gz(path):
 
 
 def is_fastq_file(file, unzipped_extensions=[".fastq", ".fq"]):
-
     base_name, extension = splitext_ignore_gz(file)
 
     return extension in unzipped_extensions
@@ -30,7 +29,6 @@ def add_sample_to_table(sample_dict, sample_id, header, fastq):
     "Add fastq path to sample table, check if already in table"
 
     if (sample_id in sample_dict) and (header in sample_dict[sample_id]):
-
         logger.error(
             f"Duplicate sample {sample_id} was found with fraction {header};"
             f"\n Sample1: \n{sample_dict[sample_id]} \n"
@@ -53,7 +51,6 @@ def infer_split_character(base_name):
 
     # infer split character if necessary only the first time.
     if (split_character is not None) and (split_character == "infer"):
-
         if ("_R1" in base_name) or ("_R2" in base_name):
             split_character = "_R"
             is_paired = True
@@ -68,7 +65,6 @@ def infer_split_character(base_name):
             is_paired = False
 
         if split_character is not None:
-
             logger.info(
                 f"I inferred that {split_character}1 and {split_character}2 distinguish paired end reads."
             )
@@ -77,7 +73,6 @@ def infer_split_character(base_name):
 
 
 def parse_file(full_path, sample_dict, sample_name=None):
-
     # only look at fastq files
     base_name, extension = splitext_ignore_gz(os.path.basename(full_path))
 
@@ -86,7 +81,6 @@ def parse_file(full_path, sample_dict, sample_name=None):
 
     # pe reads
     if is_paired:
-
         if sample_name is None:
             sample_name = base_name.split(split_character)[0]
 
@@ -97,7 +91,6 @@ def parse_file(full_path, sample_dict, sample_name=None):
         elif "_se" in base_name:
             logger.info("Found se reads. I ignore them.")
         else:
-
             logger.error(
                 f"Did't find '{split_character}1' or  "
                 f"'{split_character}2' in fastq {sample_name} : {full_path}"
@@ -106,7 +99,6 @@ def parse_file(full_path, sample_dict, sample_name=None):
 
     # se reads
     else:
-
         if sample_name is None:
             sample_name = base_name
 
@@ -114,7 +106,6 @@ def parse_file(full_path, sample_dict, sample_name=None):
 
 
 def parse_folder(base_folder, subfolder, sample_dict):
-
     files = os.listdir(os.path.join(base_folder, subfolder))
 
     fastq_files = [f for f in files if is_fastq_file(f)]
@@ -122,7 +113,6 @@ def parse_folder(base_folder, subfolder, sample_dict):
     N_files = len(fastq_files)
 
     if N_files > 3:
-
         # logger.info("You have more than three files per folder. Probably you want to merge them.")
         logger.critical(
             "You have more than three files per subfolder. I assume they come from different lanes. "
@@ -132,7 +122,6 @@ def parse_folder(base_folder, subfolder, sample_dict):
         raise NotImplementedError("Merging of files is not yet implemented")
 
     else:
-
         for file in fastq_files:
             parse_file(
                 os.path.join(base_folder, subfolder, file),
@@ -156,7 +145,6 @@ def get_samples_from_fastq(path, fraction_split_character=split_character):
     try:
         _, subfolders, files = next(os.walk(path))
     except StopIteration:
-
         logger.error(f"Folder {path} seems to conain no files or subfolders.")
         exit(1)
 
@@ -227,7 +215,6 @@ def simplify_sample_names(sample_df):
 
         # cannt find unique sample ids
         else:
-
             logger.warning(
                 "Didn't found a way to simplify sample names. "
                 "I imoute sample_names simply as S1...\n"
@@ -245,7 +232,6 @@ def simplify_sample_names(sample_df):
 
     # Start with digit
     if sample_df.index.str.match("^\d").any():
-
         logger.warning(f"Sample names start with a digit. I prepend 'S' for all.")
         sample_df.index = "S" + sample_df.index
 
@@ -268,7 +254,6 @@ def create_test_fastq_files(
     extra_file_name="L1_EXP5",
     samples=[f"sample{i}" for i in range(1, 4)],
 ):
-
     """Creates a folder (with subfolder) and touches fastq files for the test of atlas inti"""
 
     os.makedirs(output_folder)
@@ -279,14 +264,12 @@ def create_test_fastq_files(
         fractions = [""]
 
     for s in samples:
-
         if subfolders:
             sample_split_character = "/"
         else:
             sample_split_character = "_"
 
         for fraction in fractions:
-
             fname = f"{output_folder}/{s}{sample_split_character}{extra_file_name}_{fraction}{extension}"
             os.makedirs(os.path.dirname(fname), exist_ok=True)
 
@@ -299,7 +282,6 @@ def test_table_creation(
     expected_samples=None,
     **kws,
 ):
-
     fastq_folder = "test_fastq_dir"
     if os.path.exists(fastq_folder):
         shutil.rmtree(fastq_folder)
@@ -311,13 +293,10 @@ def test_table_creation(
         simplify_sample_names(sample_df)
 
     except Exception as e:
-
         if not should_fail:
-
             raise Exception("Test failed but shouldn't") from e
 
     if not should_fail:
-
         # check if samples are as expected
         if expected_samples is None:
             expected_samples = samples
@@ -328,9 +307,7 @@ def test_table_creation(
 
 
 def run_tests():
-
     for paired in [True, False]:
-
         test_table_creation(paired=paired)
         test_table_creation(
             samples=["S-ab-1", "S-ab-2"], expected_samples=["S1", "S2"], paired=paired

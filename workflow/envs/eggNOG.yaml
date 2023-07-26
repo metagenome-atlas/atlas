@@ -1,0 +1,10 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - eggnog-mapper >=2.1.11, <2.2
+    - python=3.11
+    - diamond =2.1
+    - wget # to download_eggnog_data on macOS
+    - pandas>=1.5,<2

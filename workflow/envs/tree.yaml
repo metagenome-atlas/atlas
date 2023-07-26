@@ -1,0 +1,6 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - ete3=3.1.2

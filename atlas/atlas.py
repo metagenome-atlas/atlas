@@ -1,5 +1,5 @@
-from email.policy import default
-import os, sys
+import os
+import sys
 from .color_logger import logger
 
 import multiprocessing
@@ -22,7 +22,6 @@ def handle_max_mem(max_mem, profile):
     "For numbers <1 it's the fraction of available memory."
 
     if profile is not None:
-
         if max_mem is not None:
             logger.info(
                 "Memory requirements are handled by the profile, I ignore max-mem argument."
@@ -39,7 +38,6 @@ def handle_max_mem(max_mem, profile):
         if max_mem is None:
             max_mem = 0.95
         if max_mem > 1:
-
             if max_mem > max_system_memory:
                 logger.critical(
                     f"You specified {max_mem} GB as maximum memory, but your system only has {floor(max_system_memory)} GB"
@@ -47,7 +45,6 @@ def handle_max_mem(max_mem, profile):
                 sys.exit(1)
 
         else:
-
             max_mem = max_mem * max_system_memory
 
         # specify max_mem_string including java mem and max mem
@@ -79,7 +76,7 @@ def get_snakefile(file="workflow/Snakefile"):
     return sf
 
 
-## QC command
+# QC command
 
 
 @cli.command(
@@ -90,7 +87,17 @@ def get_snakefile(file="workflow/Snakefile"):
 @click.argument(
     "workflow",
     type=click.Choice(
-        ["qc", "assembly", "binning", "genomes", "genecatalog", "None", "all"]
+        [
+            "qc",
+            "assembly",
+            "binning",
+            "genomes",
+            "genecatalog",
+            "strains",
+            "quantify_genomes",
+            "None",
+            "all",
+        ]
     ),
     #    show_default=True,
     #    help="Execute only subworkflow.",
@@ -177,6 +184,7 @@ def run_workflow(
 
     cmd = (
         "snakemake --snakefile {snakefile} --directory {working_dir} "
+        " --rerun-triggers mtime "
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
         " {profile} --use-conda {conda_prefix} {dryrun} "
@@ -206,6 +214,7 @@ def run_workflow(
 
 
 ################### Download function #################
+
 
 # Download
 @cli.command(
@@ -239,6 +248,7 @@ def run_download(db_dir, jobs, snakemake_args):
         "--jobs {jobs} --rerun-incomplete "
         "--conda-frontend mamba --scheduler greedy "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
+        " --show-failed-logs "
         "--config database_dir='{db_dir}' {add_args} "
         "{args}"
     ).format(

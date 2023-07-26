@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas=2
+  - pyarrow=11
+  - networkx=3.1
+  - scipy=1.10

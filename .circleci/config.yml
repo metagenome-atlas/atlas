@@ -1,6 +1,6 @@
 defaults: &defaults
   docker:
-    - image: continuumio/miniconda3
+    - image: condaforge/mambaforge
   environment:
     DATABASE_DIR: databases
 
@@ -21,10 +21,10 @@ jobs:
       - run:
           name: Setup conda
           command: |
+            conda config --set channel_priority strict
             conda config --add channels bioconda
             conda config --add channels conda-forge
             conda config --set always_yes true
-            conda install -y mamba
       - restore_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}
       - run:
@@ -45,8 +45,7 @@ jobs:
           name: Install atlas
           command: |
               source activate ./atlasenv
-              python setup.py install
-              conda list
+              python -m pip install . --no-deps -vv
               atlas --help
               atlas --version
       - run:
@@ -82,12 +81,12 @@ jobs:
           name: Init
           command: |
             source activate ./atlasenv
-            atlas init --db-dir $DATABASE_DIR --threads 1 -w test/Getenvs test/reads/empty
+            atlas init --db-dir $DATABASE_DIR --threads 1 --working-dir test/Getenvs test/reads/empty
       - run:
           name: install environements
           command: |
             source activate ./atlasenv
-            atlas run all -w test/Getenvs --conda-create-envs-only --cores all
+            atlas run all --working-dir test/Getenvs --conda-create-envs-only --cores all
       - save_cache:
           key: conda-environements-{{ checksum "conda_envs.tar"  }}
           paths:
@@ -96,7 +95,7 @@ jobs:
       #     name: download checkm data
       #     command: |
       #         source activate ./atlasenv
-      #         atlas run None -w test/Getenvs logs/checkm_init.txt
+      #         atlas run None --working-dir test/Getenvs logs/checkm_init.txt
 
       - persist_to_workspace:
           root: /root/project/
@@ -104,20 +103,7 @@ jobs:
             - databases
 
 
-  sra_init:
-    <<: *defaults
-    environment:
-      N_THREADS: 1
-      MEM: 2
-    resource_class: medium
-    steps:
-      - attach_workspace:
-          at: /root/project/
-      - run:
-          name: Test sra download
-          command: |
-              source activate ./atlasenv
-              test/test_sra.sh --dryrun
+
 
 
   genome_quantify:
@@ -152,7 +138,7 @@ jobs:
           paths:
             - example_data
 
-  assembly:
+  run_test:
     <<: *defaults
     environment:
       N_THREADS: 2
@@ -162,18 +148,56 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
+          name: run test
+          command: |
+            source activate ./atlasenv
+            ls -l 
+            pwd 
+            chmod +x test/test_ci.sh
+            test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_artifacts:
+          path: test_ci/logs
+          destination: logs
+      - store_artifacts:
+          path: test_ci/Streptococcus/logs
+          destination: sample_logs
+
+
+  qc_and_assembly:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: init
+          command: |
+            source activate ./atlasenv
+
+            atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --interleaved-fastq --threads "$N_THREADS" --working-dir "wd" 
+      - run:
+          name: run qc
+          command: |
+            source activate ./atlasenv
+            atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+      - run:
           name: test assembly
           command: |
             source activate ./atlasenv
-            test/test_assembly.sh --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
-            
-          # --omit-from build_qc_report build_assembly_report
+            atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd 
       - store_artifacts:
-          path: test/Test_assembly/logs
-          destination: assembly_logs
+          path: wd/logs
+          destination: logs
       - store_artifacts:
-          path: test/Test_assembly/Streptococcus/logs
-          destination: assembly_sample_logs
+          path: wd/Streptococcus/logs
+          destination: sample_logs
+      - persist_to_workspace:
+          root: /root/project
+          paths:
+            - wd
 
   genecatalog:
     <<: *defaults
@@ -185,11 +209,37 @@ jobs:
       - attach_workspace:
           at: /root/project/
       - run:
+          name: Create tabal of envs
+          command: |
+            tar cf genecatalog.envs.tar workflow/envs/sequence_utils.yaml workflow/envs/fasta.yaml workflow/envs/mmseqs.yaml workflow/envs/hdf.yaml  workflow/envs/required_packages.yaml 
+            
+      - restore_cache:
+          key: genecatalog-env-{{ checksum "genecatalog.envs.tar" }}
+          
+         
+      - run:
+         name: create conda genecatalog
+         command: |
+            source activate ./atlasenv
+            WD='wd'
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --conda-create-envs-only
+      - save_cache:
+          key: genecatalog-env-{{ checksum "genecatalog.envs.tar" }}
+          paths:
+            - databases            
+            
+      - run:
           name: run genecatalog
           command: |
             source activate ./atlasenv
-            WD='test/Test_assembly'
-            atlas run genecatalog --omit-from combine_egg_nogg_annotations  -w $WD --resources mem=$MEM --jobs=$N_THREADS --restart-times=2 
+            WD='wd'
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 
+      - store_artifacts:
+          path: wd/logs
+          destination: genecatalog_logs
+      - store_artifacts:
+          path: wd/Streptococcus/logs
+          destination: genecatalog_sample_logs
   binning:
     <<: *defaults
     environment:
@@ -199,22 +249,23 @@ jobs:
     steps:
       - attach_workspace:
           at: /root/project/
-      - run: tar -cf conda_envs.tar atlas/envs
-      - restore_cache:
-          keys:
-            - conda-environements-{{ checksum "conda_envs.tar"  }}
-            - conda-environements-
       - run:
-          name: test binning
+          name: run binning
           command: |
             source activate ./atlasenv
-            test/test_binning.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --omit-from get_bins
+            WD='wd'
+            atlas run binning --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat --omit-from checkm2_download_db download_gunc
 
       - store_test_results:
-          path: example_data/binning/reports
+          path: wd/Binning/metabat/bin_report.html
+
+
       - store_artifacts:
-          path: example_data/binning/reports
-          destination: binning_results
+          path: wd/logs
+          destination: binning_logs
+      - store_artifacts:
+          path: wd/Streptococcus/logs
+          destination: binning_logs/sample
 
   #
   #
@@ -248,22 +299,31 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
-      - sra_init:
-          requires:
-            - build_and_dryrun
       - genome_quantify:
           requires:
             - build_and_dryrun
+      - get_example_data
+
+      # - run_test:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
             
-      # - get_example_data
+      - qc_and_assembly:
+          requires:
+            - build_and_dryrun
+            - get_example_data
+
+      - binning:
+          requires:
+            - qc_and_assembly
+      - genecatalog:
+          requires:
+            - qc_and_assembly
       # - getenvs:
       #     requires:
       #       - build_and_dryrun
-      # - assembly:
+            
+      # - sra_init:
       #     requires:
       #       - build_and_dryrun
-      #       - get_example_data
-      # - binning:
-      #     requires:
-      #       - build_and_dryrun
-      #       - get_example_data

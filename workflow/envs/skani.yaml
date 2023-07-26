@@ -1,0 +1,6 @@
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - skani=0.1

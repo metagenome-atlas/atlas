@@ -1,9 +1,10 @@
 # Metagenome-Atlas
 
-[![Version](https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg)](https://anaconda.org/bioconda/metagenome-atlas)
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/metagenome-atlas/badges/latest_release_relative_date.svg)](https://anaconda.org/bioconda/metagenome-atlas)
 [![Bioconda](https://img.shields.io/conda/dn/bioconda/metagenome-atlas.svg?label=Bioconda )](https://anaconda.org/bioconda/metagenome-atlas)
 [![Documentation Status](https://readthedocs.org/projects/metagenome-atlas/badge/?version=latest)](https://metagenome-atlas.readthedocs.io/en/latest/?badge=latest)
-[![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd)
+![Mastodon Follow](https://img.shields.io/mastodon/follow/109273833677404282?domain=https%3A%2F%2Fmstdn.science&style=social)
+<!--[![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd) -->
 
 
 Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It handles all steps from QC, Assembly, Binning, to Annotation.
@@ -12,10 +13,12 @@ Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It ha
 
 You can start using atlas with three commands:
 ```
-    mamba install -y -c bioconda -c conda-forge metagenome-atlas=2.9
+    mamba install -y -c bioconda -c conda-forge metagenome-atlas={latest_version}
     atlas init --db-dir databases path/to/fastq/files
     atlas run all
 ```
+where `{latest_version}` should be replaced by [![Version](https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg)](https://anaconda.org/bioconda/metagenome-atlas)
+
 
 # Webpage
 

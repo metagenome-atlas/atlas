@@ -27,7 +27,6 @@ PHIX = "phiX174_virus.fa"
 def prepare_sample_table_for_atlas(
     sample_table, reads_are_QC=False, outfile="samples.tsv"
 ):
-
     """
     Write the file `samples.tsv` and complete the sample names and paths for all
     files in `path`.
@@ -242,9 +241,7 @@ def run_init_sra(
     runinfo_file = working_dir / "RunInfo.tsv"
 
     if os.path.exists(runinfo_file) & (not overwrite):
-
         if not ((len(identifiers) == 1) & (identifiers[0].lower() == "continue")):
-
             logger.error(
                 f"Found Filtered runinfo file {runinfo_file}"
                 "If you want me to continue with this one use 'continue' instead of identifiers. "
@@ -281,7 +278,6 @@ def run_init_sra(
     elif (RunTable.LibraryLayout == "SINGLE").all():
         paired = False
     else:
-
         logger.error(
             f"Your library layout is not consistent, please check your runtable {runinfo_file}"
         )
@@ -310,7 +306,6 @@ def run_init_sra(
             lambda s: str(SRA_READ_PATH / f"{s}/{s}.fastq.gz")
         )
     else:
-
         sample_table["R1"] = sample_table.index.map(
             lambda s: str(SRA_READ_PATH / f"{s}/{s}_1.fastq.gz")
         )

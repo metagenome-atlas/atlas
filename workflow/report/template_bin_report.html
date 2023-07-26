@@ -1,0 +1,52 @@
+<html>
+
+<head>
+
+    <title>{binner} Metagenome-Atlas - Bin Report</title>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+    <style type="text/css">
+        {css_content}
+    </style>
+
+</head>
+
+<body>
+
+
+    <div class="container" id="notebook-container">
+
+        <h1>Bin Report for Binner {binner}</h1>
+        <p>Genome completeness and contamination, and taxonomy were estimated unsing CheckM2. </p>
+        {div[QualityScore]}
+        <p>For all the information see the file {div[input_file]}</p>
+
+        <h2>Number of genomes<h/2></h>
+            {div[table]}
+        
+            <p>"Good quality" refers to the standard of Completeness &gt; 90&percnt; and Contamination &lt; 5&percnt;. Also called high-quality or near-complete. But t-RNA/r-RNA presence is not evaluated. It is less stingent than Quality Score &gt; 90.  </p>
+
+        <h2>Quality for all bins<h/2>
+                {div[2D]}
+
+
+        <h2>Quality for Species representatives<h/2>
+                {div[2Dsp]}
+
+
+
+        <h2>Quality score by Sample <h/2>
+
+            
+
+            {div[bySample]}
+
+
+
+
+    </div>
+</body>
+
+</html>

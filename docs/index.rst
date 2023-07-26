@@ -26,9 +26,13 @@ It handles all steps from QC, Assembly, Binning, to Annotation.
 
 You can start using atlas with three commands::
 
-      conda install -c bioconda -c conda-forge metagenome-atlas
+      mamba install -c bioconda -c conda-forge metagenome-atlas={latest_version}
       atlas init --db-dir databases path/to/fastq/files
       atlas run
+
+where `{latest_version}` should be replaced by 
+.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg   
+  :target: https://anaconda.org/bioconda/metagenome-atlas
 
 
 
