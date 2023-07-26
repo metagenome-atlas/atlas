@@ -2,7 +2,7 @@
 rule semibin_generate_data_multi:
     input:
         fasta=rules.combine_contigs.output,
-        bams=lambda wc: expand(rules.sort_bam.output, sample= get_samples_of_bingroup(wc)),
+        bams=get_bams_of_bingroup,
     output:
         directory("Intermediate/cobinning/{bingroup}/semibin/data_multi")
         # expand(
@@ -37,7 +37,7 @@ rule semibin_train:
     input:
         flag = "{sample}/{sample}_contigs.fasta",
         fasta_sample = rules.filter_contigs.output,
-        bams= rules.semibin_generate_data_multi.input.bams,
+        bams= get_bams_of_bingroup,
         data_folder= rules.semibin_generate_data_multi.output[0],
     output:
         "Intermediate/cobinning/{bingroup}/semibin/models/{sample}/model.h5",
@@ -97,7 +97,7 @@ rule run_semibin:
     benchmark:
         "logs/benchmarks/semibin/bin/{sample}.tsv"
     params:
-        output_dir= lambda wc, output: os.path.dirname(output[0])
+        output_dir= lambda wc, output: os.path.dirname(output[0]),
         data = lambda wc, input: Path(input.data_folder)/"samples"/wc.sample/"data.csv",
         min_bin_kbs=int(config["cobining_min_bin_size"] / 1000),
         extra=config["semibin_options"],

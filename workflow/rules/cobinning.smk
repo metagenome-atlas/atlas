@@ -52,6 +52,11 @@ def get_filtered_contigs_of_bingroup(wildcards):
     }
 
 
+def get_bams_of_bingroup(wildcards):
+
+    samples_of_group = get_samples_of_bingroup(wildcards)
+
+    return expand("Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam", sample= samples_of_group)
 
 
 rule combine_contigs:
@@ -161,7 +166,7 @@ rule sort_bam:
 
 rule summarize_bam_contig_depths:
     input:
-        bam=expand(rules.sort_bam.output, sample=SAMPLES),
+        bams= get_bams_of_bingroup,
     output:
         "Intermediate/cobinning/{bingroup}/coverage.jgi.tsv",
     log:
@@ -174,7 +179,7 @@ rule summarize_bam_contig_depths:
     shell:
         "jgi_summarize_bam_contig_depths "
         " --outputDepth {output} "
-        " {input.bam} &> {log} "
+        " {input.bams} &> {log} "
 
 
 localrules:
@@ -233,7 +238,7 @@ localrules:
 
 rule parse_vamb_output:
     input:
-        expand(rules.run_vamb.output, bingroup = SampleTable.BinGroup.unique()),
+        expand(rules.run_vamb.output, bingroup = sampleTable.BinGroup.unique()),
     output:
         renamed_clusters="Intermediate/cobinning/vamb_clusters.tsv.gz",
         cluster_atributions= expand(vamb_cluster_attribution_path, sample=SAMPLES),
