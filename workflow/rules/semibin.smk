@@ -35,7 +35,7 @@ rule semibin_generate_data_multi:
 
 rule semibin_train:
     input:
-        flag="{sample}/{sample}_contigs.fasta",
+        flag = get_assembly,
         fasta_sample=rules.filter_contigs.output[0],
         bams=get_bams_of_bingroup,
         data_folder=rules.semibin_generate_data_multi.output[0],

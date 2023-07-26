@@ -8,7 +8,7 @@ localrules:
 
 rule filter_contigs:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         temp("Intermediate/cobinning/filtered_contigs/{sample}.fasta"),
     params:
@@ -46,8 +46,6 @@ def get_filtered_contigs_of_bingroup(wildcards):
         )
 
     return {
-        # Trigers rerun if contigs change
-        "flag": expand("{sample}/{sample}_contigs.fasta", sample=samples_of_group),
         "fasta": ancient(
             expand(rules.filter_contigs.output[0], sample=samples_of_group)
         ),
