@@ -96,7 +96,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
             RunTable = RunTable.query("LibraryLayout == 'SINGLE'")
 
         else:
-            logger.warn(f"I drop {N_library_layout['SINGLE']} single end libraries")
+            logger.warning(f"I drop {N_library_layout['SINGLE']} single end libraries")
 
             RunTable = RunTable.query("LibraryLayout == 'PAIRED'")
 
@@ -105,7 +105,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
     if not RunTable.Platform.isin(["ILLUMINA"]).all():
         Platforms = ", ".join(RunTable.Platform.unique())
 
-        logger.warn(
+        logger.warning(
             f"Your samples are sequenced on the folowing platform: {Platforms}\n"
             "I don't know how well Atlas handles non-illumina reads.\n"
             "If you have long-reads, specify them via a the longreads, column in the sample table."
@@ -160,7 +160,7 @@ def validate_merging_runinfo(path):
             else:
                 problematic_samples_list = " ".join(problematic_samples)
 
-                logger.warn(
+                logger.warning(
                     "You attemt to merge runs from the same sample. "
                     f"But for {len(problematic_samples)} samples the runs have different {key}: {problematic_samples_list}\n"
                     f"You can modify the table {path} and rerun the command.\n"

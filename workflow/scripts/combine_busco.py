@@ -52,7 +52,7 @@ def main(samples, completeness_files, bin_table):
     failed_genomes = df.index[df.Dataset.str.lower().str.contains("run failed")]
 
     if len(failed_genomes) > 0:
-        logging.warn(
+        logging.warning(
             "Following genomes didn't pass BUSCO. I ignore them, because "
             "I think theas means they are too bad to be quantified:\n"
             f"{failed_genomes}"

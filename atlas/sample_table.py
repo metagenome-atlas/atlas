@@ -25,21 +25,143 @@ def validate_sample_table(sampleTable):
         exit(1)
 
     if sampleTable.index.str.match("^\d").any():
-        logger.warning(
+        logger.error(
             f"Sample names shouldn't start with a digit. This can lead to incompatibilities.\n {list(sampleTable.index)}"
         )
+        exit(1)
 
     if sampleTable.index.str.contains("_").any():
-        logger.warning(
+        logger.error(
             f"Sample names shouldn't contain underscores. This can lead to incompatibilities. \n {list(sampleTable.index)}"
         )
+        exit(1)
+
     if sampleTable.index.str.count("-").max() > 1:
-        logger.warning(
-            f"Sample names shouldn't have more than one hypon '-'. This can lead to incompatibilities.\n {list(sampleTable.index)}"
+        logger.error(
+            f"Sample names shouldn't have more than one hypo '-'. This can lead to incompatibilities.\n {list(sampleTable.index)}"
         )
+        exit(1)
+
+
+    ### Validate BinGroup
+
+    if sampleTable.BinGroup.isnull().any():
+        logger.warning(
+            f"Found empty values in the sample table column 'BinGroup'"
+        )
+        
+
+
+    if sampleTable.BinGroup.str.contains("_").any():
+        logger.error(
+            f"BinGroup names shouldn't contain underscores. This can lead to incompatibilities. \n {list(sampleTable.BinGroup)}"
+        )
+        exit(1)
+
+    if sampleTable.BinGroup.str.contains("-").any():
+        logger.error(
+            f"BinGroup names shouldn't contain hypos '-'. This can lead to incompatibilities.\n {list(sampleTable.BinGroup)}"
+        )
+        exit(1)
+
+
+
 
 
 def load_sample_table(sample_table="samples.tsv"):
     sampleTable = pd.read_csv(sample_table, index_col=0, sep="\t")
     validate_sample_table(sampleTable)
     return sampleTable
+
+
+def validate_bingroup_size_cobinning(sampleTable,logger):
+    """
+    Validate that the bingroups are not too large, nor too small for co-binning.
+
+    e.g. vamb and SemiBin
+    """
+    
+    bin_group_sizes = sampleTable.BinGroup.value_counts()
+
+
+    if bin_group_sizes.max() > 200:
+        logger.warning(
+            f"Found a bin group with more than 250 samples. This might lead to memory issues. \n {bin_group_sizes}"
+        )
+
+    if bin_group_sizes.min() <=5:
+        logger.error(
+            "If you want to use co-binning, you should have at least 5-10 samples per bin group. \n"
+        )
+        exit(1)
+
+
+def validate_bingroup_size_metabat(sampleTable,logger):
+
+    bin_group_sizes = sampleTable.BinGroup.value_counts()
+
+    max_bin_group_size = bin_group_sizes.max()
+
+    warn_message= ( "Co-binning with metabat uses cross-mapping which scales quadratically."
+                    f"You have a bingroup with {max_bin_group_size} samples, which already leads to {max_bin_group_size*max_bin_group_size} cross-mappings."
+                    
+    )
+
+
+
+    if max_bin_group_size > 50:
+        logger.error( warn_message + "This is too much for metabat. Please use vamb, or SemiBin or split your samples into smaller groups." )
+        exit(1)
+
+    if max_bin_group_size > 10:
+        logger.warning( warn_message + "This might be too much for metabat. Consider using vamb, or SemiBin or split your samples into smaller groups.")
+
+    elif max_bin_group_size ==1:
+
+        logger.warning("You have only one sample per bingroup. This doesn't use the co-abundance information.")      
+
+
+
+
+def validate_bingroup_size(sample, config,logger):
+
+
+
+    if config["final_binner"]=="DASTool":
+
+        binners = config["binner"]
+
+        logger.info(f"DASTool uses the folowing binners: {binners}")
+
+        if ("vamb" in binners) or ("SemiBin" in binners):
+
+            validate_bingroup_size_cobinning(sample,logger)
+
+        if "metabat" in binners:
+                
+                validate_bingroup_size_metabat(sample,logger)
+
+    elif config["final_binner"]=="metabat":
+
+        validate_bingroup_size_metabat(sample,logger)
+
+    elif config["final_binner"] in ["vamb","SemiBin"]:
+
+        validate_bingroup_size_cobinning(sample,logger)
+
+    elif config["final_binner"] == "maxbin":
+
+        logger.warning("maxbin Doesn't use coabundance for binning.")
+
+    else:
+        logger.error(f"Unknown final binner: {config['final_binner']}")
+        
+
+
+     
+    
+
+
+    
+
+
