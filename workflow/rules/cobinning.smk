@@ -61,6 +61,7 @@ def get_bams_of_bingroup(wildcards):
     return expand(
         "Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam",
         sample=samples_of_group,
+        bingroup= wildcards.bingroup
     )
 
 
