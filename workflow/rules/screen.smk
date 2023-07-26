@@ -18,7 +18,7 @@ rule generate_sketch:
         " samplerate=0.5"
         " minkeycount=2 "
         " out={output} "
-        " blacklist=nt ssu=f name0={sample} depth=t overwrite=t "
+        " blacklist=nt ssu=f name0={wildcards.sample} depth=t overwrite=t "
         " -Xmx{resources.java_mem}g "
         " &> {log}"
 
