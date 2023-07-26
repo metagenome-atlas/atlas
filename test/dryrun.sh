@@ -16,7 +16,7 @@ reads_dir='test/reads/empty'
 
 echo "touch reads dir"
 mkdir -p $reads_dir
-for sample in Sample1 Sample2 ; 
+for sample in Sample1 Sample2 Sample3 Sample4 Sample5 Sample6; 
   do
   for fraction in R1 R2;
     do
@@ -43,7 +43,7 @@ echo "Dryrun strains"
 atlas run genomes strains -w $WD --max-mem $MaxMem --jobs $NThreads --dryrun $@
 
 
-for binner in SemiBin vamb DASTool ; do
+for binner in metabat SemiBin vamb DASTool ; do
 
   echo "
         Dryrun Binner $binner
