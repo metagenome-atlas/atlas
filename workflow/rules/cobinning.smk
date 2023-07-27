@@ -31,7 +31,9 @@ rule filter_contigs:
 
 def get_samples_of_bingroup(wildcards):
 
-    return sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+    samples_of_group= sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+
+    return samples_of_group
 
 
 def get_filtered_contigs_of_bingroup(wildcards):
@@ -45,11 +47,7 @@ def get_filtered_contigs_of_bingroup(wildcards):
             "Adapt the sample.tsv to set BinGroup of size [5- 1000]"
         )
 
-    return {
-        "fasta": ancient(
-            expand(rules.filter_contigs.output[0], sample=samples_of_group)
-        ),
-    }
+    return expand(rules.filter_contigs.output[0], sample=samples_of_group)
 
 
 def get_bams_of_bingroup(wildcards):
@@ -65,14 +63,14 @@ def get_bams_of_bingroup(wildcards):
 
 rule combine_contigs:
     input:
-        unpack(get_filtered_contigs_of_bingroup),
+        fasta= get_filtered_contigs_of_bingroup,
     output:
         "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
         "logs/cobinning/{bingroup}/combine_contigs.log",
     params:
         seperator=config["cobinning_separator"],
-        samples=SAMPLES,
+        samples=get_samples_of_bingroup,
     threads: 1
     run:
         import gzip as gz
