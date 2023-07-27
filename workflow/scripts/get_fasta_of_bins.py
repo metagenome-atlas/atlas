@@ -6,7 +6,7 @@ import logging, traceback
 
 logging.basicConfig(
     filename=snakemake.log[0],
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -41,7 +41,7 @@ import pandas as pd
 from Bio import SeqIO
 
 
-def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
+def get_fasta_of_bins(cluster_attribution, contigs_file, out_folder):
     """
     Creates individual fasta files for each bin using the contigs fasta and the cluster attribution.
 
@@ -67,18 +67,29 @@ def get_fasta_of_bins(cluster_attribution, contigs, out_folder):
         f"I got\n{CA.head()}"
     )
 
-    contigs = SeqIO.to_dict(SeqIO.parse(contigs, "fasta"))
+    contig_fasta_dict = SeqIO.index(contigs_file, "fasta")
 
-    for binid in CA.Bin.unique():
-        bin_contig_names = CA.query('Bin == "@binid"').index.tolist()
+    assert len(contig_fasta_dict) > 0, "No contigs in your fasta"
+
+    unique_bins = CA.Bin.unique()
+
+    assert len(unique_bins) >= 1, "No bins found"
+
+    for binid in unique_bins:
+        bin_contig_names = CA.loc[CA.Bin == binid, "Contig"].tolist()
         out_file = os.path.join(out_folder, f"{binid}.fasta")
 
-        if type(bin_contig_names) == str:
-            warnings.warn(f"single contig bin Bin : {binid} {bin_contig_names}")
-            bin_contig_names = [bin_contig_names]
+        assert (
+            len(bin_contig_names) >= 1
+        ), f"No contigs found for bin {binid} in {cluster_attribution}"
 
-        bin_contigs = [contigs[c] for c in bin_contig_names]
-        SeqIO.write(bin_contigs, out_file, "fasta")
+        if len(bin_contig_names) == 1:
+            warnings.warn(f"single contig bin Bin : {binid} {bin_contig_names}")
+
+        logging.debug(f"Found {len(bin_contig_names)} contigs {bin_contig_names}")
+
+        fasta_contigs = [contig_fasta_dict[c] for c in bin_contig_names]
+        SeqIO.write(fasta_contigs, out_file, "fasta")
 
 
 if __name__ == "__main__":
@@ -92,6 +103,6 @@ if __name__ == "__main__":
     else:
         get_fasta_of_bins(
             snakemake.input.cluster_attribution,
-            snakemake.input.contigs,
+            snakemake.input.contigs[0],
             snakemake.output[0],
         )
