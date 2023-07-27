@@ -48,7 +48,6 @@ output_culsters = snakemake.output.renamed_clusters
 all_clusters = []
 
 for vamb_folder in list(snakemake.input):
-
     vamb_folder = Path(vamb_folder)
     # extract the bingroup name from the path
     vamb_folder_name = vamb_folder.parts[-1]
@@ -88,7 +87,7 @@ for vamb_folder in list(snakemake.input):
     clusters.columns = ["Sample", "Contig"]
 
     # get number of BinID given by vamb, prefix with bingroup
-    clusters["BinID"] = (
+    clusters["BinId"] = (
         bingroup
         + clusters_contigs.OriginalName.str.rsplit(separator, n=1, expand=True)[1]
     )
@@ -105,12 +104,8 @@ for vamb_folder in list(snakemake.input):
     del clusters_contigs
 
 
-logging.info(f"Concatenate all clusters")
+logging.info(f"Concatenate clusters of all bingroups")
 clusters = pd.concat(all_clusters, axis=0)
-
-
-logging.info(f"Write reformated table to {output_culsters}")
-clusters.to_csv(output_culsters, sep="\t", index=False)
 
 
 n_bins = (
@@ -120,8 +115,10 @@ logging.info(
     f"Number of bins per sample and bingroup passing the size filter:\n{n_bins}"
 )
 
+logging.info(f"Write reformated table to {output_culsters}")
+clusters.to_csv(output_culsters, sep="\t", index=False)
 
-clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinID
+clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinId
 
 logging.info(f"Write cluster_attribution for samples")
 for sample, cl in clusters.groupby("Sample"):
