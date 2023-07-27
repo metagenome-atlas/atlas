@@ -40,6 +40,7 @@ rule compare_sketch:
     shell:
         "comparesketch.sh alltoall "
         " format=3 out={output} "
+        " records=5000 "
         " {input} "
         " -Xmx{resources.java_mem}g "
         " &> {log}"
