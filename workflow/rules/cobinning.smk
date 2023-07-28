@@ -13,6 +13,7 @@ rule filter_contigs:
         temp("Intermediate/cobinning/filtered_contigs/{sample}.fasta"),
     params:
         min_length=config["cobining_min_contig_length"],
+        prefix= lambda wc: wc.sample+ config["cobinning_separator"]
     log:
         "logs/cobinning/filter_contigs/{sample}.log",
     conda:
@@ -22,8 +23,9 @@ rule filter_contigs:
         mem=config["simplejob_mem"],
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
-        " reformat.sh in={input} "
-        " fastaminlen={params.min_length} "
+        " rename.sh in={input} "
+        " prefix={params.prefix} addprefix=t addunderscore=f"
+        " minscaf={params.min_length} "
         " out={output} "
         " overwrite=true "
         " -Xmx{resources.java_mem}G 2> {log} "
@@ -31,7 +33,9 @@ rule filter_contigs:
 
 def get_samples_of_bingroup(wildcards):
 
-    return sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+    samples_of_group= sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+
+    return samples_of_group
 
 
 def get_filtered_contigs_of_bingroup(wildcards):
@@ -45,11 +49,7 @@ def get_filtered_contigs_of_bingroup(wildcards):
             "Adapt the sample.tsv to set BinGroup of size [5- 1000]"
         )
 
-    return {
-        "fasta": ancient(
-            expand(rules.filter_contigs.output[0], sample=samples_of_group)
-        ),
-    }
+    return expand(rules.filter_contigs.output[0], sample=samples_of_group)
 
 
 def get_bams_of_bingroup(wildcards):
@@ -65,27 +65,16 @@ def get_bams_of_bingroup(wildcards):
 
 rule combine_contigs:
     input:
-        unpack(get_filtered_contigs_of_bingroup),
+        fasta= get_filtered_contigs_of_bingroup,
     output:
         "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
         "logs/cobinning/{bingroup}/combine_contigs.log",
-    params:
-        seperator=config["cobinning_separator"],
-        samples=SAMPLES,
-    threads: 1
-    run:
-        import gzip as gz
-
-        with gz.open(output[0], "wt") as fout:
-            for sample, input_fasta in zip(params.samples, input.fasta):
-                with open(input_fasta) as fin:
-                    for line in fin:
-                        # if line is a header add sample name
-                        if line[0] == ">":
-                            line = f">{sample}{params.seperator}" + line[1:]
-                        # write each line to the combined file
-                        fout.write(line)
+    conda:
+        "../envs/required_packages.yaml"
+    threads: config["simplejob_threads"],
+    shell:
+        " (cat {input} | pigz -p {threads} > {output} ) 2> {log}"
 
 
 rule minimap_index:
@@ -97,7 +86,7 @@ rule minimap_index:
         index_size="12G",
     resources:
         mem=config["mem"],  # limited num of fatnodes (>200g)
-    threads: 3
+    threads: config["simplejob_threads"],
     log:
         "logs/cobinning/{bingroup}/minimap_index.log",
     benchmark:
@@ -115,7 +104,7 @@ rule samtools_dict:
         dict="Intermediate/cobinning/{bingroup}/combined_contigs.dict",
     resources:
         mem=config["simplejob_mem"],
-        ttime=config["runtime"]["simplejob"],
+        time=config["runtime"]["simplejob"],
     threads: 1
     log:
         "logs/cobinning/{bingroup}/samtools_dict.log",
@@ -242,7 +231,7 @@ rule parse_vamb_output:
     input:
         expand(rules.run_vamb.output, bingroup=sampleTable.BinGroup.unique()),
     output:
-        renamed_clusters="Intermediate/cobinning/vamb_clusters.tsv.gz",
+        renamed_clusters="Binning/vamb/vamb_clusters.tsv.gz",
         cluster_atributions=expand(vamb_cluster_attribution_path, sample=SAMPLES),
     log:
         "logs/cobinning/vamb_parse_output.log",
@@ -259,7 +248,7 @@ rule parse_vamb_output:
 
 rule vamb:
     input:
-        "Intermediate/cobinning/vamb_clusters.tsv.gz",
+        "Binning/vamb/vamb_clusters.tsv.gz",
         expand("{sample}/binning/vamb/cluster_attribution.tsv", sample=SAMPLES),
 
 

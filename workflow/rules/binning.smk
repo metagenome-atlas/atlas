@@ -313,7 +313,7 @@ rule get_bins:
     log:
         "{sample}/logs/binning/get_bins_{binner}.log",
     script:
-        "get_fasta_of_bins.py"
+        "../scripts/get_fasta_of_bins.py"
 
 
 localrules:
