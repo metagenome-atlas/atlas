@@ -10,7 +10,7 @@ rule filter_contigs:
     input:
         get_assembly,
     output:
-        temp("Intermediate/cobinning/filtered_contigs/{sample}.fasta"),
+        "Intermediate/cobinning/filtered_contigs/{sample}.fasta.gz",
     params:
         min_length=config["cobining_min_contig_length"],
         prefix= lambda wc: wc.sample+ config["cobinning_separator"]
@@ -195,7 +195,7 @@ rule run_vamb:
         coverage="Intermediate/cobinning/{bingroup}/coverage.tsv",
         fasta=rules.combine_contigs.output,
     output:
-        directory("Intermediate/cobinning/vamb_{bingroup}"),
+        directory("Intermediate/cobinning/{bingroup}/vamb_output"),
     conda:
         "../envs/vamb.yaml"
     threads: config["threads"]
@@ -240,6 +240,7 @@ rule parse_vamb_output:
         fasta_extension=".fna",
         output_path=lambda wc: vamb_cluster_attribution_path,  # path with {sample} to replace
         samples=SAMPLES,
+        bingroups = sampleTable.BinGroup.unique()
     conda:
         "../envs/fasta.yaml"
     script:

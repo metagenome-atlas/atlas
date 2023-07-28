@@ -3,7 +3,7 @@ import logging, traceback
 
 logging.basicConfig(
     filename=snakemake.log[0],
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -47,14 +47,11 @@ output_culsters = snakemake.output.renamed_clusters
 
 all_clusters = []
 
-for vamb_folder in list(snakemake.input):
-    vamb_folder = Path(vamb_folder)
-    # extract the bingroup name from the path
-    vamb_folder_name = vamb_folder.parts[-1]
-    assert vamb_folder_name.startswith(
-        "vamb_"
-    ), f"Folder {vamb_folder} does not start with vamb_"
-    bingroup = vamb_folder_name[len("vamb_") :]
+
+for i in range(len(list(snakemake.input))):
+    vamb_folder = Path(snakemake.input[i])
+
+    bingroup = snakemake.params.bingroups[i]
 
     logging.info(f"Parse vamb output for bingroup {bingroup}")
 
@@ -115,10 +112,16 @@ logging.info(
     f"Number of bins per sample and bingroup passing the size filter:\n{n_bins}"
 )
 
+
+clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinId
+clusters.loc[~clusters.Large_enough, "SampleBin"] = ""
+
+
 logging.info(f"Write reformated table to {output_culsters}")
 clusters.to_csv(output_culsters, sep="\t", index=False)
 
-clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinId
+# filter for following
+clusters = clusters.query("Large_enough")
 
 logging.info(f"Write cluster_attribution for samples")
 for sample, cl in clusters.groupby("Sample"):
