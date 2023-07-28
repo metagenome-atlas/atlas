@@ -264,8 +264,8 @@ jobs:
           path: wd/logs
           destination: binning_logs
       - store_artifacts:
-          path: wd/Streptococcus/logs
-          destination: binning_logs/sample
+          path: wd/sample1/logs
+          destination: sample_logs
 
   #
   #
