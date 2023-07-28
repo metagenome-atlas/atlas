@@ -222,6 +222,8 @@ def make_config(
     # conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
     # conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
 
+    conf["final_binner"] = binner
+
     if os.path.exists(config):
         logger.warning(
             f"Config file {config} already exists, I didn't dare to overwrite it. continue..."
@@ -234,7 +236,7 @@ def make_config(
             "        You may want to edit it using any text editor." % config
         )
 
-    conf["final_binner"] = binner
+
 
 
 def validate_config(config, workflow):

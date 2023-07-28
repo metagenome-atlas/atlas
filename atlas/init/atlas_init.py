@@ -161,6 +161,7 @@ def run_init(
         outfile=os.path.join(working_dir, "samples.tsv"),
     )
 
+    # Set default binner depending on number of samples
     if sample_table.shape[0] <=5:
         logger.warning("You don't have many samples in your dataset. "
                        "I set 'metabat' as binner"
