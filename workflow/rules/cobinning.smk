@@ -10,7 +10,7 @@ rule filter_contigs:
     input:
         get_assembly,
     output:
-        temp("Intermediate/cobinning/filtered_contigs/{sample}.fasta"),
+        "Intermediate/cobinning/filtered_contigs/{sample}.fasta.gz",
     params:
         min_length=config["cobining_min_contig_length"],
         prefix= lambda wc: wc.sample+ config["cobinning_separator"]

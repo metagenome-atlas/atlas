@@ -82,7 +82,6 @@ def semibin_input(wildcards):
     assert len(samples_of_bingroup) > 1
 
     mapping = dict(
-        flag=get_assembly(wildcards),
         fasta=rules.filter_contigs.output[0].format(**wildcards),
         bams=expand(
             "Intermediate/cobinning/{bingroup}/bams/{sample}.sorted.bam",
