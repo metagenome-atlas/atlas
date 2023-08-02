@@ -70,11 +70,9 @@ rule combine_contigs:
         "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
         "logs/cobinning/{bingroup}/combine_contigs.log",
-    conda:
-        "../envs/required_packages.yaml"
     threads: config["simplejob_threads"],
     shell:
-        " (cat {input} | pigz -p {threads} > {output} ) 2> {log}"
+        " (cat {input} > {output} ) 2> {log}"
 
 
 rule minimap_index:
