@@ -13,7 +13,6 @@ rule filter_contigs:
         "Intermediate/cobinning/filtered_contigs/{sample}.fasta.gz",
     params:
         min_length=config["cobining_min_contig_length"],
-        prefix= lambda wc: wc.sample+ config["cobinning_separator"]
     log:
         "logs/cobinning/filter_contigs/{sample}.log",
     conda:
@@ -23,9 +22,8 @@ rule filter_contigs:
         mem=config["simplejob_mem"],
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
-        " rename.sh in={input} "
-        " prefix={params.prefix} addprefix=t addunderscore=f"
-        " minscaf={params.min_length} "
+        " reformat.sh in={input} "
+        " fastaminlen={params.min_length} "
         " out={output} "
         " overwrite=true "
         " -Xmx{resources.java_mem}G 2> {log} "
@@ -70,9 +68,22 @@ rule combine_contigs:
         "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
         "logs/cobinning/{bingroup}/combine_contigs.log",
-    threads: config["simplejob_threads"],
-    shell:
-        " (cat {input} > {output} ) 2> {log}"
+    params:
+        seperator=config["cobinning_separator"],
+        samples=get_samples_of_bingroup,
+    threads: 1
+    run:
+        import gzip as gz
+
+        with gz.open(output[0], "wb") as fout:
+            for sample, input_fasta in zip(params.samples, input.fasta):
+                with gz.open(input_fasta, "rb") as fin:
+                    for line in fin:
+                        # if line is a header add sample name
+                        if line[0] == ord('>'):
+                            line = f">{sample}{params.seperator}".encode() + line[1:]
+                        # write each line to the combined file
+                        fout.write(line)
 
 
 rule minimap_index:
