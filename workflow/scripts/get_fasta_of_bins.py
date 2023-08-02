@@ -103,6 +103,6 @@ if __name__ == "__main__":
     else:
         get_fasta_of_bins(
             snakemake.input.cluster_attribution,
-            snakemake.input.contigs[0],
+            snakemake.input.contigs,
             snakemake.output[0],
         )
