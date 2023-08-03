@@ -159,6 +159,8 @@ minimum_map_quality: 0
 final_binner: vamb             # [SemiBin, vamb, metabat, DASTool]
 
 
+semibin_options: ""
+
 metabat:
   sensitivity: sensitive
   min_contig_length: 1500 # metabat needs >1500

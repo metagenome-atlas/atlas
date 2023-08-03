@@ -155,7 +155,6 @@ def make_default_config():
 
     config["cobining_min_contig_length"] = 2000
     config["cobining_min_bin_size"] = 200 * 1000
-    config["semibin_options"] = "  --max-node 1 --max-edges 200 "
     config["cobinning_separator"] = ":"
 
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
