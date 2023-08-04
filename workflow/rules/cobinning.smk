@@ -156,7 +156,7 @@ rule sort_bam:
         prefix="Intermediate/cobinning/{bingroup}/bams/tmp.{sample}",
     threads: 2
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"] *1000,
         time=int(config["runtime"]["simplejob"]),
     log:
         "logs/cobinning/{bingroup}/mapping/sortbam/{sample}.log",
@@ -175,9 +175,11 @@ rule summarize_bam_contig_depths:
         "logs/cobinning/{bingroup}/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"]
+    threads: 1
+    benchmark:
+        "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"]*1000,
     shell:
         "jgi_summarize_bam_contig_depths "
         " --outputDepth {output} "
@@ -195,6 +197,8 @@ rule convert_jgi2vamb_coverage:
         "Intermediate/cobinning/{bingroup}/coverage.tsv",
     log:
         "logs/cobinning/{bingroup}/convert_jgi2vamb_coverage.log",
+    benchmark:
+        "logs/benchmarks/cobinning/{bingroup}/convert_jgi2vamb_coverage.tsv"
     threads: 1
     script:
         "../scripts/convert_jgi2vamb_coverage.py"
@@ -210,7 +214,7 @@ rule run_vamb:
         "../envs/vamb.yaml"
     threads: config["threads"]
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"]*1000,
         time=config["runtime"]["long"],
     log:
         "logs/cobinning/run_vamb/{bingroup}.log",
