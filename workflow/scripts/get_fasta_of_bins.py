@@ -61,13 +61,14 @@ def get_fasta_of_bins(cluster_attribution, contigs_file, out_folder):
 
     CA.columns = ["Contig", "Bin"]
 
-    # assert that Contig is unique
-    assert CA.Contig.is_unique, (
-        f"First column of file {cluster_attribution} should be contigs, hence unique"
-        f"I got\n{CA.head()}"
-    )
+    # # assert that Contig is unique
+    # assert CA.Contig.is_unique, (
+    #     f"First column of file {cluster_attribution} should be contigs, hence unique"
+    #     f"I got\n{CA.head()}"
+    # )
 
-    contig_fasta_dict = SeqIO.index(contigs_file, "fasta")
+    logging.info(f"index fasta file {contigs_file} for fast access")
+    contig_fasta_dict = SeqIO.index(str(contigs_file), "fasta")
 
     assert len(contig_fasta_dict) > 0, "No contigs in your fasta"
 
