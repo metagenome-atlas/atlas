@@ -142,6 +142,7 @@ rule minimap:
     shell:
         """minimap2 -t {threads} -ax sr {input.mmi} {input.fq} | grep -v "^@" | cat {input.dict} - | samtools view -F 3584 -b - > {output.bam} 2>{log}"""
 
+    # samtools filters out secondary alignments
 
 ruleorder: sort_bam > minimap
 
