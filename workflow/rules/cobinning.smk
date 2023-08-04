@@ -155,7 +155,7 @@ rule sort_bam:
         prefix="Intermediate/cobinning/{bingroup}/bams/tmp.{sample}",
     threads: 2
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"] *1000,
         time=int(config["runtime"]["simplejob"]),
     log:
         "logs/cobinning/{bingroup}/mapping/sortbam/{sample}.log",
@@ -178,7 +178,7 @@ rule summarize_bam_contig_depths:
     benchmark:
         "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"]*1000,
     shell:
         "jgi_summarize_bam_contig_depths "
         " --outputDepth {output} "
@@ -213,7 +213,7 @@ rule run_vamb:
         "../envs/vamb.yaml"
     threads: config["threads"]
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"]*1000,
         time=config["runtime"]["long"],
     log:
         "logs/cobinning/run_vamb/{bingroup}.log",
