@@ -174,7 +174,9 @@ rule summarize_bam_contig_depths:
         "logs/cobinning/{bingroup}/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"]
+    threads: 1
+    benchmark:
+        "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:
         mem=config["mem"],
     shell:
@@ -194,6 +196,8 @@ rule convert_jgi2vamb_coverage:
         "Intermediate/cobinning/{bingroup}/coverage.tsv",
     log:
         "logs/cobinning/{bingroup}/convert_jgi2vamb_coverage.log",
+    benchmark:
+        "logs/benchmarks/cobinning/{bingroup}/convert_jgi2vamb_coverage.tsv"
     threads: 1
     script:
         "../scripts/convert_jgi2vamb_coverage.py"
