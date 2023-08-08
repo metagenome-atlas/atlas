@@ -175,13 +175,16 @@ rule summarize_bam_contig_depths:
         "logs/cobinning/{bingroup}/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
-    threads: 1
+    threads: config["threads"] # multithreaded trough OMP_NUM_THREADS
     benchmark:
         "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:
         mem_mb=config["mem"]*1000,
+    params:
+        minid = config["cobinning_readmapping_id"] *100
     shell:
         "jgi_summarize_bam_contig_depths "
+        " --percentIdentity {params.minid} "
         " --outputDepth {output} "
         " {input.bams} &> {log} "
 

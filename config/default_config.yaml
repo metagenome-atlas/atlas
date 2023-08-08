@@ -34,3 +34,6 @@ binner:                           # If DASTool is used as final_binner, use pred
   - metabat
   - maxbin
 #  - vamb
+
+
+cobinning_readmapping_id: 0.95  #when mapping different reads to contigs from different samples use less stringent alignment threshold
