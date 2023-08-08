@@ -221,6 +221,7 @@ for r in workflow.rules:
         if "mem" in r.resources:
             r.resources["mem_mb"] = r.resources["mem"] * 1000
         else:
+            # default
             r.resources["mem_mb"] = config["mem"] * 1000
 
 
