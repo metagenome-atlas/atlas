@@ -157,7 +157,7 @@ rule sort_bam:
     threads: 2
     resources:
         mem_mb=config["simplejob_mem"] *1000,
-        time=int(config["runtime"]["simplejob"]),
+        time_min=int(config["runtime"]["simplejob"]*60),
     log:
         "logs/cobinning/{bingroup}/mapping/sortbam/{sample}.log",
     conda:
@@ -180,6 +180,7 @@ rule summarize_bam_contig_depths:
         "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:
         mem_mb=config["mem"]*1000,
+        time_min = config["runtime"]["long"]*60
     params:
         minid = config["cobinning_readmapping_id"] *100
     shell:
@@ -218,7 +219,7 @@ rule run_vamb:
     threads: config["threads"]
     resources:
         mem_mb=config["mem"]*1000,
-        time=config["runtime"]["long"],
+        time_min=config["runtime"]["long"]*60,
     log:
         "logs/cobinning/run_vamb/{bingroup}.log",
     benchmark:
