@@ -22,6 +22,10 @@ rm -f $WD/samples.tsv
 #
 atlas init --db-dir --interleaved-fastq $databaseDir  -w $WD $reads_dir
 
+atlas run None screen -w $WD qc  $@
+
+echo "\n\nFinished screen\n\n"
+
 atlas run -w $WD qc  $@
 
 echo "\n\nFinished qc\n\n"
