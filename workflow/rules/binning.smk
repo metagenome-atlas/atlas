@@ -126,7 +126,7 @@ rule convert_concoct_csv_to_tsv:
 ## METABAT
 rule get_metabat_depth_file:
     input:
-        bam=lambda wc: expand(
+        bams=lambda wc: expand(
             "{sample}/sequence_alignment/{sample_reads}.bam",
             sample_reads=get_alls_samples_of_group(wc),
             sample=wc.sample,
@@ -141,7 +141,7 @@ rule get_metabat_depth_file:
     resources:
         mem_mb=config["mem"]*1000,
     params:
-        minid = lambda wc, input: config["cobinning_readmapping_id"] *100 if len(input.bam)>1 else 97
+        minid = lambda wc, input: config["cobinning_readmapping_id"] *100 if len(input.bams)>1 else 97
     shell:
         "jgi_summarize_bam_contig_depths "
         " --percentIdentity {params.minid} "

@@ -80,7 +80,7 @@ def validate_bingroup_size_cobinning(sampleTable, logger):
             f"Found a bin group with more than 250 samples. This might lead to memory issues. \n {bin_group_sizes}"
         )
 
-    if bin_group_sizes.min() <= 5:
+    if bin_group_sizes.min() < 5:
         logger.error(
             "If you want to use co-binning, you should have at least 5-10 samples per bin group. \n"
         )
@@ -88,7 +88,6 @@ def validate_bingroup_size_cobinning(sampleTable, logger):
 
 
 def validate_bingroup_size_metabat(sampleTable, logger):
-
     bin_group_sizes = sampleTable.BinGroup.value_counts()
 
     max_bin_group_size = bin_group_sizes.max()
@@ -112,38 +111,30 @@ def validate_bingroup_size_metabat(sampleTable, logger):
         )
 
     elif max_bin_group_size == 1:
-
         logger.warning(
             "You have only one sample per bingroup. This doesn't use the co-abundance information."
         )
 
 
 def validate_bingroup_size(sample, config, logger):
-
     if config["final_binner"] == "DASTool":
-
         binners = config["binner"]
 
         logger.info(f"DASTool uses the folowing binners: {binners}")
 
         if ("vamb" in binners) or ("SemiBin" in binners):
-
             validate_bingroup_size_cobinning(sample, logger)
 
         if "metabat" in binners:
-
             validate_bingroup_size_metabat(sample, logger)
 
     elif config["final_binner"] == "metabat":
-
         validate_bingroup_size_metabat(sample, logger)
 
     elif config["final_binner"] in ["vamb", "SemiBin"]:
-
         validate_bingroup_size_cobinning(sample, logger)
 
     elif config["final_binner"] == "maxbin":
-
         logger.warning("maxbin Doesn't use coabundance for binning.")
 
     else:
