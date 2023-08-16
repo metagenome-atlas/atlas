@@ -35,21 +35,43 @@ Which samples are binned together are defined with the `BinGroup` in the sample.
 The Size of the BinGroup should be chosen depending on the binner, respectively the co-bining strategy.
 
 Cross mapping scales quadratically with the size of the BinGroup, as each samples' reads are mapped to each other.
-It might yeld better results for very complicated metagenomes, even though I am not aware of a good benchmark. 
+It might yeld better results for very complicated metagenomes, but I am not aware of a good benchmark. 
 Co-binning is more efficient as it requires a samples' reads to be mapped only to one, even tough large, assembly. 
 
+default behavior
+`````````````````
 
-If you have less than 5 
+Since version 2.18 atlas, puts every sample in one BinGroup and sets's vamb as default binner unless you have very view samples.
+If you have less than 8 samples it uses metabat as binner.
 
+*Note: This is a small but breaking change to previous versions where all samples where in their own BinGroup, and running vamb resulted in taking all samples regardless of their BinGroup.
+This means you might see errors when using a sample.tsv generated with an older version of atlas. In most cases you simply need to set a unique BinGroup for all samples.*
 
+Also of note is that we adapted the mapping threshold to 95% identity (vs 97%) to allow the mapping of reads from different strains,
+ but not other species to map to contigs from different sample.
 
-You need to put multiple samples in the same `BinGroup` in the sample.tsv.
+If you have more than 150-200 samples for co-binning or more than 50 samples for cross-mapping, atlas will print a warning that too many samples are in a BinGroup.
+While according to the official publication of vamb, it can be run of up to 1000 samples, this requires very high resources.
 
-Atlas requires to have at least 5 samples in a group to use co-abundance binning.
-It also warns you not to have too many samples, because then it will take too long to run. 
+We therefore recommend to split your samples into BinGroups. Ideally samples that are more or less related, where you expect the same species should be in the same BinGroup. 
 
-Since atlas. v2.18 the co-binni
+Single-sample Binning
+`````````````````````
 
+If you really want to use single-sample binning. You simply need to put each sample in it's own binGroup and use `metabat` or `DASTool` as your final_binner.
+
+It is not recommend, but possible to use DASTool, and give it input from metabat and other binners based on co-abundance. 
+
+You can add the folowing lines to your config.yaml.
+
+```
+final_binner: DASTool
+
+binner: 
+  - metabat
+  - maxbin
+  - vamb
+```
 
 
 
