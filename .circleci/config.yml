@@ -59,10 +59,10 @@ jobs:
           command: |
               source activate ./atlasenv
               test/dryrun.sh
-
       - run:
           name: Test_init
           command: |
+              ls -l test
               source activate ./atlasenv
               test/test_init.sh
 
