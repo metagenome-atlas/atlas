@@ -1,10 +1,12 @@
 
-.. _configuration:
+..
+_configuration:
 
 Configure Atlas
 ***************
 
-.. _contaminants:
+..
+_contaminants:
 
 Remove reads from Host
 ======================
@@ -16,62 +18,67 @@ We recommend you to use genomes where repetitive sequences are masked.
 See here for more details `human genome <http://seqanswers.com/forums/archive/index.php/t-42552.html>`_.
 
 
-Co-abundance binning
-======================
+Co-abundance Binning
+====================
 
 .. _cobinning:
 
-While it is faster to bin each sample individually, we recommend using co-abundance for binning.
-By quantifying the coverage of contigs in multiple samples one can obtain useful information about which contigs co-vary across samples.
+While binning each sample individually is faster, using co-abundance for binning is recommended.
+Quantifying the coverage of contigs across multiple samples provides valuable insights about contig co-variation.
 
-There are two strategies to use co-abundance for binning.
+There are two primary strategies for co-abundance binning:
 
-1. Cross mapping: mapping the reads of multiple samples to each samples' contigs.
-2. Co-binning: Concatenate the contigs of multiple samples and map the all the reads to the combined contigs.
+1. **Cross mapping:** Map the reads from multiple samples to each sample's contigs.
+2. **Co-binning:** Concatenate contigs from multiple samples and map all the reads to these combined contigs.
 
-Cross-mapping is done with `final_binner: metabat2`, while Co-binning is done with `vamb`, or `SemiBin`.
+`final_binner: metabat2` is used for cross-mapping, while `vamb` or `SemiBin` is used for co-binning.
 
-Which samples are binned together are defined with the `BinGroup` in the sample.tsv.
-The Size of the BinGroup should be chosen depending on the binner, respectively the co-bining strategy.
+The samples to be binned together are specified using the `BinGroup` in the `sample.tsv` file.
+The size of the BinGroup should be selected based on the binner and the co-binning strategy in use.
 
-Cross mapping scales quadratically with the size of the BinGroup, as each samples' reads are mapped to each other.
-It might yeld better results for very complicated metagenomes, but I am not aware of a good benchmark. 
-Co-binning is more efficient as it requires a samples' reads to be mapped only to one, even tough large, assembly. 
+Cross mapping complexity scales quadratically with the size of the BinGroup since each sample's reads are mapped to each other.
+This might yield better results for complex metagenomes, although no definitive benchmark is known.
+On the other hand, co-binning is more efficient, as it maps a sample's reads only once to a potentially large assembly.
 
-default behavior
-`````````````````
+Default Behavior
+----------------
 
-Since version 2.18 atlas, puts every sample in one BinGroup and sets's vamb as default binner unless you have very view samples.
-If you have less than 8 samples it uses metabat as binner.
+Starting with version 2.18, Atlas places every sample in a single BinGroup and defaults to `vamb` as the binner unless there are very few samples.
+For fewer than 8 samples, `metabat` is the default binner.
 
-*Note: This is a small but breaking change to previous versions where all samples where in their own BinGroup, and running vamb resulted in taking all samples regardless of their BinGroup.
-This means you might see errors when using a sample.tsv generated with an older version of atlas. In most cases you simply need to set a unique BinGroup for all samples.*
+.. note::
+    This represents a  departure from previous versions, where each sample had its own BinGroup.
+    Running `vamb` in those versions would consider all samples, regardless of their BinGroup.
+    This change might cause errors if using a `sample.tsv` file from an older Atlas version.
+    Typically, you can resolve this by assigning a unique BinGroup to each sample.
 
-Also of note is that we adapted the mapping threshold to 95% identity (vs 97%) to allow the mapping of reads from different strains,
- but not other species to map to contigs from different sample.
+The mapping threshold has been adjusted to 95% identity (single sample binning is 97%) to allow reads from different strains — 
+but not other species — to map to contigs from a different sample.
 
-If you have more than 150-200 samples for co-binning or more than 50 samples for cross-mapping, atlas will print a warning that too many samples are in a BinGroup.
-While according to the official publication of vamb, it can be run of up to 1000 samples, this requires very high resources.
+If you're co-binning more than 150-200 samples or cross-mapping more than 50 samples, Atlas will issue a warning regarding excessive samples in a BinGroup.
+Although VAMB's official publication suggests it can handle up to 1000 samples, this demands substantial resources.
 
-We therefore recommend to split your samples into BinGroups. Ideally samples that are more or less related, where you expect the same species should be in the same BinGroup. 
+Therefore, splitting your samples into multiple BinGroups is recommended.
+Ideally, related samples, or those where the same species are anticipated, should belong to the same BinGroup.
 
 Single-sample Binning
-`````````````````````
+---------------------
 
-If you really want to use single-sample binning. You simply need to put each sample in it's own binGroup and use `metabat` or `DASTool` as your final_binner.
+To employ single-sample binning, simply assign each sample to its own BinGroup and select `metabat` or `DASTool` as the `final_binner`.
 
-It is not recommend, but possible to use DASTool, and give it input from metabat and other binners based on co-abundance. 
+Although it's not recommended, it's feasible to use `DASTool` and feed it inputs from `metabat` and other co-abundance-based binners.
 
-You can add the folowing lines to your config.yaml.
+Add the following lines to your `config.yaml`:
 
-```
-final_binner: DASTool
 
-binner: 
-  - metabat
-  - maxbin
-  - vamb
-```
+.. code-block:: yaml
+
+   final_binner: DASTool
+
+   binner: 
+     - metabat
+     - maxbin
+     - vamb
 
 
 
@@ -94,7 +101,8 @@ Example config file
 ===================
 
 
-.. include:: ../../workflow/../config/template_config.yaml
+..
+include:: ../../workflow/../config/template_config.yaml
   :code:
 
 
@@ -103,7 +111,8 @@ Example config file
 Detailed configuration
 ======================
 
-.. toctree::
+..
+toctree::
     :maxdepth: 1
 
     ../advanced/qc
