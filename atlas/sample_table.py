@@ -66,6 +66,15 @@ def load_sample_table(sample_table="samples.tsv"):
     return sampleTable
 
 
+class BinGroupSizeError(Exception):
+    """
+    Exception with Bingroupsize
+    """
+
+    def __init__(self, message):
+        super(BinGroupSizeError, self).__init__(message)
+
+
 def validate_bingroup_size_cobinning(sampleTable, logger):
     """
     Validate that the bingroups are not too large, nor too small for co-binning.
@@ -75,16 +84,16 @@ def validate_bingroup_size_cobinning(sampleTable, logger):
 
     bin_group_sizes = sampleTable.BinGroup.value_counts()
 
-    if bin_group_sizes.max() > 200:
+    if bin_group_sizes.max() > 180:
         logger.warning(
-            f"Found a bin group with more than 250 samples. This might lead to memory issues. \n {bin_group_sizes}"
+            f"Found a bin group with more than 180 samples. This might lead to memory issues. \n {bin_group_sizes}"
         )
 
-    if bin_group_sizes.min() < 5:
+    if bin_group_sizes.min() < 10:
         logger.error(
             "If you want to use co-binning, you should have at least 5-10 samples per bin group. \n"
         )
-        exit(1)
+        BinGroupSizeError("BinGroup too small")
 
 
 def validate_bingroup_size_metabat(sampleTable, logger):
@@ -102,7 +111,7 @@ def validate_bingroup_size_metabat(sampleTable, logger):
             warn_message
             + "This is too much for metabat. Please use vamb, or SemiBin or split your samples into smaller groups."
         )
-        exit(1)
+        BinGroupSizeError("BinGroup too large")
 
     if max_bin_group_size > 10:
         logger.warning(
@@ -116,26 +125,26 @@ def validate_bingroup_size_metabat(sampleTable, logger):
         )
 
 
-def validate_bingroup_size(sample, config, logger):
+def validate_bingroup_size(sampleTable, config, logger):
     if config["final_binner"] == "DASTool":
         binners = config["binner"]
 
         logger.info(f"DASTool uses the folowing binners: {binners}")
 
         if ("vamb" in binners) or ("SemiBin" in binners):
-            validate_bingroup_size_cobinning(sample, logger)
+            validate_bingroup_size_cobinning(sampleTable, logger)
 
         if "metabat" in binners:
-            validate_bingroup_size_metabat(sample, logger)
+            validate_bingroup_size_metabat(sampleTable, logger)
 
     elif config["final_binner"] == "metabat":
-        validate_bingroup_size_metabat(sample, logger)
+        validate_bingroup_size_metabat(sampleTable, logger)
 
     elif config["final_binner"] in ["vamb", "SemiBin"]:
-        validate_bingroup_size_cobinning(sample, logger)
+        validate_bingroup_size_cobinning(sampleTable, logger)
 
     elif config["final_binner"] == "maxbin":
         logger.warning("maxbin Doesn't use coabundance for binning.")
 
     else:
-        logger.error(f"Unknown final binner: {config['final_binner']}")
+        Exception(f"Unknown final binner: {config['final_binner']}")

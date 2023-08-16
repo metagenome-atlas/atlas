@@ -122,10 +122,9 @@ Have a look at them with a normal text editor and check if the samples names are
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 The ``BinGroup`` parameter is used during the genomic binning.
-In short: all samples in which you expect the same strain to
-be found should belong to the same group,
-e.g. all metagenome samples from mice in the same cage or location.
-
+In short: If you have between 5 and 150 samples the default (puting everithing in one group) is fine.
+If you have less than 5 samples, put every sample in an individual BinGroup and use `metabat` as final binner.
+If you have more samples see the :ref:`cobinning` section for more details.
 
 .. note:: If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
 

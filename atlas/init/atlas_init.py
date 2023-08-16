@@ -1,20 +1,16 @@
 import os, sys
 from ..color_logger import logger
-import multiprocessing
-import tempfile
-from snakemake import utils
-from snakemake.io import load_configfile
 import pandas as pd
 import numpy as np
-from collections import defaultdict
 import click
 from pathlib import Path
-
 from ..make_config import make_config, validate_config
 from .create_sample_table import get_samples_from_fastq, simplify_sample_names
 from ..sample_table import (
     validate_sample_table,
-    load_sample_table,
+    validate_bingroup_size_cobinning,
+    validate_bingroup_size_metabat,
+    BinGroupSizeError
     ADDITIONAL_SAMPLEFILE_HEADERS,
 )
 
@@ -162,13 +158,28 @@ def run_init(
     )
 
     # Set default binner depending on number of samples
-    if sample_table.shape[0] <=5:
-        logger.warning("You don't have many samples in your dataset. "
+    n_samples = sample_table.shape[0]
+    if  n_samples <= 7:
+        logger.info("You don't have many samples in your dataset. "
                        "I set 'metabat' as binner"
                        )
         binner = "metabat"
+
+    try:
+        validate_bingroup_size_metabat(sample_table,logger)
+    except BinGroupSizeError:
+        pass
+
+
     else:
         binner = "vamb"
+        try:
+            validate_bingroup_size_cobinning(sample_table,logger)
+
+        except BinGroupSizeError:
+            pass
+            
+
 
     make_config(
         db_dir,
@@ -179,6 +190,7 @@ def run_init(
         os.path.join(working_dir, "config.yaml"),
         binner= binner
     )
+
 
 
 ########### Public init download data from SRA ##############
