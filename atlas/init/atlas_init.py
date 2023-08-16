@@ -10,7 +10,7 @@ from ..sample_table import (
     validate_sample_table,
     validate_bingroup_size_cobinning,
     validate_bingroup_size_metabat,
-    BinGroupSizeError
+    BinGroupSizeError,
     ADDITIONAL_SAMPLEFILE_HEADERS,
 )
 
