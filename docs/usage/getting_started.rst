@@ -52,8 +52,11 @@ We also recommend to specify the latest version of metagenome-atlas.
     source activate atlasenv
 
 where `{latest_version}` should be replaced by 
-.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg   
-  :target: https://anaconda.org/bioconda/metagenome-atlas
+
+.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg
+    :target: https://anaconda.org/bioconda/metagenome-atlas
+
+
 
 
 Install metagenome-atlas from GitHub
