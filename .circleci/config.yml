@@ -64,7 +64,7 @@ jobs:
           command: |
               ls -l test
               source activate ./atlasenv
-              bash test/test_init.sh
+              ./test/test_init_many_samples.sh
 
       - persist_to_workspace:
           root: /root/project/
