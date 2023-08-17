@@ -16,7 +16,7 @@ databaseDir="test/databases"
 
 create_reads_dir() {
 
-    local reads_dir="$12"
+    local reads_dir="$1"
     local N=$2
 
 echo "touch reads dir"
@@ -36,14 +36,19 @@ done
 
 
 
-echoe "test to create projects for N samples"
+
 
 for N in 5 10 50 300 ; 
 do
 
-WD="test/test_init/$N"
+echo "test init with  $N samples"
 
+WD="test/test_init/$N"
 reads_dir="test/test_init/reads_${N}_samples/"
+
+rm -rf $WD $reads_dir
+
+
 
 create_reads_dir $reads_dir $N
 
