@@ -59,6 +59,12 @@ jobs:
           command: |
               source activate ./atlasenv
               test/dryrun.sh
+      - run:
+          name: Test_init
+          command: |
+              ls -l test
+              source activate ./atlasenv
+              ./test/test_init_many_samples.sh
 
       - persist_to_workspace:
           root: /root/project/
@@ -264,8 +270,8 @@ jobs:
           path: wd/logs
           destination: binning_logs
       - store_artifacts:
-          path: wd/Streptococcus/logs
-          destination: binning_logs/sample
+          path: wd/sample1/logs
+          destination: sample_logs
 
   #
   #

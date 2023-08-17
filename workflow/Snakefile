@@ -33,11 +33,9 @@ min_version("6.1")
 container: "docker://continuumio/miniconda3:4.4.10"
 
 
-
-
-
 wildcard_constraints:
     binner="[A-Za-z]+",
+
 
 include: "rules/sample_table.smk"
 include: "rules/download.smk"  # contains hard coded variables
@@ -173,7 +171,7 @@ rule binning:
 
 rule assembly_one_sample:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
         "{sample}/sequence_alignment/{sample}.bam",
         "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
         "{sample}/assembly/contig_stats/final_contig_stats.txt",
@@ -228,11 +226,9 @@ for r in workflow.rules:
         if "mem" in r.resources:
             r.resources["mem_mb"] = r.resources["mem"] * 1000
         else:
+            # default
             r.resources["mem_mb"] = config["mem"] * 1000
 
-    # snakemake has a new name for that
-    if not "mem_mib" in r.resources:
-        r.resources["mem_mib"] = r.resources["mem_mb"]
 
     # add time if ot present. Simple jobs use simple time
 

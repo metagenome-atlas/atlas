@@ -22,9 +22,18 @@ genome_aligner: "minimap"
 
 bin_quality_asesser: checkm2          #[ checkm2, busco, cehckm]
 
-
+semibin_options: ""
 semibin_train_extra: ""
 
 
 filter_chimieric_bins: true
 gunc_database: "progenomes"  # progenomes or gtdb
+
+
+binner:                           # If DASTool is used as final_binner, use predictions of this binners
+  - metabat
+  - maxbin
+#  - vamb
+
+
+cobinning_readmapping_id: 0.95  #when mapping different reads to contigs from different samples use less stringent alignment threshold

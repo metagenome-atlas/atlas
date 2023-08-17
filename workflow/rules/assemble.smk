@@ -491,7 +491,6 @@ rule rename_contigs:
         " minscaf={params.minlength} &> {log} "
 
 
-
 if config["filter_contigs"]:
 
     ruleorder: align_reads_to_prefilter_contigs > align_reads_to_final_contigs
@@ -604,11 +603,9 @@ rule finalize_contigs:
         os.symlink(os.path.relpath(input[0], os.path.dirname(output[0])), output[0])
 
 
-
-
 rule calculate_contigs_stats:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         "{sample}/assembly/contig_stats/final_contig_stats.txt",
     conda:
@@ -621,8 +618,6 @@ rule calculate_contigs_stats:
         time=config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 out={output} &> {log}"
-
-
 
 
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
@@ -648,7 +643,7 @@ rule align_reads_to_final_contigs:
 
 rule pileup_contigs_sample:
     input:
-        fasta="{sample}/{sample}_contigs.fasta",
+        fasta=get_assembly,
         bam="{sample}/sequence_alignment/{sample}.bam",
     output:
         covhist="{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
@@ -702,7 +697,7 @@ rule create_bam_index:
 
 rule predict_genes:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         fna="{sample}/annotation/predicted_genes/{sample}.fna",
         faa="{sample}/annotation/predicted_genes/{sample}.faa",

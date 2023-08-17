@@ -35,15 +35,9 @@ databases
 *.manifest
 *.spec
 databases
-test/*
 .test/*
 test/*
-!test/dryrun.sh
-!test/test_ci.sh
-!test/test_assembly.sh
-!test/test_binning.sh
-!test/test_sra.sh
-!test/test_external_genomes.sh
+!test/*.sh
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
