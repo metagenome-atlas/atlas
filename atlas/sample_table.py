@@ -113,7 +113,7 @@ def validate_bingroup_size_metabat(sampleTable, logger):
         )
         BinGroupSizeError("BinGroup too large")
 
-    if max_bin_group_size > 10:
+    if max_bin_group_size > 15:
         logger.warning(
             warn_message
             + "This might be too much for metabat. Consider using vamb, or SemiBin or split your samples into smaller groups."
