@@ -62,7 +62,7 @@ def prepare_sample_table_for_atlas(
 
     sample_table["BinGroup"] = "All"
 
-    if sample_table.shape[0] >=50:
+    if sample_table.shape[0] >= 50:
         logger.warning(
             "You have more than 50 samples in your sample table. "
             "You should consider to split your samples into multiple BinGroups"
@@ -159,27 +159,24 @@ def run_init(
 
     # Set default binner depending on number of samples
     n_samples = sample_table.shape[0]
-    if  n_samples <= 7:
-        logger.info("You don't have many samples in your dataset. "
-                       "I set 'metabat' as binner"
-                       )
+    if n_samples <= 7:
+        logger.info(
+            "You don't have many samples in your dataset. " "I set 'metabat' as binner"
+        )
         binner = "metabat"
 
-    try:
-        validate_bingroup_size_metabat(sample_table,logger)
-    except BinGroupSizeError:
-        pass
-
+        try:
+            validate_bingroup_size_metabat(sample_table, logger)
+        except BinGroupSizeError:
+            pass
 
     else:
         binner = "vamb"
         try:
-            validate_bingroup_size_cobinning(sample_table,logger)
+            validate_bingroup_size_cobinning(sample_table, logger)
 
         except BinGroupSizeError:
             pass
-            
-
 
     make_config(
         db_dir,
@@ -188,9 +185,8 @@ def run_init(
         data_type,
         interleaved_fastq,
         os.path.join(working_dir, "config.yaml"),
-        binner= binner
+        binner=binner,
     )
-
 
 
 ########### Public init download data from SRA ##############
