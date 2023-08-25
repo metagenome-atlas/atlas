@@ -62,12 +62,6 @@ def prepare_sample_table_for_atlas(
 
     sample_table["BinGroup"] = "All"
 
-    if sample_table.shape[0] >= 50:
-        logger.warning(
-            "You have more than 50 samples in your sample table. "
-            "You should consider to split your samples into multiple BinGroups"
-            "For this modify the 'BinGroup' column in your sample table"
-        )
 
     validate_sample_table(sample_table)
 
