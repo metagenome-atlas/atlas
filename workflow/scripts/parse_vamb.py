@@ -144,4 +144,4 @@ if len(samples_without_bins) > 0:
     for sample in samples_without_bins:
         sample_output_path = cluster_output_path.format(sample=sample)
         with open(sample_output_path, "w") as fout:
-            fout.write(f"{sample}_0\t{sample}_vamb_1\n")
+            fout.write(f"{sample}_1\t{sample}_vamb_1\n")

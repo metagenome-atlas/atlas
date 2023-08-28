@@ -473,22 +473,22 @@ rule rename_contigs:
     input:
         "{sample}/assembly/{sample}_raw_contigs.fasta",
     output:
-        "{sample}/assembly/{sample}_prefilter_contigs.fasta",
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
+        fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
+        mapping_table = "{sample}/assembly/old2new_contig_names.tsv"
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        time=config["runtime"]["simplejob"],
+        time=config["runtime"]["default"],
     log:
         "{sample}/logs/assembly/post_process/rename_and_filter_size.log",
     params:
         minlength=config["minimum_contig_length"],
-    shell:
-        "rename.sh "
-        " in={input} out={output} ow=t "
-        " prefix={wildcards.sample} "
-        " minscaf={params.minlength} &> {log} "
+    conda:
+        "../envs/fasta.yaml"
+    script:
+        "../scripts/rename_assembly.py"
+
+
 
 
 if config["filter_contigs"]:
@@ -581,7 +581,7 @@ else:  # no filter
 
     rule do_not_filter_contigs:
         input:
-            rules.rename_contigs.output,
+            "{sample}/assembly/{sample}_prefilter_contigs.fasta",
         output:
             "{sample}/assembly/{sample}_final_contigs.fasta",
         threads: 1
