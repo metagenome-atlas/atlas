@@ -422,8 +422,12 @@ else:
                 assembly_preprocessing_steps=assembly_preprocessing_steps,
             ),
         output:
-            "{sample}/assembly/contigs.fasta",
-            "{sample}/assembly/scaffolds.fasta",
+            multiext("{sample}/assembly/","contigs.fasta", 
+            "scaffolds.fasta",
+            "assembly_graph_after_simplification.gfa",
+            "scaffolds.paths",
+            "contigs.paths",
+            )
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:

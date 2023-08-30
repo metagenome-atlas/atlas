@@ -61,11 +61,8 @@ def get_fasta_of_bins(cluster_attribution, contigs_file, out_folder):
 
     CA.columns = ["Contig", "Bin"]
 
-    # # assert that Contig is unique
-    # assert CA.Contig.is_unique, (
-    #     f"First column of file {cluster_attribution} should be contigs, hence unique"
-    #     f"I got\n{CA.head()}"
-    # )
+    if not CA.Contig.is_unique:
+        logging.warning("Contigs are not unique, they are linked to multiple bins.")
 
     logging.info(f"index fasta file {contigs_file} for fast access")
     contig_fasta_dict = SeqIO.index(str(contigs_file), "fasta")
@@ -79,6 +76,12 @@ def get_fasta_of_bins(cluster_attribution, contigs_file, out_folder):
     for binid in unique_bins:
         bin_contig_names = CA.loc[CA.Bin == binid, "Contig"].tolist()
         out_file = os.path.join(out_folder, f"{binid}.fasta")
+
+        # binspreader adds small contigs
+
+        bin_contig_names = list(
+            set(bin_contig_names).intersection(contig_fasta_dict.keys())
+        )
 
         assert (
             len(bin_contig_names) >= 1

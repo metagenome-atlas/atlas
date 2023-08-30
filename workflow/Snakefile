@@ -42,6 +42,7 @@ include: "rules/download.smk"  # contains hard coded variables
 include: "rules/qc.smk"
 include: "rules/screen.smk" # expects function get_input_fastq defined in qc
 include: "rules/assemble.smk"
+include: "rules/binspreader.smk"
 include: "rules/binning.smk"
 include: "rules/derep.smk"
 include: "rules/genomes.smk"
