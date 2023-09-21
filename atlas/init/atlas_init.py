@@ -11,7 +11,6 @@ from ..sample_table import (
     validate_bingroup_size_cobinning,
     validate_bingroup_size_metabat,
     BinGroupSizeError,
-    ADDITIONAL_SAMPLEFILE_HEADERS,
 )
 
 # default globals
