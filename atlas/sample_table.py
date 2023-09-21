@@ -1,14 +1,12 @@
 import pandas as pd
 
-ADDITIONAL_SAMPLEFILE_HEADERS = []  # ,'Contigs']
-
 import logging
 
 logger = logging.getLogger(__file__)
 
 
 def validate_sample_table(sampleTable):
-    Expected_Headers = ["BinGroup"] + ADDITIONAL_SAMPLEFILE_HEADERS
+    Expected_Headers = ["BinGroup"]
     for h in Expected_Headers:
         if not (h in sampleTable.columns):
             logger.error(f"expect '{h}' to be found in samples.tsv")
