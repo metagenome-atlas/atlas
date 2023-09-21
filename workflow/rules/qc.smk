@@ -417,12 +417,9 @@ if not SKIP_QC:
             unpack(get_ribosomal_rna_input),
         output:
             expand(
-                "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                step=PROCESSED_STEPS[-1],
+                "QC/reads/{{sample}}_{fraction}.fastq.gz",
                 fraction=MULTIFILE_FRACTIONS,
             ),
-        params:
-            sample_table="samples.tsv",
         threads: 1
         run:
             import shutil

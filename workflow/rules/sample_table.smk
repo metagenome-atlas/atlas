@@ -175,7 +175,7 @@ def get_quality_controlled_reads(wildcards, include_se=False):
     except FileNotInSampleTableException:
         # return files as named by atlas pipeline
         return expand(
-            "{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz",
+            "QC/reads/{sample}_{fraction}.fastq.gz",
             fraction=Fractions,
             sample=wildcards.sample,
         )
@@ -194,5 +194,5 @@ def get_assembly(wildcards):
     except FileNotInSampleTableException:
         # return files as named by atlas pipeline
 
-        return "{sample}/{sample}_contigs.fasta".format(sample=wildcards.sample )
+        return "Assembly/fasta/{sample}.fasta".format(sample=wildcards.sample )
 
