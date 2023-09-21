@@ -436,12 +436,6 @@ if not SKIP_QC:
                             with open(input.rrna_reads[i], "rb") as infile2:
                                 shutil.copyfileobj(infile2, outFile)
 
-            # # append to sample table
-            # sample_table = load_sample_table(params.sample_table)
-            # qc_header = [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS]
-            # sample_table.loc[wildcards.sample, qc_header] = output
-            # sample_table.to_csv(params.sample_table, sep="\t")
-
 
 
 
