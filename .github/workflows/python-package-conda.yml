@@ -3,13 +3,15 @@ name: Combined Workflow
 on: [push]
 
 jobs:
-  build-and-get-data:
+  build-and-dryrun:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 5
     defaults:
       run:
         shell: bash -el {0} # use default shell
+    env:
+      DATABASE_DIR: databases
 
     steps:
       - name: Checkout
@@ -48,3 +50,311 @@ jobs:
         run: |
           ./test/test_init_many_samples.sh
 
+      - name: Clone Example Data Repository
+        run: git clone https://github.com/metagenome-atlas/example_data.git
+
+      - name: Persist Example Data as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: example-data
+          path: example_data
+
+  getenvs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+    env:
+      DATABASE_DIR: databases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Create Conda Environments Archive
+        run: tar -cf conda_envs.tar atlas/envs
+
+      - name: Restore Conda Environments
+        uses: actions/cache@v2
+        with:
+          path: databases
+          key: conda-environments-${{ hashFiles('conda_envs.tar') }}
+
+      - name: Init
+        run: |
+          source activate ./atlasenv
+          atlas init --db-dir $DATABASE_DIR --threads 1 --working-dir test/Getenvs test/reads/empty
+
+      - name: Install Environments
+        run: |
+          source activate ./atlasenv
+          atlas run all --working-dir test/Getenvs --conda-create-envs-only --cores all
+
+      - name: Save Conda Environments
+        uses: actions/cache@v2
+        with:
+          path: databases
+          key: conda-environments-${{ hashFiles('conda_envs.tar') }}
+
+  genome_quantify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+    env:
+      DATABASE_DIR: databases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Test Genome Quantification
+        run: |
+          source activate ./atlasenv
+          test/test_external_genomes.sh
+
+  get_example_data:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Clone Example Data Repository
+        run: git clone https://github.com/metagenome-atlas/example_data.git
+
+      - name: Persist Example Data as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: example-data
+          path: example_data
+
+  run_test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+    env:
+      N_THREADS: 2
+      MEM: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Run Test
+        run: |
+          source activate ./atlasenv
+          ls -l
+          pwd
+          chmod +x test/test_ci.sh
+          test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+
+      - name: Store Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: test_ci/logs
+
+      - name: Store Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: sample_logs
+          path: test_ci/Streptococcus/logs
+
+  qc_and_assembly:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+    env:
+      N_THREADS: 2
+      MEM: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Init
+        run: |
+          source activate ./atlasenv
+          atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --interleaved-fastq --threads "$N_THREADS" --working-dir "wd"
+
+      - name: Run QC
+        run: |
+          source activate ./atlasenv
+          atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+
+      - name: Test Assembly
+        run: |
+          source activate ./atlasenv
+          atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+
+      - name: Store Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: wd/logs
+
+      - name: Store Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: sample_logs
+          path: wd/Streptococcus/logs
+
+      - name: Persist Working Directory
+        uses: actions/upload-artifact@v2
+        with:
+          name: working-directory
+          path: wd
+
+  genecatalog:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+    env:
+      N_THREADS: 2
+      MEM: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Create Tabal of Envs
+        run: tar cf genecatalog.envs.tar workflow/envs/sequence_utils.yaml workflow/envs/fasta.yaml workflow/envs/mmseqs.yaml workflow/envs/hdf.yaml workflow/envs/required_packages.yaml
+
+      - name: Restore Conda Environments
+        uses: actions/cache@v2
+        with:
+          path: databases
+          key: genecatalog-env-${{ hashFiles('genecatalog.envs.tar') }}
+
+      - name: Create Conda Genecatalog
+        run: |
+          source activate ./atlasenv
+          WD='wd'
+          atlas run genecatalog --omit-from combine_egg_nogg_annotations --working-dir $WD --conda-create-envs-only
+
+      - name: Save Conda Environments
+        uses: actions/cache@v2
+        with:
+          path: databases
+          key: genecatalog-env-${{ hashFiles('genecatalog.envs.tar') }}
+
+      - name: Run Genecatalog
+        run: |
+          source activate ./atlasenv
+          WD='wd'
+          atlas run genecatalog --omit-from combine_egg_nogg_annotations --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+
+      - name: Store Genecatalog Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: genecatalog-logs
+          path: wd/logs
+
+      - name: Store Genecatalog Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: genecatalog-sample-logs
+          path: wd/Streptococcus/logs
+
+  binning:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0} # use default shell
+    env:
+      N_THREADS: 2
+      MEM: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Attach Workspace
+        uses: actions/download-artifact@v2
+        with:
+          name: workspace
+
+      - name: Run Binning
+        run: |
+          source activate ./atlasenv
+          WD='wd'
+          atlas run binning --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat --omit-from checkm2_download_db download_gunc
+
+      - name: Store Binning Report
+        uses: actions/upload-artifact@v2
+        with:
+          name: binning-report
+          path: wd/Binning/metabat/bin_report.html
+
+      - name: Store Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: binning-logs
+          path: wd/logs
+
+      - name: Store Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: binning-sample-logs
+          path: wd/sample1/logs
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build-and-dryrun
+      - genome_quantify:
+          requires:
+            - build-and-dryrun
+      - get-example-data
+      - run_test:
+          requires:
+            - build-and-dryrun
+            - get-example-data
+      - qc_and-assembly:
+          requires:
+            - build-and-dryrun
+            - get-example-data
+      - binning:
+          requires:
+            - qc-and-assembly
+      - genecatalog:
+          requires:
+            - qc-and-assembly
