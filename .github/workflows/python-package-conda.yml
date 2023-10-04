@@ -1,9 +1,9 @@
-name: Python Package using Conda
+name: Combined Workflow
 
 on: [push]
 
 jobs:
-  build-linux:
+  build-and-get-data:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 5
@@ -12,7 +12,6 @@ jobs:
         shell: bash -el {0} # use default shell
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v3.5.2
 
@@ -28,25 +27,24 @@ jobs:
           cache-environment-key: environment-${{ steps.date.outputs.date }}
           cache-downloads-key: downloads-${{ steps.date.outputs.date }}
 
-      - name: check mamba
-        run: mamba --help
-
       - name: Install atlas
         run: |
            python -m pip install . --no-deps -vv
+
       - name: Test atlas
         run: |
           atlas --help
           atlas --version
-      - name: Import atlas
+
+      - name: test import modules atlas
         run: |
           python -c "from atlas import utils"
 
       - name: Dryrun
         run: |
           test/dryrun.sh
-      - run:
-        name: Test init many samples
+
+      - name: Test init many samples
         run: |
-            ./test/test_init_many_samples.sh
+          ./test/test_init_many_samples.sh
 
