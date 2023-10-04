@@ -13,6 +13,8 @@ wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
 tar -xzf test_reads.tar.gz 
 
 
+ls -l test_reads
+
 databaseDir="databases"
 WD='test_ci'
 reads_dir="test_reads" #"example_data/reads/test"

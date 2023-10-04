@@ -86,14 +86,11 @@ jobs:
           python -m pip install . --no-deps -vv
           atlas --help
 
-      - name: Clone Example Data Repository
-        run: git clone https://github.com/metagenome-atlas/example_data.git
+      # - name: Clone Example Data Repository
+      #   run: git clone https://github.com/metagenome-atlas/example_data.git
       
       - name: Run Test
         run: |
-          ls -l 
-          ls -l example_data
-          chmod +x test/test_ci.sh
           test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
 
       - name: Store Logs
