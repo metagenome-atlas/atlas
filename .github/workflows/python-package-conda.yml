@@ -60,9 +60,6 @@ jobs:
 
       - name: Run Test
         run: |
-          source activate ./atlasenv
-          ls -l
-          pwd
           chmod +x test/test_ci.sh
           test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
 
