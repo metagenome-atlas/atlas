@@ -10,7 +10,7 @@ version: 2.1
 jobs:
   build_and_dryrun:
     <<: *defaults
-    resource_class: small
+    resource_class: medium
     environment:
       N_THREADS: 1
       MEM: 2
