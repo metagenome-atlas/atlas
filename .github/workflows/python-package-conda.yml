@@ -16,16 +16,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3.5.2
 
-      - name: Get current month
-        id: date
-        run: echo "date=$(date +%Y-%m)" >> "${GITHUB_OUTPUT}"
+      # - name: Get current month
+      #   id: date
+      #   run: echo "date=$(date +%Y-%m)" >> "${GITHUB_OUTPUT}"
 
       - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: atlasenv.yml
           environment-name: atlasenv
           # persist on the same month.
-          cache-environment-key: atlasenv-${{ steps.date.outputs.date }}
+          cache-environment-key: atlasenv-  #${{ steps.date.outputs.date }}
 
 
       - name: Install atlas
