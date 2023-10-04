@@ -45,32 +45,34 @@ jobs:
           python -c "from atlas import utils"
 
       - name: Dryrun
-        run: |
-          test/dryrun.sh
+        run: test/dryrun.sh
 
       - name: Test init many samples
         run: ./test/test_init_many_samples.sh
+### Full test job
 
-      - name: Clone Example Data Repository
-        run: git clone https://github.com/metagenome-atlas/example_data.git
+### Full test job
+  full-test:
+    needs: build-and-dryrun
+    steps:
+      steps:
+        - name: Clone Example Data Repository
+          run: git clone https://github.com/metagenome-atlas/example_data.git
+    - name: Run Test
+      run: |
+        ls -l 
+        ls -l example_data
+        chmod +x test/test_ci.sh
+        test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
 
+    - name: Store Logs
+      uses: actions/upload-artifact@v2
+      with:
+        name: logs
+        path: test_ci/logs
 
-
-#### start test
-
-      - name: Run Test
-        run: |
-          chmod +x test/test_ci.sh
-          test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
-
-      - name: Store Logs
-        uses: actions/upload-artifact@v2
-        with:
-          name: logs
-          path: test_ci/logs
-
-      - name: Store Sample Logs
-        uses: actions/upload-artifact@v2
-        with:
-          name: sample_logs
-          path: test_ci/Streptococcus/logs
+    - name: Store Sample Logs
+      uses: actions/upload-artifact@v2
+      with:
+        name: sample_logs
+        path: test_ci/Streptococcus/logs
