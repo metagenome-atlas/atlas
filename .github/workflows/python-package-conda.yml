@@ -47,19 +47,106 @@ jobs:
       - name: Test init many samples
         run: ./test/test_init_many_samples.sh
 
-      # - name: Cache atlas instalation
-      #   uses: actions/cache@v2
-      #   env:
-      #     cache-name: cache-atlas
-      #   with:
-      #     # npm cache files are stored in `~/.npm` on Linux/macOS
-      #     path: ~/.npm
-      #     key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-build-${{ env.cache-name }}-
-      #       ${{ runner.os }}-build-
-      #       ${{ runner.os }}-
+
+  test-qc:
+    runs-on: ubuntu-latest
+    needs: build-and-dryrun
+    strategy:
+      max-parallel: 1
+    env:
+      N_THREADS: 2
+      MEM: 3
+      DATABASE_DIR: databases
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: atlasenv.yml
+          environment-name: atlasenv
+          cache-environment-key: atlasenv-
+
+
+      - name: Install atlas
+        run: |
+          python -m pip install . --no-deps -vv
+          atlas --help
+
+
+
+  qc_and_assembly:
+    runs-on: ubuntu-latest
+    env:
+      N_THREADS: 2
+      MEM: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5
+
+      - name: Download test data
+        run: |
+          wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
+          tar -xzf test_reads.tar.gz 
+
+      - name: get conda envs
+        id: get-envs
+        uses: actions/cache@v2
+        with:
+          path: databases/conda_envs
+          key: assembly-conda-envs
+  
+        # - name: upack conda envs
+        #   if: steps.get-enfs.outputs.cache-hit != 'true'
+        #   run: tar -xzf assembly_conda_envs.tar.gz
+
+
+      - name: Init
+        run: |
+          atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir wd
+
+      - name: Run QC
+        run: |
+          atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+
+      - name: Test Assembly
+        run: |
+          atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+
+      - name: Store Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: wd/logs
+
+      - name: Store Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: sample_logs
+          path: wd/Streptococcus/logs
+
+
+      # - name: compress conda envs
+      #   run: |
+      #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
+
+      - name: Cache conda envs
+        uses: actions/cache@v2
+        env:
+          cache-name: assembly-conda-envs
+        with:
+          path: databases/conda_envs
+          key: assembly-conda-envs
+        
     
+
+
+
+
+
+
   full-test:
     runs-on: ubuntu-latest
     needs: build-and-dryrun
@@ -77,7 +164,6 @@ jobs:
         with:
           environment-file: atlasenv.yml
           environment-name: atlasenv
-          # persist on the same month.
           cache-environment-key: atlasenv-
 
 
