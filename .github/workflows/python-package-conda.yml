@@ -20,11 +20,6 @@ jobs:
         id: date
         run: echo "date=$(date +%Y-%m)" >> "${GITHUB_OUTPUT}"
 
-      - name: Where are we
-        run: |
-          pwd
-          ls
-
       - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: atlasenv.yml
@@ -50,4 +45,8 @@ jobs:
       - name: Dryrun
         run: |
           test/dryrun.sh
+      - run:
+        name: Test init many samples
+        run: |
+            ./test/test_init_many_samples.sh
 
