@@ -28,7 +28,7 @@ jobs:
       - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: atlasenv.yml
-          #environment-name: atlasenv
+          environment-name: atlasenv
           # persist on the same month.
           cache-environment-key: environment-${{ steps.date.outputs.date }}
           cache-downloads-key: downloads-${{ steps.date.outputs.date }}
