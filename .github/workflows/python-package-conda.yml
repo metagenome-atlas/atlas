@@ -84,7 +84,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5
+        uses: actions/checkout@v3.5.2
 
       - name: Download test data
         run: |
@@ -107,6 +107,25 @@ jobs:
         run: |
           atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir wd
 
+
+      - name: Install dependencies for assembly
+        if: steps.get-enfs.outputs.cache-hit != 'true'
+        run: atlas run assembly --conda-create-envs-only
+
+      # - name: compress conda envs
+      #   run: |
+      #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
+
+      - name: Cache conda envs
+        if: steps.get-enfs.outputs.cache-hit != 'true'
+        uses: actions/cache@v2
+        env:
+          cache-name: assembly-conda-envs
+        with:
+          path: databases/conda_envs
+          key: assembly-conda-envs
+
+
       - name: Run QC
         run: |
           atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
@@ -128,17 +147,7 @@ jobs:
           path: wd/Streptococcus/logs
 
 
-      # - name: compress conda envs
-      #   run: |
-      #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
 
-      - name: Cache conda envs
-        uses: actions/cache@v2
-        env:
-          cache-name: assembly-conda-envs
-        with:
-          path: databases/conda_envs
-          key: assembly-conda-envs
         
     
 
