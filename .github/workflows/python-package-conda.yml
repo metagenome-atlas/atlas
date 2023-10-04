@@ -2,18 +2,15 @@ name: Combined Workflow
 
 on: [push]
 
+defaults:
+  run:
+    shell: bash -el {0} # use default shell
 jobs:
   build-and-dryrun:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 5
-    defaults:
-      run:
-        shell: bash -el {0} # use default shell
-    env:
-      DATABASE_DIR: databases
-      N_THREADS: 2
-      MEM: 3
+      max-parallel: 2
+
 
     steps:
       - name: Checkout
@@ -49,30 +46,32 @@ jobs:
 
       - name: Test init many samples
         run: ./test/test_init_many_samples.sh
-### Full test job
+    
+  # full-test:
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-dryrun
+  #   strategy:
+  #     max-parallel: 1
 
-### Full test job
-  full-test:
-    needs: build-and-dryrun
-    steps:
-      steps:
-        - name: Clone Example Data Repository
-          run: git clone https://github.com/metagenome-atlas/example_data.git
-    - name: Run Test
-      run: |
-        ls -l 
-        ls -l example_data
-        chmod +x test/test_ci.sh
-        test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+    # steps:
+      - name: Clone Example Data Repository
+        run: git clone https://github.com/metagenome-atlas/example_data.git
+      
+      - name: Run Test
+        run: |
+          ls -l 
+          ls -l example_data
+          chmod +x test/test_ci.sh
+          test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
 
-    - name: Store Logs
-      uses: actions/upload-artifact@v2
-      with:
-        name: logs
-        path: test_ci/logs
+      - name: Store Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: test_ci/logs
 
-    - name: Store Sample Logs
-      uses: actions/upload-artifact@v2
-      with:
-        name: sample_logs
-        path: test_ci/Streptococcus/logs
+      - name: Store Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: sample_logs
+          path: test_ci/Streptococcus/logs
