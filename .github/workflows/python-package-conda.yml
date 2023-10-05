@@ -263,7 +263,6 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: databases
-          fail-on-cache-miss: true
           key: conda-envs-binning
           restore-keys: |
             conda-envs-*
