@@ -53,7 +53,6 @@ jobs:
     env:
       N_THREADS: 2
       MEM: 0.8
-      DATABASE_DIR: databases
 
     steps:
       - name: Checkout
@@ -72,7 +71,7 @@ jobs:
           python -m pip install . --no-deps -vv
           atlas --help
 
-      - name: cache example data
+      - name: get example data
         id: get-data
         uses: actions/cache/restore@v3
         with:
@@ -100,7 +99,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: databases
-          key: assembly-conda-envs
+          key: conda-envs-assembly
   
         # - name: upack conda envs
         #   if: steps.get-envs.outputs.cache-hit != 'true'
@@ -109,7 +108,7 @@ jobs:
 
       - name: Init
         run: |
-          atlas init "test_reads" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir wd
+          atlas init "test_reads" --threads "$N_THREADS" --working-dir wd
 
 
       - name: Install dependencies for qc and assembly
@@ -120,6 +119,8 @@ jobs:
       #   run: |
       #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
 
+      - name: List envs
+        run: ls -l databases/conda_envs
 
       - name: Store conda envs
         if: steps.get-envs.outputs.cache-hit != 'true'
@@ -198,7 +199,7 @@ jobs:
           path: databases
           key: binning-conda-envs
           restore-keys: |
-            assembly-conda-envs
+            conda-envs-assembly
 
       - name: Restore working dir
         uses: actions/cache/restore@v3
