@@ -9,7 +9,7 @@ jobs:
   build-and-dryrun:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 2
+      max-parallel: 1
 
 
     steps:
@@ -73,7 +73,7 @@ jobs:
 
       - name: cache example data
         id: get-data
-        uses: actions/cache@v2
+        uses: actions/cache/restore@v3
         with:
           path: test_reads.tar.gz
           key: example-data
@@ -84,10 +84,10 @@ jobs:
           
       - name: cache example data
         if: steps.get-data.outputs.cache-hit != 'true'
-        uses: actions/cache@v2
+        uses: actions/cache/save@v3
         with:
           path: test_reads.tar.gz
-          key: example-data
+          key: ${{ steps.get-data.outputs.cache-primary-key }}
         
       - name: extract data
         run: |
@@ -96,7 +96,7 @@ jobs:
 
       - name: get conda envs
         id: get-envs
-        uses: actions/cache@v2
+        uses: actions/cache/restore@v3
         with:
           path: databases/conda_envs
           key: assembly-conda-envs
@@ -121,10 +121,10 @@ jobs:
 
       - name: Cache conda envs
         if: steps.get-envs.outputs.cache-hit != 'true'
-        uses: actions/cache@v2
+        uses: actions/cache/save@v3
         with:
           path: databases/conda_envs
-          key: assembly-conda-envs
+          key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
 
       - name: Run QC
