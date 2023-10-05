@@ -113,7 +113,7 @@ jobs:
 
       - name: Install dependencies for qc and assembly
         if: steps.get-envs.outputs.cache-hit != 'true'
-        run: atlas run assembly --conda-create-envs-only
+        run: atlas run assembly --conda-create-envs-only -w wd
 
       # - name: compress conda envs
       #   run: |
