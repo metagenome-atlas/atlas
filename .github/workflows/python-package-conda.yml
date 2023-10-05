@@ -47,11 +47,11 @@ jobs:
       - name: Test init many samples
         run: ./test/test_init_many_samples.sh
 
-
-
   run-qc-and-assembly:
     runs-on: ubuntu-latest
-    needs: build-and-dryrun
+    needs: 
+      - build-and-dryrun
+      - download-example-data
     env:
       N_THREADS: 2
       MEM: 3
@@ -73,11 +73,28 @@ jobs:
           python -m pip install . --no-deps -vv
           atlas --help
 
+      - name: cache example data
+        id: get-data
+        uses: actions/cache@v2
+        with:
+          path: test_reads.tar.gz
+          key: example-data
 
       - name: Download test data
+        if: steps.get-data.outputs.cache-hit != 'true'
+        run: wget --quiet https://zenodo.org/record/3992790/files/test_reads.tar.gz
+          
+      - name: cache example data
+        if: steps.get-data.outputs.cache-hit != 'true'
+        uses: actions/cache@v2
+        with:
+          path: test_reads.tar.gz
+          key: example-data
+        
+      - name: extract data
         run: |
-          wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
           tar -xzf test_reads.tar.gz 
+          ls -l test_reads
 
       - name: get conda envs
         id: get-envs
@@ -87,17 +104,17 @@ jobs:
           key: assembly-conda-envs
   
         # - name: upack conda envs
-        #   if: steps.get-enfs.outputs.cache-hit != 'true'
+        #   if: steps.get-envs.outputs.cache-hit != 'true'
         #   run: tar -xzf assembly_conda_envs.tar.gz
 
 
       - name: Init
         run: |
-          atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir wd
+          atlas init "test_reads" --db-dir "$DATABASE_DIR" --threads "$N_THREADS" --working-dir wd
 
 
-      - name: Install dependencies for assembly
-        if: steps.get-enfs.outputs.cache-hit != 'true'
+      - name: Install dependencies for qc and assembly
+        if: steps.get-envs.outputs.cache-hit != 'true'
         run: atlas run assembly --conda-create-envs-only
 
       # - name: compress conda envs
@@ -105,7 +122,7 @@ jobs:
       #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
 
       - name: Cache conda envs
-        if: steps.get-enfs.outputs.cache-hit != 'true'
+        if: steps.get-envs.outputs.cache-hit != 'true'
         uses: actions/cache@v2
         with:
           path: databases/conda_envs
