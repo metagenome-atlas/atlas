@@ -52,7 +52,7 @@ jobs:
     needs: build-and-dryrun
     env:
       N_THREADS: 2
-      MEM: 3
+      MEM: 0.8
       DATABASE_DIR: databases
 
     steps:
@@ -130,11 +130,11 @@ jobs:
 
       - name: Run QC
         run: |
-          atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+          atlas run qc --max-mem $MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
 
       - name: Test Assembly
         run: |
-          atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+          atlas run assembly --max-mem $MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
 
       - name: Store Logs
         uses: actions/upload-artifact@v2
@@ -146,7 +146,13 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: sample_logs
-          path: wd/Sample1/logs
+          path: wd/sample1/logs
+
+      - name: Store reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: reports
+          path: wd/reports
 
 
       - name: Cache working dir
@@ -163,6 +169,7 @@ jobs:
     env:
       N_THREADS: 2
       MEM: 3
+
       DATABASE_DIR: databases
 
     steps:
