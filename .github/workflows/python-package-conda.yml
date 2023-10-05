@@ -149,7 +149,7 @@ jobs:
 
 
       - name: Cache working dir
-        uses: actions/cache@v2
+        uses: actions/cache/save@v3
         with:
           path: wd
           key: assembly-working-dir
@@ -183,7 +183,7 @@ jobs:
 
       - name: get conda envs
         id: get-genecatalog-envs
-        uses: actions/cache@v2
+        uses: actions/cache/restore@v3
         with:
           path: databases/conda_envs
           key: binning-conda-envs
@@ -191,7 +191,7 @@ jobs:
             assembly-conda-envs
 
       - name: Restore working dir
-        uses: actions/cache@v2
+        uses: actions/cache/restore@v3
         with:
           path: wd
           key: assembly-working-dir
