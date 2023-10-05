@@ -49,7 +49,7 @@ jobs:
 
   run-qc-and-assembly:
     runs-on: ubuntu-latest
-    needs: [ build-and-dryrun, download-example-data ]
+    needs: build-and-dryrun
     env:
       N_THREADS: 2
       MEM: 3
