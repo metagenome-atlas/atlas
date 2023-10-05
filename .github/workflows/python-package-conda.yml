@@ -99,7 +99,7 @@ jobs:
         id: get-envs
         uses: actions/cache/restore@v3
         with:
-          path: $DATABASE_DIR/conda_envs
+          path: databases
           key: assembly-conda-envs
   
         # - name: upack conda envs
@@ -119,17 +119,13 @@ jobs:
       # - name: compress conda envs
       #   run: |
       #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
-      - name: list databases
-        run: | 
-          echo $DATABASE_DIR
-          ls -l $DATABASE_DIR
-          ls -l $DATABASE_DIR/conda_envs
+
 
       - name: Store conda envs
         if: steps.get-envs.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
-          path: $DATABASE_DIR/conda_envs
+          path: databases
           key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
 
@@ -199,7 +195,7 @@ jobs:
         id: get-genecatalog-envs
         uses: actions/cache/restore@v3
         with:
-          path: $DATABASE_DIR/conda_envs
+          path: databases
           key: binning-conda-envs
           restore-keys: |
             assembly-conda-envs
