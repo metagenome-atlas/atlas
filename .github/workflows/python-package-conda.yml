@@ -163,6 +163,7 @@ jobs:
     env:
       N_THREADS: 2
       MEM: 3
+      DATABASE_DIR: databases
 
     steps:
       - name: Checkout
@@ -186,7 +187,7 @@ jobs:
         id: get-genecatalog-envs
         uses: actions/cache/restore@v3
         with:
-          path: databases/conda_envs
+          path: $DATABASE_DIR/conda_envs
           key: binning-conda-envs
           restore-keys: |
             assembly-conda-envs
