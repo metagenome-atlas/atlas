@@ -53,6 +53,7 @@ jobs:
     env:
       N_THREADS: 2
       MEM: 3
+      DATABASE_DIR: databases
 
     steps:
       - name: Checkout
@@ -98,7 +99,7 @@ jobs:
         id: get-envs
         uses: actions/cache/restore@v3
         with:
-          path: databases/conda_envs
+          path: $DATABASE_DIR/conda_envs
           key: assembly-conda-envs
   
         # - name: upack conda envs
@@ -123,7 +124,7 @@ jobs:
         if: steps.get-envs.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
-          path: databases/conda_envs
+          path: $DATABASE_DIR/conda_envs
           key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
 
