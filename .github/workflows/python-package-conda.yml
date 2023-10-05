@@ -213,12 +213,12 @@ jobs:
       - name: dryrun assembly shold need nothing to be done
         run: |
           ls -l wd
-          atlas run assembly -n
+          atlas run assembly -w wd -n
 
   
       - name: Test Genecatalog
         run: |
-          atlas run genecatalog --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+          atlas run genecatalog --restart-times=2 --working-dir wd --omit-from combine_egg_nogg_annotations combine_dram_genecatalog_annotations 
 
       - name: Store Logs
         uses: actions/upload-artifact@v2
@@ -230,7 +230,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: sample_logs
-          path: wd/Sample1/logs
+          path: wd/sample1/logs
 
   
 
