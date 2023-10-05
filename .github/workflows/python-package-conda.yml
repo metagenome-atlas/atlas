@@ -115,10 +115,6 @@ jobs:
         if: steps.get-envs.outputs.cache-hit != 'true'
         run: atlas run assembly --conda-create-envs-only -w wd
 
-      # - name: compress conda envs
-      #   run: |
-      #     tar -czf assembly_conda_envs.tar.gz $DATABASE_DIR/conda_envs
-
       - name: List envs
         run: ls -l databases/conda_envs
 
@@ -172,7 +168,6 @@ jobs:
       N_THREADS: 2
       MEM: 3
 
-      DATABASE_DIR: databases
 
     steps:
       - name: Checkout
@@ -193,13 +188,14 @@ jobs:
 
 
       - name: get conda envs
-        id: get-genecatalog-envs
+        id: get-envs
         uses: actions/cache/restore@v3
         with:
           path: databases
-          key: binning-conda-envs
+          key: conda-envs-genecatalog
           restore-keys: |
             conda-envs-assembly
+            conda-envs-*
 
       - name: Restore working dir
         uses: actions/cache/restore@v3
@@ -213,7 +209,7 @@ jobs:
           atlas run assembly -w wd -n
 
   
-      - name: Test Genecatalog
+      - name: test Genecatalog
         run: |
           atlas run genecatalog --restart-times=2 --working-dir wd --omit-from combine_egg_nogg_annotations combine_dram_genecatalog_annotations 
 
@@ -229,8 +225,90 @@ jobs:
           name: sample_logs
           path: wd/sample1/logs
 
-  
+      - name: Store conda envs
+        #if: steps.get-envs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: databases
+          key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
+
+  run-binning:
+    runs-on: ubuntu-latest
+    #needs: run-qc-and-assembly
+    env:
+      N_THREADS: 2
+      MEM: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: atlasenv.yml
+          environment-name: atlasenv
+          cache-environment-key: atlasenv-
+
+
+      - name: install atlas
+        run: |
+          python -m pip install . --no-deps -vv
+          atlas --help
+
+
+      - name: get conda envs
+        id: get-envs
+        uses: actions/cache/restore@v3
+        with:
+          path: databases
+          fail-on-cache-miss: true
+          key: conda-envs-binning
+          restore-keys: |
+            conda-envs-*
+
+      - name: Restore working dir
+        uses: actions/cache/restore@v3
+        with:
+          path: wd
+          fail-on-cache-miss: true
+          key: assembly-working-dir
+
+      - name: dryrun assembly shold need nothing to be done
+        run: |
+          ls -l wd
+          atlas run assembly -w wd -n
+
+  
+      - name: test binning
+        run: |
+          atlas run binning --restart-times=2 --working-dir wd 
+
+      - name: Store Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: wd/logs
+
+      - name: Store Sample Logs
+        uses: actions/upload-artifact@v2
+        with:
+          name: sample_logs
+          path: wd/sample1/logs
+
+      - name: Store conda envs
+       # if: steps.get-envs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: databases
+          key: ${{ steps.get-envs.outputs.cache-primary-key }}
+
+      - name: Cache working dir
+        uses: actions/cache/save@v3
+        with:
+          path: wd
+          key: binning-working-dir
 
   # full-test:
   #   runs-on: ubuntu-latest
