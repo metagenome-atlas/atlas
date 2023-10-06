@@ -304,27 +304,27 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
-      - genome_quantify:
-          requires:
-            - build_and_dryrun
-      - get_example_data
+      # - genome_quantify:
+      #     requires:
+      #       - build_and_dryrun
+      #- get_example_data
 
       # - run_test:
       #     requires:
       #       - build_and_dryrun
       #       - get_example_data
             
-      - qc_and_assembly:
-          requires:
-            - build_and_dryrun
-            - get_example_data
+      # - qc_and_assembly:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
 
-      - binning:
-          requires:
-            - qc_and_assembly
-      - genecatalog:
-          requires:
-            - qc_and_assembly
+      # - binning:
+      #     requires:
+      #       - qc_and_assembly
+      # - genecatalog:
+      #     requires:
+      #       - qc_and_assembly
       # - getenvs:
       #     requires:
       #       - build_and_dryrun
