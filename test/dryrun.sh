@@ -12,17 +12,37 @@ atlas run --help
 databaseDir="test/databases"
 WD='test/Dryrun'
 reads_dir='test/reads/empty'
+snakemake_args=" --quiet rules $@ --dryrun " 
+test_script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
-echo "touch reads dir"
+
+create_reads_dir() {
+
+    local reads_dir="$1"
+    local N=$2
+
+echo "touch reads dir: $reads_dir"
+
+rm -rf $reads_dir
 mkdir -p $reads_dir
-for sample in Sample1 Sample2 Sample3 Sample4 Sample5 Sample6; 
-  do
+
+for (( i=1; i<=$N; i++ )); do
+    sample="Sample$i"
+    
   for fraction in R1 R2;
     do
     touch $reads_dir/${sample}_${fraction}.fastq.gz
   done
 done
+}
+
+# need at least 10 samples for cobinning
+
+create_reads_dir $reads_dir 10 
+
+
+
 
 
 rm -fr $WD
@@ -37,10 +57,10 @@ atlas init --db-dir $databaseDir --threads=$NThreads -w $WD $reads_dir
 
 
 echo "Dryrun all"
-atlas run all -w $WD --max-mem $MaxMem --jobs $NThreads --dryrun $@
+atlas run all -w $WD  $snakemake_args
 
 echo "Dryrun strains"
-atlas run genomes strains -w $WD --max-mem $MaxMem --jobs $NThreads --dryrun $@
+atlas run genomes strains -w $WD $snakemake_args
 
 
 for binner in metabat SemiBin vamb DASTool ; do
@@ -49,7 +69,7 @@ for binner in metabat SemiBin vamb DASTool ; do
         Dryrun Binner $binner
       "
 
-  atlas run genomes -w $WD --config final_binner=$binner --dryrun $@
+  atlas run binning -w $WD --config final_binner=$binner $snakemake_args
 
 done
 
@@ -60,20 +80,45 @@ echo "
       Dryrun with skip QC and megahit
     "
 #
+
+rm -fr $WD
+
 WD=${WD}/noQC
 rm -fr $WD
-atlas init --db-dir $databaseDir --threads=$NThreads --skip-qc -w $WD --assembler megahit $reads_dir
 
-atlas run all -w $WD --dryrun $@
+atlas init --db-dir $databaseDir --skip-qc -w $WD --assembler megahit $reads_dir
 
+atlas run all -w $WD $snakemake_args
 
-echo
 
 echo "
       execution with profile
     "
 
   mkdir -p $WD/local
-  printf 'cores: 1\n' > $WD/local/config.yaml
+  printf 'cores: 2\n' > $WD/local/config.yaml
 
-  atlas run qc -w $WD --dryrun --max-mem $MaxMem --jobs $NThreads --profile $WD/local $@ 
+  atlas run qc -w $WD  --profile $WD/local $snakemake_args
+
+
+# clean up
+rm -rf $WD $reads_dir
+
+
+
+
+
+
+echo " 
+      test with external genomes
+      "
+
+bash $test_script_dir/test_external_genomes.sh $snakemake_args
+
+
+
+echo " 
+      test init with different samples
+      "
+
+bash $test_script_dir/test_init_many_samples.sh $snakemake_args

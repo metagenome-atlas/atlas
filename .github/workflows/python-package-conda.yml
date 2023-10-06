@@ -58,11 +58,7 @@ jobs:
       - name: Dryrun
         run: test/dryrun.sh
 
-      - name: Test init many samples
-        run: ./test/test_init_many_samples.sh
 
-      - name: Dryrun quantify
-        run: ./test/test_external_genomes.sh
 
   run-qc-and-assembly:
     runs-on: ubuntu-latest
