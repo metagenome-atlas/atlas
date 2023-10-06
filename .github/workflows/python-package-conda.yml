@@ -253,7 +253,7 @@ jobs:
 
   run-binning:
     runs-on: ubuntu-latest
-    needs: build-and-dryrun
+    needs: [ build-and-dryrun, run-qc-and-assembly ]
     env:
       N_THREADS: 2
       MEM: 3
