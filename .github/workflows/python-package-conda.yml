@@ -5,6 +5,12 @@ on: [push]
 defaults:
   run:
     shell: bash -el {0} # use default shell
+
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-dryrun:
     runs-on: ubuntu-latest
