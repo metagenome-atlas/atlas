@@ -212,7 +212,7 @@ jobs:
           key: conda-envs-genecatalog
           restore-keys: |
             conda-envs-assembly
-            conda-envs-*
+            conda-envs-
 
       - name: Restore working dir
         uses: actions/cache/restore@v3
