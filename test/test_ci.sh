@@ -9,18 +9,20 @@ set -exuo pipefail
 atlas --version
 
 # get test reads
-#wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
-#tar -xzf test_reads.tar.gz 
+wget https://zenodo.org/record/3992790/files/test_reads.tar.gz
+tar -xzf test_reads.tar.gz 
 
+
+ls -l test_reads
 
 databaseDir="databases"
 WD='test_ci'
-reads_dir="example_data/reads/test"
+reads_dir="test_reads" #"example_data/reads/test"
 
 
 rm -f $WD/samples.tsv
 #
-atlas init --db-dir --interleaved-fastq $databaseDir  -w $WD $reads_dir
+atlas init $reads_dir --db-dir  $databaseDir  -w $WD #--interleaved-fastq
 
 atlas run None screen -w $WD qc  $@
 

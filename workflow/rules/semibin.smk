@@ -73,7 +73,6 @@ rule semibin_train:
 
 
 def semibin_input(wildcards):
-
     bingroup_of_sample = sampleTable.loc[wildcards.sample, "BinGroup"]
     samples_of_bingroup = sampleTable.query(
         f'BinGroup=="{bingroup_of_sample}"'

@@ -42,7 +42,6 @@ rule skani_2_parquet:
     threads: 1
     run:
         try:
-
             skani_column_dtypes = {
                 "Ref_file": "category",
                 "Query_file": "category",

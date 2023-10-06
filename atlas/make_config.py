@@ -236,8 +236,6 @@ def make_config(
         )
 
 
-
-
 def validate_config(config, workflow):
     conf = load_configfile(config)
 
