@@ -187,12 +187,11 @@ def get_assembly(wildcards):
 
     """
 
-    Header= "Assembly"
+    Header = "Assembly"
     try:
         return get_files_from_sampleTable(wildcards.sample, Header)
 
     except FileNotInSampleTableException:
         # return files as named by atlas pipeline
 
-        return "{sample}/{sample}_contigs.fasta".format(sample=wildcards.sample )
-
+        return "{sample}/{sample}_contigs.fasta".format(sample=wildcards.sample)

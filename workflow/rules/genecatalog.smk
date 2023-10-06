@@ -50,7 +50,6 @@ if config["genecatalog"]["source"] == "contigs":
             cat_files(input.fna, output.fna)
             cat_files(input.short, output.short)
 
-
 else:
 
     localrules:
@@ -175,14 +174,14 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             "logs/Genecatalog/clustering/generate_orf_info.log",
         script:
             "../scripts/generate_orf_info.py"
-# cluster genes with cd-hit-est
 
+
+# cluster genes with cd-hit-est
 
 
 elif config["genecatalog"]["clustermethod"] == "cd-hit-est":
 
     include: "cdhit.smk"
-
 
 else:
     raise Exception(
@@ -388,7 +387,6 @@ rule combine_gene_coverages:
 old_subset_folder = Path("Genecatalog/subsets/genes")
 new_subset_folder = "Intermediate/genecatalog/subsets"
 if old_subset_folder.exists():
-
     logger.info(f"I move {old_subset_folder} to {new_subset_folder}")
 
     import shutil
@@ -416,7 +414,6 @@ checkpoint gene_subsets:
 
 
 def get_subset_names(wildcards):
-
     dir_for_subsets = Path(checkpoints.gene_subsets.get(**wildcards).output[0])
     subset_names = glob_wildcards(str(dir_for_subsets / "{subset}.faa")).subset
 
@@ -518,7 +515,6 @@ rule combine_egg_nogg_annotations:
         time=config["runtime"]["default"],
     run:
         try:
-
             import pandas as pd
 
             Tables = [
@@ -538,7 +534,6 @@ rule combine_egg_nogg_annotations:
 
             combined.to_parquet(output[0], index=False)
         except Exception as e:
-
             import traceback
 
             with open(log[0], "w") as logfile:
@@ -566,7 +561,6 @@ rule convert_eggNOG_tsv2parquet:
             df.to_parquet(output[0], index=False)
 
         except Exception as e:
-
             import traceback
 
             with open(log[0], "w") as logfile:
@@ -618,7 +612,6 @@ rule DRAM_annotate_genecatalog:
 
 
 def combine_genecatalog_dram_input(wildcards):
-
     all_subsets = get_subset_names(wildcards)
 
     return expand(

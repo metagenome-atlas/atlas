@@ -62,7 +62,6 @@ def prepare_sample_table_for_atlas(
 
     sample_table["BinGroup"] = "All"
 
-
     validate_sample_table(sample_table)
 
     sample_table.to_csv(outfile, sep="\t")
