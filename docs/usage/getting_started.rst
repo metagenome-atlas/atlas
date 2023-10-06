@@ -19,11 +19,12 @@ For real metagenomic data atlas should be run on a _linux_ sytem, with enough me
 
 
 
-You need to install `anaconda <http://anaconda.org/>`_ or miniconda. If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+You need to install `anaconda <http://anaconda.org/>`_ or miniconda. 
+If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+Setting strict channel priority can prevent quite some annoyances.
 
 .. code-block:: bash
-
-    conda config --add channels defaults
+    conda config --set channel_priority strict
     conda config --add channels bioconda
     conda config --add channels conda-forge
 
@@ -51,8 +52,11 @@ We also recommend to specify the latest version of metagenome-atlas.
     source activate atlasenv
 
 where `{latest_version}` should be replaced by 
-.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg   
-  :target: https://anaconda.org/bioconda/metagenome-atlas
+
+.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg
+    :target: https://anaconda.org/bioconda/metagenome-atlas
+
+
 
 
 Install metagenome-atlas from GitHub
@@ -121,10 +125,9 @@ Have a look at them with a normal text editor and check if the samples names are
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 The ``BinGroup`` parameter is used during the genomic binning.
-In short: all samples in which you expect the same strain to
-be found should belong to the same group,
-e.g. all metagenome samples from mice in the same cage or location.
-
+In short: If you have between 5 and 150 samples the default (puting everithing in one group) is fine.
+If you have less than 5 samples, put every sample in an individual BinGroup and use `metabat` as final binner.
+If you have more samples see the :ref:`cobinning` section for more details.
 
 .. note:: If you want to use :ref:`long reads <longreads>` for a hybrid assembly, you can also specify them in the sample table.
 

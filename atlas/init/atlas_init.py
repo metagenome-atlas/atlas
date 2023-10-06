@@ -1,20 +1,16 @@
 import os, sys
 from ..color_logger import logger
-import multiprocessing
-import tempfile
-from snakemake import utils
-from snakemake.io import load_configfile
 import pandas as pd
 import numpy as np
-from collections import defaultdict
 import click
 from pathlib import Path
-
 from ..make_config import make_config, validate_config
 from .create_sample_table import get_samples_from_fastq, simplify_sample_names
 from ..sample_table import (
     validate_sample_table,
-    load_sample_table,
+    validate_bingroup_size_cobinning,
+    validate_bingroup_size_metabat,
+    BinGroupSizeError,
     ADDITIONAL_SAMPLEFILE_HEADERS,
 )
 
@@ -64,7 +60,7 @@ def prepare_sample_table_for_atlas(
     for h in Headers:
         sample_table[h] = np.nan
 
-    sample_table["BinGroup"] = sample_table.index
+    sample_table["BinGroup"] = "All"
 
     validate_sample_table(sample_table)
 
@@ -146,6 +142,35 @@ def run_init(
     os.makedirs(working_dir, exist_ok=True)
     os.makedirs(db_dir, exist_ok=True)
 
+    sample_table = get_samples_from_fastq(path_to_fastq)
+
+    prepare_sample_table_for_atlas(
+        sample_table,
+        reads_are_QC=skip_qc,
+        outfile=os.path.join(working_dir, "samples.tsv"),
+    )
+
+    # Set default binner depending on number of samples
+    n_samples = sample_table.shape[0]
+    if n_samples <= 7:
+        logger.info(
+            "You don't have many samples in your dataset. " "I set 'metabat' as binner"
+        )
+        binner = "metabat"
+
+        try:
+            validate_bingroup_size_metabat(sample_table, logger)
+        except BinGroupSizeError:
+            pass
+
+    else:
+        binner = "vamb"
+        try:
+            validate_bingroup_size_cobinning(sample_table, logger)
+
+        except BinGroupSizeError:
+            pass
+
     make_config(
         db_dir,
         threads,
@@ -153,13 +178,7 @@ def run_init(
         data_type,
         interleaved_fastq,
         os.path.join(working_dir, "config.yaml"),
-    )
-    sample_table = get_samples_from_fastq(path_to_fastq)
-
-    prepare_sample_table_for_atlas(
-        sample_table,
-        reads_are_QC=skip_qc,
-        outfile=os.path.join(working_dir, "samples.tsv"),
+        binner=binner,
     )
 
 

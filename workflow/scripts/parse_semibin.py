@@ -57,4 +57,4 @@ else:
     )
 
     with open(snakemake.output[0], "w") as outf:
-        outf.write("{sample}_0\t{sample}_SemiBin_1\n".format(**snakemake.wildcards))
+        outf.write("{sample}_1\t{sample}_SemiBin_1\n".format(**snakemake.wildcards))

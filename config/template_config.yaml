@@ -34,8 +34,7 @@ runtime: #in h
     long: 24
     simplejob: 1
 
-# Local directory for temp files, useful for cluster execution without shared file system
-tmpdir: /tmp
+
 # directory where databases are downloaded with 'atlas download'
 database_dir: databases
 
@@ -157,13 +156,10 @@ minimum_map_quality: 0
 # Binning
 ########################
 
-final_binner: DASTool             # [SemiBin, DASTool, vamb, maxbin]
+final_binner: vamb             # [SemiBin, vamb, metabat, DASTool]
 
-binner:                           # If DASTool is used as final_binner, use predictions of this binners
-  - metabat
-  - maxbin
-#  - vamb
 
+semibin_options: ""
 
 metabat:
   sensitivity: sensitive

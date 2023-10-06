@@ -70,7 +70,6 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
                 -Xmx{resources.java_mem}G 2> {log}
             """
 
-
 else:
 
     localrules:
@@ -94,7 +93,6 @@ else:
             ), "Input and ouput files have not same number, can not create symlinks for all."
             for i in range(len(input)):
                 os.symlink(os.path.abspath(input[i]), output[i])
-
 
 
 
@@ -122,7 +120,6 @@ rule normalize_reads:
         mindepth=config["normalization_minimum_kmer_depth"],
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output.reads, key="out"),
-        tmpdir="tmpdir=%s" % TMPDIR if TMPDIR else "",
     log:
         "{sample}/logs/assembly/pre_process/normalization_{previous_steps}.log",
     benchmark:
@@ -136,7 +133,7 @@ rule normalize_reads:
     shell:
         " bbnorm.sh {params.inputs} "
         " {params.outputs} "
-        " {params.tmpdir} "
+        " tmpdir={resources.tmpdir} "
         " tossbadreads=t "
         " hist={output.histin} "
         " histout={output.histout} "
@@ -274,7 +271,6 @@ if config.get("assembler", "megahit") == "megahit":
         shell:
             "cat {input} > {output}"
 
-
     def megahit_input_parsing(input):
         Nfiles = len(input)
 
@@ -324,7 +320,7 @@ if config.get("assembler", "megahit") == "megahit":
 
             megahit \
             {params.inputs} \
-            --tmp-dir {TMPDIR} \
+            --tmp-dir {resources.tmpdir} \
             --num-cpu-threads {threads} \
             --k-min {params.k_min} \
             --k-max {params.k_max} \
@@ -350,7 +346,6 @@ if config.get("assembler", "megahit") == "megahit":
             temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
-
 
 else:
     if PAIRED_END:
@@ -466,68 +461,29 @@ else:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
-# standardizes header labels within contig FASTAs
 
+
+# standardizes header labels within contig FASTAs
 
 
 rule rename_contigs:
     input:
         "{sample}/assembly/{sample}_raw_contigs.fasta",
     output:
-        "{sample}/assembly/{sample}_prefilter_contigs.fasta",
-    conda:
-        "%s/required_packages.yaml" % CONDAENV
+        fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
+        mapping_table="{sample}/assembly/old2new_contig_names.tsv",
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
-        time=config["runtime"]["simplejob"],
+        time=config["runtime"]["default"],
     log:
         "{sample}/logs/assembly/post_process/rename_and_filter_size.log",
     params:
         minlength=config["minimum_contig_length"],
-    shell:
-        "rename.sh "
-        " in={input} out={output} ow=t "
-        " prefix={wildcards.sample} "
-        " minscaf={params.minlength} &> {log} "
-
-
-rule calculate_contigs_stats:
-    input:
-        "{sample}/assembly/{sample}_{assembly_step}_contigs.fasta",
-    output:
-        "{sample}/assembly/contig_stats/{assembly_step}_contig_stats.txt",
     conda:
-        "../envs/required_packages.yaml"
-    log:
-        "{sample}/logs/assembly/post_process/contig_stats_{assembly_step}.log",
-    threads: 1
-    resources:
-        mem=1,
-        time=config["runtime"]["simplejob"],
-    shell:
-        "stats.sh in={input} format=3 out={output} &> {log}"
-
-
-rule combine_sample_contig_stats:
-    input:
-        expand(
-            "{{sample}}/assembly/contig_stats/{assembly_step}_contig_stats.txt",
-            assembly_step=["prefilter", "final"],
-        ),
-    output:
-        "{sample}/assembly/contig_stats.tsv",
-    run:
-        import os
-        import pandas as pd
-
-        c = pd.DataFrame()
-        for f in input:
-            df = pd.read_csv(f, sep="\t")
-            assembly_step = os.path.basename(f).replace("_contig_stats.txt", "")
-            c.loc[assembly_step]
-
-        c.to_csv(output[0], sep="\t")
+        "../envs/fasta.yaml"
+    script:
+        "../scripts/rename_assembly.py"
 
 
 if config["filter_contigs"]:
@@ -609,8 +565,9 @@ if config["filter_contigs"]:
             minl={params.minl} \
             trim={params.trim} \
             -Xmx{resources.java_mem}G 2> {log}"""
-# HACK: this makes two copies of the same file
 
+
+# HACK: this makes two copies of the same file
 
 
 else:  # no filter
@@ -620,7 +577,7 @@ else:  # no filter
 
     rule do_not_filter_contigs:
         input:
-            rules.rename_contigs.output,
+            "{sample}/assembly/{sample}_prefilter_contigs.fasta",
         output:
             "{sample}/assembly/{sample}_final_contigs.fasta",
         threads: 1
@@ -640,6 +597,23 @@ rule finalize_contigs:
     threads: 1
     run:
         os.symlink(os.path.relpath(input[0], os.path.dirname(output[0])), output[0])
+
+
+rule calculate_contigs_stats:
+    input:
+        get_assembly,
+    output:
+        "{sample}/assembly/contig_stats/final_contig_stats.txt",
+    conda:
+        "../envs/required_packages.yaml"
+    log:
+        "{sample}/logs/assembly/post_process/contig_stats_final.log",
+    threads: 1
+    resources:
+        mem=1,
+        time=config["runtime"]["simplejob"],
+    shell:
+        "stats.sh in={input} format=3 out={output} &> {log}"
 
 
 # generalized rule so that reads from any "sample" can be aligned to contigs from "sample_contigs"
@@ -665,7 +639,7 @@ rule align_reads_to_final_contigs:
 
 rule pileup_contigs_sample:
     input:
-        fasta="{sample}/{sample}_contigs.fasta",
+        fasta=get_assembly,
         bam="{sample}/sequence_alignment/{sample}.bam",
     output:
         covhist="{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
@@ -719,7 +693,7 @@ rule create_bam_index:
 
 rule predict_genes:
     input:
-        "{sample}/{sample}_contigs.fasta",
+        get_assembly,
     output:
         fna="{sample}/annotation/predicted_genes/{sample}.fna",
         faa="{sample}/annotation/predicted_genes/{sample}.faa",

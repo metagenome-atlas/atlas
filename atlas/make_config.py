@@ -155,7 +155,6 @@ def make_default_config():
 
     config["cobining_min_contig_length"] = 2000
     config["cobining_min_bin_size"] = 200 * 1000
-    config["semibin_options"] = "  --max-node 1 --max-edges 200 "
     config["cobinning_separator"] = ":"
 
     config["annotations"] = ["gtdb_taxonomy", "checkm_taxonomy", "gtdb_tree"]
@@ -173,6 +172,7 @@ def make_config(
     data_type="metagenome",
     interleaved_fastq=False,
     config="config.yaml",
+    binner="vamb",
 ):
     """
     Reads template config file with comments from ../workflow/config/template_config.yaml
@@ -220,6 +220,8 @@ def make_config(
     # conf["refseq_namemap"] = os.path.join(database_dir, "refseq.db")
     # conf["refseq_tree"] = os.path.join(database_dir, "refseq.tree")
     # conf["diamond_db"] = os.path.join(database_dir, "refseq.dmnd")
+
+    conf["final_binner"] = binner
 
     if os.path.exists(config):
         logger.warning(

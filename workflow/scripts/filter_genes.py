@@ -34,8 +34,8 @@ sys.excepthook = handle_exception
 import pyfastx
 
 
-faa_iterator = pyfastx.Fastx(snakemake.input.faa, format="fasta")
-fna_iterator = pyfastx.Fastx(snakemake.input.fna, format="fasta")
+faa_iterator = pyfastx.Fastx(snakemake.input.faa, format="fasta", comment=True)
+fna_iterator = pyfastx.Fastx(snakemake.input.fna, format="fasta", comment=True)
 
 
 with open(snakemake.output.faa, "w") as out_faa, open(

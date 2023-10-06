@@ -31,9 +31,10 @@ You can start using atlas with three commands::
       atlas run
 
 where `{latest_version}` should be replaced by 
-.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg   
-  :target: https://anaconda.org/bioconda/metagenome-atlas
 
+
+.. image:: https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg
+    :target: https://anaconda.org/bioconda/metagenome-atlas
 
 
 .. _publication:

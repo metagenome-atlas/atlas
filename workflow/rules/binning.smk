@@ -1,14 +1,12 @@
 from glob import glob
 
-BINNING_CONTIGS = "{sample}/{sample}_contigs.fasta"
-
 
 include: "bin_quality.smk"
 
 
 rule pileup_for_binning:
     input:
-        fasta=BINNING_CONTIGS,
+        fasta=get_assembly,
         bam="{sample}/sequence_alignment/{sample_reads}.bam",
     output:
         covstats="{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
@@ -79,7 +77,7 @@ rule combine_coverages:
 rule run_concoct:
     input:
         coverage="{sample}/binning/coverage/combined_coverage.tsv",
-        fasta=BINNING_CONTIGS,
+        fasta=get_assembly,
     output:
         "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(
             config["concoct"]["min_contig_length"]
@@ -128,7 +126,7 @@ rule convert_concoct_csv_to_tsv:
 ## METABAT
 rule get_metabat_depth_file:
     input:
-        bam=lambda wc: expand(
+        bams=lambda wc: expand(
             "{sample}/sequence_alignment/{sample_reads}.bam",
             sample_reads=get_alls_samples_of_group(wc),
             sample=wc.sample,
@@ -138,15 +136,19 @@ rule get_metabat_depth_file:
     log:
         "{sample}/binning/metabat/metabat.log",
     conda:
-        "%s/metabat.yaml" % CONDAENV
-    threads: config["threads"]
+        "../envs/metabat.yaml"
+    threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
+    params:
+        minid=lambda wc, input: config["cobinning_readmapping_id"] * 100
+        if len(input.bams) > 1
+        else 97,
     shell:
-        """
-        jgi_summarize_bam_contig_depths --outputDepth {output} {input.bam} \
-            &> {log}
-        """
+        "jgi_summarize_bam_contig_depths "
+        " --percentIdentity {params.minid} "
+        " --outputDepth {output} "
+        " {input.bams} &> {log} "
 
 
 def get_metabat_sensitivity():
@@ -159,7 +161,7 @@ def get_metabat_sensitivity():
 rule metabat:
     input:
         depth_file=rules.get_metabat_depth_file.output,
-        contigs=BINNING_CONTIGS,
+        contigs=get_assembly,
     output:
         "{sample}/binning/metabat/cluster_attribution.tmp",
     params:
@@ -190,7 +192,7 @@ rule metabat:
 
 rule maxbin:
     input:
-        fasta=BINNING_CONTIGS,
+        fasta=get_assembly,
         abund="{sample}/binning/coverage/{sample}_coverage.txt",
     output:
         directory("{sample}/binning/maxbin/intermediate_files"),
@@ -307,7 +309,7 @@ rule get_maxbin_cluster_attribution:
 rule get_bins:
     input:
         cluster_attribution="{sample}/binning/{binner}/cluster_attribution.tsv",
-        contigs=BINNING_CONTIGS,
+        contigs=get_assembly,
     output:
         directory("{sample}/binning/{binner}/bins"),
     conda:
@@ -315,7 +317,7 @@ rule get_bins:
     log:
         "{sample}/logs/binning/get_bins_{binner}.log",
     script:
-        "get_fasta_of_bins.py"
+        "../scripts/get_fasta_of_bins.py"
 
 
 localrules:
@@ -337,7 +339,7 @@ rule run_das_tool:
             "{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
             binner=config["binner"],
         ),
-        contigs=BINNING_CONTIGS,
+        contigs=get_assembly,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
         "{sample}/binning/DASTool/{sample}_DASTool_summary.tsv",

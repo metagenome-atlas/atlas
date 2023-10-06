@@ -1,6 +1,6 @@
 defaults: &defaults
   docker:
-    - image: continuumio/miniconda3
+    - image: condaforge/mambaforge
   environment:
     DATABASE_DIR: databases
 
@@ -10,7 +10,7 @@ version: 2.1
 jobs:
   build_and_dryrun:
     <<: *defaults
-    resource_class: small
+    resource_class: medium
     environment:
       N_THREADS: 1
       MEM: 2
@@ -24,7 +24,6 @@ jobs:
             conda config --add channels bioconda
             conda config --add channels conda-forge
             conda config --set always_yes true
-            conda install -y mamba
       - restore_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}
       - run:
@@ -59,6 +58,12 @@ jobs:
           command: |
               source activate ./atlasenv
               test/dryrun.sh
+      - run:
+          name: Test_init
+          command: |
+              ls -l test
+              source activate ./atlasenv
+              ./test/test_init_many_samples.sh
 
       - persist_to_workspace:
           root: /root/project/
@@ -264,8 +269,8 @@ jobs:
           path: wd/logs
           destination: binning_logs
       - store_artifacts:
-          path: wd/Streptococcus/logs
-          destination: binning_logs/sample
+          path: wd/sample1/logs
+          destination: sample_logs
 
   #
   #
@@ -299,27 +304,27 @@ workflows:
   build_and_test:
     jobs:
       - build_and_dryrun
-      - genome_quantify:
-          requires:
-            - build_and_dryrun
-      - get_example_data
+      # - genome_quantify:
+      #     requires:
+      #       - build_and_dryrun
+      #- get_example_data
 
       # - run_test:
       #     requires:
       #       - build_and_dryrun
       #       - get_example_data
             
-      - qc_and_assembly:
-          requires:
-            - build_and_dryrun
-            - get_example_data
+      # - qc_and_assembly:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
 
-      - binning:
-          requires:
-            - qc_and_assembly
-      - genecatalog:
-          requires:
-            - qc_and_assembly
+      # - binning:
+      #     requires:
+      #       - qc_and_assembly
+      # - genecatalog:
+      #     requires:
+      #       - qc_and_assembly
       # - getenvs:
       #     requires:
       #       - build_and_dryrun

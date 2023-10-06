@@ -184,7 +184,6 @@ if not SKIP_QC:
                 " -Xmx{resources.java_mem}G "
                 " 2> {log}"
 
-
     PROCESSED_STEPS.append("filtered")
 
     rule apply_quality_filter:
@@ -209,8 +208,8 @@ if not SKIP_QC:
         params:
             ref=(
                 "ref=%s" % config.get("preprocess_adapters")
-            if config.get("preprocess_adapters")
-            else ""
+                if config.get("preprocess_adapters")
+                else ""
             ),
             mink=(
                 ""
@@ -301,7 +300,6 @@ if not SKIP_QC:
             " pigz=t unpigz=t "
             " -Xmx{resources.java_mem}G "
             " 2> {log}"
-
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -406,7 +404,6 @@ if not SKIP_QC:
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
-
     PROCESSED_STEPS.append("QC")
 
     localrules:
@@ -436,12 +433,11 @@ if not SKIP_QC:
                             with open(input.rrna_reads[i], "rb") as infile2:
                                 shutil.copyfileobj(infile2, outFile)
 
-            # append to sample table
+                                # append to sample table
             sample_table = load_sample_table(params.sample_table)
             qc_header = [f"Reads_QC_{fraction}" for fraction in MULTIFILE_FRACTIONS]
             sample_table.loc[wildcards.sample, qc_header] = output
             sample_table.to_csv(params.sample_table, sep="\t")
-
 
 
 
@@ -488,7 +484,6 @@ if PAIRED_END:
             """
             readlength.sh {params.inputs} out={output.read_length} 2>> {log}
             """
-
 
 else:
 
@@ -538,7 +533,6 @@ rule combine_read_length_stats:
             stats[sample] = data
 
         stats.to_csv(output[0], sep="\t")
-
 
 
 
@@ -592,7 +586,6 @@ if PAIRED_END:
                 stats[sample] = data
 
             stats.T.to_csv(output[0], sep="\t")
-
 
 
 
