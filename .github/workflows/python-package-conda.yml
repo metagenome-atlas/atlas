@@ -279,7 +279,7 @@ jobs:
           path: databases
           key: conda-envs-binning
           restore-keys: |
-            conda-envs-*
+            conda-envs-
 
       - name: Restore working dir
         uses: actions/cache/restore@v3
