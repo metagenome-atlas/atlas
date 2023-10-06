@@ -91,7 +91,7 @@ def validate_bingroup_size_cobinning(sampleTable, logger):
         logger.error(
             "If you want to use co-binning, you should have at least 5-10 samples per bin group. \n"
         )
-        BinGroupSizeError("BinGroup too small")
+        raise BinGroupSizeError("BinGroup too small")
 
 
 def validate_bingroup_size_metabat(sampleTable, logger):

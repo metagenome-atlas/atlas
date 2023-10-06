@@ -431,7 +431,6 @@ if not SKIP_QC:
                                 shutil.copyfileobj(infile2, outFile)
 
 
-
 #### STATS
 
 
