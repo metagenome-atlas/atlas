@@ -206,6 +206,7 @@ jobs:
       - name: dryrun assembly shold need nothing to be done
         run: |
           ls -l wd
+          ls -l databases/conda_envs
           atlas run assembly -w wd -n
 
   
@@ -277,12 +278,14 @@ jobs:
       - name: dryrun assembly shold need nothing to be done
         run: |
           ls -l wd
+          ls -l databases
+          ls -l databases/conda_envs
           atlas run assembly -w wd -n
 
   
       - name: test binning
         run: |
-          atlas run binning --restart-times=2 --working-dir wd 
+          atlas run binning --restart-times=2 --working-dir wd --omit-from checkm2_download_db
 
       - name: Store Logs
         uses: actions/upload-artifact@v2
@@ -303,11 +306,7 @@ jobs:
           path: databases
           key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
-      - name: Cache working dir
-        uses: actions/cache/save@v3
-        with:
-          path: wd
-          key: binning-working-dir
+
 
   # full-test:
   #   runs-on: ubuntu-latest
