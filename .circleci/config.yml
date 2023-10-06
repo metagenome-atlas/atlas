@@ -1,0 +1,334 @@
+defaults: &defaults
+  docker:
+    - image: condaforge/mambaforge
+  environment:
+    DATABASE_DIR: databases
+
+
+version: 2.1
+
+jobs:
+  build_and_dryrun:
+    <<: *defaults
+    resource_class: medium
+    environment:
+      N_THREADS: 1
+      MEM: 2
+      WORKING_DIR: test/Dryrun
+    steps:
+      - checkout
+      - run: pwd
+      - run:
+          name: Setup conda
+          command: |
+            conda config --add channels bioconda
+            conda config --add channels conda-forge
+            conda config --set always_yes true
+      - restore_cache:
+          key: atlasenv-d-{{ checksum "atlasenv.yml" }}
+      - run:
+          name: install dependencies
+          command:  |
+            if [ -d "./atlasenv" ]; then
+              echo "atlasenv exist already";
+              source activate ./atlasenv
+              conda list
+            else
+              mamba env create -p ./atlasenv --file atlasenv.yml
+            fi
+      - save_cache:
+          key: atlasenv-d-{{ checksum "atlasenv.yml" }}
+          paths:
+            - "./atlasenv"
+      - run:
+          name: Install atlas
+          command: |
+              source activate ./atlasenv
+              python -m pip install . --no-deps -vv
+              atlas --help
+              atlas --version
+      - run:
+          name: short test
+          command: |
+              source activate ./atlasenv
+              atlas --help
+              atlas --version
+      - run:
+          name: Dryrun
+          command: |
+              source activate ./atlasenv
+              test/dryrun.sh
+      - run:
+          name: Test_init
+          command: |
+              ls -l test
+              source activate ./atlasenv
+              ./test/test_init_many_samples.sh
+
+      - persist_to_workspace:
+          root: /root/project/
+          paths:
+            - ./atlasenv
+            - .
+
+  getenvs:
+    <<: *defaults
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run: tar -cf conda_envs.tar atlas/envs
+      - restore_cache:
+          keys:
+            - conda-environements-{{ checksum "conda_envs.tar"  }}
+            - conda-environements-
+      - run:
+          name: Init
+          command: |
+            source activate ./atlasenv
+            atlas init --db-dir $DATABASE_DIR --threads 1 --working-dir test/Getenvs test/reads/empty
+      - run:
+          name: install environements
+          command: |
+            source activate ./atlasenv
+            atlas run all --working-dir test/Getenvs --conda-create-envs-only --cores all
+      - save_cache:
+          key: conda-environements-{{ checksum "conda_envs.tar"  }}
+          paths:
+            - databases
+      # - run:
+      #     name: download checkm data
+      #     command: |
+      #         source activate ./atlasenv
+      #         atlas run None --working-dir test/Getenvs logs/checkm_init.txt
+
+      - persist_to_workspace:
+          root: /root/project/
+          paths:
+            - databases
+
+
+
+
+
+  genome_quantify:
+    <<: *defaults
+    environment:
+      N_THREADS: 1
+      MEM: 2
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: Test genome quantification
+          command: |
+              source activate ./atlasenv
+              test/test_external_genomes.sh
+
+
+
+
+  get_example_data:
+    <<: *defaults
+    environment:
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /root/project/
+
+      - run: git clone https://github.com/metagenome-atlas/example_data.git
+      - persist_to_workspace:
+          root: /root/project
+          paths:
+            - example_data
+
+  run_test:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: run test
+          command: |
+            source activate ./atlasenv
+            ls -l 
+            pwd 
+            chmod +x test/test_ci.sh
+            test/test_ci.sh --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2
+      - store_artifacts:
+          path: test_ci/logs
+          destination: logs
+      - store_artifacts:
+          path: test_ci/Streptococcus/logs
+          destination: sample_logs
+
+
+  qc_and_assembly:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: init
+          command: |
+            source activate ./atlasenv
+
+            atlas init "example_data/reads/test" --db-dir "$DATABASE_DIR" --interleaved-fastq --threads "$N_THREADS" --working-dir "wd" 
+      - run:
+          name: run qc
+          command: |
+            source activate ./atlasenv
+            atlas run qc --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
+      - run:
+          name: test assembly
+          command: |
+            source activate ./atlasenv
+            atlas run assembly --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd 
+      - store_artifacts:
+          path: wd/logs
+          destination: logs
+      - store_artifacts:
+          path: wd/Streptococcus/logs
+          destination: sample_logs
+      - persist_to_workspace:
+          root: /root/project
+          paths:
+            - wd
+
+  genecatalog:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: Create tabal of envs
+          command: |
+            tar cf genecatalog.envs.tar workflow/envs/sequence_utils.yaml workflow/envs/fasta.yaml workflow/envs/mmseqs.yaml workflow/envs/hdf.yaml  workflow/envs/required_packages.yaml 
+            
+      - restore_cache:
+          key: genecatalog-env-{{ checksum "genecatalog.envs.tar" }}
+          
+         
+      - run:
+         name: create conda genecatalog
+         command: |
+            source activate ./atlasenv
+            WD='wd'
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --conda-create-envs-only
+      - save_cache:
+          key: genecatalog-env-{{ checksum "genecatalog.envs.tar" }}
+          paths:
+            - databases            
+            
+      - run:
+          name: run genecatalog
+          command: |
+            source activate ./atlasenv
+            WD='wd'
+            atlas run genecatalog --omit-from combine_egg_nogg_annotations  --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 
+      - store_artifacts:
+          path: wd/logs
+          destination: genecatalog_logs
+      - store_artifacts:
+          path: wd/Streptococcus/logs
+          destination: genecatalog_sample_logs
+  binning:
+    <<: *defaults
+    environment:
+      N_THREADS: 2
+      MEM: 3
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: /root/project/
+      - run:
+          name: run binning
+          command: |
+            source activate ./atlasenv
+            WD='wd'
+            atlas run binning --working-dir $WD --resources mem=$MEM java_mem=$MEM --jobs=$N_THREADS --restart-times=2 --config final_binner=metabat --omit-from checkm2_download_db download_gunc
+
+      - store_test_results:
+          path: wd/Binning/metabat/bin_report.html
+
+
+      - store_artifacts:
+          path: wd/logs
+          destination: binning_logs
+      - store_artifacts:
+          path: wd/sample1/logs
+          destination: sample_logs
+
+  #
+  #
+  # build-docker:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - checkout
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Build Docker image
+  #         command: docker build -t $IMAGE_NAME:latest .
+  # publish-latest:
+  #   environment:
+  #     IMAGE_NAME: metagenomeatlas/atlas
+  #   docker:
+  #     - image: circleci/buildpack-deps:stretch
+  #   steps:
+  #     - setup_remote_docker
+  #     - run:
+  #         name: Publish Docker Image to Docker Hub
+  #         command: |
+  #           echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+  #           docker push $IMAGE_NAME:latest
+
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build_and_dryrun
+      - genome_quantify:
+          requires:
+            - build_and_dryrun
+      - get_example_data
+
+      # - run_test:
+      #     requires:
+      #       - build_and_dryrun
+      #       - get_example_data
+            
+      - qc_and_assembly:
+          requires:
+            - build_and_dryrun
+            - get_example_data
+
+      - binning:
+          requires:
+            - qc_and_assembly
+      - genecatalog:
+          requires:
+            - qc_and_assembly
+      # - getenvs:
+      #     requires:
+      #       - build_and_dryrun
+            
+      # - sra_init:
+      #     requires:
+      #       - build_and_dryrun
