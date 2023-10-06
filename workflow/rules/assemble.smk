@@ -70,7 +70,6 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
                 -Xmx{resources.java_mem}G 2> {log}
             """
 
-
 else:
 
     localrules:
@@ -94,7 +93,6 @@ else:
             ), "Input and ouput files have not same number, can not create symlinks for all."
             for i in range(len(input)):
                 os.symlink(os.path.abspath(input[i]), output[i])
-
 
 
 
@@ -273,7 +271,6 @@ if config.get("assembler", "megahit") == "megahit":
         shell:
             "cat {input} > {output}"
 
-
     def megahit_input_parsing(input):
         Nfiles = len(input)
 
@@ -349,7 +346,6 @@ if config.get("assembler", "megahit") == "megahit":
             temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
-
 
 else:
     if PAIRED_END:
@@ -465,8 +461,9 @@ else:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
-# standardizes header labels within contig FASTAs
 
+
+# standardizes header labels within contig FASTAs
 
 
 rule rename_contigs:
@@ -474,7 +471,7 @@ rule rename_contigs:
         "{sample}/assembly/{sample}_raw_contigs.fasta",
     output:
         fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
-        mapping_table = "{sample}/assembly/old2new_contig_names.tsv"
+        mapping_table="{sample}/assembly/old2new_contig_names.tsv",
     threads: config.get("simplejob_threads", 1)
     resources:
         mem=config["simplejob_mem"],
@@ -487,8 +484,6 @@ rule rename_contigs:
         "../envs/fasta.yaml"
     script:
         "../scripts/rename_assembly.py"
-
-
 
 
 if config["filter_contigs"]:
@@ -570,8 +565,9 @@ if config["filter_contigs"]:
             minl={params.minl} \
             trim={params.trim} \
             -Xmx{resources.java_mem}G 2> {log}"""
-# HACK: this makes two copies of the same file
 
+
+# HACK: this makes two copies of the same file
 
 
 else:  # no filter
@@ -601,7 +597,6 @@ rule finalize_contigs:
     threads: 1
     shell:
         "cp {input} {output}"
-        
 
 
 rule calculate_contigs_stats:
@@ -765,6 +760,7 @@ rule get_contigs_from_gene_names:
                             )
                         )
                         gene_idx += 1
+
 
 
 localrules:

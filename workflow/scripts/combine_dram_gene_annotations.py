@@ -72,7 +72,6 @@ for file in snakemake.input:
         cols = db_columns[db]
 
         if not df.columns.intersection(cols).empty:
-
             Tables[db].append(df[cols].dropna(axis=0, how="all"))
 
     del df
@@ -81,7 +80,6 @@ out_dir = Path(snakemake.output[0])
 out_dir.mkdir()
 
 for db in Tables:
-
     combined = pd.concat(Tables[db], axis=0)
 
     combined.sort_index(inplace=True)

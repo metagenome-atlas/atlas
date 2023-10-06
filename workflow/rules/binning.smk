@@ -137,11 +137,13 @@ rule get_metabat_depth_file:
         "{sample}/binning/metabat/metabat.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"] # multithreaded trough OMP_NUM_THREADS
+    threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
     resources:
-        mem_mb=config["mem"]*1000,
+        mem_mb=config["mem"] * 1000,
     params:
-        minid = lambda wc, input: config["cobinning_readmapping_id"] *100 if len(input.bams)>1 else 97
+        minid=lambda wc, input: config["cobinning_readmapping_id"] * 100
+        if len(input.bams) > 1
+        else 97,
     shell:
         "jgi_summarize_bam_contig_depths "
         " --percentIdentity {params.minid} "

@@ -58,10 +58,11 @@ def prepare_sample_table_for_atlas(
 
     if not reads_are_QC:
         for f in fractions:
-            sample_table[f"Reads_QC_{f}"] = f"QCreads/" + sample_table.index + f"_{f}.fastq.gz"
+            sample_table[f"Reads_QC_{f}"] = (
+                f"QCreads/" + sample_table.index + f"_{f}.fastq.gz"
+            )
 
     sample_table["Assembly"] = "Assembly/fasta/" + sample_table.index + ".fasta"
-
 
     validate_sample_table(sample_table)
 

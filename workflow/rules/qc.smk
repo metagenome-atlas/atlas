@@ -184,7 +184,6 @@ if not SKIP_QC:
                 " -Xmx{resources.java_mem}G "
                 " 2> {log}"
 
-
     PROCESSED_STEPS.append("filtered")
 
     rule apply_quality_filter:
@@ -209,8 +208,8 @@ if not SKIP_QC:
         params:
             ref=(
                 "ref=%s" % config.get("preprocess_adapters")
-            if config.get("preprocess_adapters")
-            else ""
+                if config.get("preprocess_adapters")
+                else ""
             ),
             mink=(
                 ""
@@ -301,7 +300,6 @@ if not SKIP_QC:
             " pigz=t unpigz=t "
             " -Xmx{resources.java_mem}G "
             " 2> {log}"
-
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -406,7 +404,6 @@ if not SKIP_QC:
                     -Xmx{resources.java_mem}G 2>> {log}
                 """
 
-
     PROCESSED_STEPS.append("QC")
 
     localrules:
@@ -432,7 +429,6 @@ if not SKIP_QC:
                         if hasattr(input, "rrna_reads"):
                             with open(input.rrna_reads[i], "rb") as infile2:
                                 shutil.copyfileobj(infile2, outFile)
-
 
 
 
@@ -479,7 +475,6 @@ if PAIRED_END:
             """
             readlength.sh {params.inputs} out={output.read_length} 2>> {log}
             """
-
 
 else:
 
@@ -529,7 +524,6 @@ rule combine_read_length_stats:
             stats[sample] = data
 
         stats.to_csv(output[0], sep="\t")
-
 
 
 
@@ -583,7 +577,6 @@ if PAIRED_END:
                 stats[sample] = data
 
             stats.T.to_csv(output[0], sep="\t")
-
 
 
 

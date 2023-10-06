@@ -30,14 +30,14 @@ rule filter_contigs:
 
 
 def get_samples_of_bingroup(wildcards):
-
-    samples_of_group= sampleTable.query(f'BinGroup=="{wildcards.bingroup}"').index.tolist()
+    samples_of_group = sampleTable.query(
+        f'BinGroup=="{wildcards.bingroup}"'
+    ).index.tolist()
 
     return samples_of_group
 
 
 def get_filtered_contigs_of_bingroup(wildcards):
-
     samples_of_group = get_samples_of_bingroup(wildcards)
 
     if len(samples_of_group) < 5:
@@ -51,7 +51,6 @@ def get_filtered_contigs_of_bingroup(wildcards):
 
 
 def get_bams_of_bingroup(wildcards):
-
     samples_of_group = get_samples_of_bingroup(wildcards)
 
     return expand(
@@ -63,7 +62,7 @@ def get_bams_of_bingroup(wildcards):
 
 rule combine_contigs:
     input:
-        fasta= get_filtered_contigs_of_bingroup,
+        fasta=get_filtered_contigs_of_bingroup,
     output:
         "Intermediate/cobinning/{bingroup}/combined_contigs.fasta.gz",
     log:
@@ -80,9 +79,9 @@ rule combine_contigs:
                 with gz.open(input_fasta, "rb") as fin:
                     for line in fin:
                         # if line is a header add sample name
-                        if line[0] == ord('>'):
+                        if line[0] == ord(">"):
                             line = f">{sample}{params.seperator}".encode() + line[1:]
-                        # write each line to the combined file
+                            # write each line to the combined file
                         fout.write(line)
 
 
@@ -95,7 +94,7 @@ rule minimap_index:
         index_size="12G",
     resources:
         mem=config["mem"],  # limited num of fatnodes (>200g)
-    threads: config["simplejob_threads"],
+    threads: config["simplejob_threads"]
     log:
         "logs/cobinning/{bingroup}/minimap_index.log",
     benchmark:
@@ -142,7 +141,9 @@ rule minimap:
     shell:
         """minimap2 -t {threads} -ax sr {input.mmi} {input.fq} | grep -v "^@" | cat {input.dict} - | samtools view -F 3584 -b - > {output.bam} 2>{log}"""
 
-    # samtools filters out secondary alignments
+
+# samtools filters out secondary alignments
+
 
 ruleorder: sort_bam > minimap
 
@@ -156,8 +157,8 @@ rule sort_bam:
         prefix="Intermediate/cobinning/{bingroup}/bams/tmp.{sample}",
     threads: 2
     resources:
-        mem_mb=config["simplejob_mem"] *1000,
-        time_min=int(config["runtime"]["simplejob"]*60),
+        mem_mb=config["simplejob_mem"] * 1000,
+        time_min=int(config["runtime"]["simplejob"] * 60),
     log:
         "logs/cobinning/{bingroup}/mapping/sortbam/{sample}.log",
     conda:
@@ -175,14 +176,14 @@ rule summarize_bam_contig_depths:
         "logs/cobinning/{bingroup}/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"] # multithreaded trough OMP_NUM_THREADS
+    threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
     benchmark:
         "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:
-        mem_mb=config["mem"]*1000,
-        time_min = config["runtime"]["long"]*60
+        mem_mb=config["mem"] * 1000,
+        time_min=config["runtime"]["long"] * 60,
     params:
-        minid = config["cobinning_readmapping_id"] *100
+        minid=config["cobinning_readmapping_id"] * 100,
     shell:
         "jgi_summarize_bam_contig_depths "
         " --percentIdentity {params.minid} "
@@ -218,8 +219,8 @@ rule run_vamb:
         "../envs/vamb.yaml"
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1000,
-        time_min=config["runtime"]["long"]*60,
+        mem_mb=config["mem"] * 1000,
+        time_min=config["runtime"]["long"] * 60,
     log:
         "logs/cobinning/run_vamb/{bingroup}.log",
     benchmark:
@@ -258,7 +259,7 @@ rule parse_vamb_output:
         fasta_extension=".fna",
         output_path=lambda wc: vamb_cluster_attribution_path,  # path with {sample} to replace
         samples=SAMPLES,
-        bingroups = sampleTable.BinGroup.unique()
+        bingroups=sampleTable.BinGroup.unique(),
     conda:
         "../envs/fasta.yaml"
     script:
