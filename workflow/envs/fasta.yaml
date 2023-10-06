@@ -3,7 +3,7 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - pyfastx=0.8
+    - pyfastx=0.9
     - pandas=1.2
     - pyarrow
     - biopython
