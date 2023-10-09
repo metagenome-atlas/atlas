@@ -130,6 +130,7 @@ rule get_read_stats:
     script:
         "../scripts/get_read_stats.py"
 
+
 if not SKIP_QC:
     if config.get("deduplicate", True):
         PROCESSED_STEPS.append("deduplicated")
@@ -412,13 +413,13 @@ if not SKIP_QC:
         input:
             unpack(get_ribosomal_rna_input),
         output:
-                temp(
-                    expand(
-                        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                        fraction=MULTIFILE_FRACTIONS,
-                        step=PROCESSED_STEPS[-1],
-                    )
+            temp(
+                expand(
+                    "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                    fraction=MULTIFILE_FRACTIONS,
+                    step=PROCESSED_STEPS[-1],
                 )
+            ),
         threads: 1
         run:
             import shutil
@@ -434,19 +435,17 @@ if not SKIP_QC:
 
 
 
-
 rule copy_qc_reads:
     input:
-        reads= rules.qcreads.output,
+        reads=rules.qcreads.output,
     output:
-        reads= expand(
-                "QC/reads/{{sample}}_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS,
-            ),
+        reads=expand(
+            "QC/reads/{{sample}}_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+        ),
     run:
-        for i,f in enumerate(input.reads):
+        for i, f in enumerate(input.reads):
             shutil.copy(f, output.reads[i])
-
 
 
 #### STATS
@@ -636,15 +635,12 @@ rule combine_read_counts:
         pandas_concat(list(input), output[0], sep="\t", index_col=[0, 1], axis=0)
 
 
-
-
-
 rule finalize_sample_qc:
     input:
-        reads= expand(
-                "QC/reads/{{sample}}_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS,
-            )
+        reads=expand(
+            "QC/reads/{{sample}}_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+        ),
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip=expand(
             "{{sample}}/sequence_quality_control/read_stats/{step}.zip",
@@ -654,9 +650,7 @@ rule finalize_sample_qc:
             "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         ),
     output:
-        flag= touch("{sample}/sequence_quality_control/finished_QC"),
-
-
+        flag=touch("{sample}/sequence_quality_control/finished_QC"),
 
 
 rule build_qc_report:
