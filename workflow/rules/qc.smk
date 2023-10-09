@@ -437,11 +437,11 @@ if not SKIP_QC:
 
 rule copy_qc_reads:
     input:
-        reads= expand(
-                        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
-                        fraction=MULTIFILE_FRACTIONS,
-                        step="QC",
-                    )
+        reads=expand(
+            "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+            step="QC",
+        ),
     output:
         reads=expand(
             "QC/reads/{{sample}}_{fraction}.fastq.gz",
