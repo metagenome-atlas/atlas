@@ -130,6 +130,18 @@ rule get_read_stats:
     script:
         "../scripts/get_read_stats.py"
 
+use rule get_read_stats as get_gc_read_stats with:
+    input:
+        get_quality_controlled_reads
+    output:
+        "{sample}/sequence_quality_control/read_stats/QC.zip",
+        read_counts=temp(
+            "{sample}/sequence_quality_control/read_stats/QC_read_counts.tsv"
+        ),
+    log:
+        "{sample}/logs/QC/read_stats/QC.log",
+    params:
+        folder=lambda wc, output: os.path.splitext(output[0])[0],
 
 if not SKIP_QC:
     if config.get("deduplicate", True):
