@@ -412,10 +412,13 @@ if not SKIP_QC:
         input:
             unpack(get_ribosomal_rna_input),
         output:
-            expand(
-                "QC/reads/{{sample}}_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS,
-            ),
+                temp(
+                    expand(
+                        "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
+                        fraction=MULTIFILE_FRACTIONS,
+                        step=PROCESSED_STEPS[-1],
+                    )
+                )
         threads: 1
         run:
             import shutil
@@ -619,7 +622,7 @@ rule combine_read_counts:
 
 rule finalize_sample_qc:
     input:
-        qcreads=get_quality_controlled_reads,
+        reads= rules.qcreads.output,
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip=expand(
             "{{sample}}/sequence_quality_control/read_stats/{step}.zip",
@@ -629,7 +632,15 @@ rule finalize_sample_qc:
             "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         ),
     output:
-        touch("{sample}/sequence_quality_control/finished_QC"),
+        reads= expand(
+                "QC/reads/{{sample}}_{fraction}.fastq.gz",
+                fraction=MULTIFILE_FRACTIONS,
+            ),
+        flag= touch("{sample}/sequence_quality_control/finished_QC"),
+    run:
+        for i,f in enumerate(input.reads):
+            shutil.copy(f, output.reads[i])
+
 
 
 rule build_qc_report:
