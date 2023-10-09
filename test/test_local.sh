@@ -30,9 +30,9 @@ rm -f $WD/samples.tsv
 #
 atlas init $reads_dir -w $WD 
 
-atlas run None screen -w $WD qc  $snakemake_args
+#atlas run None screen -w $WD  $snakemake_args
 
-echo "\n\nFinished screen\n\n"
+# echo "\n\nFinished screen\n\n"
 
 atlas run -w $WD qc  $snakemake_args
 
