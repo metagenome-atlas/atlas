@@ -433,6 +433,22 @@ if not SKIP_QC:
                                 shutil.copyfileobj(infile2, outFile)
 
 
+
+
+rule copy_qc_reads:
+    input:
+        reads= rules.qcreads.output,
+    output:
+        reads= expand(
+                "QC/reads/{{sample}}_{fraction}.fastq.gz",
+                fraction=MULTIFILE_FRACTIONS,
+            ),
+    run:
+        for i,f in enumerate(input.reads):
+            shutil.copy(f, output.reads[i])
+
+
+
 #### STATS
 
 
@@ -620,9 +636,15 @@ rule combine_read_counts:
         pandas_concat(list(input), output[0], sep="\t", index_col=[0, 1], axis=0)
 
 
+
+
+
 rule finalize_sample_qc:
     input:
-        reads= rules.qcreads.output,
+        reads= expand(
+                "QC/reads/{{sample}}_{fraction}.fastq.gz",
+                fraction=MULTIFILE_FRACTIONS,
+            )
         #quality_filtering_stats = "{sample}/logs/{sample}_quality_filtering_stats.txt",
         reads_stats_zip=expand(
             "{{sample}}/sequence_quality_control/read_stats/{step}.zip",
@@ -632,14 +654,8 @@ rule finalize_sample_qc:
             "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
         ),
     output:
-        reads= expand(
-                "QC/reads/{{sample}}_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS,
-            ),
         flag= touch("{sample}/sequence_quality_control/finished_QC"),
-    run:
-        for i,f in enumerate(input.reads):
-            shutil.copy(f, output.reads[i])
+
 
 
 
