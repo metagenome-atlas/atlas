@@ -1,5 +1,4 @@
 localrules:
-    move_qc_reads,
     copy_assembly,
 
 
