@@ -266,10 +266,12 @@ if not SKIP_QC:
             maxns=config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
             prealloc=config.get("preallocate_ram", PREALLOCATE_RAM),
             inputs=lambda wc, input: io_params_for_tadpole(input.reads),
-            outputs= io_params_for_tadpole(output.reads,key="out",allow_singletons=False),
+            outputs=io_params_for_tadpole(
+                output.reads, key="out", allow_singletons=False
+            ),
         log:
             stout="{sample}/logs/QC/quality_filter.log",
-            sterr = "{sample}/logs/QC/quality_filter.err",
+            sterr="{sample}/logs/QC/quality_filter.err",
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("threads", 1)
@@ -371,8 +373,12 @@ if not SKIP_QC:
                 ambiguous=config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
                 k=config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
                 paired="true" if PAIRED_END else "false",
-                inputs= io_params_for_tadpole(output.reads,key="in",allow_singletons=False),
-                outputs= io_params_for_tadpole(output.reads,key="outu",allow_singletons=False),
+                inputs=io_params_for_tadpole(
+                    output.reads, key="in", allow_singletons=False
+                ),
+                outputs=io_params_for_tadpole(
+                    output.reads, key="outu", allow_singletons=False
+                ),
             log:
                 sterr="{sample}/logs/QC/decontamination.err",
                 stout="{sample}/logs/QC/decontamination.log",
@@ -400,7 +406,6 @@ if not SKIP_QC:
                 " -Xmx{resources.java_mem}G "
                 " 1> {log.stout} "
                 " 2> {log.sterr} "
-      
 
     PROCESSED_STEPS.append("QC")
 

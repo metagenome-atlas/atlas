@@ -4,7 +4,7 @@ sampleTable = load_sample_table()
 validate_bingroup_size(sampleTable, config, logger)
 
 
-def io_params_for_tadpole(io, key="in",allow_singletons=True):
+def io_params_for_tadpole(io, key="in", allow_singletons=True):
     """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
 
@@ -27,8 +27,10 @@ def io_params_for_tadpole(io, key="in",allow_singletons=True):
         flag = f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
         logger.error("Using singletons reads will be deprecated.")
         if not allow_singletons:
-            raise IOError("Got an input object with 3 files, but allow_singletons is False")
-    
+            raise IOError(
+                "Got an input object with 3 files, but allow_singletons is False"
+            )
+
     else:
         logger.error(
             (
