@@ -4,7 +4,7 @@ sampleTable = load_sample_table()
 validate_bingroup_size(sampleTable, config, logger)
 
 
-def io_params_for_tadpole(io, key="in"):
+def io_params_for_tadpole(io, key="in",allow_singletons=True):
     """This function generates the input flag needed for bbwrap/tadpole for all cases
     possible for get_quality_controlled_reads.
 
@@ -25,13 +25,16 @@ def io_params_for_tadpole(io, key="in"):
         flag = f"{key}1={io[0]} {key}2={io[1]}"
     elif N == 3:
         flag = f"{key}1={io[0]},{io[2]} {key}2={io[1]}"
+        logger.error("Using singletons reads will be deprecated.")
+        if not allow_singletons:
+            raise IOError("Got an input object with 3 files, but allow_singletons is False")
+    
     else:
         logger.error(
             (
                 "File input/output expectation is one of: "
                 "1 file = single-end/ interleaved paired-end "
                 "2 files = R1,R2, or"
-                "3 files = R1,R2,se"
                 "got: {n} files:\n{}"
             ).format("\n".join(io), n=len(io))
         )
@@ -74,7 +77,7 @@ if len(colum_headers_QC) >= 1:
         MULTIFILE_FRACTIONS = ["R1", "R2"]
 
 else:
-    MULTIFILE_FRACTIONS = ["R1", "R2", "se"] if PAIRED_END else ["se"]
+    MULTIFILE_FRACTIONS = ["R1", "R2"] if PAIRED_END else ["se"]
 
 colum_headers_raw = sampleTable.columns[
     sampleTable.columns.str.startswith("Reads_raw_")

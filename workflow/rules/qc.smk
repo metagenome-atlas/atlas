@@ -164,7 +164,8 @@ if not SKIP_QC:
                     else "f"
                 ),
             log:
-                "{sample}/logs/QC/deduplicate.log",
+                stdout="{sample}/logs/QC/deduplicate.log",
+                stderr="{sample}/logs/QC/deduplicate.err",
             conda:
                 "%s/required_packages.yaml" % CONDAENV
             threads: config.get("threads", 1)
@@ -182,7 +183,9 @@ if not SKIP_QC:
                 " threads={threads} "
                 " pigz=t unpigz=t "
                 " -Xmx{resources.java_mem}G "
-                " 2> {log}"
+                " machineout=t "
+                " 2> {log.sterr} "
+                " 1> {log.stout} "
 
     PROCESSED_STEPS.append("filtered")
 
@@ -195,7 +198,7 @@ if not SKIP_QC:
             ),
             adapters=ancient(config["preprocess_adapters"]),
         output:
-            temp(
+            reads=temp(
                 expand(
                     "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                     fraction=MULTIFILE_FRACTIONS,
@@ -263,13 +266,10 @@ if not SKIP_QC:
             maxns=config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
             prealloc=config.get("preallocate_ram", PREALLOCATE_RAM),
             inputs=lambda wc, input: io_params_for_tadpole(input.reads),
-            outputs=(
-                lambda wc, output: "out={0} out2={1} outs={2}".format(*output)
-                if PAIRED_END
-                else "out={0}".format(*output)
-            ),
+            outputs= io_params_for_tadpole(output.reads,key="out",allow_singletons=False),
         log:
-            "{sample}/logs/QC/quality_filter.log",
+            stout="{sample}/logs/QC/quality_filter.log",
+            sterr = "{sample}/logs/QC/quality_filter.err",
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("threads", 1)
@@ -299,7 +299,9 @@ if not SKIP_QC:
             " prealloc={params.prealloc} "
             " pigz=t unpigz=t "
             " -Xmx{resources.java_mem}G "
-            " 2> {log}"
+            " machineout=t "
+            " 2> {log.sterr} "
+            " 1> {log.stout} "
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -333,7 +335,7 @@ if not SKIP_QC:
                 " threads={threads}"
                 " k={params.k}"
                 " local=t "
-                " 2> {log}"
+                " &> {log}"
 
         rule run_decontamination:
             input:
@@ -369,12 +371,11 @@ if not SKIP_QC:
                 ambiguous=config.get("contaminant_ambiguous", CONTAMINANT_AMBIGUOUS),
                 k=config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
                 paired="true" if PAIRED_END else "false",
-                input_single=lambda wc, input: input[2] if PAIRED_END else input[0],
-                output_single=(
-                    lambda wc, output: output[2] if PAIRED_END else output[0]
-                ),
+                inputs= io_params_for_tadpole(output.reads,key="in",allow_singletons=False),
+                outputs= io_params_for_tadpole(output.reads,key="outu",allow_singletons=False),
             log:
-                "{sample}/logs/QC/decontamination.log",
+                sterr="{sample}/logs/QC/decontamination.err",
+                stout="{sample}/logs/QC/decontamination.log",
             conda:
                 "%s/required_packages.yaml" % CONDAENV
             threads: config.get("threads", 1)
@@ -382,27 +383,24 @@ if not SKIP_QC:
                 mem=config["mem"],
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
-                """
-                if [ "{params.paired}" = true ] ; then
-                    bbsplit.sh in1={input[0]} in2={input[1]} \
-                        outu1={output[0]} outu2={output[1]} \
-                        basename="{params.contaminant_folder}/%_R#.fastq.gz" \
-                        maxindel={params.maxindel} minratio={params.minratio} \
-                        minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} \
-                        threads={threads} k={params.k} local=t \
-                        pigz=t unpigz=t ziplevel=9 \
-                        -Xmx{resources.java_mem}G 2> {log}
-                fi
-
-                bbsplit.sh in={params.input_single}  \
-                    outu={params.output_single} \
-                    basename="{params.contaminant_folder}/%_se.fastq.gz" \
-                    maxindel={params.maxindel} minratio={params.minratio} \
-                    minhits={params.minhits} ambiguous={params.ambiguous} refstats={output.stats} append=t \
-                    interleaved=f threads={threads} k={params.k} local=t \
-                    pigz=t unpigz=t ziplevel=9 \
-                    -Xmx{resources.java_mem}G 2>> {log}
-                """
+                " bbsplit.sh "
+                " {params.inputs} "
+                " {params.outputs} "
+                " basename={params.contaminant_folder}/%_R#.fastq.gz "
+                " maxindel={params.maxindel} "
+                " minratio={params.minratio} "
+                " minhits={params.minhits} "
+                " ambiguous={params.ambiguous} "
+                " refstats={output.stats} "
+                " threads={threads} "
+                " k={params.k} "
+                " local=t "
+                " machineout=t "
+                " pigz=t unpigz=t ziplevel=9 "
+                " -Xmx{resources.java_mem}G "
+                " 1> {log.stout} "
+                " 2> {log.sterr} "
+      
 
     PROCESSED_STEPS.append("QC")
 
