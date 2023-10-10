@@ -312,7 +312,7 @@ if config.get("assembler", "megahit") == "megahit":
             "../envs/megahit.yaml"
         threads: config["assembly_threads"]
         resources:
-            mem=config["assembly_memory"],
+            mem_mb=config["assembly_memory"]*1000,
             time=config["runtime"]["assembly"],
         shell:
             """
@@ -332,7 +332,7 @@ if config.get("assembler", "megahit") == "megahit":
             --merge-level {params.merge_level} \
             --prune-level {params.prune_level} \
             --low-local-ratio {params.low_local_ratio} \
-            --memory {resources.mem}000000000  \
+            --memory {resources.mem}000000  \
             {params.preset} >> {log} 2>&1
             """
 

@@ -28,7 +28,7 @@ WD='wd'
 rm -f $WD/samples.tsv $WD/config.yaml
 
 #
-atlas init $reads_dir -w $WD 
+atlas init $reads_dir -w $WD --assembler megahit
 
 #atlas run None screen -w $WD  $snakemake_args
 
