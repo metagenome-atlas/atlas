@@ -39,9 +39,14 @@ done
 echo "Init"
 atlas init --db-dir $databaseDir --skip-qc -w $WD $reads_dir
 
-echo "Run"
+echo "Run quantify_genomes"
 
 atlas run quantify_genomes -w $WD --config genome_dir="other_genomes" $snakemake_args
+
+
+echo "Run strains"
+
+atlas run strains -w $WD --config genome_dir="other_genomes" $snakemake_args
 
 
 rm -rf $WD $reads_dir
