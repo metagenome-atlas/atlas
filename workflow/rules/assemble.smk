@@ -332,7 +332,7 @@ if config.get("assembler", "megahit") == "megahit":
             --merge-level {params.merge_level} \
             --prune-level {params.prune_level} \
             --low-local-ratio {params.low_local_ratio} \
-            --memory {resources.mem}000000  \
+            --memory {resources.mem_mb}000000  \
             {params.preset} >> {log} 2>&1
             """
 
