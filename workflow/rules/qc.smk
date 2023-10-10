@@ -158,8 +158,8 @@ if not SKIP_QC:
                 dupesubs=config.get("duplicates_allow_substitutions"),
                 only_optical=("t" if config.get("duplicates_only_optical") else "f"),
             log:
-                stdout="{sample}/logs/QC/deduplicate.log",
-                stderr="{sample}/logs/QC/deduplicate.err",
+                stout="{sample}/logs/QC/deduplicate.log",
+                sterr="{sample}/logs/QC/deduplicate.err",
             conda:
                 "%s/required_packages.yaml" % CONDAENV
             threads: config.get("threads", 1)
