@@ -155,14 +155,8 @@ if not SKIP_QC:
             params:
                 inputs=lambda wc, input: io_params_for_tadpole(input, "in"),
                 outputs=lambda wc, output: io_params_for_tadpole(output, "out"),
-                dupesubs=config.get(
-                    "duplicates_allow_substitutions"
-                ),
-                only_optical=(
-                    "t"
-                    if config.get("duplicates_only_optical")
-                    else "f"
-                ),
+                dupesubs=config.get("duplicates_allow_substitutions"),
+                only_optical=("t" if config.get("duplicates_only_optical") else "f"),
             log:
                 stdout="{sample}/logs/QC/deduplicate.log",
                 stderr="{sample}/logs/QC/deduplicate.err",
@@ -217,26 +211,18 @@ if not SKIP_QC:
             mink=(
                 ""
                 if not config.get("preprocess_adapters")
-                else "mink=%d"
-                % config.get("preprocess_adapter_min_k")
+                else "mink=%d" % config.get("preprocess_adapter_min_k")
             ),
             ktrim=(
                 ""
                 if not config.get("preprocess_adapters")
-                else "ktrim=%s"
-                % config.get("preprocess_kmer_trim")
+                else "ktrim=%s" % config.get("preprocess_kmer_trim")
             ),
-            trimq=config.get(
-                "preprocess_minimum_base_quality"
-            ),
+            trimq=config.get("preprocess_minimum_base_quality"),
             hdist=(
                 ""
                 if not config.get("preprocess_adapters")
-                else "hdist=%d"
-                % config.get(
-                    "preprocess_allowable_kmer_mismatches"
-                    
-                )
+                else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches")
             ),
             k=(
                 ""
@@ -244,27 +230,27 @@ if not SKIP_QC:
                 else "k=%d"
                 % config.get(
                     "preprocess_reference_kmer_match_length",
-                
                 )
             ),
             qtrim=config.get("qtrim"),
             error_correction_pe=(
                 "t"
-                if PAIRED_END
-                and config["error_correction_overlapping_pairs"]
+                if PAIRED_END and config["error_correction_overlapping_pairs"]
                 else "f"
             ),
             minlength=config["preprocess_minimum_passing_read_length"],
-            minbasefrequency=config[ "preprocess_minimum_base_frequency"],
+            minbasefrequency=config["preprocess_minimum_base_frequency"],
             # we require the user to reformat to R1 and R2, non-interleaved files
             interleaved="f",
             maxns=config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
             prealloc=config.get("preallocate_ram", PREALLOCATE_RAM),
             inputs=lambda wc, input: io_params_for_tadpole(input.reads),
-            outputs= lambda wc, output: io_params_for_tadpole(output.reads,key="out",allow_singletons=False),
+            outputs=lambda wc, output: io_params_for_tadpole(
+                output.reads, key="out", allow_singletons=False
+            ),
         log:
             stout="{sample}/logs/QC/quality_filter.log",
-            sterr = "{sample}/logs/QC/quality_filter.err",
+            sterr="{sample}/logs/QC/quality_filter.err",
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("threads", 1)
@@ -334,7 +320,7 @@ if not SKIP_QC:
 
         rule run_decontamination:
             input:
-                reads= expand(
+                reads=expand(
                     "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                     step=PROCESSED_STEPS[-2],
                     fraction=MULTIFILE_FRACTIONS,
@@ -366,8 +352,12 @@ if not SKIP_QC:
                 ambiguous=config.get("contaminant_ambiguous"),
                 k=config.get("contaminant_kmer_length"),
                 paired="true" if PAIRED_END else "false",
-                inputs= lambda wc, input: io_params_for_tadpole(input.reads,key="in",allow_singletons=False),
-                outputs= lambda wc, output: io_params_for_tadpole(output.reads,key="outu",allow_singletons=False),
+                inputs=lambda wc, input: io_params_for_tadpole(
+                    input.reads, key="in", allow_singletons=False
+                ),
+                outputs=lambda wc, output: io_params_for_tadpole(
+                    output.reads, key="outu", allow_singletons=False
+                ),
             log:
                 sterr="{sample}/logs/QC/decontamination.err",
                 stout="{sample}/logs/QC/decontamination.log",
@@ -395,7 +385,6 @@ if not SKIP_QC:
                 " -Xmx{resources.java_mem}G "
                 " 1> {log.stout} "
                 " 2> {log.sterr} "
-      
 
     PROCESSED_STEPS.append("QC")
 
