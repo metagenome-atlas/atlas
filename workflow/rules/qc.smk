@@ -207,30 +207,17 @@ if not SKIP_QC:
                 if config.get("preprocess_adapters")
                 else ""
             ),
-            mink=(
-                ""
-                if not config.get("preprocess_adapters")
-                else "mink=%d" % config.get("preprocess_adapter_min_k")
-            ),
-            ktrim=(
-                ""
-                if not config.get("preprocess_adapters")
-                else "ktrim=%s" % config.get("preprocess_kmer_trim")
-            ),
+            mink= "mink=%d" % config.get("preprocess_adapter_min_k"),
+            ktrim= "ktrim=%s" % config.get("preprocess_kmer_trim")
+            ,
             trimq=config.get("preprocess_minimum_base_quality"),
-            hdist=(
-                ""
-                if not config.get("preprocess_adapters")
-                else "hdist=%d" % config.get("preprocess_allowable_kmer_mismatches")
-            ),
-            k=(
-                ""
-                if not config.get("preprocess_adapters")
-                else "k=%d"
+            hdist="hdist=%d" % config.get("preprocess_allowable_kmer_mismatches")
+            ,
+            k= "k=%d"
                 % config.get(
-                    "preprocess_reference_kmer_match_length",
-                )
-            ),
+                    "preprocess_reference_kmer_match_length"),
+                
+            ,
             qtrim=config.get("qtrim"),
             error_correction_pe=(
                 "t"
@@ -241,8 +228,8 @@ if not SKIP_QC:
             minbasefrequency=config["preprocess_minimum_base_frequency"],
             # we require the user to reformat to R1 and R2, non-interleaved files
             interleaved="f",
-            maxns=config.get("preprocess_max_ns", PREPROCESS_MAX_NS),
-            prealloc=config.get("preallocate_ram", PREALLOCATE_RAM),
+            maxns=config.get("preprocess_max_ns"),
+            prealloc=config.get("preallocate_ram"),
             inputs=lambda wc, input: io_params_for_tadpole(input.reads),
             outputs=lambda wc, output: io_params_for_tadpole(
                 output.reads, key="out", allow_singletons=False
@@ -457,8 +444,8 @@ if PAIRED_END:
         log:
             "{sample}/logs/QC/stats/calculate_insert_size.log",
         params:
-            kmer=config.get("merging_k", MERGING_K),
-            extend2=config.get("merging_extend2", MERGING_EXTEND2),
+            kmer=config.get("merging_k"),
+            extend2=config.get("merging_extend2"),
             flags="loose ecct",
             minprob=config.get("bbmerge_minprob", "0.8"),
             inputs=lambda wc, input: io_params_for_tadpole(input),
@@ -487,8 +474,8 @@ else:
                 "{sample}/sequence_quality_control/read_stats/QC_read_length_hist.txt"
             ),
         params:
-            kmer=config.get("merging_k", MERGING_K),
-        threads: config.get("simplejob_threads", 1)
+            kmer=config.get("merging_k"),
+        threads: config.get("simplejob_threads")
         resources:
             mem=config["simplejob_mem"],
         conda:
