@@ -30,7 +30,6 @@ def make_default_config():
     config["large_threads"] = 16
     config["deduplicate"] = True
 
-
     config["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     config["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO
     config["contaminant_kmer_length"] = CONTAMINANT_KMER_LENGTH

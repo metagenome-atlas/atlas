@@ -102,3 +102,4 @@ ENV/
 # on mac
 .DS_Store
 example_data
+atlas/regex_formating.py

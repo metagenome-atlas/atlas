@@ -61,7 +61,6 @@ def get_read_stats(fraction, params_in):
         " overwrite=true "
         f" -Xmx{snakemake.resources.java_mem}G "
         f" 2>&1 | tee -a {snakemake.log[0]} {tmp_file} >/dev/null "
-
     )
     content = open(tmp_file).read()
     pos = content.find("Input:")
