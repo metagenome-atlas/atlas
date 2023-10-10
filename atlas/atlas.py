@@ -187,6 +187,7 @@ def run_workflow(
         " --rerun-triggers mtime "
         "{jobs} --rerun-incomplete "
         "--configfile '{config_file}' --nolock "
+        " --show-failed-logs "
         " {profile} --use-conda {conda_prefix} {dryrun} "
         " {max_mem_string} "
         " --scheduler greedy "

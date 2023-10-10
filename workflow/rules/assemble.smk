@@ -312,7 +312,7 @@ if config.get("assembler", "megahit") == "megahit":
             "../envs/megahit.yaml"
         threads: config["assembly_threads"]
         resources:
-            mem=config["assembly_memory"],
+            mem_mb=config["assembly_memory"]*1000,
             time=config["runtime"]["assembly"],
         shell:
             """
@@ -332,7 +332,7 @@ if config.get("assembler", "megahit") == "megahit":
             --merge-level {params.merge_level} \
             --prune-level {params.prune_level} \
             --low-local-ratio {params.low_local_ratio} \
-            --memory {resources.mem}000000000  \
+            --memory {resources.mem_mb}000000  \
             {params.preset} >> {log} 2>&1
             """
 
@@ -593,10 +593,10 @@ rule finalize_contigs:
     input:
         "{sample}/assembly/{sample}_final_contigs.fasta",
     output:
-        "{sample}/{sample}_contigs.fasta",
+        "Assembly/fasta/{sample}.fasta",
     threads: 1
-    run:
-        os.symlink(os.path.relpath(input[0], os.path.dirname(output[0])), output[0])
+    shell:
+        "cp {input} {output}"
 
 
 rule calculate_contigs_stats:
@@ -620,7 +620,7 @@ rule calculate_contigs_stats:
 rule align_reads_to_final_contigs:
     input:
         query=get_quality_controlled_reads,
-        target="{sample_contigs}/{sample_contigs}_contigs.fasta",
+        target="Assembly/fasta/{sample_contigs}.fasta",
     output:
         bam="{sample_contigs}/sequence_alignment/{sample}.bam",
     params:
@@ -760,6 +760,7 @@ rule get_contigs_from_gene_names:
                             )
                         )
                         gene_idx += 1
+
 
 
 localrules:

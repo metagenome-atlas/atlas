@@ -9,11 +9,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-
 defaults:
   run:
     shell: bash -el {0} # use default shell
-
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,7 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
-
 
     steps:
       - name: Checkout
@@ -39,12 +36,11 @@ jobs:
           environment-file: atlasenv.yml
           environment-name: atlasenv
           # persist on the same month.
-          cache-environment-key: atlasenv-  #${{ steps.date.outputs.date }}
-
+          cache-environment-key: atlasenv- #${{ steps.date.outputs.date }}
 
       - name: Install atlas
         run: |
-           python -m pip install . --no-deps -vv
+          python -m pip install . --no-deps -vv
 
       - name: Test atlas
         run: |
@@ -58,8 +54,6 @@ jobs:
       - name: Dryrun
         run: test/dryrun.sh
 
-
-
   run-qc-and-assembly:
     runs-on: ubuntu-latest
     needs: build-and-dryrun
@@ -71,13 +65,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3.5.2
 
-
       - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: atlasenv.yml
           environment-name: atlasenv
           cache-environment-key: atlasenv-
-
 
       - name: Install atlas
         run: |
@@ -94,14 +86,14 @@ jobs:
       - name: Download test data
         if: steps.get-data.outputs.cache-hit != 'true'
         run: wget --quiet https://zenodo.org/record/3992790/files/test_reads.tar.gz
-          
+
       - name: cache example data
         if: steps.get-data.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: test_reads.tar.gz
           key: ${{ steps.get-data.outputs.cache-primary-key }}
-        
+
       - name: extract data
         run: |
           tar -xzf test_reads.tar.gz 
@@ -113,16 +105,14 @@ jobs:
         with:
           path: databases
           key: conda-envs-assembly
-  
+
         # - name: upack conda envs
         #   if: steps.get-envs.outputs.cache-hit != 'true'
         #   run: tar -xzf assembly_conda_envs.tar.gz
 
-
       - name: Init
         run: |
           atlas init "test_reads" --threads "$N_THREADS" --working-dir wd
-
 
       - name: Install dependencies for qc and assembly
         if: steps.get-envs.outputs.cache-hit != 'true'
@@ -138,7 +128,6 @@ jobs:
           path: databases
           key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
-
       - name: Run QC
         run: |
           atlas run qc --max-mem $MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
@@ -148,44 +137,39 @@ jobs:
           atlas run assembly --max-mem $MEM --jobs=$N_THREADS --restart-times=2 --working-dir wd
 
       - name: Store Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: logs
           path: wd/logs
 
       - name: Store Sample Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: sample_logs
           path: wd/sample1/logs
 
       - name: Store reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: reports
           path: wd/reports
-
 
       - name: Cache working dir
         uses: actions/cache/save@v3
         with:
           path: wd
           key: assembly-working-dir
-      
-  
 
   run-genecatalog:
     runs-on: ubuntu-latest
-    needs: [ build-and-dryrun, run-qc-and-assembly ]
+    needs: [build-and-dryrun, run-qc-and-assembly]
     env:
       N_THREADS: 2
       MEM: 3
 
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3.5.2
-
 
       - uses: mamba-org/setup-micromamba@v1
         with:
@@ -193,12 +177,10 @@ jobs:
           environment-name: atlasenv
           cache-environment-key: atlasenv-
 
-
       - name: install atlas
         run: |
           python -m pip install . --no-deps -vv
           atlas --help
-
 
       - name: get conda envs
         id: get-envs
@@ -222,19 +204,18 @@ jobs:
           ls -l databases/conda_envs
           atlas run assembly -w wd -n
 
-  
       - name: test Genecatalog
         run: |
-          atlas run genecatalog --restart-times=2 --working-dir wd --omit-from combine_egg_nogg_annotations combine_dram_genecatalog_annotations 
+          atlas run genecatalog --restart-times=2 --working-dir wd --omit-from combine_egg_nogg_annotations combine_dram_genecatalog_annotations
 
       - name: Store Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: logs
           path: wd/logs
 
       - name: Store Sample Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: sample_logs
           path: wd/sample1/logs
@@ -246,18 +227,15 @@ jobs:
           path: databases
           key: ${{ steps.get-envs.outputs.cache-primary-key }}
 
-
   run-binning:
     runs-on: ubuntu-latest
-    needs: [ build-and-dryrun, run-qc-and-assembly ]
+    needs: [build-and-dryrun, run-qc-and-assembly]
     env:
-      N_THREADS: 2
-      MEM: 3
+      MEM: 0.9
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3.5.2
-
 
       - uses: mamba-org/setup-micromamba@v1
         with:
@@ -265,12 +243,10 @@ jobs:
           environment-name: atlasenv
           cache-environment-key: atlasenv-
 
-
       - name: install atlas
         run: |
           python -m pip install . --no-deps -vv
           atlas --help
-
 
       - name: get conda envs
         id: get-envs
@@ -295,25 +271,24 @@ jobs:
           ls -l databases/conda_envs
           atlas run assembly -w wd -n
 
-  
       - name: test binning
         run: |
-          atlas run binning --restart-times=2 --working-dir wd --omit-from checkm2_download_db
+          atlas run binning --restart-times=2 --working-dir wd --omit-from checkm2_download_db --max-mem $MEM &> >(tee wd/logs/atlas_binning.log)
 
       - name: Store Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: logs
+          name: logs_binning
           path: wd/logs
 
       - name: Store Sample Logs
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: sample_logs
+          name: sample_logs_binning
           path: wd/sample1/logs
 
       - name: Store conda envs
-       # if: steps.get-envs.outputs.cache-hit != 'true'
+        # if: steps.get-envs.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: databases
@@ -327,19 +302,16 @@ jobs:
   #     - name: Checkout
   #       uses: actions/checkout@v3.5.2
 
-
   #     - uses: mamba-org/setup-micromamba@v1
   #       with:
   #         environment-file: atlasenv.yml
   #         environment-name: atlasenv
   #         cache-environment-key: atlasenv-
 
-
   #     - name: Install atlas
   #       run: |
   #         python -m pip install . --no-deps -vv
   #         atlas --help
-
 
   #     - name: get conda envs
   #       id: get-envs
@@ -348,4 +320,3 @@ jobs:
   #         path: databases
   #         key: conda-envs-assembly
   #         restore-keys: conda-envs-*
-

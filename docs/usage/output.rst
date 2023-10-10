@@ -58,7 +58,7 @@ Assembly
 
 Besides the `reports/assembly_report.html`_ this rule outputs the following files per sample:
 
-  - ``{sample}/{sample}_contigs.fasta``
+  - ``Assembly/fasta/{sample}.fasta``
   - ``{sample}/sequence_alignment/{sample}.bam``
   - ``{sample}/assembly/contig_stats/final_contig_stats.txt``
 

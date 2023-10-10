@@ -51,6 +51,7 @@ include: "rules/sra.smk"
 include: "rules/gtdbtk.smk"
 include: "rules/cobinning.smk"
 include: "rules/strains.smk"
+include: "rules/patch.smk"
 
 
 CONDAENV = "envs"  # overwrite definition in download.smk

@@ -11,7 +11,6 @@ from ..sample_table import (
     validate_bingroup_size_cobinning,
     validate_bingroup_size_metabat,
     BinGroupSizeError,
-    ADDITIONAL_SAMPLEFILE_HEADERS,
 )
 
 # default globals
@@ -55,12 +54,15 @@ def prepare_sample_table_for_atlas(
 
     sample_table.rename(columns={f: f"{prefix}{f}" for f in fractions}, inplace=True)
 
-    # Add BinGroup and additional empty headers
-    Headers = ADDITIONAL_SAMPLEFILE_HEADERS
-    for h in Headers:
-        sample_table[h] = np.nan
-
     sample_table["BinGroup"] = "All"
+
+    if not reads_are_QC:
+        for f in fractions:
+            sample_table[f"Reads_QC_{f}"] = (
+                f"QC/reads/" + sample_table.index + f"_{f}.fastq.gz"
+            )
+
+    sample_table["Assembly"] = "Assembly/fasta/" + sample_table.index + ".fasta"
 
     validate_sample_table(sample_table)
 

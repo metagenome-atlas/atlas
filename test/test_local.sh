@@ -25,14 +25,14 @@ fi
 WD='wd'
 
 
-rm -f $WD/samples.tsv
+rm -f $WD/samples.tsv $WD/config.yaml
 
 #
-atlas init $reads_dir -w $WD 
+atlas init $reads_dir -w $WD --assembler megahit
 
-atlas run None screen -w $WD qc  $snakemake_args
+#atlas run None screen -w $WD  $snakemake_args
 
-echo "\n\nFinished screen\n\n"
+# echo "\n\nFinished screen\n\n"
 
 atlas run -w $WD qc  $snakemake_args
 
@@ -43,13 +43,13 @@ atlas run assembly -w $WD $snakemake_args
 
 echo "\n\nFinished assembly\n\n"
 
-atlas run binning -w $WD $snakemake_args
+# atlas run binning -w $WD $snakemake_args
 
-echo "\n\nFinished binning\n\n"
+# echo "\n\nFinished binning\n\n"
 
-atlas run genecatalog --omit-from combine_egg_nogg_annotations combine_dram_genecatalog_annotations -w $WD $snakemake_args
+# atlas run genecatalog --omit-from combine_egg_nogg_annotations combine_dram_genecatalog_annotations -w $WD $snakemake_args
 
-echo "\n\nFinished genecatalog\n\n"
+# echo "\n\nFinished genecatalog\n\n"
 
 # atlas run genomes -w $WD $@
 
