@@ -15,4 +15,4 @@ dependencies:
   - click >=7
   - ruamel.yaml >=0.17
   - cookiecutter
-
+  - wget
