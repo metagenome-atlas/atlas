@@ -28,21 +28,8 @@ def make_default_config():
     config["mem"] = MEM
     config["large_mem"] = 250
     config["large_threads"] = 16
-    config["preprocess_adapter_min_k"] = PREPROCESS_ADAPTER_MIN_K
-    config["preprocess_minimum_base_quality"] = PREPROCESS_MINIMUM_BASE_QUALITY
-    config[
-        "preprocess_allowable_kmer_mismatches"
-    ] = PREPROCESS_ALLOWABLE_KMER_MISMATCHES
-    config[
-        "preprocess_reference_kmer_match_length"
-    ] = PREPROCESS_REFERENCE_KMER_MATCH_LENGTH
-    config[
-        "preprocess_minimum_passing_read_length"
-    ] = PREPROCESS_MINIMUM_PASSING_READ_LENGTH
-    config["preprocess_minimum_base_frequency"] = PREPROCESS_MINIMUM_BASE_FREQUENCY
-
     config["deduplicate"] = True
-    config["error_correction_overlapping_pairs"] = True
+
 
     config["contaminant_max_indel"] = CONTAMINANT_MAX_INDEL
     config["contaminant_min_ratio"] = CONTAMINANT_MIN_RATIO

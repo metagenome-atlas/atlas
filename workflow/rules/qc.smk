@@ -212,7 +212,7 @@ if not SKIP_QC:
             trimq=config.get("preprocess_minimum_base_quality"),
             hdist="hdist=%d" % config.get("preprocess_allowable_kmer_mismatches"),
             k="k=%d" % config.get("preprocess_reference_kmer_match_length"),
-            qtrim=config.get("qtrim"),
+            qtrim=config.get("preprocess_qtrim"),
             error_correction_pe=(
                 "t"
                 if PAIRED_END and config["error_correction_overlapping_pairs"]
