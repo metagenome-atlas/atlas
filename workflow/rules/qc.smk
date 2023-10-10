@@ -202,22 +202,17 @@ if not SKIP_QC:
         benchmark:
             "logs/benchmarks/QC/quality_filter/{sample}.txt"
         params:
+,
             ref=(
                 "ref=%s" % config.get("preprocess_adapters")
                 if config.get("preprocess_adapters")
                 else ""
             ),
-            mink= "mink=%d" % config.get("preprocess_adapter_min_k"),
-            ktrim= "ktrim=%s" % config.get("preprocess_kmer_trim")
-            ,
+            mink="mink=%d" % config.get("preprocess_adapter_min_k"),
+            ktrim="ktrim=%s" % config.get("preprocess_kmer_trim"),
             trimq=config.get("preprocess_minimum_base_quality"),
-            hdist="hdist=%d" % config.get("preprocess_allowable_kmer_mismatches")
-            ,
-            k= "k=%d"
-                % config.get(
-                    "preprocess_reference_kmer_match_length"),
-                
-            ,
+            hdist="hdist=%d" % config.get("preprocess_allowable_kmer_mismatches"),
+            k="k=%d" % config.get("preprocess_reference_kmer_match_length"),
             qtrim=config.get("qtrim"),
             error_correction_pe=(
                 "t"
