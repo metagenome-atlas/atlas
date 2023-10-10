@@ -202,10 +202,9 @@ if not SKIP_QC:
         benchmark:
             "logs/benchmarks/QC/quality_filter/{sample}.txt"
         params:
-,
             ref=(
                 "ref=%s" % config.get("preprocess_adapters")
-                if config.get("preprocess_adapters")
+                if (config["preprocess_adapters"] is not None)
                 else ""
             ),
             mink="mink=%d" % config.get("preprocess_adapter_min_k"),
