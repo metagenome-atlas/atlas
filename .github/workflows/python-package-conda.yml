@@ -231,8 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-dryrun, run-qc-and-assembly]
     env:
-      N_THREADS: 2
-      MEM: 3
+      MEM: 0.9
 
     steps:
       - name: Checkout
@@ -274,18 +273,18 @@ jobs:
 
       - name: test binning
         run: |
-          atlas run binning --restart-times=2 --working-dir wd --omit-from checkm2_download_db
+          atlas run binning --restart-times=2 --working-dir wd --omit-from checkm2_download_db --max-mem $MEM &> >(tee wd/logs/atlas_binning.log)
 
       - name: Store Logs
         uses: actions/upload-artifact@v3
         with:
-          name: logs
+          name: logs_binning
           path: wd/logs
 
       - name: Store Sample Logs
         uses: actions/upload-artifact@v3
         with:
-          name: sample_logs
+          name: sample_logs_binning
           path: wd/sample1/logs
 
       - name: Store conda envs
