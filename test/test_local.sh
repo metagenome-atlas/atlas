@@ -25,7 +25,7 @@ fi
 WD='wd'
 
 
-rm -f $WD/samples.tsv
+rm -f $WD/samples.tsv $WD/config.yaml
 
 #
 atlas init $reads_dir -w $WD 

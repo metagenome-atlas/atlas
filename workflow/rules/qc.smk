@@ -158,8 +158,8 @@ if not SKIP_QC:
                 dupesubs=config.get("duplicates_allow_substitutions"),
                 only_optical=("t" if config.get("duplicates_only_optical") else "f"),
             log:
-                stout="{sample}/logs/QC/deduplicate.log",
                 sterr="{sample}/logs/QC/deduplicate.err",
+                stout="{sample}/logs/QC/deduplicate.log",
             conda:
                 "%s/required_packages.yaml" % CONDAENV
             threads: config.get("threads", 1)
@@ -177,7 +177,6 @@ if not SKIP_QC:
                 " threads={threads} "
                 " pigz=t unpigz=t "
                 " -Xmx{resources.java_mem}G "
-                " machineout=t "
                 " 2> {log.sterr} "
                 " 1> {log.stout} "
 
@@ -249,8 +248,8 @@ if not SKIP_QC:
                 output.reads, key="out", allow_singletons=False
             ),
         log:
-            stout="{sample}/logs/QC/quality_filter.log",
             sterr="{sample}/logs/QC/quality_filter.err",
+            stout="{sample}/logs/QC/quality_filter.log",
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("threads", 1)
