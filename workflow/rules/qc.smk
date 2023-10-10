@@ -316,7 +316,7 @@ if not SKIP_QC:
             conda:
                 "%s/required_packages.yaml" % CONDAENV
             params:
-                k=config.get("contaminant_kmer_length", CONTAMINANT_KMER_LENGTH),
+                k=config.get("contaminant_kmer_length"),
                 refs_in=" ".join(
                     [
                         "ref_%s=%s" % (n, fa)
@@ -334,14 +334,14 @@ if not SKIP_QC:
 
         rule run_decontamination:
             input:
-                expand(
+                reads= expand(
                     "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                     step=PROCESSED_STEPS[-2],
                     fraction=MULTIFILE_FRACTIONS,
                 ),
                 db="ref/genome/1/summary.txt",
             output:
-                temp(
+                reads=temp(
                     expand(
                         "{{sample}}/sequence_quality_control/{{sample}}_{step}_{fraction}.fastq.gz",
                         fraction=MULTIFILE_FRACTIONS,
@@ -366,7 +366,7 @@ if not SKIP_QC:
                 ambiguous=config.get("contaminant_ambiguous"),
                 k=config.get("contaminant_kmer_length"),
                 paired="true" if PAIRED_END else "false",
-                inputs= lambda wc, input: io_params_for_tadpole(output.reads,key="in",allow_singletons=False),
+                inputs= lambda wc, input: io_params_for_tadpole(input.reads,key="in",allow_singletons=False),
                 outputs= lambda wc, output: io_params_for_tadpole(output.reads,key="outu",allow_singletons=False),
             log:
                 sterr="{sample}/logs/QC/decontamination.err",
