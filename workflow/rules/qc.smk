@@ -409,6 +409,7 @@ rule copy_qc_reads:
             fraction=MULTIFILE_FRACTIONS,
         ),
     run:
+        import shutil
         for i, f in enumerate(input.reads):
             shutil.copy(f, output.reads[i])
 
