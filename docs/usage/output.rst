@@ -19,10 +19,6 @@ Quality control
 ::
 
   atlas run qc
-  # or
-  atlas run genomes
-  # or
-  atlas run genecatalog
 
 Runs quality control of single or paired end reads and summarizes the main QC stats in
 `reports/QC_report.html`_.
@@ -31,8 +27,8 @@ Runs quality control of single or paired end reads and summarizes the main QC st
 
 Per sample it generates:
 
-  - ``{sample}/sequence_quality_control/{sample}_QC_{fraction}.fastq.gz``
-  - Various quality stats in ``sample}/sequence_quality_control/read_stats``
+  - ``QC/reads/{sample}_{fraction}.fastq.gz``
+
 
 .. _fractions:
 
@@ -50,17 +46,14 @@ Assembly
 ::
 
   atlas run assembly
-  #or
-  atlas run genomes
-  # or
-  atlas run genecatalog
+
 
 
 Besides the `reports/assembly_report.html`_ this rule outputs the following files per sample:
 
   - ``Assembly/fasta/{sample}.fasta``
   - ``{sample}/sequence_alignment/{sample}.bam``
-  - ``{sample}/assembly/contig_stats/final_contig_stats.txt``
+
 
 
 .. _reports/assembly_report.html: ../_static/assembly_report.html
@@ -75,11 +68,10 @@ Binning
 ::
 
   atlas run binning
-  #or
-  atlas run genomes
 
 
-When you use different binners (e.g. metabat, maxbin) and a bin-reconciliator (e.g. DAS Tool),
+
+When you use different binners (e.g. vamb, metabat, DASTool),
 then Atlas will produce for each binner and sample:
 
   - ``{sample}/binning/{binner}/cluster_attribution.tsv``
