@@ -486,15 +486,24 @@ rule eggNOG_annotation:
         "logs/genecatalog/annotation/eggnog/{subset}_annotate_hits_table.log",
     shell:
         """
+        if [ {params.copyto_shm} == "t" ] ; then
+            # Check if the files exist before copying
+            if [ ! -e "{params.data_dir}/eggnog.db" ]; then
+                cp {EGGNOG_DIR}/eggnog.db {params.data_dir}/eggnog.db 2> {log}
+            else
+                echo "File {params.data_dir}/eggnog.db already exists. Skipping copy." >> {log}
+            fi
 
-        if [ {params.copyto_shm} == "t" ] ;
-        then
-            cp {EGGNOG_DIR}/eggnog.db {params.data_dir}/eggnog.db 2> {log}
-            cp {EGGNOG_DIR}/eggnog_proteins.dmnd {params.data_dir}/eggnog_proteins.dmnd 2>> {log}
+            if [ ! -e "{params.data_dir}/eggnog_proteins.dmnd" ]; then
+                cp {EGGNOG_DIR}/eggnog_proteins.dmnd {params.data_dir}/eggnog_proteins.dmnd 2>> {log}
+            else
+                echo "File {params.data_dir}/eggnog_proteins.dmnd already exists. Skipping copy." >> {log}
+            fi
         fi
 
         emapper.py --annotate_hits_table {input.seed} --no_file_comments \
           --override -o {params.prefix} --cpu {threads} --data_dir {params.data_dir} 2>> {log}
+
         """
 
 
