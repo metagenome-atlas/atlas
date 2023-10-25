@@ -11,7 +11,6 @@
 #  For more details about the config values see:
 #  https://metagenome-atlas.rtfd.io
 
-
 ########################
 # Execution parameters
 ########################
@@ -29,11 +28,10 @@ simplejob_threads: 4
 
 #Runtime only for cluster execution
 runtime: #in h
-    default: 5
-    assembly: 48
-    long: 24
-    simplejob: 1
-
+  default: 5
+  assembly: 48
+  long: 24
+  simplejob: 1
 
 # directory where databases are downloaded with 'atlas download'
 database_dir: databases
@@ -72,13 +70,12 @@ contaminant_kmer_length: 13
 contaminant_minimum_hits: 1
 contaminant_ambiguous: best
 
-
 ########################
 # Pre-assembly-processing
 ########################
 
 # Advanced Error correction
-error_correction_before_assembly : true
+error_correction_before_assembly: true
 spades_skip_BayesHammer: true # Skip error correction in spades assembler
 error_correction_kmer: 31 # can be longer e.g. 62 but takes more memory
 
@@ -90,9 +87,8 @@ error_correction_aggressive: false
 
 # Merging of pairs
 # join R1 and R2 at overlap; unjoined reads are still utilized
-merge_pairs_before_assembly : true
+merge_pairs_before_assembly: true
 merging_k: 62
-
 
 ########################
 # Assembly
@@ -119,16 +115,15 @@ megahit_preset: default
 spades_use_scaffolds: true # if false use contigs
 #Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order).
 spades_k: auto
-spades_preset: meta    # meta, ,normal, rna  single end libraries doesn't work for metaspades
+spades_preset: meta # meta, ,normal, rna  single end libraries doesn't work for metaspades
 spades_extra: ""
 longread_type: none # [none,"pacbio", "nanopore", "sanger", "trusted-contigs", "untrusted-contigs"]
 # Preprocessed long reads can be defined in the sample table with 'longreads' , for more info see the spades manual
 
-
 # Filtering
 #------------
 # filter out assembled noise
-# this is more important for assemblys from megahit
+# this is more important for assembly from megahit
 filter_contigs: false
 # trim contig tips
 contig_trim_bp: 0
@@ -136,9 +131,6 @@ contig_trim_bp: 0
 minimum_average_coverage: 1
 minimum_percent_covered_bases: 20
 minimum_mapped_reads: 0
-
-
-
 
 ########################
 # Quantification
@@ -156,8 +148,7 @@ minimum_map_quality: 0
 # Binning
 ########################
 
-final_binner: vamb             # [SemiBin, vamb, metabat, DASTool]
-
+final_binner: vamb # [SemiBin, vamb, metabat, DASTool]
 
 semibin_options: ""
 
@@ -171,22 +162,19 @@ maxbin:
   min_contig_length: 1000
 
 DASTool:
-  search_engine: 'diamond'
-  score_threshold: 0.5              # Score threshold until selection algorithm will keep selecting bins [0..1].
-
+  search_engine: "diamond"
+  score_threshold: 0.5 # Score threshold until selection algorithm will keep selecting bins [0..1].
 
 genome_filter_criteria: "(Completeness-5*Contamination >50 ) & (Length_scaffolds >=50000) & (Ambigious_bases <1e6) & (N50 > 5*1e3) & (N_scaffolds < 1e3)"
 
-
-filter_chimieric_bins: true  # filter chimeric bins using GUNC
-gunc_database: "progenomes"  # 'progenomes' or 'gtdb'
-
+filter_chimieric_bins: true # filter chimeric bins using GUNC
+gunc_database: "progenomes" # 'progenomes' or 'gtdb'
 
 genome_dereplication:
-  ANI: 0.95                     ## Genome dreplication threshold 0.95 is more or less species
-  overlap: 0.2                  
+  ANI: 0.95 ## Genome dreplication threshold 0.95 is more or less species
+  overlap: 0.2
 
-rename_mags_contigs: true        #Rename contigs of representative MAGs
+rename_mags_contigs: true #Rename contigs of representative MAGs
 
 ########################
 # Annotations
@@ -199,18 +187,14 @@ annotations:
   - kegg_modules
   - dram
 
-
-
-
-
 ########################
 # Gene catalog
 #######################
 genecatalog:
-  source: contigs               # [contigs, genomes] Predict genes from all contigs or only from the representative genomes
-  clustermethod: linclust       # [mmseqs or linclust] see mmseqs for more details
-  minlength_nt: 270             # min length 
-  minid: 0.90                   # min id for gene clustering for the main gene catalog used for annotation
+  source: contigs # [contigs, genomes] Predict genes from all contigs or only from the representative genomes
+  clustermethod: linclust # [mmseqs or linclust] see mmseqs for more details
+  minlength_nt: 270 # min length
+  minid: 0.90 # min id for gene clustering for the main gene catalog used for annotation
   coverage: 0.9
   extra: " "
   SubsetSize: 500000
@@ -219,5 +203,5 @@ gene_annotations:
   - eggNOG
   # - dram
 
-eggNOG_use_virtual_disk: false   # coping the eggNOG DB to a virtual disk can sppeed up the annotation
-virtual_disk: "/dev/shm"         # But you need 37G extra ram
+eggNOG_use_virtual_disk: false # coping the eggNOG DB to a virtual disk can speed up the annotation
+virtual_disk: "/dev/shm" # But you need 37G extra ram
