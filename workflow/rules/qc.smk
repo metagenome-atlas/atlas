@@ -313,11 +313,6 @@ if not SKIP_QC:
                         step=PROCESSED_STEPS[-1],
                     )
                 ),
-                contaminants=expand(
-                    "{{sample}}/sequence_quality_control/contaminants/{db}_{fraction}.fastq.gz",
-                    db=list(config["contaminant_references"].keys()),
-                    fraction=MULTIFILE_FRACTIONS,
-                ),
                 stats="{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
             benchmark:
                 "logs/benchmarks/QC/decontamination/{sample}.txt"
