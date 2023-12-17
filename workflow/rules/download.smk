@@ -226,18 +226,19 @@ rule checkm2_download_db:
 rule download_gunc:
     output:
         #TODO: add .dmnd extension in a later version
-        os.path.join(GUNCDIR, "{gunc_database}"), 
+        os.path.join(GUNCDIR, "{gunc_database}"),
     conda:
         "../envs/gunc.yaml"
     threads: 1
     resources:
-        time=int(config.get("runtime", {"default": 5})["default"]),
+        time_min=int(config.get("runtime", {"default": 5})["default"]) * 60,
         mem_mb=config.get("simplejob_mem", 1) * 1000,
-        out_dir= GUNCDIR
+    params:
+        out_dir=GUNCDIR,
     log:
         "logs/downloads/gunc_download_{gunc_database}.log",
     shell:
-        "gunc download_db {params.out_dir} -db {wildcards.gunc_database} &> {log} ;"
+        "gunc download_db {params.out_dir} -db {wildcards.gunc_database} &> {log} ; "
         "mv {params.out_dir}/gunc_db_{wildcards.gunc_database}*.dmnd {output} 2>> {log}"
 
 

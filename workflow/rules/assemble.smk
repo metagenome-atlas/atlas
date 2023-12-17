@@ -312,7 +312,7 @@ if config.get("assembler", "megahit") == "megahit":
             "../envs/megahit.yaml"
         threads: config["assembly_threads"]
         resources:
-            mem_mb=config["assembly_memory"]*1000,
+            mem_mb=config["assembly_memory"] * 1000,
             time=config["runtime"]["assembly"],
         shell:
             """
