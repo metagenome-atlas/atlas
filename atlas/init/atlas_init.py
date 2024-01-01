@@ -196,7 +196,13 @@ def run_init(
     "ERR1190946 PRJEB20796\n\n"
     "Reads are automatically downloaded and only temporarily stored on your machine.",
 )
-@click.argument("identifiers", nargs=-1, type=str)
+@click.option(
+    "-r",
+    "--run-table",
+    type=click.Path(dir_okay=True, writable=True, resolve_path=True),
+    show_default=True,
+    help="location to the run table",
+)
 @click.option(
     "-d",
     "--db-dir",
@@ -228,7 +234,7 @@ def run_init(
     help="Ignore the paired end reads from your SRA samples",
 )
 def run_init_sra(
-    identifiers,
+    run_table,
     db_dir,
     working_dir,
     skip_qc=False,
@@ -261,32 +267,19 @@ def run_init_sra(
 
     runinfo_file = working_dir / "RunInfo.tsv"
 
-    if os.path.exists(runinfo_file) & (not overwrite):
-        if not ((len(identifiers) == 1) & (identifiers[0].lower() == "continue")):
-            logger.error(
-                f"Found Filtered runinfo file {runinfo_file}"
-                "If you want me to continue with this one use 'continue' instead of identifiers. "
-                "Alternatively use --overwrite to overwrite the files"
-            )
-            sys.exit(1)
+    # Create runinfo table in folder for SRA reads
+    # runinfo_file_original = SRA_subfolder / "RunInfo_original.tsv"
+    runinfo_file_original = run_table
 
-    else:
-        logger.info(f"Downloading runinfo from SRA")
+    # Parse runtable
+    RunTable = load_and_validate_runinfo_table(runinfo_file_original)
 
-        # Create runinfo table in folder for SRA reads
-        runinfo_file_original = SRA_subfolder / "RunInfo_original.tsv"
+    # Filter runtable
+    RunTable_filtered = filter_runinfo(RunTable, ignore_paired=ignore_paired)
 
-        get_runtable_from_ids(identifiers, runinfo_file_original)
-
-        # Parse runtable
-        RunTable = load_and_validate_runinfo_table(runinfo_file_original)
-
-        # Filter runtable
-        RunTable_filtered = filter_runinfo(RunTable, ignore_paired=ignore_paired)
-
-        # save filtered runtable
-        logger.info(f"Write filtered runinfo to {runinfo_file}")
-        RunTable_filtered.to_csv(runinfo_file, sep="\t")
+    # save filtered runtable
+    logger.info(f"Write filtered runinfo to {runinfo_file}")
+    RunTable_filtered.to_csv(runinfo_file, sep="\t")
 
     # validate if can be merged
     RunTable = validate_merging_runinfo(runinfo_file)
