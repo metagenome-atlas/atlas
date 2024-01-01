@@ -241,13 +241,6 @@ def run_init_sra(
     ignore_paired=False,
     overwrite=False,
 ):
-    """"""
-
-    if len(identifiers) == 0:
-        click.echo(
-            "No SRA identifiers supplied, exiting. Use --help for more information."
-        )
-        sys.exit(1)
 
     from .get_SRA_runinfo import get_runtable_from_ids
     from .parse_sra import (
@@ -279,7 +272,7 @@ def run_init_sra(
 
     # save filtered runtable
     logger.info(f"Write filtered runinfo to {runinfo_file}")
-    RunTable_filtered.to_csv(runinfo_file, sep="\t")
+    RunTable_filtered.to_csv(runinfo_file, sep=",")
 
     # validate if can be merged
     RunTable = validate_merging_runinfo(runinfo_file)
