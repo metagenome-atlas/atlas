@@ -137,7 +137,7 @@ samples_without_bins = set(snakemake.params.samples).difference(set(clusters.Sam
 
 if len(samples_without_bins) > 0:
     logging.warning(
-        "The following samples did't yield bins, I add longest contig to make the pipline continue:\n"
+        "The following samples didn't yield bins, I add longest contig to make the pipeline continue:\n"
         + "\n".join(samples_without_bins)
     )
 

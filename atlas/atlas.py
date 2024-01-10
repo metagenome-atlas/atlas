@@ -121,7 +121,7 @@ def get_snakefile(file="workflow/Snakefile"):
     type=int,
     default=multiprocessing.cpu_count(),
     show_default=True,
-    help="use at most this many jobs in parallel (see cluster submission for mor details).",
+    help="use at most this many jobs in parallel (see cluster submission for more details).",
 )
 @click.option(
     "--max-mem",

@@ -11,7 +11,7 @@ Conda package manager
 ---------------------
 
 Atlas has **one dependency**: conda_. All databases and other dependencies are installed **on the fly**.
-Atlas is based on snakemake which allows to run steps of the workflow in parallel on a cluster.
+Atlas is based on snakemake, which allows to run steps of the workflow in parallel on a cluster.
 
 If you want to try atlas and have a linux computer (OSX may also work), you can use our `example data`_ for testing.
 
@@ -20,7 +20,7 @@ For real metagenomic data atlas should be run on a _linux_ sytem, with enough me
 
 
 You need to install `anaconda <http://anaconda.org/>`_ or miniconda. 
-If you haven't done it already you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
+If you haven't done it already, you need to configure conda with the bioconda-channel and the conda-forge channel. This are sources for packages beyond the default one.
 Setting strict channel priority can prevent quite some annoyances.
 
 .. code-block:: bash
@@ -38,12 +38,12 @@ Conda can be a bit slow because there are so many packages. A good way around th
     conda install mamba
 
 
-From now on you can replace ``conda install`` with ``mamba install`` and see how much faster this snake is.
+From now on, you can replace ``conda install`` with ``mamba install`` and see how much faster this snake is.
 
 Install metagenome-atlas
 ------------------------
 
-We recommend you to install metagenome-atlas into a conda environment e.g. named ``atlasenv`` 
+We recommend to install metagenome-atlas into a conda environment e.g. named ``atlasenv``. 
 We also recommend to specify the latest version of metagenome-atlas.  
 
 .. code-block:: bash
@@ -62,7 +62,7 @@ where `{latest_version}` should be replaced by
 Install metagenome-atlas from GitHub
 ------------------------------------
 
-Alternatively you can install metagenome Atlas directly form GitHub. This allows you to access versions that are not yet in the conda release, e.g. versions that are still in development.
+Alternatively, you can install metagenome Atlas directly from GitHub. This allows you to access versions that are not yet in the conda release, e.g. versions that are still in development.
 
 .. code-block:: bash
 
@@ -76,7 +76,7 @@ Alternatively you can install metagenome Atlas directly form GitHub. This allows
     mamba env create -n atlas-dev --file atlasenv.yml
     conda activate atlas-dev
 
-    # install atlas version. Changes in this files are directly available in the atlas dev version
+    # install atlas version. Changes in the files are directly available in the atlas dev version
     pip install --editable .
     cd ..
 
@@ -89,9 +89,9 @@ Alternatively you can install metagenome Atlas directly form GitHub. This allows
 Example Data
 ============
 
-If you want to test atlas on a small example data here is a two sample, three genome minimal metagenome dataset,
+If you want to test atlas on a small example data, here is a two sample, three genome minimal metagenome dataset,
 to test atlas. Even when atlas will run faster on the test data,
-it will anyway download all the databases and requirements, for the a complete run,
+it will anyway download all the databases and requirements, for a complete run,
 which can take a certain amount of time and especially disk space (>100Gb).
 
 The database dir of the test run should be the same as for the later atlas executions.
@@ -119,13 +119,13 @@ This command parses the folder for fastq files (extension ``.fastq(.gz)`` or ``.
 
 The command creates a ``samples.tsv`` and a ``config.yaml`` in the working directory.
 
-Have a look at them with a normal text editor and check if the samples names are inferred correctly. The sample names are used for the naming of contigs, genes, and genomes. Therefore, the sample names should consist only form digits and letters and start with a letter (Even though one ``-`` is allowed). Atlas tries to simplify the file name to obtain unique sample names, if it doesn't succeed it simply puts S1, S2, ... as sample names.
+Have a look at them with a normal text editor and check if the sample names are inferred correctly. The sample names are used for the naming of contigs, genes, and genomes. Therefore, the sample names should consist only of digits and letters and start with a letter (Even though one ``-`` is allowed). Atlas tries to simplify the file name to obtain unique sample names, if it doesn't succeed it simply puts S1, S2, ... as sample names.
 
 
 See the  :download:`example sample table <../reports/samples.tsv>`
 
 The ``BinGroup`` parameter is used during the genomic binning.
-In short: If you have between 5 and 150 samples the default (puting everithing in one group) is fine.
+In short: If you have between 5 and 150 samples the default (putting everything in one group) is fine.
 If you have less than 5 samples, put every sample in an individual BinGroup and use `metabat` as final binner.
 If you have more samples see the :ref:`cobinning` section for more details.
 
@@ -180,11 +180,11 @@ Since v2.9 atlas has possibility to start a new project from public data stored 
 
 You can run ``atlas init-public <SRA_IDs>`` and specify any ids, like bioprojects, or other SRA ids. 
 
-Atlas does the folowing steps:
+Atlas does the following steps:
 
-  1. Search SRA for the corresponding sequences (Runs) and save them in the file ``SRA/RunInfo_original.tsv``. For example if you specify a Bioproject, it fetches the information for all runs of this project. 
+  1. Search SRA for the corresponding sequences (Runs) and save them in the file ``SRA/RunInfo_original.tsv``. For example, if you specify a Bioproject, it fetches the information for all runs of this project. 
   2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.tsv``
-  3. Sometimes the same Sample is sequenced on different laines, which will result into multipe runs from the same sample. Atlas will **merge** runs from the same biosample.
+  3. Sometimes the same Sample is sequenced on different lanes, which will result into multiple runs from the same sample. Atlas will **merge** runs from the same biosample.
   4. Prepare a sample table and a config.yaml similar to the ``atlas init`` command.
 
 
@@ -196,10 +196,10 @@ Limitations: For now atlas, cannot handle a mixture of paired and single end rea
 If you have longreads for your project, you would need to specify them yourself in the sample.tsv.
 
 During the run, the reads are downloaded from SRA in the likely most efficient way using prefetch and parallel, fastq.gz generation. 
-The download step has checkpoints, so if the pipline gets interupted, you can restart where you left off. 
-Using the comand line arguments ``--restart-times 3 and --keep-going`` You can even ask atlas to do multiple restarts befor stoping. 
+The download step has checkpoints, so if the pipeline gets interrupted, you can restart where you left off. 
+Using the command line arguments ``--restart-times 3 and --keep-going`` You can even ask atlas to do multiple restarts before stopping. 
 
-The downloaded reads, are directly processed. If you however want only to doenload the reads you can use.::
+The downloaded reads are directly processed. However, if you only want to download the reads you can use::
 
   atlas run None download_sra
 
@@ -247,7 +247,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
   Usage: atlas run [OPTIONS] [qc|assembly|binning|genomes|genecatalog|None|all]
                    [SNAKEMAKE_ARGS]...
 
-    Runs the ATLAS pipline
+    Runs the ATLAS pipeline
 
     By default all steps are executed but a sub-workflow can be specified.
     Needs a config-file and expects to find a sample table in the working-
@@ -262,7 +262,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     -w, --working-dir PATH  location to run atlas.
     -c, --config-file PATH  config-file generated with 'atlas init'
     -j, --jobs INTEGER      use at most this many jobs in parallel (see cluster
-                            submission for mor details).
+                            submission for more details).
 
     --profile TEXT          snakemake profile e.g. for cluster execution.
     -n, --dryrun            Test execution.  [default: False]
@@ -282,7 +282,7 @@ Automatic submitting to cluster systems
 ---------------------------------------
 
 Thanks to the underlying snakemake Atlas can submit parts of the pipeline automatically to a cluster system and define the appropriate resources. If one job has finished it launches the next one.
-This allows you use the full capacity of your cluster system. You even need to pay attention not to spam the other users of the cluster.
+This allows to use the full capacity of your cluster system. You even need to pay attention not to spam the other users of the cluster.
 
 
 
@@ -303,7 +303,7 @@ Then run::
 
     cookiecutter --output-dir ~/.config/snakemake https://github.com/metagenome-atlas/clusterprofile.git
 
-This opens a interactive shell dialog and ask you for the name of the profile and your cluster system.
+This opens an interactive shell dialog and ask you for the name of the profile and your cluster system.
 We recommend you keep the default name ``cluster``. The profile was tested on ``slurm``, ``lsf`` and ``pbs``.
 
 The resources (threads, memory and time) are defined in the atlas config file (hours and GB).
@@ -352,11 +352,11 @@ The atlas argument ``--jobs`` now becomes the number of jobs simultaneously subm
 Single machine execution
 ========================
 
-If you dont want to use the  :ref:`automatic scheduling <cluster>` you can use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
+If you don't want to use the  :ref:`automatic scheduling <cluster>` you can use atlas on a single machine (local execution) with a lot of memory and threads ideally. In this case I recommend you the following options. The same applies if you submit a single job to a cluster running atlas.
 
-Atlas detects how many CPUs and how much memory is available on your system and it will schedule as many jobs in paralell as possible.  If you have less resources available than specified in the config file, the jobs are downscaled.
+Atlas detects how many CPUs and how much memory is available on your system and it will schedule as many jobs in parallel as possible.  If you have less resources available than specified in the config file, the jobs are downscaled.
 
-By default atlas will use all cpus and 95% of all the available memory. If you are not happy with that, or you need to specify an exact ammount of memory/ cpus you can use the comand line arguments ``--jobs`` and ``--max-mem`` to do so. 
+By default atlas will use all cpus and 95% of all the available memory. If you are not happy with that, or you need to specify an exact amount of memory/ cpus you can use the command line arguments ``--jobs`` and ``--max-mem`` to do so. 
 
 
 Cloud execution

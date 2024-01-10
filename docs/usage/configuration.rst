@@ -11,10 +11,10 @@ _contaminants:
 Remove reads from Host
 ======================
 
-One of the most important steps in the Quality control is to remove host genome.
+One of the most important steps in the Quality control is to remove reads from the host's genome.
 You can add any number of genomes to be removed.
 
-We recommend you to use genomes where repetitive sequences are masked.
+We recommend using genomes where repetitive sequences are masked.
 See here for more details `human genome <http://seqanswers.com/forums/archive/index.php/t-42552.html>`_.
 
 
@@ -36,7 +36,7 @@ There are two primary strategies for co-abundance binning:
 The samples to be binned together are specified using the `BinGroup` in the `sample.tsv` file.
 The size of the BinGroup should be selected based on the binner and the co-binning strategy in use.
 
-Cross mapping complexity scales quadratically with the size of the BinGroup since each sample's reads are mapped to each other.
+Cross-mapping complexity scales quadratically with the size of the BinGroup since each sample's reads are mapped to each other.
 This might yield better results for complex metagenomes, although no definitive benchmark is known.
 On the other hand, co-binning is more efficient, as it maps a sample's reads only once to a potentially large assembly.
 
@@ -88,12 +88,12 @@ Long reads
 ==========
 
 Limitation: Hybrid assembly of long and short reads is supported with spades and metaSpades.
-However metaSpades needs a paired-end short-read library.
+However, metaSpades needs a paired-end short-read library.
 
 The path of the (preprocessed) long reads should be added manually to the
-the sample table under a new column heading  'longreads'.
+sample table under a new column heading  'longreads'.
 
-In addition the type of the long reads should be defined in the config file:
+In addition, the type of the long reads should be defined in the config file:
 ``longread_type`` one of ["pacbio", "nanopore", "sanger", "trusted-contigs", "untrusted-contigs"]
 
 

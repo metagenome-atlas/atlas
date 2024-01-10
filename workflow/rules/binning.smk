@@ -273,7 +273,7 @@ rule get_unique_cluster_attribution:
         if new_d.shape[0] == 0:
             logger.warning(
                 f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
-                "I add longest contig to make the pipline continue"
+                "I add longest contig to make the pipeline continue"
             )
 
             new_d[f"{wildcards.sample}_0"] = "{sample}_{binner}_1".format(**wildcards)

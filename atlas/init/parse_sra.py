@@ -67,7 +67,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
         if Difference > 0:
             logger.info(
-                f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
+                f"Runs have the following values for {key}: {', '.join(All_values)}\n"
                 f"Select only runs {key} == {Expected_library_values[key]}, "
                 f"Filtered out {Difference} runs"
             )
@@ -77,7 +77,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
         All_values = RunTable[key].unique()
         if any(RunTable[key] != Expected_library_values[key]):
             logger.warning(
-                f"Runs have the folowing values for {key}: {', '.join(All_values)}\n"
+                f"Runs have the following values for {key}: {', '.join(All_values)}\n"
                 f"Usually I expect {key} == {Expected_library_values[key]} "
             )
 
@@ -141,7 +141,7 @@ def validate_merging_runinfo(path):
         logger.error(
             f"You attemt to merge runs from the same sample. "
             f"But for {len(problematic_samples)} samples the runs are sequenced with different platforms and should't be merged.\n"
-            f"Please resolve the the abiguity in the table {path} and rerun the command.\n"
+            f"Please resolve the abiguity in the table {path} and rerun the command.\n"
         )
 
         exit(1)
