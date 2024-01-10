@@ -135,7 +135,7 @@ def _pandas_concat_disck_based(
             selected_headers.update(list(headers_of_file.columns))
 
         selected_headers = list(selected_headers)
-        logger.info(f"Infered folowing list of headers {selected_headers}")
+        logger.info(f"Inferred following list of headers {selected_headers}")
 
     # parse one file after another
 
