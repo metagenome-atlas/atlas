@@ -314,12 +314,10 @@ if not SKIP_QC:
                     )
                 ),
                 stats="{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
+                contaminant_folder= directory("Intermediate/qc/decontamination/{sample}")
             benchmark:
                 "logs/benchmarks/QC/decontamination/{sample}.txt"
             params:
-                contaminant_folder=lambda wc, output: os.path.dirname(
-                    output.contaminants[0]
-                ),
                 maxindel=config["contaminant_max_indel"],
                 minratio=config["contaminant_min_ratio"],
                 minhits=config["contaminant_minimum_hits"],
@@ -345,7 +343,7 @@ if not SKIP_QC:
                 " bbsplit.sh "
                 " {params.inputs} "
                 " {params.outputs} "
-                " basename={params.contaminant_folder}/%_R#.fastq.gz "
+                " basename={output.contaminant_folder}/%_R#.fastq.gz "
                 " maxindel={params.maxindel} "
                 " minratio={params.minratio} "
                 " minhits={params.minhits} "
