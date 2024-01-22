@@ -1,6 +1,6 @@
 from .default_values import *
 from snakemake.utils import update_config as snakemake_update_config
-from snakemake.common.configfile import load_configfile
+from snakemake.io import load_configfile
 import tempfile
 import sys
 import os
