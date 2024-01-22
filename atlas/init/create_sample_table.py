@@ -158,7 +158,7 @@ def get_samples_from_fastq(path, fraction_split_character=split_character):
     # parse subfolder
     if len(subfolders) > 0:
         logger.info(
-            f"Found {len(subfolders)} subfolders. Check if I find fastq files inside. Use the the subfolder as sample_names "
+            f"Found {len(subfolders)} subfolders. Check if I find fastq files inside. Use the subfolder as sample_names "
         )
 
         for subf in subfolders:
