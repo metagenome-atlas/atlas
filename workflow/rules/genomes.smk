@@ -310,7 +310,7 @@ rule multiqc_mapping_genome:
     log:
         "logs/genomes/alignment/multiqc.log",
     wrapper:
-        "v1.19.1/bio/multiqc"
+        "v3.3.6/bio/multiqc"
 
 
 rule pileup_MAGs:
