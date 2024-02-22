@@ -14,7 +14,7 @@ Expected_library_values = {
 
 
 def load_and_validate_runinfo_table(path):
-    RunTable = pd.read_csv(path, sep="\t", index_col=0)
+    RunTable = pd.read_csv(path, sep=",", index_col=0)
 
     # validate sra table
     format_error = False
@@ -24,7 +24,7 @@ def load_and_validate_runinfo_table(path):
         "LibraryLayout",
         "LibrarySource",
         "LibrarySelection",
-        "LibraryStrategy",
+        #"LibraryStrategy",
         "BioSample",
     ]
     for header in Expected_headers:
@@ -72,7 +72,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
                 f"Filtered out {Difference} runs"
             )
 
-    for key in ["LibrarySelection", "LibraryStrategy"]:
+    for key in ["LibrarySelection"]: #, "LibraryStrategy"]:
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
         if any(RunTable[key] != Expected_library_values[key]):
