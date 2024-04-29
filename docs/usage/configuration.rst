@@ -101,8 +101,7 @@ Example config file
 ===================
 
 
-..
-include:: ../../workflow/../config/template_config.yaml
+..include:: ../../config/template_config.yaml
   :code:
 
 
