@@ -158,13 +158,12 @@ if not SKIP_QC:
                 dupesubs=config["duplicates_allow_substitutions"],
                 only_optical=("t" if config.get("duplicates_only_optical") else "f"),
             log:
-                sterr="{sample}/logs/QC/deduplicate.err",
-                stout="{sample}/logs/QC/deduplicate.log",
+                "{sample}/logs/QC/deduplicate.log",
             conda:
                 "%s/required_packages.yaml" % CONDAENV
             threads: config.get("threads", 1)
             resources:
-                mem=config["mem"],
+                mem_mb=config["mem"]*1024,
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 "clumpify.sh "
@@ -177,8 +176,7 @@ if not SKIP_QC:
                 " threads={threads} "
                 " pigz=t unpigz=t "
                 " -Xmx{resources.java_mem}G "
-                " 2> {log.sterr} "
-                " 1> {log.stout} "
+                " &> {log} "
 
     PROCESSED_STEPS.append("filtered")
 
