@@ -31,67 +31,67 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of scripts
 
-# python 3.5 without f strings
 
-import os, shutil, sys
-import uuid
-import itertools
-from glob import glob
-from snakemake.shell import shell
-from snakemake.io import glob_wildcards
+### New script
+
+from Bio import SeqIO
+import pyrodigal
+from pathlib import Path
+
+
 from multiprocessing import Pool
+import itertools
 
 
-def predict_genes(genome, fasta, out_dir, log):
-    fna = "{}/{}.fna".format(out_dir, genome)
-    faa = "{}/{}.faa".format(out_dir, genome)
-    gff = "{}/{}.gff".format(out_dir, genome)
 
-    shell('printf "{genome}:\n" > {log}'.format(genome=genome, log=log))
-    shell(
-        "prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p sinlge -c -m -f gff 2>> {log} ".format(
-            fasta=fasta, log=log, gff=gff, fna=fna, faa=faa
-        )
-    )
-    shell('printf "\n" >> {log}'.format(log=log))
+def predict_genes(fasta_file, output_folder, translation_table=11, meta=True, name="infer") -> None:
+    """Produces faa and fna file from fasta file using pyrodigal """
+
+    if not name=="infer":
+        # get name
+        if fasta_file.endswith(".gz"): raise NotImplementedError("I have not implmented gziped fasta")
+        name = Path(fasta_file).stem
+
+    # define output files
+    output_folder = Path(output_folder)
+    faa_file= output_folder/ (name+".faa")
+    fna_file= output_folder/ (name+".fna")
 
 
-def predict_genes_genomes(input_dir, out_dir, log, threads):
-    genomes_fastas = glob(os.path.join(input_dir, "*.fasta"))
+    orf_finder = pyrodigal.OrfFinder(meta=meta)
 
-    os.makedirs(out_dir, exist_ok=True)
+    with open(faa_file,"w") as faa_handle, open(fna_file,"w") as fna_handle:
 
-    temp_log_dir = os.path.join(os.path.dirname(log), "tmp_" + uuid.uuid4().hex)
-    os.makedirs(temp_log_dir, exist_ok=False)
+        for contig in SeqIO.parse(fasta_file, "fasta"):
 
-    genome_names = []
-    log_names = []
-    for fasta in genomes_fastas:
-        genome_name = os.path.splitext(os.path.split(fasta)[-1])[0]
-        genome_names.append(genome_name)
-        log_names.append(os.path.join(temp_log_dir, genome_name + ".prodigal.tmp"))
+            genes = orf_finder.find_genes(bytes(contig.seq))
 
+
+            genes.write_genes(fna_handle, sequence_id=contig.id)
+            genes.write_translations(faa_handle, sequence_id=contig.id,translation_table=translation_table)
+
+
+def predict_genes_genomes(input_dir, out_dir, threads):
+
+    input_dir = Path(input_dir)
+    out_dir = Path(out_dir)
+
+
+    genomes_fastas= input_dir.glob("*[.fasta|.fn]*")
+
+    out_dir.mkdir(exist_ok=True)
+    
     pool = Pool(threads)
     pool.starmap(
         predict_genes,
-        zip(genome_names, genomes_fastas, itertools.repeat(out_dir), log_names),
+        zip(genomes_fastas, itertools.repeat(out_dir),itertools.repeat(11)),
     )
-
-    # cat in python
-    with open(log, "ab") as f_out:
-        for logfile in log_names:
-            with open(logfile, "rb") as f_in:
-                shutil.copyfileobj(f_in, f_out)
-
-    shell("rm -r {temp_log_dir}".format(temp_log_dir=temp_log_dir))
 
 
 if __name__ == "__main__":
     predict_genes_genomes(
         snakemake.input.dir,
         snakemake.output[0],
-        snakemake.log[0],
         int(snakemake.threads),
     )

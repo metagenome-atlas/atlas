@@ -104,43 +104,44 @@ rule get_contig2genomes:
 ruleorder: get_contig2genomes > rename_genomes
 
 
-# rule predict_genes_genomes:
-#     input:
-#         dir= genomes_dir
-#     output:
-#         directory("genomes/annotations/genes")
-#     conda:
-#         "%s/prodigal.yaml" % CONDAENV
-#     log:
-#         "logs/genomes/prodigal.log"
-#     shadow:
-#         "shallow"
-#     threads:
-#         config.get("threads", 1)
-#     script:
-#         "predict_genes_of_genomes.py"
-
-
 rule predict_genes_genomes:
     input:
-        os.path.join(genome_dir, "{genome}.fasta"),
+        dir= genomes_dir
     output:
-        fna="genomes/annotations/genes/{genome}.fna",
-        faa="genomes/annotations/genes/{genome}.faa",
-        gff=temp("genomes/annotations/genes/{genome}.gff"),
+        #directory("genomes/annotations/genes")
+        expand(
+        "genomes/annotations/genes/{genome}.{extension}",
+        genome=get_all_genomes(wildcards),
+        extension=["fna", "faa"])
     conda:
-        "%s/prodigal.yaml" % CONDAENV
+        "../envs/pyrodigal.yaml" 
     log:
-        "logs/genomes/prodigal/{genome}.txt",
-    threads: 1
-    resources:
-        mem=config["simplejob_mem"],
-        time=config["runtime"]["simplejob"],
-    shell:
-        """
-        prodigal -i {input} -o {output.gff} -d {output.fna} \
-            -a {output.faa} -p meta -f gff 2> {log}
-        """
+        "logs/genomes/prodigal.log"
+    threads:
+        config.get("threads", 1)
+    script:
+        "predict_genes_of_genomes.py"
+
+
+# rule predict_genes_genomes:
+#     input:
+#         os.path.join(genome_dir, "{genome}.fasta"),
+#     output:
+#         fna="genomes/annotations/genes/{genome}.fna",
+#         faa="genomes/annotations/genes/{genome}.faa",
+#     conda:
+#         "../envs/pyrodigal.yaml",
+#     log:
+#         "logs/genomes/prodigal/{genome}.txt",
+#     threads: 1
+#     resources:
+#         mem=config["simplejob_mem"],
+#         time=config["runtime"]["simplejob"],
+#     shell:
+#         """
+#         prodigal -i {input} -o {output.gff} -d {output.fna} \
+#             -a {output.faa} -p meta -f gff 2> {log}
+#         """
 
 
 def get_all_genes(wildcards, extension=".faa"):
