@@ -65,7 +65,7 @@ rule cluster_genes:
         "logs/Genecatalog/cluster_genes.log",
     threads: config.get("threads", 1)
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"]*1024,
     params:
         coverage=config["genecatalog"]["coverage"],
         identity=config["genecatalog"]["minid"],

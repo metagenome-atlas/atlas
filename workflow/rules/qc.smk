@@ -87,7 +87,7 @@ rule initialize_qc:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("simplejob_threads", 1)
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"]*1024,
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "reformat.sh "
@@ -120,7 +120,7 @@ rule get_read_stats:
     #     "%s/required_packages.yaml" % CONDAENV
     threads: config.get("simplejob_threads", 1)
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"]*1024,
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     params:
         folder=lambda wc, output: os.path.splitext(output[0])[0],
@@ -164,7 +164,7 @@ if not SKIP_QC:
                 "%s/required_packages.yaml" % CONDAENV
             threads: config.get("threads", 1)
             resources:
-                mem=config["mem"],
+                mem_mb=config["mem"]*1024,
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 "clumpify.sh "
@@ -235,7 +235,7 @@ if not SKIP_QC:
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("threads", 1)
         resources:
-            mem=config["mem"],
+            mem_mb=config["mem"]*1024,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
             " bbduk.sh {params.inputs} "
@@ -274,7 +274,7 @@ if not SKIP_QC:
                 "ref/genome/1/summary.txt",
             threads: config.get("threads", 1)
             resources:
-                mem=config["mem"],
+                mem_mb=config["mem"]*1024,
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             log:
                 "logs/QC/build_decontamination_db.log",
@@ -314,7 +314,7 @@ if not SKIP_QC:
                     )
                 ),
                 stats="{sample}/sequence_quality_control/{sample}_decontamination_reference_stats.txt",
-                contaminant_folder= directory("Intermediate/qc/decontamination/{sample}")
+                contaminant_folder=directory("Intermediate/qc/decontamination/{sample}"),
             benchmark:
                 "logs/benchmarks/QC/decontamination/{sample}.txt"
             params:
@@ -337,7 +337,7 @@ if not SKIP_QC:
                 "../envs/required_packages.yaml"
             threads: config.get("threads", 1)
             resources:
-                mem=config["mem"],
+                mem_mb=config["mem"]*1024,
                 java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
             shell:
                 " bbsplit.sh "
@@ -425,7 +425,7 @@ if PAIRED_END:
             ),
         threads: config.get("simplejob_threads", 1)
         resources:
-            mem=config["mem"],
+            mem_mb=config["mem"]*1024,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         conda:
             "../envs/required_packages.yaml"
@@ -465,7 +465,7 @@ else:
             kmer=config["merging_k"],
         threads: config["simplejob_threads"]
         resources:
-            mem=config["simplejob_mem"],
+            mem_mb=config["simplejob_mem"]*1024,
         conda:
             "../envs/required_packages.yaml"
         log:
