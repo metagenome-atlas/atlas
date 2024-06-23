@@ -51,7 +51,7 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("simplejob_threads", 1)
         resources:
-            mem_mb=config["simplejob_mem"] * 1024,
+            mem_mb=config["simplejob_mem"] * 1000,
             java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         shell:
             """
@@ -128,7 +128,7 @@ rule normalize_reads:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("threads", 1)
     resources:
-        mem_mb=config["mem"] * 1024,
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         " bbnorm.sh {params.inputs} "
@@ -165,7 +165,7 @@ rule error_correction:
     conda:
         "%s/required_packages.yaml" % CONDAENV
     resources:
-        mem_mb=config["mem"] * 1024,
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     params:
         inputs=lambda wc, input: io_params_for_tadpole(input),
@@ -212,7 +212,7 @@ rule merge_pairs:
         ),
     threads: config.get("threads", 1)
     resources:
-        mem_mb=config["mem"] * 1024,
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     conda:
         "%s/required_packages.yaml" % CONDAENV
@@ -431,7 +431,7 @@ else:
             "../envs/spades.yaml"
         threads: config["assembly_threads"]
         resources:
-            mem_mb=config["assembly_memory"] * 1024,
+            mem_mb=config["assembly_memory"] * 1000,
             time_min=60 * config["runtime"]["assembly"],
         shell:
             # remove pipeline_state file to create all output files again
@@ -474,7 +474,7 @@ rule rename_contigs:
         mapping_table="{sample}/assembly/old2new_contig_names.tsv",
     threads: config.get("simplejob_threads", 1)
     resources:
-        mem_mb=config["simplejob_mem"] * 1024,
+        mem_mb=config["simplejob_mem"] * 1000,
         time_min=60 * config["runtime"]["default"],
     log:
         "{sample}/logs/assembly/post_process/rename_and_filter_size.log",
@@ -552,7 +552,7 @@ if config["filter_contigs"]:
             "%s/required_packages.yaml" % CONDAENV
         threads: 1
         resources:
-            mem_mb=config["simplejob_mem"] * 1024,
+            mem_mb=config["simplejob_mem"] * 1000,
             java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
         shell:
             """filterbycoverage.sh in={input.fasta} \
@@ -610,7 +610,7 @@ rule calculate_contigs_stats:
         "{sample}/logs/assembly/post_process/contig_stats_final.log",
     threads: 1
     resources:
-        mem_mb=1024,
+        mem_mb=1000,
         time_min=60 * config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 out={output} &> {log}"
@@ -660,7 +660,7 @@ rule pileup_contigs_sample:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("threads", 1)
     resources:
-        mem_mb=config["mem"] * 1024,
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         "pileup.sh "
@@ -686,7 +686,7 @@ rule create_bam_index:
         "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem_mb=2 * config["simplejob_threads"] * 1024,
+        mem_mb=2 * config["simplejob_threads"] * 1000,
     shell:
         "samtools index {input}"
 
@@ -706,7 +706,7 @@ rule predict_genes:
         "logs/benchmarks/prodigal/{sample}.txt"
     threads: 1
     resources:
-        mem_mb=config["simplejob_mem"] * 1024,
+        mem_mb=config["simplejob_mem"] * 1000,
         time_min=60 * config["runtime"]["simplejob"],
     shell:
         """

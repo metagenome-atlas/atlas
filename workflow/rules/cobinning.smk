@@ -19,7 +19,7 @@ rule filter_contigs:
         "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem_mb=config["simplejob_mem"] * 1024,
+        mem_mb=config["simplejob_mem"] * 1000,
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         " reformat.sh in={input} "
@@ -93,7 +93,7 @@ rule minimap_index:
     params:
         index_size="12G",
     resources:
-        mem_mb=config["mem"] * 1024,  # limited num of fatnodes (>200g)
+        mem_mb=config["mem"] * 1000,  # limited num of fatnodes (>200g)
     threads: config["simplejob_threads"]
     log:
         "logs/cobinning/{bingroup}/minimap_index.log",
@@ -111,7 +111,7 @@ rule samtools_dict:
     output:
         dict="Intermediate/cobinning/{bingroup}/combined_contigs.dict",
     resources:
-        mem_mb=config["simplejob_mem"] * 1024,
+        mem_mb=config["simplejob_mem"] * 1000,
         time_min=60 * config["runtime"]["simplejob"],
     threads: 1
     log:
@@ -131,7 +131,7 @@ rule minimap:
         bam=temp("Intermediate/cobinning/{bingroup}/bams/{sample}.unsorted.bam"),
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"] * 1024,
+        mem_mb=config["mem"] * 1000,
     log:
         "logs/cobinning/{bingroup}/mapping/minimap/{sample}.log",
     benchmark:

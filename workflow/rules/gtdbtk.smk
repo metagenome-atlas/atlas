@@ -53,7 +53,7 @@ rule classify:
         directory(f"{gtdb_dir}/classify"),
     threads: config["threads"]  #pplacer needs much memory for not many threads
     resources:
-        mem_mb=config["large_mem"] * 1024,
+        mem_mb=config["large_mem"] * 1000,
         time_min=60 * config["runtime"]["long"],
     conda:
         "../envs/gtdbtk.yaml"
@@ -123,7 +123,7 @@ rule root_tree:
         "../envs/tree.yaml"
     threads: 1
     resources:
-        mem_mb=config["simplejob_mem"] * 1024,
+        mem_mb=config["simplejob_mem"] * 1000,
         ttime_min=60 * config["runtime"]["simplejob"],
     log:
         "logs/genomes/tree/root_tree_{msa}.log",
