@@ -521,7 +521,7 @@ rule combine_egg_nogg_annotations:
     log:
         "logs/genecatalog/annotation/eggNOG/combine.log",
     resources:
-        time=config["runtime"]["default"],
+        time_min=60*config["runtime"]["default"],
     run:
         try:
             import pandas as pd
@@ -558,7 +558,7 @@ rule convert_eggNOG_tsv2parquet:
     output:
         "Genecatalog/annotations/eggNOG.parquet",
     resources:
-        time=config["runtime"]["default"],
+        time_min=60*config["runtime"]["default"],
     log:
         "logs/genecatalog/annotation/eggNOG/tsv2parquet.log",
     run:
@@ -598,7 +598,7 @@ rule DRAM_annotate_genecatalog:
     threads: config["simplejob_threads"]
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time=config["runtime"]["long"],
+        time_min=60*config["runtime"]["long"],
     conda:
         "../envs/dram.yaml"
     params:
@@ -634,7 +634,7 @@ rule combine_dram_genecatalog_annotations:
     output:
         directory("Genecatalog/annotations/dram"),
     resources:
-        time=config["runtime"]["default"],
+        time_min=60*config["runtime"]["default"],
     log:
         "logs/genecatalog/annotation/dram/combine.log",
     script:

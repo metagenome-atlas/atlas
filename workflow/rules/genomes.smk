@@ -135,7 +135,7 @@ rule predict_genes_genomes:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time=config["runtime"]["simplejob"],
+        time_min=60*config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
