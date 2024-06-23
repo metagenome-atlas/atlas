@@ -222,7 +222,6 @@ if config["genome_aligner"] == "minimap":
         threads: config["threads"]
         resources:
             mem_mb=config["mem"] * 1024,
-            mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/minimap2/aligner"
 
@@ -257,7 +256,6 @@ elif config["genome_aligner"] == "bwa":
         threads: config["threads"]
         resources:
             mem_mb=config["mem"] * 1024,
-            mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/bwa-mem2/mem"
 
