@@ -134,7 +134,7 @@ rule predict_genes_genomes:
         "logs/genomes/prodigal/{genome}.txt",
     threads: 1
     resources:
-        mem_mb=config["simplejob_mem"]*1024,
+        mem_mb=config["simplejob_mem"] * 1024,
         time=config["runtime"]["simplejob"],
     shell:
         """
@@ -204,7 +204,7 @@ if config["genome_aligner"] == "minimap":
             index_size="12G",
         threads: 3
         resources:
-            mem_mb=config["mem"]*1024,
+            mem_mb=config["mem"] * 1024,
         wrapper:
             "v1.19.0/bio/minimap2/index"
 
@@ -221,7 +221,7 @@ if config["genome_aligner"] == "minimap":
             sort="coordinate",
         threads: config["threads"]
         resources:
-            mem_mb=config["mem"]*1024,
+            mem_mb=config["mem"] * 1024,
             mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/minimap2/aligner"
@@ -238,7 +238,7 @@ elif config["genome_aligner"] == "bwa":
             "logs/genomes/alignments/bwa_index.log",
         threads: 4
         resources:
-            mem_mb=config["mem"]*1024,
+            mem_mb=config["mem"] * 1024,
         wrapper:
             "v1.19.0/bio/bwa-mem2/index"
 
@@ -256,7 +256,7 @@ elif config["genome_aligner"] == "bwa":
             sort_order="coordinate",
         threads: config["threads"]
         resources:
-            mem_mb=config["mem"]*1024,
+            mem_mb=config["mem"] * 1024,
             mem_mb=config["mem"] * 1000,
         wrapper:
             "v1.19.0/bio/bwa-mem2/mem"
@@ -297,7 +297,7 @@ rule mapping_stats_genomes:
         "logs/genomes/alignments/{sample}_stats.log",
     threads: 1
     resources:
-        mem_mb=config["simplejob_mem"]*1024,
+        mem_mb=config["simplejob_mem"] * 1024,
     wrapper:
         "v1.19.0/bio/samtools/stats"
 
@@ -329,7 +329,7 @@ rule pileup_MAGs:
         "../envs/required_packages.yaml"
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1024,
+        mem_mb=config["mem"] * 1024,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         "pileup.sh in={input.bam} "

@@ -14,7 +14,7 @@ rule semibin_generate_data_multi:
         "../envs/semibin.yaml"
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1024,
+        mem_mb=config["mem"] * 1024,
         time=config["runtime"]["default"],
     log:
         "logs/semibin/{bingroup}/generate_data_multi.log",
@@ -45,7 +45,7 @@ rule semibin_train:
         "../envs/semibin.yaml"
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1024,
+        mem_mb=config["mem"] * 1024,
         time=config["runtime"]["default"],
     log:
         "logs/semibin/{bingroup}/train/{sample}.log",
@@ -110,7 +110,7 @@ rule run_semibin:
         "../envs/semibin.yaml"
     threads: config["threads"]
     resources:
-        mem_mb=config["mem"]*1024,
+        mem_mb=config["mem"] * 1024,
         time=config["runtime"]["default"],
     log:
         "logs/semibin/bin/{sample}.log",
