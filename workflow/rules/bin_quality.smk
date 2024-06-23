@@ -66,7 +66,7 @@ rule run_checkm2:
     benchmark:
         "logs/benchmarks/checkm2/{sample}_{binner}.tsv"
     resources:
-        time_min=60*int(config["runtime"]["default"]),
+        time_min=60 * int(config["runtime"]["default"]),
         mem_mb=config["mem"] * 1000,
     shell:
         " checkm2 predict "
@@ -102,7 +102,7 @@ rule run_gunc:
     log:
         "{sample}/logs/binning/{binner}/gunc.log",
     resources:
-        time_min=60*int(config["runtime"]["default"]),
+        time_min=60 * int(config["runtime"]["default"]),
         mem_mb=config["mem"] * 1000,
     shell:
         " mkdir {output.folder} 2> {log}"

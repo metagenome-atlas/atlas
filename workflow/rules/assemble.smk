@@ -313,7 +313,7 @@ if config.get("assembler", "megahit") == "megahit":
         threads: config["assembly_threads"]
         resources:
             mem_mb=config["assembly_memory"] * 1000,
-            time_min=60*config["runtime"]["assembly"],
+            time_min=60 * config["runtime"]["assembly"],
         shell:
             """
             rm -r {params.outdir} 2> {log}
@@ -432,7 +432,7 @@ else:
         threads: config["assembly_threads"]
         resources:
             mem_mb=config["assembly_memory"] * 1024,
-            time_min=60*config["runtime"]["assembly"],
+            time_min=60 * config["runtime"]["assembly"],
         shell:
             # remove pipeline_state file to create all output files again
             " rm -f {params.p[outdir]}/pipeline_state/stage_*_copy_files 2> {log} ; "
@@ -475,7 +475,7 @@ rule rename_contigs:
     threads: config.get("simplejob_threads", 1)
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "{sample}/logs/assembly/post_process/rename_and_filter_size.log",
     params:
@@ -611,7 +611,7 @@ rule calculate_contigs_stats:
     threads: 1
     resources:
         mem_mb=1024,
-        time_min=60*config["runtime"]["simplejob"],
+        time_min=60 * config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 out={output} &> {log}"
 
@@ -707,7 +707,7 @@ rule predict_genes:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time_min=60*config["runtime"]["simplejob"],
+        time_min=60 * config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \

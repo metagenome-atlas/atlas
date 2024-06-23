@@ -23,7 +23,7 @@ rule dram_download:
     threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/dram/download_dram.log",
     benchmark:
@@ -52,7 +52,7 @@ rule DRAM_annotate:
     threads: config["simplejob_threads"]
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     conda:
         "../envs/dram.yaml"
     params:
@@ -90,7 +90,7 @@ rule concat_annotations:
     output:
         expand("genomes/annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
     resources:
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     run:
         from utils import io
 
@@ -113,7 +113,7 @@ rule DRAM_destill:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        ttime_min=60*config["runtime"]["simplejob"],
+        ttime_min=60 * config["runtime"]["simplejob"],
     conda:
         "../envs/dram.yaml"
     log:
@@ -135,7 +135,7 @@ rule get_all_modules:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     conda:
         "../envs/dram.yaml"
     log:

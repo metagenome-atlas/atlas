@@ -112,7 +112,7 @@ rule samtools_dict:
         dict="Intermediate/cobinning/{bingroup}/combined_contigs.dict",
     resources:
         mem_mb=config["simplejob_mem"] * 1024,
-        time_min=60*config["runtime"]["simplejob"],
+        time_min=60 * config["runtime"]["simplejob"],
     threads: 1
     log:
         "logs/cobinning/{bingroup}/samtools_dict.log",

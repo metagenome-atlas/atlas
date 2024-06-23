@@ -15,7 +15,7 @@ rule semibin_generate_data_multi:
     threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/semibin/{bingroup}/generate_data_multi.log",
     benchmark:
@@ -46,7 +46,7 @@ rule semibin_train:
     threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/semibin/{bingroup}/train/{sample}.log",
     benchmark:
@@ -111,7 +111,7 @@ rule run_semibin:
     threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1024,
-        time_min=60*config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/semibin/bin/{sample}.log",
     benchmark:

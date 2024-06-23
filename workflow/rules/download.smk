@@ -185,7 +185,7 @@ rule download_gtdb:
         "../envs/gtdbtk.yaml"
     threads: 1
     resources:
-        time_min=60*int(config.get("runtime", {"long": 10})["long"]),
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
         "logs/download/gtdbtk.log",
     shell:
@@ -201,7 +201,7 @@ rule extract_gtdb:
         "../envs/gtdbtk.yaml"
     threads: 1
     resources:
-        time_min=60*int(config.get("runtime", {"long": 10})["long"]),
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
         "logs/download/gtdbtk_untar.log",
     shell:
@@ -217,7 +217,7 @@ rule checkm2_download_db:
     log:
         "logs/download/checkm2.log",
     resources:
-        time_min=60*int(config.get("runtime", {"long": 10})["long"]),
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     shell:
         " checkm2 database --download --path {output} "
         " &>> {log}"
@@ -230,7 +230,7 @@ rule download_gunc:
         "../envs/gunc.yaml"
     threads: 1
     resources:
-        time_min=60*int(config.get("runtime", {"default": 5})["default"]),
+        time_min=60 * int(config.get("runtime", {"default": 5})["default"]),
         mem_mb=config.get("simplejob_mem", 1) * 1000,
         tmpdir=config.get("tmpdir", "."),  # you can store the file in the main working folder if you want
     log:
@@ -247,7 +247,7 @@ rule download_busco:
         "../envs/busco.yaml"
     threads: 1
     resources:
-        time_min=60*int(config.get("runtime", {"default": 5})["default"]),
+        time_min=60 * int(config.get("runtime", {"default": 5})["default"]),
         mem_mb=config.get("simplejob_mem", 1) * 1000,
     log:
         "logs/busco_lineages.log",
