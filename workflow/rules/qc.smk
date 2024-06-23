@@ -227,13 +227,12 @@ if not SKIP_QC:
                 output.reads, key="out", allow_singletons=False
             ),
         log:
-            sterr="{sample}/logs/QC/quality_filter.err",
-            stout="{sample}/logs/QC/quality_filter.log",
+            "{sample}/logs/QC/quality_filter.log",
         conda:
             "%s/required_packages.yaml" % CONDAENV
         threads: config.get("threads", 1)
         resources:
-            mem=config["mem"],
+            mem_mb=config["mem"]*1024,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         shell:
             " bbduk.sh {params.inputs} "
@@ -258,8 +257,7 @@ if not SKIP_QC:
             " prealloc={params.prealloc} "
             " pigz=t unpigz=t "
             " -Xmx{resources.java_mem}G "
-            " 2> {log.sterr} "
-            " 1> {log.stout} "
+            " &> {log} "
 
     # if there are no references, decontamination will be skipped
     if len(config.get("contaminant_references", {}).keys()) > 0:
@@ -463,7 +461,7 @@ else:
             kmer=config["merging_k"],
         threads: config["simplejob_threads"]
         resources:
-            mem=config["simplejob_mem"],
+            mem_mb = config["simplejob_mem"]*1024,
         conda:
             "../envs/required_packages.yaml"
         log:
