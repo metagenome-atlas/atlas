@@ -19,8 +19,8 @@ rule instrain_profile:
     benchmark:
         "logs/benchmarks/strains/profile/{sample}.tsv"
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["long"],
+        mem_mb=config["mem"] * 1000,
+        time_min=60 * config["runtime"]["long"],
     shell:
         #" cat {input.genes} > {resources.tmpdir}/all_genome_genes.fna 2> {log} "
         #" ; "
@@ -51,8 +51,8 @@ rule instrain_compare:
     benchmark:
         "logs/benchmarks/strains/compare.tsv"
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["long"],
+        mem_mb=config["mem"] * 1000,
+        time_min=60 * config["runtime"]["long"],
     shell:
         "inStrain compare "
         " --input {input.profiles} "

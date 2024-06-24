@@ -14,8 +14,8 @@ rule semibin_generate_data_multi:
         "../envs/semibin.yaml"
     threads: config["threads"]
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["default"],
+        mem_mb=config["mem"] * 1000,
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/semibin/{bingroup}/generate_data_multi.log",
     benchmark:
@@ -45,8 +45,8 @@ rule semibin_train:
         "../envs/semibin.yaml"
     threads: config["threads"]
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["default"],
+        mem_mb=config["mem"] * 1000,
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/semibin/{bingroup}/train/{sample}.log",
     benchmark:
@@ -110,8 +110,8 @@ rule run_semibin:
         "../envs/semibin.yaml"
     threads: config["threads"]
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["default"],
+        mem_mb=config["mem"] * 1000,
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/semibin/bin/{sample}.log",
     benchmark:

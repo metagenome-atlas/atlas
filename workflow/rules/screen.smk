@@ -10,7 +10,7 @@ rule generate_sketch:
         "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"] * 1000,
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "bbsketch.sh "
@@ -36,7 +36,7 @@ rule compare_sketch:
         "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         "comparesketch.sh alltoall "
