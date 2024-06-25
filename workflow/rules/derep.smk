@@ -110,4 +110,4 @@ rule build_bin_report:
     log:
         "logs/binning/report_{binner}.log",
     script:
-        "../../report/bin_report.py"
+        "../report/bin_report.py"
