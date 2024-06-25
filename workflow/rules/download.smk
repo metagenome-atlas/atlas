@@ -1,8 +1,13 @@
 import hashlib
 import os
 from pathlib import Path
+from pathlib import Path
 
 # this values are incuded in the snakefile
+DBDIR = Path(config["database_dir"]).resolve()
+
+GUNCDIR = DBDIR/ "gunc_database"
+BUSCODIR = DBDIR/ "busco_lineages"
 DBDIR = Path(config["database_dir"]).resolve()
 
 GUNCDIR = DBDIR/ "gunc_database"
@@ -11,8 +16,19 @@ BUSCODIR = DBDIR/ "busco_lineages"
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
 EGGNOG_DIR = DBDIR/ ("EggNOG_V" + EGGNOG_VERSION)
+EGGNOG_DIR = DBDIR/ ("EggNOG_V" + EGGNOG_VERSION)
 
 CONDAENV = "../envs"
+
+
+## GTDBTk
+
+
+## GTDBTk
+
+<<<<<<< HEAD
+
+## GTDBTk
 
 <<<<<<< HEAD
 
@@ -65,9 +81,50 @@ rule extract_gtdb:
 ### end GTDBTk
 =======
 GTDB_VERSION = "V09_R200"
-GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package/full_package/gtdbtk_r220_data.tar.gz"
-GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_" + GTDB_VERSION)
->>>>>>> d378298 (update verstion and paths)
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package"
+GTDBTK_DATA_PATH = DBDIR/ ("GTDB_" + GTDB_VERSION)
+
+
+def all_partial_gtdb_tarbals(wildcards,GTDB_REFSEQ_VERSION=220,GTDB_PATIAL_SUFFIXES=["a"+i for i in "abcdefghijk"]):
+
+    return expand(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}",
+     gtdb_refseq_version= GTDB_REFSEQ_VERSION,
+      suffix=GTDB_PATIAL_SUFFIXES)
+
+
+localrules:
+    download_partial_gtdb, extract_gtdb
+
+
+rule download_partial_gtdb:
+    output:
+        temp(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}"),
+    threads: 1
+    params:
+        url = lambda wc,output: f"{GTDB_DATA_URL}/split_package/{ Path(output[0]).name}"
+    resources:
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+    log:
+        "logs/download/gtdbtk_r{gtdb_refseq_version}_part_{suffix}.log",
+    shell:
+        " wget --no-check-certificate {params.url} -O {output} &> {log} "
+
+
+rule extract_gtdb:
+    input:
+        all_partial_gtdb_tarbals
+    output:
+        touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
+    threads: 1
+    resources:
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+    log:
+        stdout="logs/download/gtdbtk_untar.log",
+        stderr="logs/download/gtdbtk_untar.err",
+    shell:
+        '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log.stderr} > {log.stdout} '
+
+### end GTDBTk
 
 
 def md5(fname):
@@ -86,6 +143,10 @@ FILES = {
     "adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
     "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
     "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
+
+}
+
+
 
 }
 
@@ -119,6 +180,7 @@ rule download:
         ),
         get_eggnog_db_file(),
         f"{DBDIR}/CheckM2",
+        GTDBTK_DATA_PATH/ "downloaded_success"
         GTDBTK_DATA_PATH/ "downloaded_success"
 
 
