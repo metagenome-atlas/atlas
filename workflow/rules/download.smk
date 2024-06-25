@@ -14,6 +14,7 @@ EGGNOG_DIR = DBDIR/ ("EggNOG_V" + EGGNOG_VERSION)
 
 CONDAENV = "../envs"
 
+<<<<<<< HEAD
 
 ## GTDBTk
 
@@ -62,6 +63,11 @@ rule extract_gtdb:
         '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log.stderr} > {log.stdout} '
 
 ### end GTDBTk
+=======
+GTDB_VERSION = "V09_R200"
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package/full_package/gtdbtk_r220_data.tar.gz"
+GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_" + GTDB_VERSION)
+>>>>>>> d378298 (update verstion and paths)
 
 
 def md5(fname):
