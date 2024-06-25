@@ -1,25 +1,66 @@
 import hashlib
 import os
-
+from pathlib import Path
 
 # this values are incuded in the snakefile
-DBDIR = os.path.realpath(config["database_dir"])
-CHECKMDIR = os.path.join(DBDIR, "checkm")
-CHECKM_ARCHIVE = "checkm_data_v1.0.9.tar.gz"
-CAT_DIR = os.path.join(DBDIR, "CAT")
-CAT_flag_downloaded = os.path.join(CAT_DIR, "downloaded")
-GUNCDIR = os.path.join(DBDIR, "gunc_database")
-BUSCODIR = os.path.join(DBDIR, "busco_lineages")
+DBDIR = Path(config["database_dir"]).resolve()
+
+GUNCDIR = DBDIR/ "gunc_database"
+BUSCODIR = DBDIR/ "busco_lineages"
 
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
-EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V" + EGGNOG_VERSION)
+EGGNOG_DIR = DBDIR/ ("EggNOG_V" + EGGNOG_VERSION)
 
 CONDAENV = "../envs"
 
+
+## GTDBTk
+
 GTDB_VERSION = "V09_R200"
-GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package/full_package/gtdbtk_r220_data.tar.gz"
-GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_" + GTDB_VERSION)
+GTDB_DATA_URL = Path("https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package")
+GTDBTK_DATA_PATH = DBDIR/ ("GTDB_" + GTDB_VERSION)
+
+
+def all_partial_gtdb_tarbals(wildcards,GTDB_REFSEQ_VERSION=220,GTDB_PATIAL_SUFFIXES=["a"+i for i in "abcdefghijk"]):
+
+    return expand(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}",
+     gtdb_refseq_version= GTDB_REFSEQ_VERSION,
+      suffix=GTDB_PATIAL_SUFFIXES)
+
+
+localrules:
+    download_partial_gtdb, extract_gtdb
+
+
+rule download_partial_gtdb:
+    output:
+        temp(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}"),
+    threads: 1
+    params:
+        url = lambda wc,output: GTDB_DATA_URL/"split_package"/ Path(output[0]).name
+    resources:
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+    log:
+        "logs/download/gtdbtk_r{gtdb_refseq_version}_part_{suffix}.log",
+    shell:
+        " wget --no-check-certificate {params.url} -O {output} &> {log} "
+
+
+rule extract_gtdb:
+    input:
+        all_partial_gtdb_tarbals
+    output:
+        touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
+    threads: 1
+    resources:
+        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+    log:
+        "logs/download/gtdbtk_untar.log",
+    shell:
+        '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log} '
+
+### end GTDBTk
 
 
 def md5(fname):
@@ -37,50 +78,11 @@ def md5(fname):
 FILES = {
     "adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
     "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
-    "refseq.db": "42b8976656f2cfd661b8a299d6e24c19",
-    "refseq.dmnd": "c01facc7e397270ccb796ea799a09108",
-    "refseq.tree": "469fcbeb15dd0d4bf8f1677682bde157",
     "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
-    "eggnog.db": "7923d3bb7eca8e0e8f122be4b5ca6997",
-    "eggnog_proteins.dmnd": "64fefa838833a6f3e220a06fb9d403cd",
-    CHECKM_ARCHIVE: "631012fa598c43fdeb88c619ad282c4d",
+
 }
 
 
-CHECKMFILES = [
-    "%s/taxon_marker_sets.tsv" % CHECKMDIR,
-    "%s/selected_marker_sets.tsv" % CHECKMDIR,
-    "%s/pfam/tigrfam2pfam.tsv" % CHECKMDIR,
-    "%s/pfam/Pfam-A.hmm.dat" % CHECKMDIR,
-    "%s/img/img_metadata.tsv" % CHECKMDIR,
-    "%s/hmms_ssu/SSU_euk.hmm" % CHECKMDIR,
-    "%s/hmms_ssu/SSU_bacteria.hmm" % CHECKMDIR,
-    "%s/hmms_ssu/SSU_archaea.hmm" % CHECKMDIR,
-    "%s/hmms_ssu/createHMMs.py" % CHECKMDIR,
-    "%s/hmms/phylo.hmm.ssi" % CHECKMDIR,
-    "%s/hmms/phylo.hmm" % CHECKMDIR,
-    "%s/hmms/checkm.hmm.ssi" % CHECKMDIR,
-    "%s/hmms/checkm.hmm" % CHECKMDIR,
-    "%s/genome_tree/missing_duplicate_genes_97.tsv" % CHECKMDIR,
-    "%s/genome_tree/missing_duplicate_genes_50.tsv" % CHECKMDIR,
-    "%s/genome_tree/genome_tree.taxonomy.tsv" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_reduced.refpkg/phylo_modelJqWx6_.json" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_reduced.refpkg/genome_tree.tre" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_reduced.refpkg/genome_tree.log" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_reduced.refpkg/genome_tree.fasta" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_reduced.refpkg/CONTENTS.json" % CHECKMDIR,
-    "%s/genome_tree/genome_tree.metadata.tsv" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_full.refpkg/phylo_modelEcOyPk.json" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_full.refpkg/genome_tree.tre" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_full.refpkg/genome_tree.log" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_full.refpkg/genome_tree.fasta" % CHECKMDIR,
-    "%s/genome_tree/genome_tree_full.refpkg/CONTENTS.json" % CHECKMDIR,
-    "%s/genome_tree/genome_tree.derep.txt" % CHECKMDIR,
-    "%s/.dmanifest" % CHECKMDIR,
-    "%s/distributions/td_dist.txt" % CHECKMDIR,
-    "%s/distributions/gc_dist.txt" % CHECKMDIR,
-    "%s/distributions/cd_dist.txt" % CHECKMDIR,
-]
 
 
 def get_eggnog_db_file():
@@ -97,7 +99,6 @@ localrules:
     download,
     download_eggNOG_files,
     download_atlas_files,
-    download_checkm_data,
     download_gunc,
 
 
@@ -111,7 +112,7 @@ rule download:
         ),
         get_eggnog_db_file(),
         f"{DBDIR}/CheckM2",
-        os.path.join(GTDBTK_DATA_PATH, "downloaded_success"),
+        GTDBTK_DATA_PATH/ "downloaded_success"
 
 
 rule download_eggNOG_files:
@@ -139,73 +140,7 @@ rule download_atlas_files:
             raise OSError(2, "Invalid checksum", output[0])
 
 
-rule download_checkm_data:
-    output:
-        tar=temp(CHECKM_ARCHIVE),
-        files=CHECKMFILES,
-    params:
-        path=CHECKMDIR,
-    run:
-        shell(
-            "wget -O {output.tar} 'https://zenodo.org/record/{ZENODO_ARCHIVE}/files/{CHECKM_ARCHIVE}' "
-        )
-        if not FILES[CHECKM_ARCHIVE] == md5(output.tar):
-            raise OSError(2, "Invalid checksum", CHECKM_ARCHIVE)
 
-        shell("tar -zxf {output.tar} --directory {params.path}")
-
-
-localrules:
-    initialize_checkm,
-
-
-rule initialize_checkm:
-    input:
-        ancient(CHECKMFILES),
-    output:
-        touched_output=touch("logs/checkm_init.txt"),
-    params:
-        database_dir=CHECKMDIR,
-    conda:
-        "%s/checkm.yaml" % CONDAENV
-    log:
-        "logs/initialize_checkm.log",
-    shell:
-        "checkm data setRoot {params.database_dir} &> {log} "
-
-
-localrules:
-    download_gtdb,
-
-
-rule download_gtdb:
-    output:
-        temp(f"{GTDBTK_DATA_PATH}/gtdb_data.tar.gz"),
-    conda:
-        "../envs/gtdbtk.yaml"
-    threads: 1
-    resources:
-        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
-    log:
-        "logs/download/gtdbtk.log",
-    shell:
-        " wget --no-check-certificate {GTDB_DATA_URL} -O {output} &> {log} "
-
-
-rule extract_gtdb:
-    input:
-        rules.download_gtdb.output,
-    output:
-        touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
-    conda:
-        "../envs/gtdbtk.yaml"
-    threads: 1
-    resources:
-        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
-    log:
-        "logs/download/gtdbtk_untar.log",
-    shell:
-        'tar -xzvf {input} -C "{GTDBTK_DATA_PATH}" --strip 1 2> {log}; '
 
 
 rule checkm2_download_db:
@@ -261,14 +196,12 @@ onsuccess:
 
 onerror:
     print("An error occurred while downloading reference databases.")
-    print(
-        "ATLAS databases can be manually downloaded from: https://zenodo.org/record/%s"
-        % ZENODO_ARCHIVE
-    )
-    print(
-        "eggNOG databases can be manually downloaded from: http://eggnogdb.embl.de/download/emapperdb-%s"
-        % EGGNOG_VERSION
-    )
-    print(
-        "CAT databases can be manually downloaded from: https://github.com/dutilh/CAT"
-    )
+    # print(
+    #     "ATLAS databases can be manually downloaded from: https://zenodo.org/record/%s"
+    #     % ZENODO_ARCHIVE
+    # )
+    # print(
+    #     "eggNOG databases can be manually downloaded from: http://eggnogdb.embl.de/download/emapperdb-%s"
+    #     % EGGNOG_VERSION
+    # )
+
