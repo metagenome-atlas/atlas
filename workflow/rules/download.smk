@@ -17,8 +17,8 @@ EGGNOG_DIR = os.path.join(DBDIR, "EggNOG_V" + EGGNOG_VERSION)
 
 CONDAENV = "../envs"
 
-GTDB_VERSION = "V08_R214"
-GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release214/214.0/auxillary_files/gtdbtk_r214_data.tar.gz"
+GTDB_VERSION = "V09_R200"
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package/full_package/gtdbtk_r220_data.tar.gz"
 GTDBTK_DATA_PATH = os.path.join(DBDIR, "GTDB_" + GTDB_VERSION)
 
 
