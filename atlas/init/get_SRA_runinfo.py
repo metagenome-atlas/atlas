@@ -11,6 +11,10 @@ except ImportError:
     tqdm = list
 
 
+from .kingfisher import SraMetadata
+SRA= SraMetadata()
+
+
 class SRAUtils:
     """
     Prefixes can be found here http://www.ddbj.nig.ac.jp/sub/prefix.html for DDBJ, ENA/EBI (ERA), and NCBI(SRA)
@@ -284,6 +288,47 @@ class SRAUtils:
             )
 
 
+def query_bioprojects_and_SRA(accessions):
+
+    accessions = set(accessions)
+
+    bioproject_accessions = [identifier for identifier in accessions if identifier.startswith("PRJ") or identifier[1:3] == "RP"]
+
+    accessions = accessions - set(bioproject_accessions)
+
+    run_accessions = [identifier for identifier in accessions if identifier[1:3] == "RR"]
+
+    accessions = accessions - set(run_accessions)
+
+    if len(accessions)>0:
+        n_searchable= len(bioproject_accessions) + len(run_accessions)
+        error_text="I can only search for run-accessions, e.g. ERR1739691 "
+        " or projects e.g. PRJNA621514 or SRP260223\n"
+        if n_searchable>0:
+            error_text+= f"I can search for {n_searchable} accessions,\n but "
+
+        error_text+= f"I cannot search for {len(accessions)} accessions: "\
+            + ",".join(accessions[1:min(len(accessions),4)])
+        
+        raise Exception(error_text)
+    
+    else:
+
+        if len(bioproject_accessions)>0:
+            tab = SRA.fetch_runs_from_bioprojects(bioproject_accessions)
+
+        if len(run_accessions)>0:
+            tab = SRA.efetch_sra_from_accessions(run_accessions)
+
+        
+
+
+
+
+        
+        
+
+
 # main function
 
 
@@ -302,13 +347,7 @@ def get_runtable_from_ids(identifiers, output_file="SRA_runtable.tsv", overwrite
 
         for identifier in identifier_with_progressbar:
             try:
-                tab = SRAUtils.getInfoFromSRAIdentifier(identifier)
-                # write header
-                if 0 == identifierCount:
-                    outInfoFile.write("\t".join(tab[0].keys()) + "\n")
-                for row in tab:
-                    outInfoFile.write("\t".join(row.values()) + "\n")
-                identifierCount = identifierCount + 1
+
 
             except Exception as err:
                 raise Exception(
