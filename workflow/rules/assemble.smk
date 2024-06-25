@@ -432,6 +432,7 @@ else:
         threads: config["assembly_threads"]
         resources:
             mem_mb=config["assembly_memory"] * 1000,
+            mem_gb= config["assembly_memory"],
             time_min=60 * config["runtime"]["assembly"],
         shell:
             # remove pipeline_state file to create all output files again
@@ -439,7 +440,7 @@ else:
             " "
             "spades.py "
             " --threads {threads} "
-            " --memory {resources.mem} "
+            " --memory {resources.mem_gb} "
             " -o {params.p[outdir]} "
             " -k {params.k}"
             " {params.p[preset]} "
