@@ -22,8 +22,8 @@ rule dram_download:
         config=f"{DBDIR}/DRAM/DRAM.config",
     threads: config["threads"]
     resources:
-        mem=config["mem"],
-        time=config["runtime"]["default"],
+        mem_mb=config["mem"] * 1000,
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/dram/download_dram.log",
     benchmark:
@@ -51,8 +51,8 @@ rule DRAM_annotate:
         outdir=directory("genomes/annotations/dram/intermediate_files/{genome}"),
     threads: config["simplejob_threads"]
     resources:
-        mem=config["simplejob_mem"],
-        time=config["runtime"]["default"],
+        mem_mb=config["simplejob_mem"] * 1000,
+        time_min=60 * config["runtime"]["default"],
     conda:
         "../envs/dram.yaml"
     params:
@@ -90,7 +90,7 @@ rule concat_annotations:
     output:
         expand("genomes/annotations/dram/{annotation}", annotation=DRAM_ANNOTATON_FILES),
     resources:
-        time=config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     run:
         from utils import io
 
@@ -112,8 +112,8 @@ rule DRAM_destill:
         outdir=directory("genomes/annotations/dram/distil"),
     threads: 1
     resources:
-        mem=config["simplejob_mem"],
-        ttime=config["runtime"]["simplejob"],
+        mem_mb=config["simplejob_mem"] * 1000,
+        ttime_min=60 * config["runtime"]["simplejob"],
     conda:
         "../envs/dram.yaml"
     log:
@@ -134,8 +134,8 @@ rule get_all_modules:
         "genomes/annotations/dram/kegg_modules.tsv",
     threads: 1
     resources:
-        mem=config["simplejob_mem"],
-        time=config["runtime"]["default"],
+        mem_mb=config["simplejob_mem"] * 1000,
+        time_min=60 * config["runtime"]["default"],
     conda:
         "../envs/dram.yaml"
     log:

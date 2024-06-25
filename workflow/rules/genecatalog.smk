@@ -150,7 +150,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             "../envs/required_packages.yaml"
         threads: 1
         resources:
-            mem=config["mem"],
+            mem_mb=config["mem"] * 1000,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
         log:
             "logs/Genecatalog/clustering/get_cds_of_proteins.log",
@@ -218,7 +218,7 @@ rule get_genecatalog_seq_info:
         "../envs/required_packages.yaml"
     threads: 1
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"] * 1000,
         java_mem=int(config["simplejob_mem"] * JAVA_MEM_FRACTION),
     shell:
         "stats.sh gcformat=4 gc={output} in={input} &> {log}"
@@ -283,7 +283,7 @@ rule pileup_Genecatalog:
         "../envs/required_packages.yaml"
     threads: config["threads"]
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     shell:
         " pileup.sh "
@@ -304,7 +304,7 @@ rule gene_pileup_as_parquet:
         "Genecatalog/alignments/{sample}_coverage.parquet",
     threads: 1
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"] * 1000,
         time_min=config["runtime"]["simplejob"] * 60,
     log:
         "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log",
@@ -368,7 +368,7 @@ rule combine_gene_coverages:
         "../envs/hdf.yaml"
     threads: 1
     resources:
-        mem=config["simplejob_mem"],
+        mem_mb=config["simplejob_mem"] * 1000,
         time_min=get_combine_cov_time(),
     script:
         "../scripts/combine_gene_coverages.py"
@@ -441,7 +441,7 @@ rule eggNOG_homology_search:
         data_dir=EGGNOG_DIR,
         prefix=lambda wc, output: output[0].replace(".emapper.seed_orthologs", ""),
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
     threads: config["threads"]
     shadow:
         "minimal"
@@ -458,8 +458,8 @@ rule eggNOG_homology_search:
 
 
 def calculate_mem_eggnog():
-    return 2 * config["simplejob_mem"] + (
-        37 if config["eggNOG_use_virtual_disk"] else 0
+    return 2000 * config["simplejob_mem"] + (
+        37000 if config["eggNOG_use_virtual_disk"] else 0
     )
 
 
@@ -477,7 +477,7 @@ rule eggNOG_annotation:
         copyto_shm="t" if config["eggNOG_use_virtual_disk"] else "f",
     threads: config.get("threads", 1)
     resources:
-        mem=calculate_mem_eggnog(),
+        mem_mb=calculate_mem_eggnog(),
     shadow:
         "minimal"
     conda:
@@ -521,7 +521,7 @@ rule combine_egg_nogg_annotations:
     log:
         "logs/genecatalog/annotation/eggNOG/combine.log",
     resources:
-        time=config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     run:
         try:
             import pandas as pd
@@ -558,7 +558,7 @@ rule convert_eggNOG_tsv2parquet:
     output:
         "Genecatalog/annotations/eggNOG.parquet",
     resources:
-        time=config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/genecatalog/annotation/eggNOG/tsv2parquet.log",
     run:
@@ -597,8 +597,8 @@ rule DRAM_annotate_genecatalog:
         genes=temp("Intermediate/genecatalog/annotation/dram/{subset}/genes.faa"),
     threads: config["simplejob_threads"]
     resources:
-        mem=config["simplejob_mem"],
-        time=config["runtime"]["long"],
+        mem_mb=config["simplejob_mem"] * 1000,
+        time_min=60 * config["runtime"]["long"],
     conda:
         "../envs/dram.yaml"
     params:
@@ -634,7 +634,7 @@ rule combine_dram_genecatalog_annotations:
     output:
         directory("Genecatalog/annotations/dram"),
     resources:
-        time=config["runtime"]["default"],
+        time_min=60 * config["runtime"]["default"],
     log:
         "logs/genecatalog/annotation/dram/combine.log",
     script:
@@ -696,7 +696,7 @@ rule gene2genome:
 #     threads:
 #         12
 #     resources:
-#         mem= 220
+#         mem_mb= 220*1000
 #     shell:
 #         """
 #         canopy -i {input} -o {output.cluster} -c {output.profile} -n {threads} --canopy_size_stats_file {log} {params.canopy_params} 2> {log}

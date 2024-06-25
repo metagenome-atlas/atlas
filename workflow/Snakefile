@@ -224,19 +224,13 @@ onerror:
 
 for r in workflow.rules:
     if not "mem_mb" in r.resources:
-        if "mem" in r.resources:
-            r.resources["mem_mb"] = r.resources["mem"] * 1000
-        else:
-            # default
-            r.resources["mem_mb"] = config["mem"] * 1000
+        # default
+        r.resources["mem_mb"] = config["mem"] * 1000
 
     # add time if ot present. Simple jobs use simple time
 
     if "time_min" not in r.resources:
-        if "time" in r.resources:
-            r.resources["time_min"] = r.resources["time"] * 60
-        else:
-            r.resources["time_min"] = config["runtime"]["default"] * 60
+        r.resources["time_min"] = config["runtime"]["default"] * 60
 
     if not "runtime" in r.resources:
         r.resources["runtime"] = r.resources["time_min"]

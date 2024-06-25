@@ -94,7 +94,7 @@ rule run_concoct:
         "%s/concoct.yaml" % CONDAENV
     threads: 10  # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
     shell:
         """
         concoct -c {params.Nexpected_clusters} \
@@ -176,7 +176,7 @@ rule metabat:
         "%s/metabat.yaml" % CONDAENV
     threads: config["threads"]
     resources:
-        mem=config["mem"],
+        mem_mb=config["mem"] * 1000,
     shell:
         """
         metabat2 -i {input.contigs} \
@@ -273,7 +273,7 @@ rule get_unique_cluster_attribution:
         if new_d.shape[0] == 0:
             logger.warning(
                 f"No bins detected with binner {wildcards.binner} in sample {wildcards.sample}.\n"
-                "I add longest contig to make the pipline continue"
+                "I add longest contig to make the pipeline continue"
             )
 
             new_d[f"{wildcards.sample}_0"] = "{sample}_{binner}_1".format(**wildcards)

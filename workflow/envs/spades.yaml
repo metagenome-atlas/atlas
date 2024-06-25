@@ -3,4 +3,4 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - spades>=3.15.3
+    - spades>=4.0
