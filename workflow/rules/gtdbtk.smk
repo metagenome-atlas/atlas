@@ -32,6 +32,8 @@ checkpoint align:
     output:
         directory(f"{gtdb_dir}/align"),
     threads: config["threads"]
+    resources:
+        mem_mb=config["large_mem"] * 1000,
     conda:
         "../envs/gtdbtk.yaml"
     log:
