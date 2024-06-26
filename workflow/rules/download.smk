@@ -18,7 +18,7 @@ CONDAENV = "../envs"
 ## GTDBTk
 
 GTDB_VERSION = "V09_R200"
-GTDB_DATA_URL = Path("https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package")
+GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package"
 GTDBTK_DATA_PATH = DBDIR/ ("GTDB_" + GTDB_VERSION)
 
 
@@ -38,7 +38,7 @@ rule download_partial_gtdb:
         temp(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}"),
     threads: 1
     params:
-        url = lambda wc,output: GTDB_DATA_URL/"split_package"/ Path(output[0]).name
+        url = lambda wc,output: f"{GTDB_DATA_URL}/split_package/{ Path(output[0]).name}"
     resources:
         time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
