@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  # Cancel concurrent flows on PRs
+  group: ci-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  formatting:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      pull-requests: write # for marocchino/sticky-pull-request-comment to create or update PR comment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-name: black
+          create-args: black
+          cache-environment: true
+
+      - name: Check formatting
+        shell: bash -el {0}
+        run: black --check --diff .
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request' && failure()
+        uses: marocchino/sticky-pull-request-comment@v2.8.0
+        with:
+          message: "Please format your code with [black](https://black.readthedocs.io): `black . `."
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
