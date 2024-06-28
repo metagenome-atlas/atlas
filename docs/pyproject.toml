@@ -4,3 +4,11 @@ skip = '.git,*.pdf,*.svg,versioneer.py,*.css,test_*'
 check-hidden = true
 ignore-regex = '^\s*"image/\S+": ".*|\b[Mm]anuel[. ][Hh]oltgrewe\b'
 ignore-words-list = 'testin'
+
+
+[tool.versioneer]
+VCS = git
+style = pep440
+versionfile_source = atlas/_version.py
+versionfile_build = atlas/_version.py
+tag_prefix = v
