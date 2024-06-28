@@ -22,17 +22,24 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          environment-name: black
-          create-args: black
+          environment-name: formatting
+          create-args: black snakefmt
           cache-environment: true
 
-      - name: Check formatting
+      - name: Check Black formatting
         shell: bash -el {0}
         run: black --check --diff .
+
+      - name: Check Snakefmt formatting
+        shell: bash -el {0}
+        run: snakefmt --check --diff .
 
       - name: Comment PR
         if: github.event_name == 'pull_request' && failure()
         uses: marocchino/sticky-pull-request-comment@v2.8.0
         with:
-          message: "Please format your code with [black](https://black.readthedocs.io): `black . `."
+          message: |
+            Please format your code with:
+            - [black](https://black.readthedocs.io): `black .`
+            - [snakefmt](https://github.com/snakemake/snakefmt): `snakefmt .`
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
