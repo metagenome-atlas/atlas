@@ -1,8 +1,13 @@
-
-
-
 # Change log
 
+
+## [2.18.2](https://github.com/metagenome-atlas/atlas/compare/v2.18.1...v2.18.2) (2024-06-28)
+
+
+### Bug Fixes
+
+* 676 ([8b4d552](https://github.com/metagenome-atlas/atlas/commit/8b4d5522afe2b35265ea406ac2a4b7d0edf571fb))
+* 701 ([ce22404](https://github.com/metagenome-atlas/atlas/commit/ce224044ee13db9647b74a6cba726006f04ec861))
 
 ## 2.18.1
 
@@ -175,12 +180,4 @@ Atlas log uses nice colors.
 
 The default ANI threshold for genome-dereplication was set to 97.5% to include more sub-species diversity. 
 
-[See more](https://metagenome-atlas.readthedocs.io/en/v2.8.0/usage/output.html#genomes) 
-
-
-
-
-
-
-
-
+[See more](https://metagenome-atlas.readthedocs.io/en/v2.8.0/usage/output.html#genomes)
