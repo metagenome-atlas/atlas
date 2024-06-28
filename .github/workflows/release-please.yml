@@ -13,7 +13,7 @@ jobs:
         id: release
         with:
           release-type: python
-          package-name: snakemake
+          package-name: metagenome-atlas
 
       - uses: actions/checkout@v3
         if: ${{ steps.release.outputs.release_created }}
