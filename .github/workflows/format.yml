@@ -24,6 +24,10 @@ jobs:
         with:
           environment-name: formatting
           create-args: black snakefmt
+          condarc: |
+            channels:
+              - conda-forge
+              - bioconda
           cache-environment: true
 
       - name: Check Black formatting
