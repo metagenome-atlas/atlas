@@ -5,12 +5,12 @@ from pathlib import Path
 # this values are incuded in the snakefile
 DBDIR = Path(config["database_dir"]).resolve()
 
-GUNCDIR = DBDIR/ "gunc_database"
-BUSCODIR = DBDIR/ "busco_lineages"
+GUNCDIR = DBDIR / "gunc_database"
+BUSCODIR = DBDIR / "busco_lineages"
 
 ZENODO_ARCHIVE = "1134890"
 EGGNOG_VERSION = "5"
-EGGNOG_DIR = DBDIR/ ("EggNOG_V" + EGGNOG_VERSION)
+EGGNOG_DIR = DBDIR / ("EggNOG_V" + EGGNOG_VERSION)
 
 CONDAENV = "../envs"
 
@@ -19,26 +19,35 @@ CONDAENV = "../envs"
 
 GTDB_VERSION = "V09_R200"
 GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package"
-GTDBTK_DATA_PATH = DBDIR/ ("GTDB_" + GTDB_VERSION)
+GTDBTK_DATA_PATH = DBDIR / ("GTDB_" + GTDB_VERSION)
 
 
-def all_partial_gtdb_tarbals(wildcards,GTDB_REFSEQ_VERSION=220,GTDB_PATIAL_SUFFIXES=["a"+i for i in "abcdefghijk"]):
-
-    return expand(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}",
-     gtdb_refseq_version= GTDB_REFSEQ_VERSION,
-      suffix=GTDB_PATIAL_SUFFIXES)
+def all_partial_gtdb_tarbals(
+    wildcards,
+    GTDB_REFSEQ_VERSION=220,
+    GTDB_PATIAL_SUFFIXES=["a" + i for i in "abcdefghijk"],
+):
+    return expand(
+        GTDBTK_DATA_PATH / "gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}",
+        gtdb_refseq_version=GTDB_REFSEQ_VERSION,
+        suffix=GTDB_PATIAL_SUFFIXES,
+    )
 
 
 localrules:
-    download_partial_gtdb, extract_gtdb
+    download_partial_gtdb,
+    extract_gtdb,
 
 
 rule download_partial_gtdb:
     output:
-        temp(GTDBTK_DATA_PATH/"gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}"),
+        temp(
+            GTDBTK_DATA_PATH
+            / "gtdbtk_r{gtdb_refseq_version}_data.tar.gz.part_{suffix}"
+        ),
     threads: 1
     params:
-        url = lambda wc,output: f"{GTDB_DATA_URL}/split_package/{ Path(output[0]).name}"
+        url=lambda wc, output: f"{GTDB_DATA_URL}/split_package/{ Path(output[0]).name}",
     resources:
         time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
@@ -49,7 +58,7 @@ rule download_partial_gtdb:
 
 rule extract_gtdb:
     input:
-        all_partial_gtdb_tarbals
+        all_partial_gtdb_tarbals,
     output:
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     threads: 1
@@ -59,6 +68,7 @@ rule extract_gtdb:
         "logs/download/gtdbtk_untar.log",
     shell:
         '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log} '
+
 
 ### end GTDBTk
 
@@ -79,10 +89,7 @@ FILES = {
     "adapters.fa": "ae839dc79cfb855a1b750a0d593fe01e",
     "phiX174_virus.fa": "82516880142e8c89b466bc6118696c47",
     "silva_rfam_all_rRNAs.fa": "f102e35d9f48eabeb0efe9058559bc66",
-
 }
-
-
 
 
 def get_eggnog_db_file():
@@ -112,7 +119,7 @@ rule download:
         ),
         get_eggnog_db_file(),
         f"{DBDIR}/CheckM2",
-        GTDBTK_DATA_PATH/ "downloaded_success"
+        GTDBTK_DATA_PATH / "downloaded_success",
 
 
 rule download_eggNOG_files:
@@ -138,9 +145,6 @@ rule download_atlas_files:
         )
         if not FILES[wildcards.filename] == md5(output[0]):
             raise OSError(2, "Invalid checksum", output[0])
-
-
-
 
 
 rule checkm2_download_db:
