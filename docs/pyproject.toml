@@ -1,0 +1,6 @@
+[tool.codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+skip = '.git,*.pdf,*.svg,versioneer.py,*.css,test_*'
+check-hidden = true
+ignore-regex = '^\s*"image/\S+": ".*|\b[Mm]anuel[. ][Hh]oltgrewe\b'
+ignore-words-list = 'testin'
