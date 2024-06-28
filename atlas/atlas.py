@@ -245,7 +245,7 @@ def run_download(db_dir, jobs, snakemake_args):
     """
 
     cmd = (
-        "snakemake --snakefile {snakefile} "
+        "snakemake --snakefile {snakefile} download "
         "--jobs {jobs} --rerun-incomplete "
         "--conda-frontend mamba --scheduler greedy "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
