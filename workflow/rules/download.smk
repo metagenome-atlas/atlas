@@ -65,9 +65,10 @@ rule extract_gtdb:
     resources:
         time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
-        "logs/download/gtdbtk_untar.log",
+        stdout="logs/download/gtdbtk_untar.log",
+        stderr="logs/download/gtdbtk_untar.err",
     shell:
-        '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log} '
+        '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log.stderr} > {log.stdout} '
 
 
 ### end GTDBTk
