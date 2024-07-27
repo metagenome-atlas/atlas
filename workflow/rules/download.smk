@@ -68,8 +68,11 @@ rule extract_gtdb:
     log:
         stdout="logs/download/gtdbtk_untar.log",
         stderr="logs/download/gtdbtk_untar.err",
+        stdout="logs/download/gtdbtk_untar.log",
+        stderr="logs/download/gtdbtk_untar.err",
     shell:
         '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log.stderr} > {log.stdout} '
+
 
 ### end GTDBTk
 
