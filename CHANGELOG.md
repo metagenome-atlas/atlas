@@ -1,5 +1,8 @@
 # Change log
 
+## [2.19.0](https://github.com/metagenome-atlas/atlas/compare/v2.18.2...v2.19.0) (2024-07-28)
+* GTDB V9 R220
+* Spades v4
 
 ## [2.18.2](https://github.com/metagenome-atlas/atlas/compare/v2.18.1...v2.18.2) (2024-06-28)
 
