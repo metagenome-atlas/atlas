@@ -21,9 +21,9 @@ def make_default_config():
 
     config["simplejob_mem"] = 10
     config["simplejob_threads"] = 4
-    config[
-        "importqc_params"
-    ] = "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
+    config["importqc_params"] = (
+        "iupacToN=t touppercase=t qout=33 addslash=t trimreaddescription=t"
+    )
 
     config["mem"] = MEM
     config["large_mem"] = 250

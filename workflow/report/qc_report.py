@@ -236,9 +236,9 @@ def make_plots(
 
     ### Insert insert_size_stats
     if insert_size_stats is None:
-        div[
-            "Insert"
-        ] = "<p>Insert size information is not available for single end reads.</p>"
+        div["Insert"] = (
+            "<p>Insert size information is not available for single end reads.</p>"
+        )
     else:
         data_insert = pd.read_table(insert_size_stats, index_col=0)
         data_insert.index.name = "Sample"
