@@ -88,7 +88,7 @@ jobs:
             source activate ./atlasenv
             atlas init --db-dir $DATABASE_DIR --threads 1 --working-dir test/Getenvs test/reads/empty
       - run:
-          name: install environements
+          name: install environments
           command: |
             source activate ./atlasenv
             atlas run all --working-dir test/Getenvs --conda-create-envs-only --cores all

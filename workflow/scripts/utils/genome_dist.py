@@ -94,7 +94,7 @@ def load_bindash(dist_file, simplify_names=True):
     ['Genome1','Genome2','Distance','Pvalue','Fraction','Nmapped','Ntotal','ANI']
     in header.
 
-    Bindash tables are not necessarily simetrical.
+    Bindash tables are not necessarily symmetrical.
     """
     F = load_ani_table_(
         dist_file, ["Distance", "Pvalue", "Fraction"], simplify_names=simplify_names
@@ -147,10 +147,10 @@ def pairewise2matrix(M, fillna=np.nan):
     """
     This functions turns a pairewise genome ANI table [genome1, genome2, column...]
     In to a matrix [genome1 genome2] of the values of column.
-    When ANI values are symetrical (with minimal error),
+    When ANI values are symmetrical (with minimal error),
     usually only one halve of NxN possibilities values are calculated.
 
-    During the process missing values are inputed with 0
+    During the process missing values are inputted with 0
 
     Diagonal values are set to 1
 
@@ -195,7 +195,7 @@ def group_species_linkage(M, threshold=0.95, fillna=None, linkage_method="averag
     M is a series of ANI
     """
     assert type(M) == pd.Series
-    verify_expected_range(threshold, 0.3, 1, "clustering thrshold")
+    verify_expected_range(threshold, 0.3, 1, "clustering threshold")
 
     verify_expected_range(M.max(), 0.05, 1, "ANI max")
     verify_expected_range(M.min(), 0.05, 1, "ANI min")

@@ -60,7 +60,7 @@ def cat_files(files, outfilename, gzip=False):
 
 
 def convert_percentages(df):
-    """Convet all columns with strings and % at the end to percentages"""
+    """Convert all columns with strings and % at the end to percentages"""
     for col in df.columns:
         if df.dtypes[col] == "object":
             if df[col].iloc[0].endswith("%"):

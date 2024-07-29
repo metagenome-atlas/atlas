@@ -20,12 +20,12 @@ Fix error with downloading DRAM. Update to DRAM v1.5
 
 - Qc reads, assembly are now written in the sample.tsv from the start. This should fix errors of partial writing to the sample.tsv https://github.com/metagenome-atlas/atlas/issues/695
 - It also allows you to add external assemblies.
-- singletons reads are no longer used trough the pipeline. 
+- singletons reads are no longer used through the pipeline. 
 - This changes the default paths for raw reads and assemblies. 
 assembly are now in `Assembly/fasta/{sample}.fasta`
 reads: `QC/reads/{sample}_{fraction}.fastq.gz`
 
-**Seemless update**: If you update atlas and continue on an old project. Your old files will be copied.
+**Seamless update**: If you update atlas and continue on an old project. Your old files will be copied.
 Or the path defined in the sample.tsv will be used. 
 
 

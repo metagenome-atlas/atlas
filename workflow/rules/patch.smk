@@ -2,7 +2,7 @@ localrules:
     copy_assembly,
 
 
-# Rules that are usefull temporarily to update to new version of atlas
+# Rules that are useful temporarily to update to new version of atlas
 
 
 ruleorder: copy_assembly > finalize_contigs

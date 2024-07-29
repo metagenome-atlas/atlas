@@ -30,7 +30,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 sys.excepthook = handle_exception
 
 
-# begining of script
+# beginning of script
 
 import datetime
 import shutil

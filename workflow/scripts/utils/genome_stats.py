@@ -60,14 +60,14 @@ def genome_stats(fasta_file, number_of_n_for_split=10):
             faiter = (x[1] for x in groupby(fasta, lambda line: line[0] == ">"))
 
             for record in faiter:
-                # reccord contains header
+                # record contains header
                 ## join sequence lines
                 sequence = "".join(s.strip() for s in faiter.__next__())
                 sequence = sequence.upper()
 
                 verify_dna(sequence, is_upper=True)
 
-                # count ambigous bases
+                # count ambiguous bases
                 ambigious_bases += sequence.count("N")
 
                 # get set of scaffold lengths

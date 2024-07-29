@@ -29,7 +29,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of scripts
+#### Beginning of scripts
 
 
 import pandas as pd
@@ -93,7 +93,7 @@ last_species_nr = 1  # start at 1
 
 
 n_pre_clusters = nx.connected.number_connected_components(G)
-logging.info(f"Found {n_pre_clusters} pre-clusters, itterate over them.")
+logging.info(f"Found {n_pre_clusters} pre-clusters, iterate over them.")
 logging.debug(f"Cluster with threshold {threshold} and {linkage_method}-linkage method")
 for i, cc in enumerate(nx.connected_components(G)):
     logging.info(f"Precluster {i+1}/{n_pre_clusters} with {len(cc)} genomes")
@@ -165,7 +165,7 @@ for i, cc in enumerate(nx.connected_components(G)):
 
         # drop low quality genomes
 
-        logging.info("Drop low quality genomes acording to filtercriteria")
+        logging.info("Drop low quality genomes according to filter criteria")
 
         try:
             filter_criteria = snakemake.config["genome_filter_criteria"]
@@ -229,7 +229,7 @@ mag2Species.loc[missing_species, "SpeciesNr"] = (
 n_species = mag2Species.SpeciesNr.unique().shape[0]
 logging.info(f"Identified {n_species } species in total")
 
-# create propper species names
+# create proper species names
 n_leading_zeros = len(str(mag2Species.SpeciesNr.max()))
 format_int = "sp{:0" + str(n_leading_zeros) + "d}"
 mag2Species["Species"] = mag2Species.SpeciesNr.apply(format_int.format)
@@ -239,13 +239,13 @@ mag2Species["Species"] = mag2Species.SpeciesNr.apply(format_int.format)
 
 
 logging.info("Define Quality score defined as Completeness - 5x Contamination")
-# recalulate quality score as some completeness might be recalibrated.
+# recalculate quality score as some completeness might be recalibrated.
 Q.eval("Quality_score = Completeness - 5* Contamination", inplace=True)
 quality_score = Q.Quality_score
 
 assert (
     not quality_score.isnull().any()
-), "I have NA quality values for thq quality score, it seems not all of the values defined in the quality_score_formula are presentfor all entries in tables/Genome_quality.tsv "
+), "I have NA quality values for the quality score, it seems not all of the values defined in the quality_score_formula are presentfor all entries in tables/Genome_quality.tsv "
 
 
 # select representative

@@ -233,7 +233,7 @@ rule get_bin_filenames:
         def get_list_of_files(dirs, pattern):
             fasta_files = []
 
-            # searh for fasta files (.f*) in all bin folders
+            # search for fasta files (.f*) in all bin folders
             for dir in dirs:
                 dir = Path(dir)
                 fasta_files += list(dir.glob(pattern))

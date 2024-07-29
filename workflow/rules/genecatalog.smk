@@ -376,7 +376,7 @@ rule combine_gene_coverages:
 
 # TODO: combine RPKM
 
-# TODO: caluclate mapping rate from pileup mapping files
+# TODO: calculate mapping rate from pileup mapping files
 # logs/Genecatalog/alignment/sample2_pileup.log
 # Reads:                                  1207217
 # Mapped reads:                           1071071

@@ -127,7 +127,7 @@ def validate_bingroup_size(sampleTable, config, logger):
     if config["final_binner"] == "DASTool":
         binners = config["binner"]
 
-        logger.info(f"DASTool uses the folowing binners: {binners}")
+        logger.info(f"DASTool uses the following binners: {binners}")
 
         if ("vamb" in binners) or ("SemiBin" in binners):
             validate_bingroup_size_cobinning(sampleTable, logger)
