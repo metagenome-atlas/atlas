@@ -17,7 +17,7 @@ CONDAENV = "../envs"
 
 ## GTDBTk
 
-GTDB_VERSION = "V09_R200"
+GTDB_VERSION = "V09_R220"
 GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package"
 GTDBTK_DATA_PATH = DBDIR / ("GTDB_" + GTDB_VERSION)
 
