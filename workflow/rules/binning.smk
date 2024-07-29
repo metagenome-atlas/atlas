@@ -46,12 +46,12 @@ rule get_contig_coverage_from_bb:
     output:
         temp("{sample}/binning/coverage/{sample_reads}_coverage.txt"),
     run:
-        with open(input[0]) as fi, open(output[0], "w") as fo:
+        with open(input[0]) as fi, open(output[0], "w") as fout:
             # header
             next(fi)
             for line in fi:
                 toks = line.strip().split("\t")
-                print(toks[0], toks[1], sep="\t", file=fo)
+                print(toks[0], toks[1], sep="\t", file=fout)
 
 
 rule combine_coverages:

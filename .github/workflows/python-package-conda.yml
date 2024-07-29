@@ -198,7 +198,7 @@ jobs:
           path: wd
           key: assembly-working-dir
 
-      - name: dryrun assembly shold need nothing to be done
+      - name: dryrun assembly should need nothing to be done
         run: |
           ls -l wd
           ls -l databases/conda_envs
@@ -264,7 +264,7 @@ jobs:
           fail-on-cache-miss: true
           key: assembly-working-dir
 
-      - name: dryrun assembly shold need nothing to be done
+      - name: dryrun assembly should need nothing to be done
         run: |
           ls -l wd
           ls -l databases
