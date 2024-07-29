@@ -46,7 +46,7 @@ def get_fasta_of_bins(cluster_attribution, contigs_file, out_folder):
     Creates individual fasta files for each bin using the contigs fasta and the cluster attribution.
 
     input:
-    - cluster attribution file:   tab seperated file of "contig_fasta_header    bin"
+    - cluster attribution file:   tab separated file of "contig_fasta_header    bin"
     - contigs:                    fasta file of contigs
     - out_prefix:                 output_prefix for bin fastas  {out_folder}/{binid}.fasta
     """

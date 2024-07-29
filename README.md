@@ -38,7 +38,7 @@ https://metagenome-atlas.readthedocs.io/
 > doi: [10.1186/s12859-020-03585-4](https://doi.org/10.1186/s12859-020-03585-4)
 
 
-# Developpment/Extensions
+# Development/Extensions
 
 Here are some ideas I work or want to work on when I have time. If you want to contribute or have some ideas let me know via a feature request issue.
 

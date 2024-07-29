@@ -92,7 +92,7 @@ rule run_concoct:
         "{sample}/binning/concoct/intermediate_files/log.txt",
     conda:
         "%s/concoct.yaml" % CONDAENV
-    threads: 10  # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
+    threads: 10  # concoct uses 10 threads by default, with for update: https://github.com/BinPro/CONCOCT/issues/177
     resources:
         mem_mb=config["mem"] * 1000,
     shell:
@@ -137,7 +137,7 @@ rule get_metabat_depth_file:
         "{sample}/binning/metabat/metabat.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
+    threads: config["threads"]  # multithreaded through OMP_NUM_THREADS
     resources:
         mem_mb=config["mem"] * 1000,
     params:

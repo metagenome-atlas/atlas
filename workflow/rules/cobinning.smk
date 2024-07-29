@@ -43,7 +43,7 @@ def get_filtered_contigs_of_bingroup(wildcards):
     if len(samples_of_group) < 5:
         raise ValueError(
             f"Bin group {wildcards.bingroup} has {len(samples_of_group)} less than 5 samples."
-            "For cobinning we reccomend at least 5 samples per bin group."
+            "For cobinning we recommend at least 5 samples per bin group."
             "Adapt the sample.tsv to set BinGroup of size [5- 1000]"
         )
 
@@ -68,7 +68,7 @@ rule combine_contigs:
     log:
         "logs/cobinning/{bingroup}/combine_contigs.log",
     params:
-        seperator=config["cobinning_separator"],
+        separator=config["cobinning_separator"],
         samples=get_samples_of_bingroup,
     threads: 1
     run:
@@ -80,7 +80,7 @@ rule combine_contigs:
                     for line in fin:
                         # if line is a header add sample name
                         if line[0] == ord(">"):
-                            line = f">{sample}{params.seperator}".encode() + line[1:]
+                            line = f">{sample}{params.separator}".encode() + line[1:]
                             # write each line to the combined file
                         fout.write(line)
 
@@ -176,7 +176,7 @@ rule summarize_bam_contig_depths:
         "logs/cobinning/{bingroup}/combine_coverage.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
+    threads: config["threads"]  # multithreaded through OMP_NUM_THREADS
     benchmark:
         "logs/benchmarks/cobinning/{bingroup}/summarize_bam_contig_depths.tsv"
     resources:

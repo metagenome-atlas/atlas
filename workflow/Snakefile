@@ -15,11 +15,11 @@ import utils
 
 
 # add default config
-# comand line adds user config
+# command line adds user config
 configfile: os.path.join(workflow_folder, "..", "config", "default_config.yaml")
 
 
-# add defualt values from python (TODO: replace this)
+# add default values from python (TODO: replace this)
 from atlas.make_config import update_config as atlas_update_config
 
 config = atlas_update_config(config)

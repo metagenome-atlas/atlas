@@ -2,7 +2,7 @@ import hashlib
 import os
 from pathlib import Path
 
-# this values are incuded in the snakefile
+# this values are included in the snakefile
 DBDIR = Path(config["database_dir"]).resolve()
 
 GUNCDIR = DBDIR / "gunc_database"

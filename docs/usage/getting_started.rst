@@ -15,7 +15,7 @@ Atlas is based on snakemake, which allows to run steps of the workflow in parall
 
 If you want to try atlas and have a linux computer (OSX may also work), you can use our `example data`_ for testing.
 
-For real metagenomic data atlas should be run on a _linux_ sytem, with enough memory (min ~50GB but assembly usually requires 250GB).
+For real metagenomic data atlas should be run on a _linux_ system, with enough memory (min ~50GB but assembly usually requires 250GB).
 
 
 
@@ -213,9 +213,9 @@ Gives the output::
   
   [Atlas] INFO: Downloading runinfo from SRA
   [Atlas] INFO: Start with 2979 runs from 2979 samples
-  [Atlas] INFO: Runs have the folowing values for LibrarySource: METAGENOMIC, METATRANSCRIPTOMIC
+  [Atlas] INFO: Runs have the following values for LibrarySource: METAGENOMIC, METATRANSCRIPTOMIC
           Select only runs LibrarySource == METAGENOMIC, Filtered out 762 runs
-  [Atlas] INFO: Runs have the folowing values for LibrarySelection: PCR, RT-PCR, RANDOM
+  [Atlas] INFO: Runs have the following values for LibrarySelection: PCR, RT-PCR, RANDOM
           Select only runs LibrarySelection == RANDOM, Filtered out 879 runs
   [Atlas] INFO: Selected 1338 runs from 1338 samples
   [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.tsv
@@ -269,7 +269,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     -h, --help              Show this message and exit.
 
 
-Execue Atlas
+Execute Atlas
 ************
 
 

@@ -106,7 +106,7 @@ jobs:
           path: databases
           key: conda-envs-assembly
 
-        # - name: upack conda envs
+        # - name: unpack conda envs
         #   if: steps.get-envs.outputs.cache-hit != 'true'
         #   run: tar -xzf assembly_conda_envs.tar.gz
 

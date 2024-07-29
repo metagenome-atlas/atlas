@@ -29,7 +29,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of scripts
+#### Beginning of scripts
 
 from common_report import *
 
