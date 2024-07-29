@@ -39,9 +39,9 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
         params:
             inputs=lambda wc, input: io_params_for_tadpole(input, "in"),
             interleaved=(
-                lambda wc: "t"
-                if (config.get("interleaved_fastqs", False) & SKIP_QC)
-                else "f"
+                lambda wc: (
+                    "t" if (config.get("interleaved_fastqs", False) & SKIP_QC) else "f"
+                )
             ),
             outputs=lambda wc, output: io_params_for_tadpole(output, "out"),
             verifypaired="t" if PAIRED_END else "f",
@@ -456,7 +456,7 @@ else:
     rule rename_spades_output:
         input:
             "{{sample}}/assembly/{sequences}.fasta".format(
-            sequences="scaffolds" if config["spades_use_scaffolds"] else "contigs"
+                sequences="scaffolds" if config["spades_use_scaffolds"] else "contigs"
             ),
         output:
             temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
