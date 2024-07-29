@@ -1,7 +1,6 @@
 import hashlib
 import os
 from pathlib import Path
-from pathlib import Path
 
 # this values are incuded in the snakefile
 DBDIR = Path(config["database_dir"]).resolve()
@@ -18,7 +17,7 @@ CONDAENV = "../envs"
 
 ## GTDBTk
 
-GTDB_VERSION = "V09_R200"
+GTDB_VERSION = "V09_R220"
 GTDB_DATA_URL = "https://data.gtdb.ecogenomic.org/releases/release220/220.0/auxillary_files/gtdbtk_package"
 GTDBTK_DATA_PATH = DBDIR / ("GTDB_" + GTDB_VERSION)
 
@@ -69,7 +68,6 @@ rule extract_gtdb:
         stdout="logs/download/gtdbtk_untar.log",
         stderr="logs/download/gtdbtk_untar.err",
     shell:
-        '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log.stderr} > {log.stdout} '
         '( cat {input} | tar -xzvf - -C "{GTDBTK_DATA_PATH}" --strip 1 ) 2> {log.stderr} > {log.stdout} '
 
 
