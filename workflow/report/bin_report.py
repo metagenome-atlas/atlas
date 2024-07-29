@@ -68,9 +68,9 @@ def make_plots(bin_info):
     add_stats("All", df)
 
     df.eval("Quality_score = Completeness - 5* Contamination", inplace=True)
-    div[
-        "QualityScore"
-    ] = "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
+    div["QualityScore"] = (
+        "<p>Quality score is calculated as: Completeness - 5 x Contamination.</p>"
+    )
     add_stats("Quality score >50 ", df.query("Quality_score>50"))
     add_stats("Good quality", df.query("Completeness>90 & Contamination <5"))
     add_stats("Quality score >90 ", df.query("Quality_score>90"))
