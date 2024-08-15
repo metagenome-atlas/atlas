@@ -5,12 +5,13 @@ import xml.etree.ElementTree as ET
 import logging
 import collections
 import json
-from tqdm import tqdm
+import itertools
+
 
 try:
-    from StringIO import StringIO
+    from tqdm import tqdm
 except ImportError:
-    from io import StringIO
+    tqdm = list
 
 import pandas as pd
 
@@ -168,7 +169,7 @@ class SraMetadata:
             d['sample_description'] = try_get(lambda: pkg.find('./SAMPLE/DESCRIPTION').text.replace('\r',''))
             d['sample_alias'] = try_get(lambda: pkg.find('./SAMPLE').attrib['alias'])
             d['sample_accession'] = try_get(lambda: pkg.find('./SAMPLE').attrib['accession'])
-            d['biosample'] = try_get(lambda: pkg.find('./SAMPLE/IDENTIFIERS/EXTERNAL_ID[@namespace="BioSample"]').text)
+            d['biosample'] = try_get(lambda: pkg.find('./SAMPLE/IDENTIFIERS/EXTERNAL_ID[@namespace="biosample"]').text)
             d['sample_title'] = try_get(lambda: pkg.find('./SAMPLE/TITLE').text)
             d['taxon_name'] = try_get(lambda: pkg.find('./SAMPLE/SAMPLE_NAME/SCIENTIFIC_NAME').text)
             sample_sample_name = None

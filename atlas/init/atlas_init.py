@@ -192,8 +192,8 @@ def run_init(
     short_help="Prepare atlas run from public data from SRA",
     help="prepare configuration file and sample table for atlas run"
     "based on public data from SRA\n"
-    "Supply a set of SRA run ids to the command, e.g.:"
-    "ERR1190946 PRJEB20796\n\n"
+    "Supply a set of SRA run ids to the command, e.g."
+    "PRJEB20796 ERR1190946 \n\n"
     "Reads are automatically downloaded and only temporarily stored on your machine.",
 )
 @click.argument("identifiers", nargs=-1, type=str)
@@ -243,7 +243,7 @@ def run_init_sra(
         )
         sys.exit(1)
 
-    from .get_SRA_runinfo import get_runtable_from_ids
+    from .get_SRA_runinfo import get_table_from_accessions
     from .parse_sra import (
         filter_runinfo,
         load_and_validate_runinfo_table,
@@ -276,7 +276,7 @@ def run_init_sra(
         # Create runinfo table in folder for SRA reads
         runinfo_file_original = SRA_subfolder / "RunInfo_original.tsv"
 
-        get_runtable_from_ids(identifiers, runinfo_file_original)
+        get_table_from_accessions(identifiers, runinfo_file_original)
 
         # Parse runtable
         RunTable = load_and_validate_runinfo_table(runinfo_file_original)
@@ -286,17 +286,17 @@ def run_init_sra(
 
         # save filtered runtable
         logger.info(f"Write filtered runinfo to {runinfo_file}")
-        RunTable_filtered.to_csv(runinfo_file, sep="\t")
+        RunTable_filtered.to_csv(runinfo_file)
 
     # validate if can be merged
     RunTable = validate_merging_runinfo(runinfo_file)
 
     # create sample table
-    Samples = RunTable.BioSample.unique()
+    Samples = RunTable.biosample.unique()
 
-    if (RunTable.LibraryLayout == "PAIRED").all():
+    if (RunTable.library_layout == "PAIRED").all():
         paired = True
-    elif (RunTable.LibraryLayout == "SINGLE").all():
+    elif (RunTable.library_layout == "SINGLE").all():
         paired = False
     else:
         logger.error(

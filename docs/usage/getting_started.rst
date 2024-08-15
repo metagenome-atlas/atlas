@@ -213,10 +213,10 @@ Gives the output::
   
   [Atlas] INFO: Downloading runinfo from SRA
   [Atlas] INFO: Start with 2979 runs from 2979 samples
-  [Atlas] INFO: Runs have the following values for LibrarySource: METAGENOMIC, METATRANSCRIPTOMIC
-          Select only runs LibrarySource == METAGENOMIC, Filtered out 762 runs
-  [Atlas] INFO: Runs have the following values for LibrarySelection: PCR, RT-PCR, RANDOM
-          Select only runs LibrarySelection == RANDOM, Filtered out 879 runs
+  [Atlas] INFO: Runs have the following values for library_source: METAGENOMIC, METATRANSCRIPTOMIC
+          Select only runs library_source == METAGENOMIC, Filtered out 762 runs
+  [Atlas] INFO: Runs have the following values for library_selection: PCR, RT-PCR, RANDOM
+          Select only runs library_selection == RANDOM, Filtered out 879 runs
   [Atlas] INFO: Selected 1338 runs from 1338 samples
   [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.tsv
   [Atlas] INFO: Prepared sample table with 1338 samples

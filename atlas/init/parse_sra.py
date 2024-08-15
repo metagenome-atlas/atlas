@@ -6,42 +6,55 @@ import pandas as pd
 
 
 Expected_library_values = {
-    "LibrarySelection": "RANDOM",
-    "LibraryStrategy": "WGS",
-    "LibrarySource": "METAGENOMIC",
-    "Platform": "ILLUMINA",
+    "library_selection": "RANDOM",
+    "library_strategy": "WGS",
+    "library_source": "METAGENOMIC",
+    "platform": "ILLUMINA",
 }
 
 
 def load_and_validate_runinfo_table(path):
-    RunTable = pd.read_csv(path, sep="\t", index_col=0)
+    RunTable = pd.read_csv(path, index_col=0)
 
     # validate sra table
     format_error = False
 
     # check if all headers are present
     Expected_headers = [
-        "LibraryLayout",
-        "LibrarySource",
-        "LibrarySelection",
-        "LibraryStrategy",
-        "BioSample",
+        "library_layout",
+        "library_source",
+        "library_selection",
+        "library_strategy",
+        "biosample",
+        "sample_alias"
     ]
     for header in Expected_headers:
         if not header in RunTable.columns:
             logger.error(f"Didn't found expected header {header}")
             format_error = True
 
+
+
+    # if biosample is null copy with sample_alias
+    if RunTable.biosample.isnull().all():
+        RunTable["biosample"] = RunTable["sample_alias"]
+
+    # set to string all expected headers
+    RunTable[Expected_headers] = RunTable[Expected_headers].astype(str)
+
+
     if not all(RunTable.index.str[1:2] == "R"):
         logger.error("Expect runs as index, e.g. [E,S,D]RR000")
         format_error = True
 
-    if not RunTable.BioSample.str.startswith("SAM").all():
-        logger.error("BioSample should start with 'SAM'")
+
+
+    if not RunTable.biosample.str.startswith("SAM").all():
+        logger.error("biosample should start with 'SAM'")
         format_error = True
 
-    if not RunTable.LibraryLayout.isin(["PAIRED", "SINGLE"]).all():
-        logger.error("LibraryLayout should be 'PAIRED' or 'SINGLE'")
+    if not RunTable.library_layout.isin(["PAIRED", "SINGLE"]).all():
+        logger.error("library_layout should be 'PAIRED' or 'SINGLE'")
         format_error = True
 
     if format_error:
@@ -53,12 +66,12 @@ def load_and_validate_runinfo_table(path):
 
 def filter_runinfo(RunTable, ignore_paired=False):
     logger.info(
-        f"Start with {RunTable.shape[0]} runs from {RunTable.BioSample.unique().shape[0]} samples"
+        f"Start with {RunTable.shape[0]} runs from {RunTable.biosample.unique().shape[0]} samples"
     )
 
     # Filter out reads that are not metagenomics
 
-    for key in ["LibrarySource"]:
+    for key in ["library_source"]:
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
         RunTable = RunTable.loc[RunTable[key] == Expected_library_values[key]]
@@ -72,7 +85,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
                 f"Filtered out {Difference} runs"
             )
 
-    for key in ["LibrarySelection", "LibraryStrategy"]:
+    for key in ["library_selection", "library_strategy"]:
         Nruns_before = RunTable.shape[0]
         All_values = RunTable[key].unique()
         if any(RunTable[key] != Expected_library_values[key]):
@@ -83,8 +96,8 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
     # Handle single end reads if mixed
 
-    if ("PAIRED" in RunTable.LibraryLayout) and ("SINGLE" in RunTable.LibraryLayout):
-        N_library_layout = RunTable.LibraryLayout.value_counts()
+    if ("PAIRED" in RunTable.library_layout) and ("SINGLE" in RunTable.library_layout):
+        N_library_layout = RunTable.library_layout.value_counts()
 
         logger.info(
             f"Run table contains {N_library_layout['SINGLE']} single-end "
@@ -93,20 +106,20 @@ def filter_runinfo(RunTable, ignore_paired=False):
 
         if ignore_paired:
             logger.info(f"I drop {N_library_layout['PAIRED']} paired end libraries")
-            RunTable = RunTable.query("LibraryLayout == 'SINGLE'")
+            RunTable = RunTable.query("library_layout == 'SINGLE'")
 
         else:
             logger.warning(f"I drop {N_library_layout['SINGLE']} single end libraries")
 
-            RunTable = RunTable.query("LibraryLayout == 'PAIRED'")
+            RunTable = RunTable.query("library_layout == 'PAIRED'")
 
     # Illumina or not
 
-    if not RunTable.Platform.isin(["ILLUMINA"]).all():
-        Platforms = ", ".join(RunTable.Platform.unique())
+    if not RunTable.platform.isin(["ILLUMINA"]).all():
+        platforms = ", ".join(RunTable.platform.unique())
 
         logger.warning(
-            f"Your samples are sequenced on the following platform: {Platforms}\n"
+            f"Your samples are sequenced on the following platform: {platforms}\n"
             "I don't know how well Atlas handles non-illumina reads.\n"
             "If you have long-reads, specify them via a the longreads, column in the sample table."
         )
@@ -114,7 +127,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
     # Final
     if RunTable.shape[0] > 0:
         logger.info(
-            f"Selected {RunTable.shape[0]} runs from {RunTable.BioSample.unique().shape[0]} samples"
+            f"Selected {RunTable.shape[0]} runs from {RunTable.biosample.unique().shape[0]} samples"
         )
 
     else:
@@ -128,13 +141,13 @@ def validate_merging_runinfo(path):
     RunTable = load_and_validate_runinfo_table(path)
 
     # If each run is from a different biosample, merging is not necessary
-    if RunTable.shape[0] == RunTable.BioSample.unique().shape[0]:
+    if RunTable.shape[0] == RunTable.biosample.unique().shape[0]:
         return RunTable
 
     # Cannot merge if different platforms
     problematic_samples = []
-    for sample, df in RunTable.groupby("BioSample"):
-        if not all(df.Platform == df.Platform.iloc[0]):
+    for sample, df in RunTable.groupby("biosample"):
+        if not all(df.platform == df.platform.iloc[0]):
             problematic_samples.append(sample)
 
     if len(problematic_samples) > 0:
@@ -147,10 +160,10 @@ def validate_merging_runinfo(path):
         exit(1)
 
     # Warn if samples are not identical for the following columns
-    Expected_same_values = ["Experiment", "Model", "LibraryName"]
+    Expected_same_values = ["experiment", "model", "library_name"]
     for key in Expected_same_values:
         problematic_samples = []
-        for sample, df in RunTable.groupby("BioSample"):
+        for sample, df in RunTable.groupby("biosample"):
             if not all(df[key] == df[key].iloc[0]):
                 problematic_samples.append(sample)
 

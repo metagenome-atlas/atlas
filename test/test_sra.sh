@@ -63,7 +63,7 @@ echo "Now with a single end sample"
 WD=$Test_dir/"SingleEnd"
 echo "WD="$WD
 
-atlas init-public SAMEA104416160  -w $WD
+atlas init-public ERR2213683  -w $WD
 
 atlas run None download_sra -w $WD $@
 
@@ -77,7 +77,7 @@ echo "WD="$WD
 
 echo "gives warning as library is selected with PCR"
 
-atlas init-public SAMEA9831203 SAMEA9831204 -w $WD
+atlas init-public ERR1739691 ERR1739692 -w $WD
 
 echo "Run Atlas"
 

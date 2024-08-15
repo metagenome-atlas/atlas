@@ -87,7 +87,7 @@ def get_runids_for_biosample(wildcards):
 
         RunTable = load_and_validate_runinfo_table("RunInfo.tsv")
 
-    run_ids = RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
+    run_ids = RunTable.query(f"biosample == '{wildcards.sample}'").index.tolist()
 
     return run_ids
 
