@@ -188,6 +188,8 @@ def simplify_sample_names(sample_df):
 
     assert sample_df.index.is_unique
 
+    sample_df.index = sample_df.index.astype(str)
+
     sample_name_df = (
         sample_df.index.str.split("[_, ,-]", expand=True)
         .to_frame()

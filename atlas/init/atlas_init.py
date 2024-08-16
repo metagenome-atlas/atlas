@@ -4,8 +4,9 @@ import pandas as pd
 import numpy as np
 import click
 from pathlib import Path
-from ..make_config import make_config, validate_config
+from ..make_config import make_config
 from .create_sample_table import get_samples_from_fastq, simplify_sample_names
+
 from ..sample_table import (
     validate_sample_table,
     validate_bingroup_size_cobinning,
@@ -19,8 +20,8 @@ RRNA = "silva_rfam_all_rRNAs.fa"
 PHIX = "phiX174_virus.fa"
 
 
-def prepare_sample_table_for_atlas(
-    sample_table, reads_are_QC=False, outfile="samples.tsv"
+def write_sample_table_for_atlas(
+    sample_table, reads_are_QC=False, sample_table_file="samples.tsv", overwrite=False
 ):
     """
     Write the file `samples.tsv` and complete the sample names and paths for all
@@ -29,30 +30,39 @@ def prepare_sample_table_for_atlas(
             path_to_fastq (str): fastq/fasta data directory
     """
 
-    if os.path.exists(outfile):
-        logger.error(
-            f"Output file {outfile} already exists I don't dare to overwrite it."
-        )
-        exit(1)
-
+    sample_table_file = Path(sample_table_file)
+    # delete samples.tsv if it exists and overwrite is set
+    if sample_table_file.exists():
+        if overwrite:
+            sample_table_file.unlink()
+        else:
+            logger.info(
+                f"{sample_table_file} already exists, I dare not to overwrite it. "
+                f"Use --overwrite to overwrite this file"
+            )
+            exit(1)
     simplify_sample_names(sample_table)
 
-    columns = sample_table.columns  # R1 and R2 or only R1 , who knows
-
-    # Test if paired end
-    if "R2" in columns:
-        fractions = ["R1", "R2"]
-    else:
-        sample_table.rename(columns={"R1": "se"}, inplace=True)
-        fractions = ["se"]
 
     # Add prefix to fractions depending if qc or not
     if reads_are_QC:
-        prefix = "Reads_QC_"
+        prefix = "Reads_QC"
     else:
-        prefix = "Reads_raw_"
+        prefix = "Reads_raw"
 
-    sample_table.rename(columns={f: f"{prefix}{f}" for f in fractions}, inplace=True)
+
+
+    if is_paired(sample_table):
+        fractions = ["R1", "R2"]
+
+        sample_table.rename(columns={f: f"{prefix}_{f}" for f in fractions}, inplace=True,errors='raise')
+    else:
+        fractions = ["se"]
+        sample_table.rename(columns={"R1": f"{prefix}_se"}, inplace=True,errors='raise')
+
+
+
+    
 
     sample_table["BinGroup"] = "All"
 
@@ -66,7 +76,95 @@ def prepare_sample_table_for_atlas(
 
     validate_sample_table(sample_table)
 
-    sample_table.to_csv(outfile, sep="\t")
+    logger.info(f"Prepared sample table with {sample_table.shape[0]} samples")
+
+    sample_table.to_csv(sample_table_file, sep="\t")
+
+
+def get_default_binner(sample_table):
+
+    n_samples = sample_table.shape[0]
+    if n_samples <= 7:
+        logger.info(
+            "You don't have many samples in your dataset. " "I set 'metabat' as binner"
+        )
+        binner = "metabat"
+
+        try:
+            validate_bingroup_size_metabat(sample_table, logger)
+        except BinGroupSizeError:
+            pass
+
+    else:
+        binner = "vamb"
+        try:
+            validate_bingroup_size_cobinning(sample_table, logger)
+
+        except BinGroupSizeError:
+            pass
+
+    return binner
+
+
+def is_paired(sample_table):
+    # Test if paired end
+
+    if not (sample_table.columns.str.endswith("R1").any() or sample_table.columns.str.endswith("se").any()):
+        logger.error("I didn't find any R1 reads in your sample table")
+        exit(1)
+
+    return sample_table.columns.str.endswith("R2").any()
+
+
+def get_default_assembler(sample_table):
+
+    if not is_paired(sample_table):
+        logger.info("Set assembler to megahit as spades cannot handle single-end reads")
+        return "megahit"
+    else:
+        return "spades"
+
+
+def init_project(
+    sample_table_simple,
+    db_dir,
+    working_dir,
+    data_type="metagenomics",
+    interleaved_fastq=False,
+    threads=8,
+    skip_qc=False,
+    assembler=None,
+    binner=None,
+    overwrite=False,
+):
+    # create working dir and db_dir
+    os.makedirs(working_dir, exist_ok=True)
+    os.makedirs(db_dir, exist_ok=True)
+
+    sample_table_file = os.path.join(working_dir, "samples.tsv")
+
+    write_sample_table_for_atlas(
+        sample_table_simple,
+        reads_are_QC=skip_qc,
+        sample_table_file=sample_table_file,
+        overwrite=overwrite,
+    )
+
+    if binner is None:
+        binner = get_default_binner(sample_table_simple)
+
+    if assembler is None:
+        assembler = get_default_assembler(sample_table_simple)
+
+    make_config(
+        db_dir,
+        threads,
+        assembler,
+        data_type,
+        interleaved_fastq,
+        os.path.join(working_dir, "config.yaml"),
+        binner=binner,
+    )
 
 
 ###### Atlas init command ######
@@ -119,6 +217,11 @@ def prepare_sample_table_for_atlas(
     help="number of threads to use per multi-threaded job",
 )
 @click.option(
+    "--overwrite",
+    is_flag=True,
+    help="Overwrite previously downloaded Runinfo",
+)
+@click.option(
     "--skip-qc",
     is_flag=True,
     help="Skip QC, if reads are already pre-processed",
@@ -131,6 +234,7 @@ def run_init(
     data_type,
     interleaved_fastq,
     threads,
+    overwrite=False,
     skip_qc=False,
 ):
     """Write the file CONFIG and complete the sample names and paths for all
@@ -140,51 +244,44 @@ def run_init(
     the file name with the file name minus extension as the sample ID.
     """
 
-    # create working dir and db_dir
-    os.makedirs(working_dir, exist_ok=True)
-    os.makedirs(db_dir, exist_ok=True)
-
     sample_table = get_samples_from_fastq(path_to_fastq)
 
-    prepare_sample_table_for_atlas(
-        sample_table,
-        reads_are_QC=skip_qc,
-        outfile=os.path.join(working_dir, "samples.tsv"),
-    )
-
-    # Set default binner depending on number of samples
-    n_samples = sample_table.shape[0]
-    if n_samples <= 7:
-        logger.info(
-            "You don't have many samples in your dataset. " "I set 'metabat' as binner"
-        )
-        binner = "metabat"
-
-        try:
-            validate_bingroup_size_metabat(sample_table, logger)
-        except BinGroupSizeError:
-            pass
-
-    else:
-        binner = "vamb"
-        try:
-            validate_bingroup_size_cobinning(sample_table, logger)
-
-        except BinGroupSizeError:
-            pass
-
-    make_config(
+    init_project(
+        sample_table_simple,
         db_dir,
-        threads,
-        assembler,
-        data_type,
-        interleaved_fastq,
-        os.path.join(working_dir, "config.yaml"),
-        binner=binner,
+        working_dir,
+        data_type="metagenomics",
+        interleaved_fastq=False,
+        threads=8,
+        overwrite=overwrite,
+        skip_qc=False,
+        assembler=None,
+        binner=None,
     )
 
 
 ########### Public init download data from SRA ##############
+
+
+def create_sample_table_from_sample_names(Samples, paired, fastq_folder):
+
+    sample_table = pd.DataFrame(index=Samples)
+
+    fastq_folder = Path(fastq_folder)
+
+    if not paired:
+        sample_table["R1"] = sample_table.index.map(
+            lambda s: str(fastq_folder / f"{s}/{s}.fastq.gz")
+        )
+    else:
+        sample_table["R1"] = sample_table.index.map(
+            lambda s: str(fastq_folder / f"{s}/{s}_1.fastq.gz")
+        )
+        sample_table["R2"] = sample_table.index.map(
+            lambda s: str(fastq_folder / f"{s}/{s}_2.fastq.gz")
+        )
+
+    return sample_table
 
 
 @click.command(
@@ -248,6 +345,7 @@ def run_init_sra(
         filter_runinfo,
         load_and_validate_runinfo_table,
         validate_merging_runinfo,
+        get_all_sample_names
     )
 
     # create working dir and db_dir
@@ -259,7 +357,7 @@ def run_init_sra(
     SRA_subfolder = working_dir / "SRA"
     SRA_subfolder.mkdir(exist_ok=True)
 
-    runinfo_file = working_dir / "RunInfo.tsv"
+    runinfo_file = working_dir / "RunInfo.csv"
 
     if os.path.exists(runinfo_file) & (not overwrite):
         if not ((len(identifiers) == 1) & (identifiers[0].lower() == "continue")):
@@ -274,7 +372,7 @@ def run_init_sra(
         logger.info(f"Downloading runinfo from SRA")
 
         # Create runinfo table in folder for SRA reads
-        runinfo_file_original = SRA_subfolder / "RunInfo_original.tsv"
+        runinfo_file_original = SRA_subfolder / "RunInfo_original.csv"
 
         get_table_from_accessions(identifiers, runinfo_file_original)
 
@@ -292,7 +390,7 @@ def run_init_sra(
     RunTable = validate_merging_runinfo(runinfo_file)
 
     # create sample table
-    Samples = RunTable.biosample.unique()
+    Samples = get_all_sample_names(RunTable)
 
     if (RunTable.library_layout == "PAIRED").all():
         paired = True
@@ -304,46 +402,10 @@ def run_init_sra(
         )
         exit(1)
 
-    sample_table_file = working_dir / "samples.tsv"
-    # delete samples.tsv if it exists and overwrite is set
-    if sample_table_file.exists():
-        if overwrite:
-            sample_table_file.unlink()
-        else:
-            logger.info(
-                f"{sample_table_file} already exists, I dare not to overwrite it. "
-                f"Use --overwrite to overwrite this file"
-            )
-            exit(1)
-
-    # create sample table
-
-    sample_table = pd.DataFrame(index=Samples)
-
-    SRA_READ_PATH = SRA_subfolder.relative_to(working_dir) / "Samples"
-
-    if not paired:
-        sample_table["R1"] = sample_table.index.map(
-            lambda s: str(SRA_READ_PATH / f"{s}/{s}.fastq.gz")
-        )
-    else:
-        sample_table["R1"] = sample_table.index.map(
-            lambda s: str(SRA_READ_PATH / f"{s}/{s}_1.fastq.gz")
-        )
-        sample_table["R2"] = sample_table.index.map(
-            lambda s: str(SRA_READ_PATH / f"{s}/{s}_2.fastq.gz")
-        )
-
-    prepare_sample_table_for_atlas(
-        sample_table, reads_are_QC=skip_qc, outfile=str(sample_table_file)
+    sample_table = create_sample_table_from_sample_names(
+        Samples, paired, fastq_folder=SRA_subfolder.relative_to(working_dir) / "Samples"
     )
 
-    logger.info(f"Prepared sample table with {sample_table.shape[0]} samples")
-
-    if not paired:
-        logger.info("Set assembler to megahit as spades cannot handle single-end reads")
-        assembler = "megahit"
-    else:
-        assembler = "spades"
-    # create config file
-    make_config(db_dir, config=str(working_dir / "config.yaml"), assembler=assembler)
+    init_project(
+        sample_table, db_dir, working_dir, skip_qc=skip_qc, overwrite=overwrite
+    )

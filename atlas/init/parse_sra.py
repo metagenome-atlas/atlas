@@ -12,8 +12,13 @@ Expected_library_values = {
     "platform": "ILLUMINA",
 }
 
+# Values that should be the same for all runs from the same sample
+Expected_same_values = ["experiment_accession", "model", "library_name"]
 
-def load_and_validate_runinfo_table(path):
+
+SAMPLE_NAME_COLUMN = "sample_accession"
+
+def load_and_validate_runinfo_table(path="RunInfo.csv"):
     RunTable = pd.read_csv(path, index_col=0)
 
     # validate sra table
@@ -25,32 +30,25 @@ def load_and_validate_runinfo_table(path):
         "library_source",
         "library_selection",
         "library_strategy",
-        "biosample",
-        "sample_alias"
+        "sample_accession",
     ]
     for header in Expected_headers:
         if not header in RunTable.columns:
             logger.error(f"Didn't found expected header {header}")
             format_error = True
 
-
-
-    # if biosample is null copy with sample_alias
-    if RunTable.biosample.isnull().all():
-        RunTable["biosample"] = RunTable["sample_alias"]
-
     # set to string all expected headers
     RunTable[Expected_headers] = RunTable[Expected_headers].astype(str)
 
-
-    if not all(RunTable.index.str[1:2] == "R"):
+    if not all(RunTable.index.str[1:3] == "RR"):
         logger.error("Expect runs as index, e.g. [E,S,D]RR000")
         format_error = True
 
-
-
-    if not RunTable.biosample.str.startswith("SAM").all():
-        logger.error("biosample should start with 'SAM'")
+    assert (
+        SAMPLE_NAME_COLUMN == "sample_accession"
+    ), "This code is not tested for other sample names"
+    if not (RunTable.sample_accession.str[1:3] == "RS").all():
+        logger.error("sample_accession should start with [E,S,D]RS")
         format_error = True
 
     if not RunTable.library_layout.isin(["PAIRED", "SINGLE"]).all():
@@ -66,7 +64,7 @@ def load_and_validate_runinfo_table(path):
 
 def filter_runinfo(RunTable, ignore_paired=False):
     logger.info(
-        f"Start with {RunTable.shape[0]} runs from {RunTable.biosample.unique().shape[0]} samples"
+        f"Start with {RunTable.shape[0]} runs from {RunTable[SAMPLE_NAME_COLUMN].unique().shape[0]} samples"
     )
 
     # Filter out reads that are not metagenomics
@@ -127,7 +125,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
     # Final
     if RunTable.shape[0] > 0:
         logger.info(
-            f"Selected {RunTable.shape[0]} runs from {RunTable.biosample.unique().shape[0]} samples"
+            f"Selected {RunTable.shape[0]} runs from {RunTable[SAMPLE_NAME_COLUMN].unique().shape[0]} samples"
         )
 
     else:
@@ -140,13 +138,13 @@ def filter_runinfo(RunTable, ignore_paired=False):
 def validate_merging_runinfo(path):
     RunTable = load_and_validate_runinfo_table(path)
 
-    # If each run is from a different biosample, merging is not necessary
-    if RunTable.shape[0] == RunTable.biosample.unique().shape[0]:
+    # If each run is from a different SAMPLE_NAME_COLUMN, merging is not necessary
+    if RunTable.shape[0] == RunTable[SAMPLE_NAME_COLUMN].unique().shape[0]:
         return RunTable
 
     # Cannot merge if different platforms
     problematic_samples = []
-    for sample, df in RunTable.groupby("biosample"):
+    for sample, df in RunTable.groupby(SAMPLE_NAME_COLUMN):
         if not all(df.platform == df.platform.iloc[0]):
             problematic_samples.append(sample)
 
@@ -159,13 +157,20 @@ def validate_merging_runinfo(path):
 
         exit(1)
 
-    # Warn if samples are not identical for the following columns
-    Expected_same_values = ["experiment", "model", "library_name"]
+    # Warn if samples are not identical values if expected the same
+
+
+
     for key in Expected_same_values:
         problematic_samples = []
-        for sample, df in RunTable.groupby("biosample"):
-            if not all(df[key] == df[key].iloc[0]):
-                problematic_samples.append(sample)
+
+        if key not in RunTable.columns:
+            logger.warning(f"Didn't found column {key} in RunTable at {path}, don't check for identical values")
+        else:
+
+            for sample, df in RunTable.groupby(SAMPLE_NAME_COLUMN):
+                if not all(df[key] == df[key].iloc[0]):
+                    problematic_samples.append(sample)
 
         if len(problematic_samples) > 0:
             if len(problematic_samples) > 5:
@@ -179,6 +184,22 @@ def validate_merging_runinfo(path):
                     f"You can modify the table {path} and rerun the command.\n"
                 )
 
-    logger.info("I will automatically merge runs from the same biosample.")
+    logger.info(
+        "I will automatically merge runs from the same sample."
+    )
 
     return RunTable
+
+
+
+
+def get_run_ids_for_sample(run_table,sample):
+
+    return run_table.query(f"{SAMPLE_NAME_COLUMN} == '{sample}'").index.tolist()
+
+
+def get_all_sample_names(run_table):
+    return run_table[SAMPLE_NAME_COLUMN].unique().tolist()
+
+
+

@@ -77,23 +77,23 @@ rule extract_run:
         " rm -f {params.sra_file} 2>> {log} "
 
 
+
+
+
+
+
 RunTable = None
+def get_run_fastq_for_sample(wildcards):
 
+    from atlas.init.parse_sra import load_and_validate_runinfo_table, get_run_ids_for_sample
 
-def get_runids_for_biosample(wildcards):
+    # load RunTable if not already loaded
     global RunTable
     if RunTable is None:
-        from atlas.init.parse_sra import load_and_validate_runinfo_table
+        
+        RunTable = load_and_validate_runinfo_table()
 
-        RunTable = load_and_validate_runinfo_table("RunInfo.tsv")
-
-    run_ids = RunTable.query(f"biosample == '{wildcards.sample}'").index.tolist()
-
-    return run_ids
-
-
-def get_runs_for_biosample(wildcards):
-    run_ids = get_runids_for_biosample(wildcards)
+    run_ids = get_run_ids_for_sample(RunTable,wildcards.sample)
 
     ReadFiles = {}
     for fraction in SRA_read_fractions:
@@ -113,7 +113,7 @@ def get_runs_for_biosample(wildcards):
 
 rule merge_runs_to_sample:
     input:
-        unpack(get_runs_for_biosample),
+        unpack(get_run_fastq_for_sample),
     output:
         expand(
             "SRA/Samples/{{sample}}/{{sample}}{fraction}.fastq.gz",

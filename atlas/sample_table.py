@@ -60,6 +60,9 @@ def validate_sample_table(sampleTable):
 
 def load_sample_table(sample_table="samples.tsv"):
     sampleTable = pd.read_csv(sample_table, index_col=0, sep="\t")
+
+    sampleTable.index = sampleTable.index.astype(str)
+
     validate_sample_table(sampleTable)
     return sampleTable
 

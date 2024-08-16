@@ -183,12 +183,12 @@ You can run ``atlas init-public <SRA_IDs>`` and specify any ids, like bioproject
 Atlas does the following steps:
 
   1. Search SRA for the corresponding sequences (Runs) and save them in the file ``SRA/RunInfo_original.tsv``. For example, if you specify a Bioproject, it fetches the information for all runs of this project. 
-  2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.tsv``
+  2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.csv``
   3. Sometimes the same Sample is sequenced on different lanes, which will result into multiple runs from the same sample. Atlas will **merge** runs from the same biosample.
   4. Prepare a sample table and a config.yaml similar to the ``atlas init`` command.
 
 
-If you are not happy with the filtering atlas performs, you can go back to the ``SRA/RunInfo_original.tsv`` and create a new ``RunInfo.tsv``. 
+If you are not happy with the filtering atlas performs, you can go back to the ``SRA/RunInfo_original.tsv`` and create a new ``RunInfo.csv``. 
 If you then rerun ``atlas init-public continue`` it will continue from your modified RunInfo and do step 3. & 4. above. 
 
 
@@ -218,7 +218,7 @@ Gives the output::
   [Atlas] INFO: Runs have the following values for library_selection: PCR, RT-PCR, RANDOM
           Select only runs library_selection == RANDOM, Filtered out 879 runs
   [Atlas] INFO: Selected 1338 runs from 1338 samples
-  [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.tsv
+  [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.csv
   [Atlas] INFO: Prepared sample table with 1338 samples
   [Atlas] INFO: Configuration file written to HMP2/config.yaml
           You may want to edit it using any text editor.

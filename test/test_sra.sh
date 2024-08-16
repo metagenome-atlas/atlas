@@ -20,41 +20,7 @@ echo "Run Atlas"
 atlas run qc -w $WD --dry-run $@
 
 
-echo "Download reads from HMP"
-WD=$Test_dir/"HMP"
-echo "WD="$WD
 
-# this fails as HMP have samples sequenced with different platforms
-
-
-set +e
-atlas init-public SRP002423 -w $WD
-
-set -e
-echo "(expected errors)"
-
-
-echo "drop illumina samples"
-sed -i.bak '/ILLUMINA/d' $WD/RunInfo.tsv
-
-# modify assembler as spades cannot handle single end reads
-
-# python << END
-# from ruamel.yaml import YAML
-# yaml = YAML()
-# config_file="$WD/config.yaml"
-# config= yaml.load(open(config_file))
-# config['assembler'] = 'megahit'
-# yaml.dump(config, open(config_file, 'w'))
-# END
-
-
-echo "create sample table"
-atlas init-public continue -w $WD
-
-echo "Run Atlas"
-
-atlas run qc -w $WD --dry-run $@
 
 ## single end
 
@@ -65,7 +31,39 @@ echo "WD="$WD
 
 atlas init-public ERR2213683  -w $WD
 
-atlas run None download_sra -w $WD $@
+atlas run qc -w $WD --dry-run $@
+
+
+
+
+
+# this fails as HMP have samples sequenced with different platforms
+# HMP is also single end
+
+echo "Download reads from HMP"
+WD=$Test_dir/"HMP"
+echo "WD="$WD
+
+
+set +e
+atlas init-public SRP002423 -w $WD
+
+set -e
+echo "(expected errors)"
+
+
+echo "drop illumina samples"
+sed -i.bak '/ILLUMINA/d' $WD/RunInfo.csv
+
+
+
+echo "Continue public init"
+atlas init-public continue -w $WD
+
+echo "Run Atlas"
+
+atlas run qc -w $WD --dry-run $@
+
 
 ## small data
 
@@ -82,3 +80,13 @@ atlas init-public ERR1739691 ERR1739692 -w $WD
 echo "Run Atlas"
 
 atlas run None download_sra -w $WD $@ 
+
+
+# Test single end
+
+echo "Run single end test"
+
+WD=$Test_dir/"SingleEnd"
+echo "WD="$WD
+
+atlas run None download_sra -w $WD $@
