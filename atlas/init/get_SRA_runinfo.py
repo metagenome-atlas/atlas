@@ -87,7 +87,7 @@ def get_table_from_accessions(accessions, output_file="SRA_run_table.csv") -> No
 
 
 def parse_arguments_from_terminal():
-    ## Comand line interface
+    ## Command line interface
     import argparse
 
     parser = argparse.ArgumentParser()

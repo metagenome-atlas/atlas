@@ -42,7 +42,7 @@ class SraMetadata:
         return other_params
 
     def _retry_request(self, description, func):
-        """Retry a reqests.post or requests.get 3 times, returning the request
+        """Retry a retests.post or requests.get 3 times, returning the request
         when OK, otherwise raising an Exception"""
 
         num_retries = 3
