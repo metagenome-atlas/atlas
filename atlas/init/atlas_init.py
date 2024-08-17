@@ -43,26 +43,25 @@ def write_sample_table_for_atlas(
             exit(1)
     simplify_sample_names(sample_table)
 
-
     # Add prefix to fractions depending if qc or not
     if reads_are_QC:
         prefix = "Reads_QC"
     else:
         prefix = "Reads_raw"
 
-
-
     if is_paired(sample_table):
         fractions = ["R1", "R2"]
 
-        sample_table.rename(columns={f: f"{prefix}_{f}" for f in fractions}, inplace=True,errors='raise')
+        sample_table.rename(
+            columns={f: f"{prefix}_{f}" for f in fractions},
+            inplace=True,
+            errors="raise",
+        )
     else:
         fractions = ["se"]
-        sample_table.rename(columns={"R1": f"{prefix}_se"}, inplace=True,errors='raise')
-
-
-
-    
+        sample_table.rename(
+            columns={"R1": f"{prefix}_se"}, inplace=True, errors="raise"
+        )
 
     sample_table["BinGroup"] = "All"
 
@@ -109,7 +108,10 @@ def get_default_binner(sample_table):
 def is_paired(sample_table):
     # Test if paired end
 
-    if not (sample_table.columns.str.endswith("R1").any() or sample_table.columns.str.endswith("se").any()):
+    if not (
+        sample_table.columns.str.endswith("R1").any()
+        or sample_table.columns.str.endswith("se").any()
+    ):
         logger.error("I didn't find any R1 reads in your sample table")
         exit(1)
 
@@ -345,7 +347,7 @@ def run_init_sra(
         filter_runinfo,
         load_and_validate_runinfo_table,
         validate_merging_runinfo,
-        get_all_sample_names
+        get_all_sample_names,
     )
 
     # create working dir and db_dir

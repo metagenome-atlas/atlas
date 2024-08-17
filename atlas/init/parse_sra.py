@@ -18,6 +18,7 @@ Expected_same_values = ["experiment_accession", "model", "library_name"]
 
 SAMPLE_NAME_COLUMN = "sample_accession"
 
+
 def load_and_validate_runinfo_table(path="RunInfo.csv"):
     RunTable = pd.read_csv(path, index_col=0)
 
@@ -159,13 +160,13 @@ def validate_merging_runinfo(path):
 
     # Warn if samples are not identical values if expected the same
 
-
-
     for key in Expected_same_values:
         problematic_samples = []
 
         if key not in RunTable.columns:
-            logger.warning(f"Didn't found column {key} in RunTable at {path}, don't check for identical values")
+            logger.warning(
+                f"Didn't found column {key} in RunTable at {path}, don't check for identical values"
+            )
         else:
 
             for sample, df in RunTable.groupby(SAMPLE_NAME_COLUMN):
@@ -184,22 +185,15 @@ def validate_merging_runinfo(path):
                     f"You can modify the table {path} and rerun the command.\n"
                 )
 
-    logger.info(
-        "I will automatically merge runs from the same sample."
-    )
+    logger.info("I will automatically merge runs from the same sample.")
 
     return RunTable
 
 
-
-
-def get_run_ids_for_sample(run_table,sample):
+def get_run_ids_for_sample(run_table, sample):
 
     return run_table.query(f"{SAMPLE_NAME_COLUMN} == '{sample}'").index.tolist()
 
 
 def get_all_sample_names(run_table):
     return run_table[SAMPLE_NAME_COLUMN].unique().tolist()
-
-
-
