@@ -60,6 +60,9 @@ def validate_sample_table(sampleTable):
 
 def load_sample_table(sample_table="samples.tsv"):
     sampleTable = pd.read_csv(sample_table, index_col=0, sep="\t")
+
+    sampleTable.index = sampleTable.index.astype(str)
+
     validate_sample_table(sampleTable)
     return sampleTable
 
@@ -127,7 +130,7 @@ def validate_bingroup_size(sampleTable, config, logger):
     if config["final_binner"] == "DASTool":
         binners = config["binner"]
 
-        logger.info(f"DASTool uses the folowing binners: {binners}")
+        logger.info(f"DASTool uses the following binners: {binners}")
 
         if ("vamb" in binners) or ("SemiBin" in binners):
             validate_bingroup_size_cobinning(sampleTable, logger)

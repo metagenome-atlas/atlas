@@ -15,11 +15,11 @@ import utils
 
 
 # add default config
-# comand line adds user config
+# command line adds user config
 configfile: os.path.join(workflow_folder, "..", "config", "default_config.yaml")
 
 
-# add defualt values from python (TODO: replace this)
+# add default values from python (TODO: replace this)
 from atlas.make_config import update_config as atlas_update_config
 
 config = atlas_update_config(config)
@@ -227,7 +227,7 @@ for r in workflow.rules:
         # default
         r.resources["mem_mb"] = config["mem"] * 1000
 
-    # add time if ot present. Simple jobs use simple time
+    # add time if not present. Simple jobs use simple time
 
     if "time_min" not in r.resources:
         r.resources["time_min"] = config["runtime"]["default"] * 60

@@ -124,9 +124,9 @@ def read_bbsplit_bincov(bbsplit_bincov_file):
 
     # split first index `genome$contig` in two
     index = pd.Series(binCov.index.levels[0], index=binCov.index.levels[0])
-    splitted = index.str.split("$", expand=True)
-    splitted.columns = ["Genome", "Contig"]
-    new_index = splitted.loc[binCov.index.get_level_values(0)]
+    Split = index.str.split("$", expand=True)
+    Split.columns = ["Genome", "Contig"]
+    new_index = Split.loc[binCov.index.get_level_values(0)]
     new_index["Position"] = binCov.index.get_level_values(1).values
     binCov.index = pd.MultiIndex.from_frame(new_index)
 

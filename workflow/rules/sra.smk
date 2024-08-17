@@ -3,97 +3,64 @@ wildcard_constraints:
 
 
 localrules:
-    prefetch,
+    kingfisher_get,
+    merge_runs_to_sample,
 
 
 SRA_read_fractions = ["_1", "_2"] if PAIRED_END else [""]
-SRA_SUBDIR_RUN = "SRA/Runs"
-
-
-rule prefetch:
-    output:
-        sra=temp(touch(SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}_downloaded")),
-        # not givins sra file as output allows for continue from the same download
-    params:
-        outdir=SRA_SUBDIR_RUN,  # prefetch creates file in subfolder with run name automatically
-    log:
-        "logs/SRAdownload/prefetch/{sra_run}.log",
-    benchmark:
-        "logs/benchmarks/SRAdownload/prefetch/{sra_run}.tsv"
-    threads: 1
-    resources:
-        mem_mb=1000,
-        time_min=60 * int(config["runtime"]["simplejob"]),
-        internet_connection=1,
-    conda:
-        "%s/sra.yaml" % CONDAENV
-    shell:
-        " mkdir -p {params.outdir} 2> {log} "
-        " ; "
-        " prefetch "
-        " --output-directory {params.outdir} "
-        " -X 999999999 "
-        " --progress "
-        " --log-level info "
-        " {wildcards.sra_run} &>> {log} "
-        " ; "
-        " vdb-validate {params.outdir}/{wildcards.sra_run}/{wildcards.sra_run}.sra &>> {log} "
-
-
-rule extract_run:
-    input:
-        flag=rules.prefetch.output,
-    output:
-        temp(
-            expand(
-                SRA_SUBDIR_RUN + "/{{sra_run}}/{{sra_run}}{fraction}.fastq.gz",
-                fraction=SRA_read_fractions,
-            )
-        ),
-    params:
-        outdir=os.path.abspath(SRA_SUBDIR_RUN + "/{sra_run}"),
-        sra_file=SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}.sra",
-    log:
-        "logs/SRAdownload/extract/{sra_run}.log",
-    benchmark:
-        "logs/benchmarks/SRAdownload/fasterqdump/{sra_run}.tsv"
-    threads: config["simplejob_threads"]
-    resources:
-        time_min=60 * int(config["runtime"]["simplejob"]),
-        mem_mb=1000,  #default 100Mb
-    conda:
-        "%s/sra.yaml" % CONDAENV
-    shell:
-        " vdb-validate {params.sra_file} &>> {log} "
-        " ; "
-        " parallel-fastq-dump "
-        " --threads {threads} "
-        " --gzip --split-files "
-        " --outdir {params.outdir} "
-        " --tmpdir {resources.tmpdir} "
-        " --skip-technical --split-3 "
-        " -s {params.sra_file} &>> {log} "
-        " ; "
-        " rm -f {params.sra_file} 2>> {log} "
+SRA_SUBDIR_RUN = Path("SRA/Runs")
 
 
 RunTable = None
 
 
-def get_runids_for_biosample(wildcards):
+def load_runtable():
     global RunTable
     if RunTable is None:
-        from atlas.init.parse_sra import load_and_validate_runinfo_table
+        from atlas.init import parse_sra
 
-        RunTable = load_and_validate_runinfo_table("RunInfo.tsv")
-
-    run_ids = RunTable.query(f"BioSample == '{wildcards.sample}'").index.tolist()
-
-    return run_ids
+        RunTable = parse_sra.load_and_validate_runinfo_table()
+    return RunTable
 
 
-def get_runs_for_biosample(wildcards):
-    run_ids = get_runids_for_biosample(wildcards)
+def get_run_ids_for_sample(wildcards):
+    RunTable = load_runtable()
+    from atlas.init import parse_sra
+
+    return parse_sra.get_run_ids_for_sample(RunTable, wildcards.sample)
+
+
+rule kingfisher_get:
+    output:
+        #dir = temp(directory("Reads/tmp/runs/{sample}")),
+        flag=temp(touch("Reads/tmp/flags/{sample}.downloaded")),
+    params:
+        run_ids=get_run_ids_for_sample,
+        download_methods="ena-ascp ena-ftp prefetch",
+        output_dir=lambda wc: SRA_SUBDIR_RUN / wc.sample,
+    log:
+        Path("log/download_reads/download/{sample}.log").resolve(),
+    threads: config["threads"]
+    resources:
+        mem_mb=config["mem"] * 1000,
+        time_min=config["runtime"]["long"] * 60,
+        ncbi_connection=1,
+    conda:
+        "../envs/kingfisher.yaml"
+    shell:
+        " mkdir -p {params.output_dir} ; "
+        " cd {params.output_dir} "
+        " ; "
+        "kingfisher get --run-identifiers {params.run_ids} "
+        " --download-threads 2 --extraction-threads {threads} "
+        " --hide-download-progress "
+        " --output-format-possibilities 'fastq.gz' "
+        " --force --check-md5sums "
+        " --download-methods {params.download_methods} "
+        " -f fastq.gz &> {log}"
+
+
+def get_run_fastq_for_sample(run_ids):
 
     ReadFiles = {}
     for fraction in SRA_read_fractions:
@@ -103,7 +70,7 @@ def get_runs_for_biosample(wildcards):
             key = fraction
 
         ReadFiles[key] = expand(
-            SRA_SUBDIR_RUN + "/{sra_run}/{sra_run}{fraction}.fastq.gz",
+            str(SRA_SUBDIR_RUN / "{sample}/{sra_run}{fraction}.fastq.gz"),
             fraction=fraction,
             sra_run=run_ids,
         )
@@ -113,20 +80,32 @@ def get_runs_for_biosample(wildcards):
 
 rule merge_runs_to_sample:
     input:
-        unpack(get_runs_for_biosample),
+        flag="Reads/tmp/flags/{sample}.downloaded",
     output:
         expand(
             "SRA/Samples/{{sample}}/{{sample}}{fraction}.fastq.gz",
             fraction=SRA_read_fractions,
         ),
+    params:
+        run_ids=get_run_ids_for_sample,
     threads: 1
     run:
         from utils import io
 
         for i, fraction in enumerate(SRA_read_fractions):
-            if fraction == "":
-                fraction = "se"
-            io.cat_files(input[fraction], output[i])
+
+            run_fastqs = expand(
+                SRA_SUBDIR_RUN / "{sample}/{sra_run}{fraction}.fastq.gz",
+                fraction=fraction,
+                sra_run=params.run_ids,
+                sample=wildcards.sample,
+            )
+
+            assert all([Path(f).exists() for f in run_fastqs]), (
+                " Not all fastq files exist. Expected: %s" % run_fastqs
+            )
+
+            io.cat_files(run_fastqs, output[i])
 
 
 rule download_sra:

@@ -117,7 +117,7 @@ clusters["SampleBin"] = clusters.Sample + "_vamb_" + clusters.BinId
 clusters.loc[~clusters.Large_enough, "SampleBin"] = ""
 
 
-logging.info(f"Write reformated table to {output_culsters}")
+logging.info(f"Write reformatted table to {output_culsters}")
 clusters.to_csv(output_culsters, sep="\t", index=False)
 
 # filter for following

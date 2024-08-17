@@ -45,7 +45,7 @@ is_paired = None
 
 
 def infer_split_character(base_name):
-    "Infer if fastq filename uses '_R1' '_1' to seperate filenames"
+    "Infer if fastq filename uses '_R1' '_1' to separate filenames"
 
     global split_character, is_paired
 
@@ -59,7 +59,7 @@ def infer_split_character(base_name):
             is_paired = True
         else:
             logger.warning(
-                f"Could't find '_R1'/'_R2' or '_1'/'_2' in your filename {base_name}. Assume you have single-end reads."
+                f"Couldn't find '_R1'/'_R2' or '_1'/'_2' in your filename {base_name}. Assume you have single-end reads."
             )
             split_character = None
             is_paired = False
@@ -145,7 +145,7 @@ def get_samples_from_fastq(path, fraction_split_character=split_character):
     try:
         _, subfolders, files = next(os.walk(path))
     except StopIteration:
-        logger.error(f"Folder {path} seems to conain no files or subfolders.")
+        logger.error(f"Folder {path} seems to contain no files or subfolders.")
         exit(1)
 
     abs_path = os.path.abspath(path)
@@ -188,6 +188,8 @@ def simplify_sample_names(sample_df):
 
     assert sample_df.index.is_unique
 
+    sample_df.index = sample_df.index.astype(str)
+
     sample_name_df = (
         sample_df.index.str.split("[_, ,-]", expand=True)
         .to_frame()
@@ -213,7 +215,7 @@ def simplify_sample_names(sample_df):
                 lambda row: "{0}-{1}".format(*row), axis=1
             )
 
-        # cannt find unique sample ids
+        # cannot find unique sample ids
         else:
             logger.warning(
                 "Didn't found a way to simplify sample names. "

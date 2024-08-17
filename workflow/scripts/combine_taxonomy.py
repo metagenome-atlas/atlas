@@ -28,7 +28,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of scripts
+#### Beginning of scripts
 
 import pandas as pd
 import numpy as np
