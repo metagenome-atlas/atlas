@@ -15,7 +15,7 @@ echo "WD="$WD
 
 atlas init-public PRJEB20796 -w $WD
 
-echo "Run Atlas"
+echo "Dry run Atlas"
 
 atlas run qc -w $WD --dry-run $@
 
@@ -30,6 +30,8 @@ WD=$Test_dir/"SingleEnd"
 echo "WD="$WD
 
 atlas init-public ERR2213683  -w $WD
+
+echo "Dry run Atlas"
 
 atlas run qc -w $WD --dry-run $@
 
@@ -60,7 +62,7 @@ sed -i.bak '/ILLUMINA/d' $WD/RunInfo.csv
 echo "Continue public init"
 atlas init-public continue -w $WD
 
-echo "Run Atlas"
+echo "Dry run Atlas"
 
 atlas run qc -w $WD --dry-run $@
 
