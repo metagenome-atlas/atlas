@@ -184,7 +184,7 @@ Atlas does the following steps:
 
   1. Search SRA for the corresponding sequences (Runs) and save them in the file ``SRA/RunInfo_original.tsv``. For example, if you specify a Bioproject, it fetches the information for all runs of this project. 
   2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.csv``
-  3. Sometimes the same Sample is sequenced on different lanes, which will result into multiple runs from the same sample. Atlas will **merge** runs from the same biosample.
+  3. Sometimes the same Sample is sequenced on different lanes, which will result into multiple runs from the same sample. Atlas will **merge** runs from the same sample.
   4. Prepare a sample table and a config.yaml similar to the ``atlas init`` command.
 
 
@@ -203,8 +203,8 @@ The downloaded reads are directly processed. However, if you only want to downlo
 
   atlas run None download_sra
 
-Example: Downloading reads from the human microbiome project2
-`````````````````````````````````````````````````````````````
+Example: Downloading reads from the human microbiome project 2
+``````````````````````````````````````````````````````````````
 ::
 
   atlas init-public --working-dir HMP2 PRJNA398089
