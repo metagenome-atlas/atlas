@@ -9,4 +9,4 @@ dependencies:
     - bzip2 >=1.0
     - pandas >=1.2, <2
     - samtools >=1.13, <2
-    - sambamba <1
+
