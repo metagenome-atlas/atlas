@@ -7,7 +7,7 @@ import subprocess
 import click
 
 
-from snakemake.io import load_configfile
+from snakemake.common.configfile import load_configfile
 from .make_config import validate_config
 from .init.atlas_init import run_init  # , run_init_sra
 
@@ -247,7 +247,7 @@ def run_download(db_dir, jobs, snakemake_args):
     cmd = (
         "snakemake --snakefile {snakefile} download "
         "--jobs {jobs} --rerun-incomplete "
-        "--conda-frontend mamba --scheduler greedy "
+        "--scheduler greedy "
         "--nolock  --use-conda  --conda-prefix {conda_prefix} "
         " --show-failed-logs "
         "--config database_dir='{db_dir}' {add_args} "
