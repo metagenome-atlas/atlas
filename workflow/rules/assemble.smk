@@ -505,7 +505,7 @@ if config["filter_contigs"]:
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v5.5.0/bio/minimap2/aligner"
+            "v1.19.0/bio/minimap2/aligner"
 
     rule pileup_prefilter:
         input:
@@ -635,7 +635,7 @@ rule align_reads_to_final_contigs:
     resources:
         mem_mb=config["mem"] * 1000,
     wrapper:
-        "v5.5.0/bio/minimap2/aligner"
+        "v1.19.0/bio/minimap2/aligner"
 
 
 rule pileup_contigs_sample:
