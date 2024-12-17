@@ -1,0 +1,1 @@
+docker run -it --name atlas-debug -v $(pwd):/main  atlas-debug
