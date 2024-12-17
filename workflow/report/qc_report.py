@@ -27,7 +27,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of scripts
+#### Beginning of scripts
 
 from common_report import *
 
@@ -158,7 +158,7 @@ def make_plots(
     Quality_QC_pe, Quality_QC_se = get_stats_from_zips(zipfiles_QC, samples)
     # Quality_raw_pe, Quality_raw_se = get_stats_from_zips(zipfiles_QC,samples)
 
-    # detrmine range of quality values and if paired
+    # determine range of quality values and if paired
     max_quality = 1 + np.nanmax((Quality_QC_pe.max().max(), Quality_QC_se.max().max()))
     quality_range = [min_quality, max_quality]
 

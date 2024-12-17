@@ -74,7 +74,7 @@ else:
 
 if Q.shape[0] == 0:
     logging.error(
-        f"No bins passed filtering criteria! Bad luck!. You might want to tweek the filtering criteria. Also check the {snakemake.input.quality}"
+        f"No bins passed filtering criteria! Bad luck!. You might want to tweak the filtering criteria. Also check the {snakemake.input.quality}"
     )
     exit(1)
 

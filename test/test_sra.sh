@@ -67,7 +67,7 @@ atlas init-public SAMEA104416160  -w $WD
 
 atlas run None download_sra -w $WD $@
 
-## smal data
+## small data
 
 
 echo "Download reads from small dataset for real test"

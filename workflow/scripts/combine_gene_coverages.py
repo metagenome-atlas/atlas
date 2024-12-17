@@ -28,7 +28,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of script
+#### Beginning of script
 import numpy as np
 import pandas as pd
 import gc, os
@@ -94,7 +94,7 @@ with h5py.File(snakemake.output.cov, "w") as hdf_cov_file, h5py.File(
         "data", shape=gene_matrix_shape, fillvalue=0, compression="gzip"
     )
 
-    # add Smaple names attribute
+    # add Sample names attribute
     sample_names = np.array(list(snakemake.params.samples)).astype("S")
     combined_cov.attrs["sample_names"] = sample_names
     combined_counts.attrs["sample_names"] = sample_names

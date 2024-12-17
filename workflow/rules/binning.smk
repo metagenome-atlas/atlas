@@ -46,12 +46,12 @@ rule get_contig_coverage_from_bb:
     output:
         temp("{sample}/binning/coverage/{sample_reads}_coverage.txt"),
     run:
-        with open(input[0]) as fi, open(output[0], "w") as fo:
+        with open(input[0]) as fi, open(output[0], "w") as fout:
             # header
             next(fi)
             for line in fi:
                 toks = line.strip().split("\t")
-                print(toks[0], toks[1], sep="\t", file=fo)
+                print(toks[0], toks[1], sep="\t", file=fout)
 
 
 rule combine_coverages:
@@ -92,7 +92,7 @@ rule run_concoct:
         "{sample}/binning/concoct/intermediate_files/log.txt",
     conda:
         "%s/concoct.yaml" % CONDAENV
-    threads: 10  # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
+    threads: 10  # concoct uses 10 threads by default, with for update: https://github.com/BinPro/CONCOCT/issues/177
     resources:
         mem_mb=config["mem"] * 1000,
     shell:
@@ -137,7 +137,7 @@ rule get_metabat_depth_file:
         "{sample}/binning/metabat/metabat.log",
     conda:
         "../envs/metabat.yaml"
-    threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
+    threads: config["threads"]  # multithreaded through OMP_NUM_THREADS
     resources:
         mem_mb=config["mem"] * 1000,
     params:

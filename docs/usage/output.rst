@@ -94,7 +94,7 @@ Genomes
     atlas run genomes
 
 
-Binning can predict several times the same genome from different samples. To remove this reduncancy we use DeRep to filter and de-replicate the genomes. By default the threshold is set to **97.5%**, which corresponds somewhat to the *sub-species level*. The best quality genome for each cluster is choosen as the representative for each cluster. The represenative MAG are then renamed and used for annotation and quantification.
+Binning can predict several times the same genome from different samples. To remove this reduncancy we use DeRep to filter and de-replicate the genomes. By default the threshold is set to **97.5%**, which corresponds somewhat to the *sub-species level*. The best quality genome for each cluster is chosen as the representative for each cluster. The representative MAG are then renamed and used for annotation and quantification.
 
 The fasta sequence of the dereplicated and renamed genomes can be found in ``genomes/genomes``
 and their quality estimation are in ``genomes/checkm/completeness.tsv``.
@@ -138,7 +138,7 @@ All trees are properly rooted using the midpoint. The files can be found in ``ge
 
 **Functional annotation**
 
-Sicne version 2.8, We use `DRAM <https://github.com/shafferm/DRAM>`_ to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
+Since version 2.8, We use `DRAM <https://github.com/shafferm/DRAM>`_ to annotate the genomes with Functional annotations, e.g. KEGG and CAZy as well as to **infere pathways**, or more specifically Kegg modules.
 
 The Functional annotations for each genome can be found in ``genomes/annotations/dram/``
 
@@ -148,7 +148,7 @@ and are contain the following files:
  - ``annotations.tsv`` Table of all annotations
  - ``distil/metabolism_summary.xlsx`` Excel of the summary of all annotations
 
- The tool alos produces a nice report in `distil/product.html`_.
+ The tool also produces a nice report in `distil/product.html`_.
 
 .. _distil/product.html: ../_static/dram_product.html
 
@@ -290,7 +290,7 @@ Here is the R code to calculate the gene copies per million (analogous to transc
 
 
 Before version 2.15 the output of the counts were stored in a parquet file.
-The parquet file can be opended easily with ``pandas.read_parquet`` or ``arrow::read_parquet```.
+The parquet file can be opened easily with ``pandas.read_parquet`` or ``arrow::read_parquet```.
 However you need to load the full data into memory.
 
 .. code-block:: R
