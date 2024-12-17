@@ -234,7 +234,7 @@ rule index_genecatalog:
     params:
         index_size="12G",
     wrapper:
-        "v5.5.0/bio/minimap2/index"
+        "v1.19.0/bio/minimap2/index"
 
 
 rule concat_all_reads:
@@ -266,7 +266,7 @@ rule align_reads_to_Genecatalog:
         extra="-x sr --split-prefix {sample}_split_ ",
         sort="coordinate",
     wrapper:
-        "v5.5.0/bio/minimap2/aligner"
+        "v1.19.0/bio/minimap2/aligner"
 
 
 rule pileup_Genecatalog:
