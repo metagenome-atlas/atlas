@@ -4,9 +4,9 @@ channels:
   - defaults
 dependencies:
   - python >=3.10, < 3.12
-  - mamba
+  - libmamba= 2
   - bbmap >= 39.01, <40
-  - snakemake-minimal >= 8.12, <8.15
+  - snakemake-minimal >= 8.12, <8.26
   - pygments
   - networkx
   - graphviz
@@ -16,4 +16,4 @@ dependencies:
   - ruamel.yaml >=0.17
   - cookiecutter
   - wget
-  -  snakemake-executor-plugin-slurm
+  - snakemake-executor-plugin-slurm
