@@ -206,7 +206,7 @@ if config["genome_aligner"] == "minimap":
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v1.19.0/bio/minimap2/index"
+            "v5.5.0/bio/minimap2/index"
 
     rule align_reads_to_genomes:
         input:
@@ -223,7 +223,7 @@ if config["genome_aligner"] == "minimap":
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v1.19.0/bio/minimap2/aligner"
+            "v5.5.0/bio/minimap2/aligner"
 
 elif config["genome_aligner"] == "bwa":
 
