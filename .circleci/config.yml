@@ -34,7 +34,7 @@ jobs:
               source activate ./atlasenv
               conda list
             else
-              mamba env create -p ./atlasenv --file atlasenv.yml
+              conda env create -p ./atlasenv --file atlasenv.yml
             fi
       - save_cache:
           key: atlasenv-d-{{ checksum "atlasenv.yml" }}

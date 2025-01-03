@@ -1,5 +1,5 @@
 .. _conda: http://anaconda.org/
-.. _mamba: https://github.com/TheSnakePit/mamba
+
 
 Getting Started
 ***************
@@ -30,15 +30,8 @@ Setting strict channel priority can prevent quite some annoyances.
 
 The order is important by the way.
 
-Install mamba
--------------
-
-Conda can be a bit slow because there are so many packages. A good way around this is to use mamba_ (another snake).::
-
-    conda install mamba
-
-
-From now on, you can replace ``conda install`` with ``mamba install`` and see how much faster this snake is.
+_Previously atalas reccomended to use of mamba, which was faster. Since conda 24.9, conda uses the same library as backend.
+So we sugest to update conda ``conda update -n base conda``` and to use it._::
 
 Install metagenome-atlas
 ------------------------
@@ -48,7 +41,7 @@ We also recommend to specify the latest version of metagenome-atlas.
 
 .. code-block:: bash
 
-    mamba create -y -n atlasenv metagenome-atlas={latest_version}
+    conda create -y -n atlasenv metagenome-atlas={latest_version}
     source activate atlasenv
 
 where `{latest_version}` should be replaced by 
@@ -73,7 +66,7 @@ Alternatively, you can install metagenome Atlas directly from GitHub. This allow
     # git checkout branchname
 
     # create dependencies for atlas
-    mamba env create -n atlas-dev --file atlasenv.yml
+    conda env create -n atlas-dev --file atlasenv.yml
     conda activate atlas-dev
 
     # install atlas version. Changes in the files are directly available in the atlas dev version
