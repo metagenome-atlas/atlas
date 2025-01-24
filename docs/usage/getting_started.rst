@@ -15,7 +15,7 @@ Atlas is based on snakemake, which allows to run steps of the workflow in parall
 
 If you want to try atlas and have a linux computer (OSX may also work), you can use our `example data`_ for testing.
 
-For real metagenomic data atlas should be run on a _linux_ sytem, with enough memory (min ~50GB but assembly usually requires 250GB).
+For real metagenomic data atlas should be run on a _linux_ system, with enough memory (min ~50GB but assembly usually requires 250GB).
 
 
 
@@ -183,12 +183,12 @@ You can run ``atlas init-public <SRA_IDs>`` and specify any ids, like bioproject
 Atlas does the following steps:
 
   1. Search SRA for the corresponding sequences (Runs) and save them in the file ``SRA/RunInfo_original.tsv``. For example, if you specify a Bioproject, it fetches the information for all runs of this project. 
-  2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.tsv``
-  3. Sometimes the same Sample is sequenced on different lanes, which will result into multiple runs from the same sample. Atlas will **merge** runs from the same biosample.
+  2. Atlas filters the runs to contain only valid metagenome sequences. E.g. exclude singleton reads, 16S. The output will be saved in ``RunInfo.csv``
+  3. Sometimes the same Sample is sequenced on different lanes, which will result into multiple runs from the same sample. Atlas will **merge** runs from the same sample.
   4. Prepare a sample table and a config.yaml similar to the ``atlas init`` command.
 
 
-If you are not happy with the filtering atlas performs, you can go back to the ``SRA/RunInfo_original.tsv`` and create a new ``RunInfo.tsv``. 
+If you are not happy with the filtering atlas performs, you can go back to the ``SRA/RunInfo_original.tsv`` and create a new ``RunInfo.csv``. 
 If you then rerun ``atlas init-public continue`` it will continue from your modified RunInfo and do step 3. & 4. above. 
 
 
@@ -203,8 +203,8 @@ The downloaded reads are directly processed. However, if you only want to downlo
 
   atlas run None download_sra
 
-Example: Downloading reads from the human microbiome project2
-`````````````````````````````````````````````````````````````
+Example: Downloading reads from the human microbiome project 2
+``````````````````````````````````````````````````````````````
 ::
 
   atlas init-public --working-dir HMP2 PRJNA398089
@@ -213,12 +213,12 @@ Gives the output::
   
   [Atlas] INFO: Downloading runinfo from SRA
   [Atlas] INFO: Start with 2979 runs from 2979 samples
-  [Atlas] INFO: Runs have the folowing values for LibrarySource: METAGENOMIC, METATRANSCRIPTOMIC
-          Select only runs LibrarySource == METAGENOMIC, Filtered out 762 runs
-  [Atlas] INFO: Runs have the folowing values for LibrarySelection: PCR, RT-PCR, RANDOM
-          Select only runs LibrarySelection == RANDOM, Filtered out 879 runs
+  [Atlas] INFO: Runs have the following values for library_source: METAGENOMIC, METATRANSCRIPTOMIC
+          Select only runs library_source == METAGENOMIC, Filtered out 762 runs
+  [Atlas] INFO: Runs have the following values for library_selection: PCR, RT-PCR, RANDOM
+          Select only runs library_selection == RANDOM, Filtered out 879 runs
   [Atlas] INFO: Selected 1338 runs from 1338 samples
-  [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.tsv
+  [Atlas] INFO: Write filtered runinfo to HMP2/RunInfo.csv
   [Atlas] INFO: Prepared sample table with 1338 samples
   [Atlas] INFO: Configuration file written to HMP2/config.yaml
           You may want to edit it using any text editor.
@@ -269,7 +269,7 @@ We recommend to use atlas on a :ref:`cluster` system, which can be set up in a v
     -h, --help              Show this message and exit.
 
 
-Execue Atlas
+Execute Atlas
 ************
 
 

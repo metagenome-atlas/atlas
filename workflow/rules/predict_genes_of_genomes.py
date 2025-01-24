@@ -31,7 +31,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of scripts
+#### Beginning of scripts
 
 # python 3.5 without f strings
 
@@ -51,7 +51,7 @@ def predict_genes(genome, fasta, out_dir, log):
 
     shell('printf "{genome}:\n" > {log}'.format(genome=genome, log=log))
     shell(
-        "prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p sinlge -c -m -f gff 2>> {log} ".format(
+        "prodigal -i {fasta} -o {gff} -d {fna} -a {faa} -p single -c -m -f gff 2>> {log} ".format(
             fasta=fasta, log=log, gff=gff, fna=fna, faa=faa
         )
     )

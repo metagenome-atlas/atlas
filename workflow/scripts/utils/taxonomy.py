@@ -16,7 +16,7 @@ def tax2table(Taxonomy_Series, split_character=";", remove_prefix=False):
     # drop missing values
     if Taxonomy_Series.isnull().any():
         warnings.warn(
-            "Some samples have no taxonomy asigned. Samples:\n"
+            "Some samples have no taxonomy assigned. Samples:\n"
             + ", ".join(Taxonomy_Series.index[Taxonomy_Series.isnull()].astype(str))
         )
 

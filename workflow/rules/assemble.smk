@@ -90,7 +90,7 @@ else:
             # make symlink
             assert len(input) == len(
                 output
-            ), "Input and ouput files have not same number, can not create symlinks for all."
+            ), "Input and output files have not same number, can not create symlinks for all."
             for i in range(len(input)):
                 os.symlink(os.path.abspath(input[i]), output[i])
 
@@ -170,7 +170,7 @@ rule error_correction:
     params:
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
-        prefilter=2,  # Ignore kmers with less than 2 occurance
+        prefilter=2,  # Ignore kmers with less than 2 occurrence
         minprob=config["error_correction_minprob"],
         tossdepth=config["error_correction_minimum_kmer_depth"],
         tossjunk="t" if config["error_correction_remove_lowdepth"] else "f",
@@ -656,7 +656,7 @@ rule pileup_contigs_sample:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",  # This log file is uesd for report
+        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",  # This log file is used for report
     conda:
         "%s/required_packages.yaml" % CONDAENV
     threads: config.get("threads", 1)

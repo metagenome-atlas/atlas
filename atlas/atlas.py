@@ -9,7 +9,7 @@ import click
 
 from snakemake.io import load_configfile
 from .make_config import validate_config
-from .init.atlas_init import run_init  # , run_init_sra
+from .init.atlas_init import run_init, run_init_sra
 
 from .__init__ import __version__
 
@@ -32,7 +32,7 @@ def handle_max_mem(max_mem, profile):
         import psutil
         from math import floor
 
-        # calulate max  system meory in GB (float!)
+        # calculate max  system memory in GB (float!)
         max_system_memory = psutil.virtual_memory().total / (1024**3)
 
         if max_mem is None:
@@ -66,7 +66,7 @@ def cli(obj):
 cli.add_command(run_init)
 
 
-# cli.add_command(run_init_sra)
+cli.add_command(run_init_sra)
 
 
 def get_snakefile(file="workflow/Snakefile"):
@@ -146,7 +146,7 @@ def get_snakefile(file="workflow/Snakefile"):
 def run_workflow(
     workflow, working_dir, config_file, jobs, max_mem, profile, dryrun, snakemake_args
 ):
-    """Runs the ATLAS pipline
+    """Runs the ATLAS pipeline
 
     By default all steps are executed but a sub-workflow can be specified.
     Needs a config-file and expects to find a sample table in the working-directory. Both can be generated with 'atlas init'

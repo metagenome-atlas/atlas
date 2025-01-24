@@ -106,7 +106,7 @@ jobs:
           path: databases
           key: conda-envs-assembly
 
-        # - name: upack conda envs
+        # - name: unpack conda envs
         #   if: steps.get-envs.outputs.cache-hit != 'true'
         #   run: tar -xzf assembly_conda_envs.tar.gz
 
@@ -198,7 +198,7 @@ jobs:
           path: wd
           key: assembly-working-dir
 
-      - name: dryrun assembly shold need nothing to be done
+      - name: dryrun assembly should need nothing to be done
         run: |
           ls -l wd
           ls -l databases/conda_envs
@@ -264,7 +264,7 @@ jobs:
           fail-on-cache-miss: true
           key: assembly-working-dir
 
-      - name: dryrun assembly shold need nothing to be done
+      - name: dryrun assembly should need nothing to be done
         run: |
           ls -l wd
           ls -l databases

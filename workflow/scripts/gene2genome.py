@@ -28,7 +28,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-#### Begining of script
+#### Beginning of script
 
 import pandas as pd
 from utils import gene_scripts

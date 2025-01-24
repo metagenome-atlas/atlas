@@ -16,3 +16,4 @@ dependencies:
   - ruamel.yaml >=0.17
   - cookiecutter
   - wget
+  - xmltodict
