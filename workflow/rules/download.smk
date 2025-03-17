@@ -47,7 +47,7 @@ rule download_partial_gtdb:
         ),
     threads: 1
     params:
-        url=lambda wc, output: f"{GTDB_DATA_URL}/split_package/{ Path(output[0]).name}",
+        url=lambda wc, output: f"{GTDB_DATA_URL}/split_package/{Path(output[0]).name}",
     resources:
         time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
