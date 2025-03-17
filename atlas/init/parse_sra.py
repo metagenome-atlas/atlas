@@ -158,8 +158,8 @@ def validate_merging_runinfo(path):
 
         exit(1)
 
-    # Warn if samples are not identical values if expected the same
-
+    # Warn if samples are not identical for the following columns
+    Expected_same_values = ["Experiment", "Model", "LibraryName"]
     for key in Expected_same_values:
         problematic_samples = []
 
