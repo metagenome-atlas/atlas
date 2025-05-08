@@ -6,39 +6,38 @@
 ![Mastodon Follow](https://img.shields.io/mastodon/follow/109273833677404282?domain=https%3A%2F%2Fmstdn.science&style=social)
 <!--[![follow on twitter](https://img.shields.io/twitter/follow/SilasKieser.svg?style=social&label=Follow)](https://twitter.com/search?f=tweets&q=%40SilasKieser%20%23metagenomeAtlas&src=typd) -->
 
-
 Metagenome-atlas is a easy-to-use metagenomic pipeline based on snakemake. It handles all steps from QC, Assembly, Binning, to Annotation.
 
 ![scheme of workflow](resources/images/atlas_list.png?raw=true)
 
 You can start using atlas with three commands:
-```
+
+```sh
     mamba install -y -c bioconda -c conda-forge metagenome-atlas={latest_version}
     atlas init --db-dir databases path/to/fastq/files
     atlas run all
 ```
+
 where `{latest_version}` should be replaced by [![Version](https://anaconda.org/bioconda/metagenome-atlas/badges/version.svg)](https://anaconda.org/bioconda/metagenome-atlas)
 
-
-# Webpage
+## Webpage
 
 [metagenome-atlas.github.io](https://metagenome-atlas.github.io/)
 
-# Documentation
+## Documentation
 
-https://metagenome-atlas.readthedocs.io/
+<https://metagenome-atlas.readthedocs.io/>
 
 [Tutorial](https://github.com/metagenome-atlas/Tutorial)
 
-# Citation
+## Citation
 
 > ATLAS: a Snakemake workflow for assembly, annotation, and genomic binning of metagenome sequence data.  
-> Kieser, S., Brown, J., Zdobnov, E. M., Trajkovski, M. & McCue, L. A.   
+> Kieser, S., Brown, J., Zdobnov, E. M., Trajkovski, M. & McCue, L. A.
 > BMC Bioinformatics 21, 257 (2020).  
 > doi: [10.1186/s12859-020-03585-4](https://doi.org/10.1186/s12859-020-03585-4)
 
-
-# Developpment/Extensions
+## Development/Extensions
 
 Here are some ideas I work or want to work on when I have time. If you want to contribute or have some ideas let me know via a feature request issue.
 

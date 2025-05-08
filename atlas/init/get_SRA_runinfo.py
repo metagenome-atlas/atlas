@@ -276,7 +276,7 @@ class SRAUtils:
             # SAME, SAMD, and SAMN
             return SRAUtils.getInfoFromBioSampleAcc(identifier)
         elif identifier.startswith("PRJ"):
-            # DDBJ archvie bioproject prefix PRJNA SAMEA2796165
+            # DDBJ archive bioproject prefix PRJNA SAMEA2796165
             return SRAUtils.getInfoFromBioProjectAcc(identifier)
         else:
             raise Exception(
@@ -294,7 +294,7 @@ def get_runtable_from_ids(identifiers, output_file="SRA_runtable.tsv", overwrite
     with open(output_file, "w") as outInfoFile:
         identifierCount = 0
 
-        # don't show progress bar if only one elelment
+        # don't show progress bar if only one element
         if len(identifiers) > 1:
             identifier_with_progressbar = tqdm(identifiers)
         else:
@@ -317,7 +317,7 @@ def get_runtable_from_ids(identifiers, output_file="SRA_runtable.tsv", overwrite
 
 
 def parse_arguments_from_terminal():
-    ## Comand line interface
+    ## Command line interface
     import argparse
 
     parser = argparse.ArgumentParser()

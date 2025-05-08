@@ -106,7 +106,7 @@ def filter_runinfo(RunTable, ignore_paired=False):
         Platforms = ", ".join(RunTable.Platform.unique())
 
         logger.warning(
-            f"Your samples are sequenced on the folowing platform: {Platforms}\n"
+            f"Your samples are sequenced on the following platform: {Platforms}\n"
             "I don't know how well Atlas handles non-illumina reads.\n"
             "If you have long-reads, specify them via a the longreads, column in the sample table."
         )
@@ -139,14 +139,14 @@ def validate_merging_runinfo(path):
 
     if len(problematic_samples) > 0:
         logger.error(
-            f"You attemt to merge runs from the same sample. "
-            f"But for {len(problematic_samples)} samples the runs are sequenced with different platforms and should't be merged.\n"
-            f"Please resolve the abiguity in the table {path} and rerun the command.\n"
+            f"You attempt to merge runs from the same sample. "
+            f"But for {len(problematic_samples)} samples the runs are sequenced with different platforms and shouldn't be merged.\n"
+            f"Please resolve the ambiguity in the table {path} and rerun the command.\n"
         )
 
         exit(1)
 
-    # Warn if samples are not identical for the follwing columns
+    # Warn if samples are not identical for the following columns
     Expected_same_values = ["Experiment", "Model", "LibraryName"]
     for key in Expected_same_values:
         problematic_samples = []
@@ -161,7 +161,7 @@ def validate_merging_runinfo(path):
                 problematic_samples_list = " ".join(problematic_samples)
 
                 logger.warning(
-                    "You attemt to merge runs from the same sample. "
+                    "You attempt to merge runs from the same sample. "
                     f"But for {len(problematic_samples)} samples the runs have different {key}: {problematic_samples_list}\n"
                     f"You can modify the table {path} and rerun the command.\n"
                 )
