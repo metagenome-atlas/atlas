@@ -7,7 +7,7 @@ import subprocess
 import click
 
 
-from snakemake.io import load_configfile
+from snakemake.common.configfile import load_configfile
 from .make_config import validate_config
 from .init.atlas_init import run_init  # , run_init_sra
 
