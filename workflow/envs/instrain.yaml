@@ -3,5 +3,6 @@ channels:
 - bioconda
 - defaults
 dependencies:
-- instrain =1.5.*
-- pandas>=1.5,<2.0
+- instrain >=1.9, <2
+- python <3.12
+- samtools >=1.21, <2
