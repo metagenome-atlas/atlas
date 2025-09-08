@@ -1,11 +1,9 @@
-Pre-Assambly-processing
-------------------------
+# Pre-Assambly-processing
 
-Normalization Parameters
-``````````````````````````
+## Normalization Parameters
 
 To improve assembly time and often assemblies themselves, coverage is
-normalized across kmers to a target depth and can be set using::
+normalized across kmers to a target depth and can be set using:
 
     # kmer length over which we calculated coverage
     normalization_kmer_length: 21
@@ -14,30 +12,22 @@ normalized across kmers to a target depth and can be set using::
     # reads must have at least this many kmers over min depth to be retained
     normalization_minimum_kmers: 8
 
+## Error Correction
 
-
-Error Correction
-``````````````````````````
-
-Optionally perform error correction using ``tadpole.sh`` from BBTools::
+Optionally perform error correction using `tadpole.sh` from BBTools:
 
     perform_error_correction: true
 
+# Assembly Parameters
 
+## Assembler
 
-Assembly Parameters
-------------------------
-
-
-Assembler
-``````````````````````````
-
-Currently, the supported assemblers are 'spades' and 'megahit' with the
-default setting of::
+Currently, the supported assemblers are \'spades\' and \'megahit\' with
+the default setting of:
 
     assembler: megahit
 
-Both assemblers have settings that can be altered in the configuration::
+Both assemblers have settings that can be altered in the configuration:
 
     # minimum multiplicity for filtering (k_min+1)-mers
     megahit_min_count: 2
@@ -58,11 +48,9 @@ Both assemblers have settings that can be altered in the configuration::
     # comma-separated list of k-mer sizes (must be odd and less than 128)
     spades_k: auto
 
+## Contig Filtering
 
-Contig Filtering
-``````````````````````````
-
-After assembly, contigs can be filtered based on several metrics::
+After assembly, contigs can be filtered based on several metrics:
 
     # Discard contigs with lower average coverage.
     minimum_average_coverage: 5
