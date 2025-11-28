@@ -77,7 +77,7 @@ else:
 
     rule init_pre_assembly_processing:
         input:
-            lambda wildcards: get_quality_controlled_reads(wildcards, include_se=True),
+            lambda wildcards: get_quality_controlled_reads(wildcards),
         output:
             temp(
                 expand(
