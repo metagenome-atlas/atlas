@@ -173,17 +173,18 @@ rule binning:
 rule assembly_one_sample:
     input:
         get_assembly,
-        "{sample}/sequence_alignment/{sample}.bam",
-        "{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-        "{sample}/assembly/contig_stats/final_contig_stats.txt",
+        "Assembly/alignment_stats/{sample}/{sample}_coverage_stats.txt",
+        "Assembly/contig_stats/{sample}_final_contig_stats.txt",
+        "Assembly/annotation/predicted_genes/{sample}.tsv",
     output:
-        touch("{sample}/finished_assembly"),
+        touch("Intermediate/assembly/flag/{sample}_finished_assembly"),
 
 
 rule assembly:
     input:
-        expand("{sample}/finished_assembly", sample=SAMPLES),
-        "reports/assembly_report.html",
+        expand("Intermediate/assembly/flag/{sample}_finished_assembly", sample=SAMPLES),
+        "Assembly/assembly_report.html",
+        "Assembly/combined_contig_stats.tsv",
         "finished_QC",
     output:
         touch("finished_assembly"),

@@ -7,9 +7,9 @@ include: "bin_quality.smk"
 rule pileup_for_binning:
     input:
         fasta=get_assembly,
-        bam="{sample}/sequence_alignment/{sample_reads}.bam",
+        bam=get_bam,
     output:
-        covstats="{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
+        covstats="Intermediate/binning/coverage/{sample}_to_{sample_reads}_coverage_stats.txt",
     params:
         pileup_secondary=(
             "t"
@@ -17,7 +17,7 @@ rule pileup_for_binning:
             else "f"
         ),
     log:
-        "{sample}/logs/binning/calculate_coverage/pileup_reads_from_{sample_reads}_to_filtered_contigs.log",  # this file is udes for assembly report
+        "logs/binning/calculate_coverage/pileup_reads_from_{sample_reads}_to_{sample}.log", 
     conda:
         "../envs/required_packages.yaml"
     threads: config["threads"]
@@ -42,9 +42,9 @@ localrules:
 
 rule get_contig_coverage_from_bb:
     input:
-        coverage="{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
+        coverage=rules.pileup_for_binning.output.covstats,
     output:
-        temp("{sample}/binning/coverage/{sample_reads}_coverage.txt"),
+        temp("Intermediate/binning/contig_coverage/{sample}_to_{sample_reads}.txt"),
     run:
         with open(input[0]) as fi, open(output[0], "w") as fo:
             # header
@@ -57,12 +57,12 @@ rule get_contig_coverage_from_bb:
 rule combine_coverages:
     input:
         covstats=lambda wc: expand(
-            "{sample}/binning/coverage/{sample_reads}_coverage_stats.txt",
+            "Intermediate/binning/contig_coverage/{sample}_to_{sample_reads}.txt",
             sample_reads=get_alls_samples_of_group(wc),
             sample=wc.sample,
         ),
     output:
-        "{sample}/binning/coverage/combined_coverage.tsv",
+        "Intermediate/binning/combined_contig_coverage/{sample}.tsv",
     run:
         from utils.parsers_bbmap import combine_coverages
 
@@ -73,68 +73,18 @@ rule combine_coverages:
         combined_cov.T.to_csv(output[0], sep="\t")
 
 
-## CONCOCT
-rule run_concoct:
-    input:
-        coverage="{sample}/binning/coverage/combined_coverage.tsv",
-        fasta=get_assembly,
-    output:
-        "{{sample}}/binning/concoct/intermediate_files/clustering_gt{}.csv".format(
-            config["concoct"]["min_contig_length"]
-        ),
-    params:
-        basename=lambda wc, output: os.path.dirname(output[0]),
-        Nexpected_clusters=config["concoct"]["Nexpected_clusters"],
-        read_length=config["concoct"]["read_length"],
-        min_length=config["concoct"]["min_contig_length"],
-        niterations=config["concoct"]["Niterations"],
-    log:
-        "{sample}/binning/concoct/intermediate_files/log.txt",
-    conda:
-        "%s/concoct.yaml" % CONDAENV
-    threads: 10  # concoct uses 10 threads by default, wit for update: https://github.com/BinPro/CONCOCT/issues/177
-    resources:
-        mem_mb=config["mem"] * 1000,
-    shell:
-        """
-        concoct -c {params.Nexpected_clusters} \
-            --coverage_file {input.coverage} \
-            --composition_file {input.fasta} \
-            --basename {params.basename} \
-            --read_length {params.read_length} \
-            --length_threshold {params.min_length} \
-            --converge_out \
-            --iterations {params.niterations}
-        """
-
-
-localrules:
-    convert_concoct_csv_to_tsv,
-
-
-rule convert_concoct_csv_to_tsv:
-    input:
-        rules.run_concoct.output[0],
-    output:
-        "{sample}/binning/concoct/cluster_attribution.tmp",
-    run:
-        with open(input[0]) as fin, open(output[0], "w") as fout:
-            for line in fin:
-                fout.write(line.replace(",", "\t"))
-
-
 ## METABAT
 rule get_metabat_depth_file:
     input:
         bams=lambda wc: expand(
-            "{sample}/sequence_alignment/{sample_reads}.bam",
+            get_bam,
             sample_reads=get_alls_samples_of_group(wc),
             sample=wc.sample,
         ),
     output:
-        temp("{sample}/binning/metabat/metabat_depth.txt"),
+        temp("Intermediate/binning/metabat/{sample}/metabat_depth.txt"),
     log:
-        "{sample}/binning/metabat/metabat.log",
+        "logs/binning/{sample}/binning/jgi_summarize_bam_contig_depths.log",
     conda:
         "../envs/metabat.yaml"
     threads: config["threads"]  # multithreaded trough OMP_NUM_THREADS
@@ -163,7 +113,7 @@ rule metabat:
         depth_file=rules.get_metabat_depth_file.output,
         contigs=get_assembly,
     output:
-        "{sample}/binning/metabat/cluster_attribution.tmp",
+        "Intermediate/binning/metabat/{sample}/cluster_attribution.tmp",
     params:
         sensitivity=get_metabat_sensitivity(),
         min_contig_len=config["metabat"]["min_contig_length"],
@@ -171,7 +121,7 @@ rule metabat:
     benchmark:
         "logs/benchmarks/binning/metabat/{sample}.txt"
     log:
-        "{sample}/logs/binning/metabat.txt",
+        "logs/binning/{sample}/metabat.log",
     conda:
         "%s/metabat.yaml" % CONDAENV
     threads: config["threads"]
@@ -193,22 +143,22 @@ rule metabat:
 rule maxbin:
     input:
         fasta=get_assembly,
-        abund="{sample}/binning/coverage/{sample}_coverage.txt",
+        abund="Intermediate/binning/contig_coverage/{sample}_to_{sample}.txt",
     output:
-        directory("{sample}/binning/maxbin/intermediate_files"),
-        "{sample}/binning/maxbin/{sample}.summary",
-        "{sample}/binning/maxbin/{sample}.marker",
-        "{sample}/binning/maxbin/{sample}.marker_of_each_bin.tar.gz",
-        "{sample}/binning/maxbin/{sample}.log",
+        directory("Intermediate/binning/maxbin/{sample}/intermediate_files"),
+        "Intermediate/binning/maxbin/{sample}/{sample}.summary",
+        "Intermediate/binning/maxbin/{sample}/{sample}.marker",
+        "Intermediate/binning/maxbin/{sample}/{sample}.marker_of_each_bin.tar.gz",
+        "Intermediate/binning/maxbin/{sample}/maxbin.log",
     params:
         mi=config["maxbin"]["max_iteration"],
         mcl=config["maxbin"]["min_contig_length"],
         pt=config["maxbin"]["prob_threshold"],
         output_prefix=lambda wc, output: os.path.join(output[0], wc.sample),
     log:
-        "{sample}/logs/binning/maxbin.log",
+        "logs/binning/{sample}/maxbin.log",
     conda:
-        "%s/maxbin.yaml" % CONDAENV
+        "../envs/maxbin.yaml"
     threads: config["threads"]
     shell:
         """
@@ -240,9 +190,9 @@ localrules:
 
 rule get_unique_cluster_attribution:
     input:
-        "{sample}/binning/{binner}/cluster_attribution.tmp",
+        "Intermediate/binning/{binner}/{sample}/cluster_attribution.tmp",
     output:
-        "{sample}/binning/{binner}/cluster_attribution.tsv",
+        "Binning/cluster_attribution/{binner}/{sample}.tsv",
     run:
         import pandas as pd
         import numpy as np
@@ -286,9 +236,9 @@ rule get_unique_cluster_attribution:
 
 rule get_maxbin_cluster_attribution:
     input:
-        "{sample}/binning/maxbin/intermediate_files",
+        "Intermediate/binning/maxbin/{sample}/intermediate_files",
     output:
-        "{sample}/binning/maxbin/cluster_attribution.tmp",
+        "Intermediate/binning/maxbin/{sample}/cluster_attribution.tmp",
     params:
         file_name=lambda wc, input: "{folder}/{sample}.{{binid}}.fasta".format(
             folder=input[0], **wc
@@ -308,14 +258,14 @@ rule get_maxbin_cluster_attribution:
 
 rule get_bins:
     input:
-        cluster_attribution="{sample}/binning/{binner}/cluster_attribution.tsv",
+        cluster_attribution="Binning/cluster_attribution/{binner}/{sample}.tsv",
         contigs=get_assembly,
     output:
-        directory("{sample}/binning/{binner}/bins"),
+        directory("Intermediate/binning/{binner}/bins/{sample}"),
     conda:
         "../envs/sequence_utils.yaml"
     log:
-        "{sample}/logs/binning/get_bins_{binner}.log",
+        "logs/binning/{sample}/get_bins_{binner}.log",
     script:
         "../scripts/get_fasta_of_bins.py"
 
@@ -326,9 +276,9 @@ localrules:
 
 rule get_unique_bin_ids:
     input:
-        "{sample}/binning/{binner}/cluster_attribution.tsv",
+        "Binning/cluster_attribution/{binner}/{sample}.tsv",
     output:
-        "{sample}/binning/DASTool/{binner}.scaffolds2bin",
+        "Intermediate/binning/DASTool/{binner}/{sample}.scaffolds2bin",
     shell:
         "cp {input} {output}"
 
@@ -336,15 +286,16 @@ rule get_unique_bin_ids:
 rule run_das_tool:
     input:
         cluster_attribution=expand(
-            "{{sample}}/binning/DASTool/{binner}.scaffolds2bin",
+            "Intermediate/binning/DASTool/{binner}/{{sample}}.scaffolds2bin",
             binner=config["binner"],
         ),
         contigs=get_assembly,
         proteins="{sample}/annotation/predicted_genes/{sample}.faa",
     output:
-        "{sample}/binning/DASTool/{sample}_DASTool_summary.tsv",
-        "{sample}/binning/DASTool/{sample}_allBins.eval",
-        cluster_attribution="{sample}/binning/DASTool/cluster_attribution.tsv",
+        "Binning/DASTool/{sample}_DASTool_summary.tsv",
+        "Binning/DASTool/{sample}_allBins.eval",
+        "Binning/DASTool/{sample}_DASTool_contig2bin.tsv",
+        cluster_attribution="Binning/cluster_attribution/DASTool/{sample}.tsv",
     threads: config["threads"]
     log:
         "{sample}/logs/binning/DASTool.log",
@@ -353,7 +304,7 @@ rule run_das_tool:
     params:
         binner_names=",".join(config["binner"]),
         scaffolds2bin=lambda wc, input: ",".join(input.cluster_attribution),
-        output_prefix="{sample}/binning/DASTool/{sample}",
+        output_prefix="Binning/DASTool/{sample}",
         score_threshold=config["DASTool"]["score_threshold"],
         megabin_penalty=config["DASTool"]["megabin_penalty"],
         duplicate_penalty=config["DASTool"]["duplicate_penalty"],
@@ -370,7 +321,7 @@ rule run_das_tool:
         " --threads {threads} "
         " --debug "
         " --score_threshold {params.score_threshold} &> {log} "
-        " ; mv {params.output_prefix}_DASTool_contig2bin.tsv {output.cluster_attribution} &>> {log}"
+        " ; cp {params.output_prefix}_DASTool_contig2bin.tsv {output.cluster_attribution} &>> {log}"
 
 
 #

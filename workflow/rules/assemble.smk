@@ -32,7 +32,7 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
         output:
             temp(
                 expand(
-                    "{{sample}}/assembly/reads/QC_{fraction}.fastq.gz",
+                    "Intermediate/assembly/reads/{{sample}}/QC_{fraction}.fastq.gz",
                     fraction=MULTIFILE_FRACTIONS,
                 )
             ),
@@ -46,9 +46,9 @@ if SKIP_QC & (len(MULTIFILE_FRACTIONS) < 3):
             outputs=lambda wc, output: io_params_for_tadpole(output, "out"),
             verifypaired="t" if PAIRED_END else "f",
         log:
-            "{sample}/logs/assembly/init.log",
+            "logs/assembly/{sample}/init.log",
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "../envs/required_packages.yaml"
         threads: config.get("simplejob_threads", 1)
         resources:
             mem_mb=config["simplejob_mem"] * 1000,
@@ -81,7 +81,7 @@ else:
         output:
             temp(
                 expand(
-                    "{{sample}}/assembly/reads/QC_{fraction}.fastq.gz",
+                    "Intermediate/assembly/reads/{{sample}}/QC_{fraction}.fastq.gz",
                     fraction=MULTIFILE_FRACTIONS,
                 )
             ),
@@ -100,20 +100,18 @@ else:
 rule normalize_reads:
     input:
         expand(
-            "{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
+            "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS,
         ),
     output:
         reads=temp(
             expand(
-                "{{sample}}/assembly/reads/{{previous_steps}}.normalized_{fraction}.fastq.gz",
+                "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}.normalized_{fraction}.fastq.gz",
                 fraction=MULTIFILE_FRACTIONS,
             )
         ),
-        histin="{sample}/assembly/normalization/histogram_{previous_steps}_before_normalization.tsv.gz",
-        histout=(
-            "{sample}/assembly/normalization/histogram_{previous_steps}_after.tsv.gz"
-        ),
+        histin="Assembly/pre-processing/histogram/{sample}_{previous_steps}_before_normalization.tsv.gz",
+        histout="Assembly/pre-processing/histogram/{sample}_{previous_steps}_after_normalization.tsv.gz"
     params:
         k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         target=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
@@ -121,11 +119,9 @@ rule normalize_reads:
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output.reads, key="out"),
     log:
-        "{sample}/logs/assembly/pre_process/normalization_{previous_steps}.log",
-    benchmark:
-        "logs/benchmarks/assembly/pre_process/normalization/{sample}_{previous_steps}.txt"
+        "logs/assembly/pre_process/normalization/{sample}_{previous_steps}.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "../envs/required_packages.yaml"
     threads: config.get("threads", 1)
     resources:
         mem_mb=config["mem"] * 1000,
@@ -148,22 +144,20 @@ rule normalize_reads:
 rule error_correction:
     input:
         expand(
-            "{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
+            "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}_{fraction}.fastq.gz",
             fraction=MULTIFILE_FRACTIONS,
         ),
     output:
-        temp(
+            #temp(
             expand(
-                "{{sample}}/assembly/reads/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
+                "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
                 fraction=MULTIFILE_FRACTIONS,
             )
-        ),
-    benchmark:
-        "logs/benchmarks/assembly/pre_process/{sample}_error_correction_{previous_steps}.txt"
+
     log:
-        "{sample}/logs/assembly/pre_process/error_correction_{previous_steps}.log",
+        "logs/assembly/pre_process/error_correction/{sample}_{previous_steps}.log",
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "../envs/required_packages.yaml"
     resources:
         mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
@@ -200,13 +194,13 @@ rule error_correction:
 rule merge_pairs:
     input:
         expand(
-            "{{sample}}/assembly/reads/{{previous_steps}}_{fraction}.fastq.gz",
+            "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}_{fraction}.fastq.gz",
             fraction=["R1", "R2"],
         ),
     output:
         temp(
             expand(
-                "{{sample}}/assembly/reads/{{previous_steps}}.merged_{fraction}.fastq.gz",
+                "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}.merged_{fraction}.fastq.gz",
                 fraction=["R1", "R2", "me"],
             )
         ),
@@ -215,11 +209,11 @@ rule merge_pairs:
         mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
     conda:
-        "%s/required_packages.yaml" % CONDAENV
+        "../envs/required_packages.yaml"
     log:
-        "{sample}/logs/assembly/pre_process/merge_pairs_{previous_steps}.log",
+        "logs/assembly/pre_process/merge_pairs/{sample}_{previous_steps}.log",
     benchmark:
-        "logs/benchmarks/assembly/pre_process/merge_pairs_{previous_steps}/{sample}.txt"
+        "logs/benchmarks/assembly/pre_process/merge_pairs/{sample}_{previous_steps}.txt"
     shadow:
         "shallow"
     params:
@@ -256,14 +250,14 @@ if config.get("assembler", "megahit") == "megahit":
     rule merge_se_me_for_megahit:
         input:
             expand(
-                "{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                "Intermediate/assembly/reads/{{sample}}/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
                 fraction=["se", "me"],
                 assembly_preprocessing_steps=assembly_preprocessing_steps,
             ),
         output:
             temp(
                 expand(
-                    "{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                    "Intermediate/assembly/reads/{{sample}}/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
                     fraction=["co"],
                     assembly_preprocessing_steps=assembly_preprocessing_steps,
                 )
@@ -286,16 +280,16 @@ if config.get("assembler", "megahit") == "megahit":
     rule run_megahit:
         input:
             expand(
-                "{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                "Intermediate/assembly/reads/{{sample}}/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps,
             ),
         output:
-            temp("{sample}/assembly/megahit/{sample}_prefilter.contigs.fa"),
+            temp("Intermediate/assembly/megahit/{sample}_prefilter.contigs.fa"),
         benchmark:
             "logs/benchmarks/assembly/megahit/{sample}.txt"
         log:
-            "{sample}/logs/assembly/megahit.log",
+            "logs/assembly/megahit/{sample}.log",
         params:
             min_count=config.get("megahit_min_count", MEGAHIT_MIN_COUNT),
             k_min=config.get("megahit_k_min", MEGAHIT_K_MIN),
@@ -341,9 +335,9 @@ if config.get("assembler", "megahit") == "megahit":
 
     rule rename_megahit_output:
         input:
-            "{sample}/assembly/megahit/{sample}_prefilter.contigs.fa",
+            rules.run_megahit.output,
         output:
-            temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
+            temp("Intermediate/assembly/post_processing/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
 
@@ -406,27 +400,27 @@ else:
                 "longreads": "",
             }
 
-        params["outdir"] = "{sample}/assembly".format(sample=wc.sample)
+        params["outdir"] = "Intermediate/assembly/spades/{sample}".format(sample=wc.sample)
 
         return params
 
     rule run_spades:
         input:
             expand(
-                "{{sample}}/assembly/reads/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
+                "Intermediate/assembly/reads/{{sample}}/{assembly_preprocessing_steps}_{fraction}.fastq.gz",
                 fraction=ASSEMBLY_FRACTIONS,
                 assembly_preprocessing_steps=assembly_preprocessing_steps,
             ),
         output:
-            "{sample}/assembly/contigs.fasta",
-            "{sample}/assembly/scaffolds.fasta",
+            "Intermediate/assembly/spades/{sample}/contigs.fasta",
+            "Intermediate/assembly/spades/{sample}/scaffolds.fasta",
         benchmark:
             "logs/benchmarks/assembly/spades/{sample}.txt"
         params:
             p=lambda wc, input: spades_parameters(wc, input),
             k=config.get("spades_k", SPADES_K),
         log:
-            "{sample}/logs/assembly/spades.log",
+            "logs/assembly/spades/{sample}.log",
         conda:
             "../envs/spades.yaml"
         threads: config["assembly_threads"]
@@ -455,11 +449,11 @@ else:
 
     rule rename_spades_output:
         input:
-            "{{sample}}/assembly/{sequences}.fasta".format(
+            "Intermediate/assembly/spades/{{sample}}/{sequences}.fasta".format(
                 sequences="scaffolds" if config["spades_use_scaffolds"] else "contigs"
             ),
         output:
-            temp("{sample}/assembly/{sample}_raw_contigs.fasta"),
+            temp("Intermediate/assembly/post_processing/{sample}_raw_contigs.fasta"),
         shell:
             "cp {input} {output}"
 
@@ -469,16 +463,16 @@ else:
 
 rule rename_contigs:
     input:
-        "{sample}/assembly/{sample}_raw_contigs.fasta",
+        "Intermediate/assembly/post_processing/{sample}_raw_contigs.fasta",
     output:
-        fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
-        mapping_table="{sample}/assembly/old2new_contig_names.tsv",
+        fasta="Intermediate/assembly/post_processing/{sample}_prefilter_contigs.fasta",
+        mapping_table="Assembly/post_processing/old2new_contig_names/{sample}.tsv",
     threads: config.get("simplejob_threads", 1)
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
         time_min=60 * config["runtime"]["default"],
     log:
-        "{sample}/logs/assembly/post_process/rename_and_filter_size.log",
+        "logs/assembly/post_process/rename_and_filter_size/{sample}/.log",
     params:
         minlength=config["minimum_contig_length"],
     conda:
@@ -496,11 +490,11 @@ if config["filter_contigs"]:
             query=get_quality_controlled_reads,
             target=rules.rename_contigs.output,
         output:
-            bam=temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.bam"),
+            bam=temp("Intermediate/assembly/post_processing/alignment_to_prefilter_contigs/{sample}.bam"),
         params:
             extra="-x sr",
         log:
-            "{sample}/logs/assembly/post_process/align_reads_to_prefiltered_contigs.log",
+            "logs/assembly/post_process/alignment_to_prefilter_contigs/{sample}.log",
         threads: config["threads"]
         resources:
             mem_mb=config["mem"] * 1000,
@@ -509,15 +503,15 @@ if config["filter_contigs"]:
 
     rule pileup_prefilter:
         input:
-            fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
-            bam="{sample}/sequence_alignment/alignment_to_prefilter_contigs.bam",
+            fasta=rules.rename_contigs.output.fasta,
+            bam=rules.align_reads_to_prefilter_contigs.output.bam,
         output:
-            covstats="{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+            covstats="Intermediate/assembly/post_processing/prefilter_coverage_stats/{sample}.txt",
         params:
             pileup_secondary="t",
             minmapq=config["minimum_map_quality"],
         log:
-            "{sample}/logs/assembly/post_process/pilup_prefilter_contigs.log",
+            "logs/assembly/post_process/pileup_prefilter_contigs/{sample}.log",
         conda:
             "../envs/required_packages.yaml"
         threads: config["threads"]
@@ -536,11 +530,11 @@ if config["filter_contigs"]:
 
     rule filter_by_coverage:
         input:
-            fasta="{sample}/assembly/{sample}_prefilter_contigs.fasta",
-            covstats="{sample}/assembly/contig_stats/prefilter_coverage_stats.txt",
+            fasta=rules.rename_contigs.output.fasta,
+            covstats=rules.pileup_prefilter.output.covstats,
         output:
-            fasta="{sample}/assembly/{sample}_final_contigs.fasta",
-            removed_names="{sample}/assembly/{sample}_discarded_contigs.fasta",
+            fasta="Assembly/fasta/{sample}.fasta.gz",
+            removed_names="Intermediate/assembly/discarded_contigs/{sample}.fasta",
         params:
             minc=config["minimum_average_coverage"],
             minp=config["minimum_percent_covered_bases"],
@@ -548,9 +542,9 @@ if config["filter_contigs"]:
             minl=config.get("minimum_contig_length", MINIMUM_CONTIG_LENGTH),
             trim=config.get("contig_trim_bp", CONTIG_TRIM_BP),
         log:
-            "{sample}/logs/assembly/post_process/filter_by_coverage.log",
+            "logs/assembly/post_process/filter_by_coverage/{sample}.log",
         conda:
-            "%s/required_packages.yaml" % CONDAENV
+            "../envs/required_packages.yaml"
         threads: 1
         resources:
             mem_mb=config["simplejob_mem"] * 1000,
@@ -568,34 +562,33 @@ if config["filter_contigs"]:
             -Xmx{resources.java_mem}G 2> {log}"""
 
 
-# HACK: this makes two copies of the same file
-
-
-else:  # no filter
-
-    localrules:
-        do_not_filter_contigs,
-
-    rule do_not_filter_contigs:
-        input:
-            "{sample}/assembly/{sample}_prefilter_contigs.fasta",
-        output:
-            "{sample}/assembly/{sample}_final_contigs.fasta",
-        threads: 1
-        shell:
-            "cp {input} {output}"
-
+if config["filter_contigs"]:
+    almost_final_assembly = rules.filter_by_coverage.output.fasta
+else:
+    almost_final_assembly = rules.rename_contigs.output.fasta
 
 localrules:
-    finalize_contigs,
+    finalize_assembly, extract_assembly
 
+ruleorder: extract_assembly > finalize_assembly
 
-rule finalize_contigs:
+rule finalize_assembly:
     input:
-        "{sample}/assembly/{sample}_final_contigs.fasta",
+        almost_final_assembly
     output:
-        "Assembly/fasta/{sample}.fasta",
+        fasta=temp("Assembly/fasta/{sample}.fasta"),
+        gz= protected("Assembly/fasta/{sample}.fasta.gz"),
+        
     threads: 1
+    shell:
+        "cp {input} {output.fasta}; gzip -c {output.fasta} > {output.gz}"
+
+
+rule extract_assembly:
+    input:
+        ancient("Assembly/fasta/{sample}.fasta.gz"),
+    output:
+        temp("Assembly/fasta/{sample}.fasta"),
     shell:
         "cp {input} {output}"
 
@@ -604,11 +597,11 @@ rule calculate_contigs_stats:
     input:
         get_assembly,
     output:
-        "{sample}/assembly/contig_stats/final_contig_stats.txt",
+        "Assembly/contig_stats/{sample}_final_contig_stats.txt",
     conda:
         "../envs/required_packages.yaml"
     log:
-        "{sample}/logs/assembly/post_process/contig_stats_final.log",
+        "logs/assembly/post_process/contig_stats_final/{sample}.log",
     threads: 1
     resources:
         mem_mb=1000,
@@ -621,16 +614,16 @@ rule calculate_contigs_stats:
 rule align_reads_to_final_contigs:
     input:
         query=get_quality_controlled_reads,
-        target="Assembly/fasta/{sample_contigs}.fasta",
+        target=get_assembly,
     output:
-        bam="{sample_contigs}/sequence_alignment/{sample}.bam",
+        bam="Intermediate/sequence_alignment/map_{sample}_to_{sample_contigs}.bam",
     params:
         extra="-x sr",
         sorting="coordinate",
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/align_reads_to_filtered_contigs/{sample}_to_{sample_contigs}.txt"
     log:
-        "{sample_contigs}/logs/assembly/calculate_coverage/align_reads_from_{sample}_to_filtered_contigs.log",
+        "logs/alignments/map_{sample}_to_{sample_contigs}.log",
     threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1000,
@@ -638,14 +631,26 @@ rule align_reads_to_final_contigs:
         "v1.19.0/bio/minimap2/aligner"
 
 
+def get_bam(wildcards):
+
+
+    sample_contigs = wildcards.sample_contigs if hasattr(wildcards, "sample_contigs") else wildcards.sample
+    
+    sample_reads = wildcards.sample_reads if hasattr(wildcards, "sample_reads") else wildcards.sample
+
+    return rules.align_reads_to_final_contigs.output.bam.format(
+        sample_reads=sample_reads, sample_contigs=sample_contigs
+    )
+
+
 rule pileup_contigs_sample:
     input:
         fasta=get_assembly,
-        bam="{sample}/sequence_alignment/{sample}.bam",
+        bam="Intermediate/sequence_alignment/map_{sample}_to_{sample}.bam",
     output:
-        covhist="{sample}/assembly/contig_stats/postfilter_coverage_histogram.txt",
-        covstats="{sample}/assembly/contig_stats/postfilter_coverage_stats.txt",
-        bincov="{sample}/assembly/contig_stats/postfilter_coverage_binned.txt",
+        covhist="Assembly/alignment_stats/{sample}/{sample}_coverage_histogram.txt",
+        covstats="Assembly/alignment_stats/{sample}/{sample}_coverage_stats.txt",
+        bincov="Assembly/alignment_stats/{sample}/{sample}_coverage_binned.txt",
     params:
         pileup_secondary=(
             "t"
@@ -656,10 +661,10 @@ rule pileup_contigs_sample:
     benchmark:
         "logs/benchmarks/assembly/calculate_coverage/pileup/{sample}.txt"
     log:
-        "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",  # This log file is uesd for report
+        "logs/assembly/calculate_coverage/pileup_final_contigs/{sample}.log",  # This log file is uesd for report
     conda:
-        "%s/required_packages.yaml" % CONDAENV
-    threads: config.get("threads", 1)
+        "../envs/required_packages.yaml"
+    threads: config["threads"]
     resources:
         mem_mb=config["mem"] * 1000,
         java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
@@ -696,13 +701,13 @@ rule predict_genes:
     input:
         get_assembly,
     output:
-        fna="{sample}/annotation/predicted_genes/{sample}.fna",
-        faa="{sample}/annotation/predicted_genes/{sample}.faa",
-        gff="{sample}/annotation/predicted_genes/{sample}.gff",
+        fna="Assembly/annotation/predicted_genes/{sample}.fna",
+        faa="Assembly/annotation/predicted_genes/{sample}.faa",
+        gff="Assembly/annotation/predicted_genes/{sample}.gff",
     conda:
-        "%s/prodigal.yaml" % CONDAENV
+        "../envs/prodigal.yaml"
     log:
-        "{sample}/logs/gene_annotation/prodigal.txt",
+        "logs/gene_annotation/prodigal/{sample}.txt",
     benchmark:
         "logs/benchmarks/prodigal/{sample}.txt"
     threads: 1
@@ -722,9 +727,9 @@ localrules:
 
 rule get_contigs_from_gene_names:
     input:
-        faa="{sample}/annotation/predicted_genes/{sample}.faa",
+        faa="Assembly/annotation/predicted_genes/{sample}.faa",
     output:
-        tsv="{sample}/annotation/predicted_genes/{sample}.tsv",
+        tsv="Assembly/annotation/predicted_genes/{sample}.tsv",
     run:
         header = [
             "gene_id",
@@ -772,19 +777,19 @@ localrules:
 rule combine_contig_stats:
     input:
         contig_stats=expand(
-            "{sample}/assembly/contig_stats/final_contig_stats.txt", sample=SAMPLES
+            "Assembly/contig_stats/{sample}_final_contig_stats.txt", sample=SAMPLES
         ),
         gene_tables=expand(
-            "{sample}/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES
+            "Assembly/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES
         ),
         mapping_logs=expand(
-            "{sample}/logs/assembly/calculate_coverage/pilup_final_contigs.log",
+           rules.pileup_contigs_sample.log,
             sample=SAMPLES,
         ),
-        # mapping logs will be incomplete unless we wait on alignment to finish
-        bams=expand("{sample}/sequence_alignment/{sample}.bam", sample=SAMPLES),
+        # logs will be incomplete unless we wait on output
+        proof_of_final=expand(rules.pileup_contigs_sample.output[0], sample=SAMPLES),
     output:
-        combined_contig_stats="stats/combined_contig_stats.tsv",
+        combined_contig_stats="Assembly/combined_contig_stats.tsv",
     params:
         samples=SAMPLES,
     log:
@@ -795,11 +800,11 @@ rule combine_contig_stats:
 
 rule build_assembly_report:
     input:
-        combined_contig_stats="stats/combined_contig_stats.tsv",
+        combined_contig_stats="Assembly/combined_contig_stats.tsv",
     output:
-        report="reports/assembly_report.html",
+        report="Assembly/assembly_report.html",
     conda:
-        "%s/report.yaml" % CONDAENV
+        "../envs/report.yaml"
     log:
         "logs/assembly/report.log",
     script:
