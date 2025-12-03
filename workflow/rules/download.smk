@@ -49,7 +49,7 @@ rule download_partial_gtdb:
     params:
         url=lambda wc, output: f"{GTDB_DATA_URL}/split_package/{Path(output[0]).name}",
     resources:
-        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+        runtime=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
         "logs/download/gtdbtk_r{gtdb_refseq_version}_part_{suffix}.log",
     shell:
@@ -63,7 +63,7 @@ rule extract_gtdb:
         touch(os.path.join(GTDBTK_DATA_PATH, "downloaded_success")),
     threads: 1
     resources:
-        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+        runtime=60 * int(config.get("runtime", {"long": 10})["long"]),
     log:
         stdout="logs/download/gtdbtk_untar.log",
         stderr="logs/download/gtdbtk_untar.err",
@@ -157,7 +157,7 @@ rule checkm2_download_db:
     log:
         "logs/download/checkm2.log",
     resources:
-        time_min=60 * int(config.get("runtime", {"long": 10})["long"]),
+        runtime=60 * int(config.get("runtime", {"long": 10})["long"]),
     shell:
         " checkm2 database --download --path {output} "
         " &>> {log}"
@@ -170,7 +170,7 @@ rule download_gunc:
         "../envs/gunc.yaml"
     threads: 1
     resources:
-        time_min=60 * int(config.get("runtime", {"default": 5})["default"]),
+        runtime=60 * int(config.get("runtime", {"default": 5})["default"]),
         mem_mb=config.get("simplejob_mem", 1) * 1000,
         tmpdir=config.get("tmpdir", "."),  # you can store the file in the main working folder if you want
     log:
@@ -187,7 +187,7 @@ rule download_busco:
         "../envs/busco.yaml"
     threads: 1
     resources:
-        time_min=60 * int(config.get("runtime", {"default": 5})["default"]),
+        runtime=60 * int(config.get("runtime", {"default": 5})["default"]),
         mem_mb=config.get("simplejob_mem", 1) * 1000,
     log:
         "logs/busco_lineages.log",

@@ -305,7 +305,7 @@ rule gene_pileup_as_parquet:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
-        time_min=config["runtime"]["simplejob"] * 60,
+        runtime=config["runtime"]["simplejob"] * 60,
     log:
         "logs/Genecatalog/counts/parse_gene_coverages/{sample}.log",
     run:
@@ -369,7 +369,7 @@ rule combine_gene_coverages:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
-        time_min=get_combine_cov_time(),
+        runtime=get_combine_cov_time(),
     script:
         "../scripts/combine_gene_coverages.py"
 
@@ -521,7 +521,7 @@ rule combine_egg_nogg_annotations:
     log:
         "logs/genecatalog/annotation/eggNOG/combine.log",
     resources:
-        time_min=60 * config["runtime"]["default"],
+        runtime=60 * config["runtime"]["default"],
     run:
         try:
             import pandas as pd
@@ -558,7 +558,7 @@ rule convert_eggNOG_tsv2parquet:
     output:
         "Genecatalog/annotations/eggNOG.parquet",
     resources:
-        time_min=60 * config["runtime"]["default"],
+        runtime=60 * config["runtime"]["default"],
     log:
         "logs/genecatalog/annotation/eggNOG/tsv2parquet.log",
     run:
@@ -598,7 +598,7 @@ rule DRAM_annotate_genecatalog:
     threads: config["simplejob_threads"]
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
-        time_min=60 * config["runtime"]["long"],
+        runtime=60 * config["runtime"]["long"],
     conda:
         "../envs/dram.yaml"
     params:
@@ -634,7 +634,7 @@ rule combine_dram_genecatalog_annotations:
     output:
         directory("Genecatalog/annotations/dram"),
     resources:
-        time_min=60 * config["runtime"]["default"],
+        runtime=60 * config["runtime"]["default"],
     log:
         "logs/genecatalog/annotation/dram/combine.log",
     script:

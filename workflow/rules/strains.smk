@@ -33,7 +33,7 @@ rule instrain_profile:
         "logs/benchmarks/strains/profile/{sample}.tsv"
     resources:
         mem_mb=config["large_mem"] * 1000,
-        time_min=60 * config["runtime"]["long"],
+        runtime=60 * config["runtime"]["long"],
     shell:
         "inStrain profile "
         " {input.bam} {input.genomes} "
@@ -63,7 +63,7 @@ rule instrain_compare_genome:
         "logs/benchmarks/strains/compare_{genome}.tsv"
     resources:
         mem_mb=config["large_mem"] * 1000,
-        time_min=60 * config["runtime"]["default"],
+        runtime=60 * config["runtime"]["default"],
     shell:
         "inStrain compare "
         " --input {input.profiles} "

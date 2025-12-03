@@ -30,12 +30,12 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 # Install exception handler
 sys.excepthook = handle_exception
 
-
+import gzip as gz
 from Bio import SeqIO
 
 # Open the snakemake.output FASTA file and mapping table file for writing
-with open(snakemake.output.fasta, "w") as output_handle, open(
-    snakemake.output.mapping_table, "w"
+with gz.open(snakemake.output.fasta_gz, "wt") as output_handle, open(snakemake.output.fasta, "w") as uncompressed_handle, gz.open(
+    snakemake.output.mapping_table, "wt"
 ) as mapping_table_handle:
     i = 1
 
@@ -49,6 +49,7 @@ with open(snakemake.output.fasta, "w") as output_handle, open(
         record.description = ""
 
         SeqIO.write(record, output_handle, "fasta")
+        SeqIO.write(record, uncompressed_handle, "fasta")
 
         mapping_table_handle.write(f"{new_name}\t{old_name}\n")
 

@@ -10,7 +10,7 @@ rule run_skani:
         "logs/binning/{binner}/dereplication/skani_calculation.log",
     resources:
         mem_mb=config["mem"] * 1000,
-        time_min=60 * config["runtime"]["default"],
+        runtime=60 * config["runtime"]["default"],
     params:
         #preset= "medium", # fast, medium or slow
         min_af=config["genome_dereplication"]["overlap"] * 100,
@@ -36,7 +36,7 @@ rule skani_2_parquet:
         "Binning/{binner}/genome_similarities.parquet",
     resources:
         mem_mb=config["mem"] * 1000,
-        time_min=60 * config["runtime"]["simplejob"],
+        runtime=60 * config["runtime"]["simplejob"],
     log:
         "logs/binning/{binner}/dereplication/skani_2_parquet.log",
     threads: 1

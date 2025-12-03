@@ -135,7 +135,7 @@ rule predict_genes_genomes:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
-        time_min=60 * config["runtime"]["simplejob"],
+        runtime=60 * config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \
@@ -363,6 +363,6 @@ rule combine_coverages_MAGs:
     threads: 1
     resources:
         mem_mb=1000 * config["simplejob_mem"],
-        time_min=config["runtime"]["simplejob"] * 60,
+        runtime=config["runtime"]["simplejob"] * 60,
     script:
         "../scripts/combine_coverage_MAGs.py"

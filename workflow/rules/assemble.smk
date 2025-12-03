@@ -159,8 +159,8 @@ rule error_correction:
     conda:
         "../envs/required_packages.yaml"
     resources:
-        mem_mb=config["mem"] * 1000,
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+        mem_mb=config["large_mem"] * 1000,
+        java_mem=int(config["large_mem"] * JAVA_MEM_FRACTION),
     params:
         inputs=lambda wc, input: io_params_for_tadpole(input),
         outputs=lambda wc, output: io_params_for_tadpole(output, key="out"),
@@ -206,8 +206,8 @@ rule merge_pairs:
         ),
     threads: config.get("threads", 1)
     resources:
-        mem_mb=config["mem"] * 1000,
-        java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+        mem_mb=config["large_mem"] * 1000,
+        java_mem=int(config["large_mem"] * JAVA_MEM_FRACTION),
     conda:
         "../envs/required_packages.yaml"
     log:
@@ -307,7 +307,7 @@ if config.get("assembler", "megahit") == "megahit":
         threads: config["assembly_threads"]
         resources:
             mem_mb=config["assembly_memory"] * 1000,
-            time_min=60 * config["runtime"]["assembly"],
+            runtime=60 * config["runtime"]["assembly"],
         shell:
             """
             rm -r {params.outdir} 2> {log}
@@ -427,7 +427,7 @@ else:
         resources:
             mem_mb=config["assembly_memory"] * 1000,
             mem_gb=config["assembly_memory"],
-            time_min=60 * config["runtime"]["assembly"],
+            runtime=60 * config["runtime"]["assembly"],
         shell:
             # remove pipeline_state file to create all output files again
             " rm -f {params.p[outdir]}/pipeline_state/stage_*_copy_files 2> {log} ; "
@@ -458,27 +458,30 @@ else:
             "cp {input} {output}"
 
 
-# standardizes header labels within contig FASTAs
 
 
-rule rename_contigs:
+length_filtered_contigs= "Intermediate/assembly/post_processing/{sample}_length_filtered_contigs.fasta.gz"
+
+
+rule filter_contig_by_length:
     input:
         "Intermediate/assembly/post_processing/{sample}_raw_contigs.fasta",
     output:
-        fasta="Intermediate/assembly/post_processing/{sample}_prefilter_contigs.fasta",
-        mapping_table="Assembly/post_processing/old2new_contig_names/{sample}.tsv",
-    threads: config.get("simplejob_threads", 1)
+        fasta=temp(length_filtered_contigs),
+    params:
+        min_length=config["minimum_contig_length"],
+    log:
+        "logs/assembly/post_process/filter_by_length/{sample}.log",
+    conda:
+        "../envs/required_packages.yaml"
+    threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
-        time_min=60 * config["runtime"]["default"],
-    log:
-        "logs/assembly/post_process/rename_and_filter_size/{sample}/.log",
-    params:
-        minlength=config["minimum_contig_length"],
-    conda:
-        "../envs/fasta.yaml"
-    script:
-        "../scripts/rename_assembly.py"
+        runtime=60 * config["runtime"]["simplejob"],
+    shell:
+        "filterbylength.sh in={input} out={output.fasta} "
+        "minlength={params.min_length} "
+        " -Xmx{resources.mem_mb}M 2> {log} "
 
 
 if config["filter_contigs"]:
@@ -488,7 +491,7 @@ if config["filter_contigs"]:
     rule align_reads_to_prefilter_contigs:
         input:
             query=get_quality_controlled_reads,
-            target=rules.rename_contigs.output,
+            target=length_filtered_contigs,
         output:
             bam=temp("Intermediate/assembly/post_processing/alignment_to_prefilter_contigs/{sample}.bam"),
         params:
@@ -503,7 +506,7 @@ if config["filter_contigs"]:
 
     rule pileup_prefilter:
         input:
-            fasta=rules.rename_contigs.output.fasta,
+            fasta=length_filtered_contigs,
             bam=rules.align_reads_to_prefilter_contigs.output.bam,
         output:
             covstats="Intermediate/assembly/post_processing/prefilter_coverage_stats/{sample}.txt",
@@ -530,7 +533,7 @@ if config["filter_contigs"]:
 
     rule filter_by_coverage:
         input:
-            fasta=rules.rename_contigs.output.fasta,
+            fasta=length_filtered_contigs,
             covstats=rules.pileup_prefilter.output.covstats,
         output:
             fasta="Assembly/fasta/{sample}.fasta.gz",
@@ -562,26 +565,35 @@ if config["filter_contigs"]:
             -Xmx{resources.java_mem}G 2> {log}"""
 
 
-if config["filter_contigs"]:
-    almost_final_assembly = rules.filter_by_coverage.output.fasta
-else:
-    almost_final_assembly = rules.rename_contigs.output.fasta
+localrules: extract_assembly
 
-localrules:
-    finalize_assembly, extract_assembly
+ruleorder: extract_assembly > rename_contigs
 
-ruleorder: extract_assembly > finalize_assembly
 
-rule finalize_assembly:
+# standardizes header labels within contig FASTAs
+
+
+rule rename_contigs:
     input:
-        almost_final_assembly
+        rules.filter_by_coverage.output.fasta if config["filter_contigs"] else length_filtered_contigs,
     output:
+        fasta_gz=protected("Assembly/fasta/{sample}.fasta.gz"),
         fasta=temp("Assembly/fasta/{sample}.fasta"),
-        gz= protected("Assembly/fasta/{sample}.fasta.gz"),
-        
-    threads: 1
-    shell:
-        "cp {input} {output.fasta}; gzip -c {output.fasta} > {output.gz}"
+        mapping_table="Assembly/post_processing/old2new_contig_names/{sample}.tsv",
+    threads: config.get("simplejob_threads", 1)
+    resources:
+        mem_mb=config["simplejob_mem"] * 1000,
+        runtime=60 * config["runtime"]["default"],
+    log:
+        "logs/assembly/post_process/rename_and_filter_size/{sample}/.log",
+    params:
+        minlength=config["minimum_contig_length"],
+    conda:
+        "../envs/fasta.yaml"
+    script:
+        "../scripts/rename_assembly.py"
+
+
 
 
 rule extract_assembly:
@@ -605,7 +617,7 @@ rule calculate_contigs_stats:
     threads: 1
     resources:
         mem_mb=1000,
-        time_min=60 * config["runtime"]["simplejob"],
+        runtime=60 * config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 out={output} &> {log}"
 
@@ -713,7 +725,7 @@ rule predict_genes:
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
-        time_min=60 * config["runtime"]["simplejob"],
+        runtime=60 * config["runtime"]["simplejob"],
     shell:
         """
         prodigal -i {input} -o {output.gff} -d {output.fna} \

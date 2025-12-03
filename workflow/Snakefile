@@ -230,8 +230,8 @@ for r in workflow.rules:
 
     # add time if not present. Simple jobs use simple time
 
-    if "time_min" not in r.resources:
-        r.resources["time_min"] = config["runtime"]["default"] * 60
+    if "runtime" not in r.resources:
+        r.resources["runtime"] = config["runtime"]["default"] * 60
 
     if not "runtime" in r.resources:
-        r.resources["runtime"] = r.resources["time_min"]
+        r.resources["runtime"] = r.resources["runtime"]
