@@ -494,7 +494,8 @@ if config["filter_contigs"]:
     rule align_reads_to_prefilter_contigs:
         input:
             query=get_quality_controlled_reads,
-            target=rules.rename_contigs.output,
+            target=rules.rename_contigs.output.fasta,
+            mapping_table=rules.rename_contigs.output.mapping_table,
         output:
             bam=temp("{sample}/sequence_alignment/alignment_to_prefilter_contigs.bam"),
         params:
