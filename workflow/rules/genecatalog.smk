@@ -28,21 +28,21 @@ if config["genecatalog"]["source"] == "contigs":
     rule concat_genes:
         input:
             faa=expand(
-                "{sample}/annotation/predicted_genes/{sample}.filtered.faa",
+                "Assembly/annotation/predicted_genes/{sample}.filtered.faa",
                 sample=SAMPLES,
             ),
             fna=expand(
-                "{sample}/annotation/predicted_genes/{sample}.filtered.fna",
+                "Assembly/annotation/predicted_genes/{sample}.filtered.fna",
                 sample=SAMPLES,
             ),
             short=expand(
-                "{sample}/annotation/predicted_genes/{sample}.short.faa",
+                "Assembly/annotation/predicted_genes/{sample}.short.faa",
                 sample=SAMPLES,
             ),
         output:
-            faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
-            fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
-            short=temp("Genecatalog/all_genes/short_genes.faa"),
+            faa=temp("Intermediate/Genecatalog/all_genes/predicted_genes.faa"),
+            fna=temp("Intermediate/Genecatalog/all_genes/predicted_genes.fna"),
+            short=temp("Intermediate/Genecatalog/all_genes/short_genes.faa"),
         run:
             from utils.io import cat_files
 
@@ -62,9 +62,9 @@ else:
             fna=lambda wc: get_all_genes(wc, ".filtered.fna"),
             short=lambda wc: get_all_genes(wc, ".short.faa"),
         output:
-            faa=temp("Genecatalog/all_genes/predicted_genes.faa"),
-            fna=temp("Genecatalog/all_genes/predicted_genes.fna"),
-            short=temp("Genecatalog/all_genes/short_genes.faa"),
+            faa=temp("Intermediate/Genecatalog/all_genes/predicted_genes.faa"),
+            fna=temp("Intermediate/Genecatalog/all_genes/predicted_genes.fna"),
+            short=temp("Intermediate/Genecatalog/all_genes/short_genes.faa"),
         run:
             from utils.io import cat_files
 
@@ -79,10 +79,10 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
     rule cluster_genes:
         input:
-            faa="Genecatalog/all_genes/predicted_genes.faa",
+            faa="Intermediate/Genecatalog/all_genes/predicted_genes.faa",
         output:
-            db=temp(directory("Genecatalog/all_genes/predicted_genes")),
-            clusterdb=temp(directory("Genecatalog/clustering/mmseqs")),
+            db=temp(directory("Intermediate/Genecatalog/all_genes/predicted_genes")),
+            clusterdb=temp(directory("Intermediate/Genecatalog/clustering/mmseqs")),
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
@@ -117,9 +117,9 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
             db=rules.cluster_genes.output.db,
             clusterdb=rules.cluster_genes.output.clusterdb,
         output:
-            cluster_attribution=temp("Genecatalog/orf2gene_oldnames.tsv"),
-            rep_seqs_db=temp(directory("Genecatalog/protein_catalog")),
-            rep_seqs=temp("Genecatalog/representatives_of_clusters.faa"),
+            cluster_attribution=temp("Intermediate/Genecatalog/orf2gene_oldnames.tsv"),
+            rep_seqs_db=temp(directory("Intermediate/Genecatalog/protein_catalog")),
+            rep_seqs=temp("Intermediate/Genecatalog/representatives_of_clusters.faa"),
         conda:
             "%s/mmseqs.yaml" % CONDAENV
         log:
@@ -142,10 +142,10 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
     rule get_cds_of_proteins:
         input:
-            all="Genecatalog/all_genes/predicted_genes.fna",
-            names="Genecatalog/representatives_of_clusters.faa",
+            all="Intermediate/Genecatalog/all_genes/predicted_genes.fna",
+            names="Intermediate/Genecatalog/representatives_of_clusters.faa",
         output:
-            temp("Genecatalog/representatives_of_clusters.fna"),
+            temp("Intermediate/Genecatalog/representatives_of_clusters.fna"),
         conda:
             "../envs/required_packages.yaml"
         threads: 1
@@ -165,7 +165,7 @@ if (config["genecatalog"]["clustermethod"] == "linclust") or (
 
     rule generate_orf_info:
         input:
-            cluster_attribution="Genecatalog/orf2gene_oldnames.tsv",
+            cluster_attribution="Intermediate/Genecatalog/orf2gene_oldnames.tsv",
         output:
             cluster_attribution="Genecatalog/clustering/orf_info.parquet",
             rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
@@ -197,10 +197,10 @@ localrules:
 
 rule rename_gene_catalog:
     input:
-        fasta="Genecatalog/representatives_of_clusters.{ext}",
+        fasta="Intermediate/Genecatalog/representatives_of_clusters.{ext}",
         rep2genenr="Genecatalog/clustering/representative2genenr.tsv",
     output:
-        "Genecatalog/gene_catalog.{ext}",
+        "Genecatalog/gene_catalog.{ext}.gz",
     log:
         "logs/Genecatalog/clustering/rename_gene_catalog_{ext}.log",
     script:
@@ -209,9 +209,9 @@ rule rename_gene_catalog:
 
 rule get_genecatalog_seq_info:
     input:
-        "Genecatalog/gene_catalog.fna",
+        "Genecatalog/gene_catalog.fna.gz",
     output:
-        temp("Genecatalog/counts/sequence_infos.tsv"),
+        temp("Intermediate/Genecatalog/counts/sequence_infos.tsv"),
     log:
         "logs/Genecatalog/get_seq_info.log",
     conda:
@@ -226,7 +226,7 @@ rule get_genecatalog_seq_info:
 
 rule index_genecatalog:
     input:
-        target="Genecatalog/gene_catalog.fna",
+        target="Genecatalog/gene_catalog.fna.gz",
     output:
         temp("ref/Genecatalog.mmi"),
     log:
@@ -234,7 +234,7 @@ rule index_genecatalog:
     params:
         index_size="12G",
     wrapper:
-        "v1.19.0/bio/minimap2/index"
+        "v7.6.0/bio/minimap2/index"
 
 
 rule concat_all_reads:
@@ -256,7 +256,7 @@ rule align_reads_to_Genecatalog:
         target=rules.index_genecatalog.output,
         query=rules.concat_all_reads.output[0],
     output:
-        temp("Genecatalog/alignments/{sample}.bam"),
+        temp("Intermediate/Genecatalog/alignments/{sample}.bam"),
     log:
         "logs/Genecatalog/alignment/{sample}_map.log",
     threads: config["threads"]
@@ -266,15 +266,15 @@ rule align_reads_to_Genecatalog:
         extra="-x sr --split-prefix {sample}_split_ ",
         sort="coordinate",
     wrapper:
-        "v1.19.0/bio/minimap2/aligner"
+        "v7.6.0/bio/minimap2/aligner"
 
 
 rule pileup_Genecatalog:
     input:
         bam=rules.align_reads_to_Genecatalog.output,
     output:
-        covstats=temp("Genecatalog/alignments/{sample}_coverage.tsv"),
-        rpkm=temp("Genecatalog/alignments/{sample}_rpkm.tsv"),
+        covstats=temp("Intermediate/Genecatalog/alignments/{sample}_coverage.tsv"),
+        rpkm=temp("Intermediate/Genecatalog/alignments/{sample}_rpkm.tsv"),
     params:
         minmapq=config["minimum_map_quality"],
     log:
@@ -298,10 +298,10 @@ rule pileup_Genecatalog:
 
 rule gene_pileup_as_parquet:
     input:
-        cov="Genecatalog/alignments/{sample}_coverage.tsv",
-        #rpkm = "Genecatalog/alignments/{sample}_rpkm.tsv"
+        cov="Intermediate/Genecatalog/alignments/{sample}_coverage.tsv",
+        #rpkm = "Intermediate/Genecatalog/alignments/{sample}_rpkm.tsv"
     output:
-        "Genecatalog/alignments/{sample}_coverage.parquet",
+        "Intermediate/Genecatalog/alignments/{sample}_coverage.parquet",
     threads: 1
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
@@ -352,9 +352,10 @@ def get_combine_cov_time():
 rule combine_gene_coverages:
     input:
         covstats=expand(
-            "Genecatalog/alignments/{sample}_coverage.parquet", sample=SAMPLES
+            "Intermediate/Genecatalog/alignments/{sample}_coverage.parquet",
+            sample=SAMPLES,
         ),
-        info="Genecatalog/counts/sequence_infos.tsv",
+        info="Intermediate/Genecatalog/counts/sequence_infos.tsv",
     output:
         cov="Genecatalog/counts/median_coverage.h5",
         counts="Genecatalog/counts/Nmapped_reads.h5",
@@ -400,7 +401,7 @@ localrules:
 
 checkpoint gene_subsets:
     input:
-        "Genecatalog/gene_catalog.faa",
+        "Genecatalog/gene_catalog.faa.gz",
     output:
         directory("Intermediate/genecatalog/subsets"),
     params:

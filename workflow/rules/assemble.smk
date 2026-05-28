@@ -111,7 +111,7 @@ rule normalize_reads:
             )
         ),
         histin="Assembly/pre-processing/histogram/{sample}_{previous_steps}_before_normalization.tsv.gz",
-        histout="Assembly/pre-processing/histogram/{sample}_{previous_steps}_after_normalization.tsv.gz"
+        histout="Assembly/pre-processing/histogram/{sample}_{previous_steps}_after_normalization.tsv.gz",
     params:
         k=config.get("normalization_kmer_length", NORMALIZATION_KMER_LENGTH),
         target=config.get("normalization_target_depth", NORMALIZATION_TARGET_DEPTH),
@@ -148,12 +148,11 @@ rule error_correction:
             fraction=MULTIFILE_FRACTIONS,
         ),
     output:
-            #temp(
-            expand(
-                "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
-                fraction=MULTIFILE_FRACTIONS,
-            )
-
+        #temp(
+        expand(
+            "Intermediate/assembly/reads/{{sample}}/{{previous_steps}}.errorcorr_{fraction}.fastq.gz",
+            fraction=MULTIFILE_FRACTIONS,
+        ),
     log:
         "logs/assembly/pre_process/error_correction/{sample}_{previous_steps}.log",
     conda:
@@ -400,7 +399,9 @@ else:
                 "longreads": "",
             }
 
-        params["outdir"] = "Intermediate/assembly/spades/{sample}".format(sample=wc.sample)
+        params["outdir"] = "Intermediate/assembly/spades/{sample}".format(
+            sample=wc.sample
+        )
 
         return params
 
@@ -460,7 +461,9 @@ else:
 
 
 
-length_filtered_contigs= "Intermediate/assembly/post_processing/{sample}_length_filtered_contigs.fasta.gz"
+length_filtered_contigs = (
+    "Intermediate/assembly/post_processing/{sample}_length_filtered_contigs.fasta.gz"
+)
 
 
 rule filter_contig_by_length:
@@ -479,8 +482,9 @@ rule filter_contig_by_length:
         mem_mb=config["simplejob_mem"] * 1000,
         runtime=60 * config["runtime"]["simplejob"],
     shell:
-        "filterbylength.sh in={input} out={output.fasta} "
+        "reformat.sh in={input} out={output.fasta} "
         "minlength={params.min_length} "
+        " trimreaddescription=t "
         " -Xmx{resources.mem_mb}M 2> {log} "
 
 
@@ -493,21 +497,24 @@ if config["filter_contigs"]:
             query=get_quality_controlled_reads,
             target=length_filtered_contigs,
         output:
-            bam=temp("Intermediate/assembly/post_processing/alignment_to_prefilter_contigs/{sample}.bam"),
+            bam=temp(
+                "Intermediate/assembly/post_processing/alignment_to_prefilter_contigs/{sample}.bam"
+            ),
         params:
             extra="-x sr",
         log:
             "logs/assembly/post_process/alignment_to_prefilter_contigs/{sample}.log",
         threads: config["threads"]
         resources:
-            mem_mb=config["mem"] * 1000,
+            mem_mb=config["simplejob_mem"] * 1000,
+            runtime=60 * config["runtime"]["simplejob"],
         wrapper:
-            "v1.19.0/bio/minimap2/aligner"
+            "v7.6.0/bio/minimap2/aligner"
 
     rule pileup_prefilter:
         input:
             fasta=length_filtered_contigs,
-            bam=rules.align_reads_to_prefilter_contigs.output.bam,
+            bam=rules.align_reads_to_prefilter_contigs.output.bam, 
         output:
             covstats="Intermediate/assembly/post_processing/prefilter_coverage_stats/{sample}.txt",
         params:
@@ -521,22 +528,25 @@ if config["filter_contigs"]:
         resources:
             mem_mb=config["mem"] * 1000,
             java_mem=int(config["mem"] * JAVA_MEM_FRACTION),
+            runtime=60 * config["runtime"]["default"],
         shell:
             "pileup.sh ref={input.fasta} in={input.bam} "
             " threads={threads} "
             " -Xmx{resources.java_mem}G "
             " covstats={output.covstats} "
             " concise=t "
+            " addfromref=f "
             " minmapq={params.minmapq} "
             " secondary={params.pileup_secondary} "
             " 2> {log}"
+            # due to adding of header
 
     rule filter_by_coverage:
         input:
             fasta=length_filtered_contigs,
             covstats=rules.pileup_prefilter.output.covstats,
         output:
-            fasta="Assembly/fasta/{sample}.fasta.gz",
+            fasta="Intermediate/assembly/post_processing/{sample}_coverage_filtered_contigs.fasta.gz",
             removed_names="Intermediate/assembly/discarded_contigs/{sample}.fasta",
         params:
             minc=config["minimum_average_coverage"],
@@ -565,7 +575,9 @@ if config["filter_contigs"]:
             -Xmx{resources.java_mem}G 2> {log}"""
 
 
-localrules: extract_assembly
+localrules:
+    extract_assembly,
+
 
 ruleorder: extract_assembly > rename_contigs
 
@@ -575,10 +587,12 @@ ruleorder: extract_assembly > rename_contigs
 
 rule rename_contigs:
     input:
-        rules.filter_by_coverage.output.fasta if config["filter_contigs"] else length_filtered_contigs,
+        rules.filter_by_coverage.output.fasta
+        if config["filter_contigs"]
+        else length_filtered_contigs,
     output:
         fasta_gz=protected("Assembly/fasta/{sample}.fasta.gz"),
-        fasta=temp("Assembly/fasta/{sample}.fasta"),
+        fasta=temp("Intermediate/assembly/final_uncompressed_contigs/{sample}.fasta"),
         mapping_table="Assembly/post_processing/old2new_contig_names/{sample}.tsv",
     threads: config.get("simplejob_threads", 1)
     resources:
@@ -594,29 +608,27 @@ rule rename_contigs:
         "../scripts/rename_assembly.py"
 
 
-
-
 rule extract_assembly:
     input:
-        ancient("Assembly/fasta/{sample}.fasta.gz"),
+        get_assembly_gz,
     output:
-        temp("Assembly/fasta/{sample}.fasta"),
+        temp("Intermediate/assembly/final_uncompressed_contigs/{sample}.fasta"),
     shell:
-        "cp {input} {output}"
+        "gunzip -c {input} > {output}"
 
 
 rule calculate_contigs_stats:
     input:
         get_assembly,
     output:
-        "Assembly/contig_stats/{sample}_final_contig_stats.txt",
+        "Intermediate/assembly/contig_stats/{sample}_final_contig_stats.txt",
     conda:
         "../envs/required_packages.yaml"
     log:
         "logs/assembly/post_process/contig_stats_final/{sample}.log",
     threads: 1
     resources:
-        mem_mb=1000,
+        mem_mb=500,
         runtime=60 * config["runtime"]["simplejob"],
     shell:
         "stats.sh in={input} format=3 out={output} &> {log}"
@@ -626,7 +638,7 @@ rule calculate_contigs_stats:
 rule align_reads_to_final_contigs:
     input:
         query=get_quality_controlled_reads,
-        target=get_assembly,
+        target=get_assembly_gz,
     output:
         bam="Intermediate/sequence_alignment/map_{sample}_to_{sample_contigs}.bam",
     params:
@@ -640,15 +652,22 @@ rule align_reads_to_final_contigs:
     resources:
         mem_mb=config["mem"] * 1000,
     wrapper:
-        "v1.19.0/bio/minimap2/aligner"
+        "v7.6.0/bio/minimap2/aligner"
 
 
 def get_bam(wildcards):
 
+    sample_contigs = (
+        wildcards.sample_contigs
+        if hasattr(wildcards, "sample_contigs")
+        else wildcards.sample
+    )
 
-    sample_contigs = wildcards.sample_contigs if hasattr(wildcards, "sample_contigs") else wildcards.sample
-    
-    sample_reads = wildcards.sample_reads if hasattr(wildcards, "sample_reads") else wildcards.sample
+    sample_reads = (
+        wildcards.sample_reads
+        if hasattr(wildcards, "sample_reads")
+        else wildcards.sample
+    )
 
     return rules.align_reads_to_final_contigs.output.bam.format(
         sample_reads=sample_reads, sample_contigs=sample_contigs
@@ -660,8 +679,8 @@ rule pileup_contigs_sample:
         fasta=get_assembly,
         bam="Intermediate/sequence_alignment/map_{sample}_to_{sample}.bam",
     output:
-        covhist="Assembly/alignment_stats/{sample}/{sample}_coverage_histogram.txt",
         covstats="Assembly/alignment_stats/{sample}/{sample}_coverage_stats.txt",
+        covhist="Assembly/alignment_stats/{sample}/{sample}_coverage_histogram.txt",
         bincov="Assembly/alignment_stats/{sample}/{sample}_coverage_binned.txt",
     params:
         pileup_secondary=(
@@ -689,6 +708,7 @@ rule pileup_contigs_sample:
         " covstats={output.covstats} "
         " hist={output.covhist} "
         " concise=t "
+        " addfromref=f "
         " minmapq={params.minmapq} "
         " secondary={params.pileup_secondary} "
         " bincov={output.bincov} "
@@ -789,13 +809,13 @@ localrules:
 rule combine_contig_stats:
     input:
         contig_stats=expand(
-            "Assembly/contig_stats/{sample}_final_contig_stats.txt", sample=SAMPLES
+            "Intermediate/assembly/contig_stats/{sample}_final_contig_stats.txt", sample=SAMPLES
         ),
         gene_tables=expand(
             "Assembly/annotation/predicted_genes/{sample}.tsv", sample=SAMPLES
         ),
         mapping_logs=expand(
-           rules.pileup_contigs_sample.log,
+            rules.pileup_contigs_sample.log,
             sample=SAMPLES,
         ),
         # logs will be incomplete unless we wait on output

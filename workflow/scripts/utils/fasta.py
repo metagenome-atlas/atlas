@@ -1,10 +1,11 @@
 from Bio import SeqIO
 from numpy import ceil
 import os
+from .io import simply_open
 
 
 def _make_test_fasta(test_file="test_ABC.fasta"):
-    with open(test_file, "w") as f:
+    with simply_open(test_file, "w") as f:
         for Number, Letter in enumerate("ATCG"):
             f.write(f">contig_{Number+1} description\n{Letter}\n")
 
@@ -20,7 +21,7 @@ def count_Nseq(fasta_file):
 
     """
     i = 0
-    with open(fasta_file) as f:
+    with simply_open(fasta_file) as f:
         for line in f:
             if line[0] == ">":
                 i += 1
@@ -51,19 +52,21 @@ def split(fasta_file, maxSubsetSize, out_dir, simplify_headers=True):
     N = count_Nseq(fasta_file)
 
     SubsetSize = int(ceil(N / ceil(N / maxSubsetSize)))
-    extension = os.path.splitext(fasta_file)[-1]
+    bas_file, extension = os.path.splitext(fasta_file)
+    if extension == ".gz":
+        extension = os.path.splitext(bas_file)[-1]
 
     os.makedirs(out_dir)
 
     i, subset_n = 0, 0
     fout = None
-    for i, seq in enumerate(SeqIO.parse(fasta_file, "fasta")):
+    for i, seq in enumerate(SeqIO.parse(simply_open(fasta_file), "fasta")):
         if (i % SubsetSize) == 0:
             subset_n += 1
             if fout is not None:
                 fout.close()
 
-            fout = open(f"{out_dir}/subset{subset_n}{extension}", "w")
+            fout = simply_open(f"{out_dir}/subset{subset_n}{extension}", "w")
 
         if simplify_headers:
             seq.description = ""
@@ -79,7 +82,7 @@ def parse_fasta_headers(fasta_file, simplify_header=True):
 
     headers = []
 
-    with open(fasta_file) as f:
+    with simply_open(fasta_file) as f:
         for line in f:
             if line[0] == ">":
                 header = line[1:].strip()
@@ -112,14 +115,14 @@ def header2origin(fasta_file, out, simplify_header=True):
     """
 
     if type(out) == str:
-        out_stream = open(out, "w")
+        out_stream = simply_open(out, "w")
     else:
         out_stream = out
 
     name = os.path.splitext(os.path.split(fasta_file)[-1])[0]
 
     # write names of contigs in mapping file
-    with open(fasta_file) as f:
+    with simply_open(fasta_file) as f:
         for line in f:
             if line[0] == ">":
                 header = line[1:].strip()
@@ -127,6 +130,8 @@ def header2origin(fasta_file, out, simplify_header=True):
                     header = header.split()[0]
                 out_stream.write(f"{header}\t{name}\n")
     out_stream.flush()
+
+    out_stream.close()
 
 
 if __name__ == "__main__":

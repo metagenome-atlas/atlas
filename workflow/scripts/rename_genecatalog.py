@@ -3,6 +3,7 @@
 
 import sys, os
 import logging, traceback
+import gzip as gz
 
 logging.basicConfig(
     filename=snakemake.log[0],
@@ -51,7 +52,7 @@ logging.info(
 assert rep2gene.shape[0] > 0
 
 
-with open(snakemake.output[0], "w") as fout:
+with gz.open(snakemake.output[0], "wt") as fout:
     with open(snakemake.input.fasta, "r") as fin:
         for line in fin:
             if line[0] == ">":

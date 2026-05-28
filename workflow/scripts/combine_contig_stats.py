@@ -66,21 +66,16 @@ def parse_map_stats(sample_data, out_tsv):
 
 def main(samples, contig_stats, gene_tables, mapping_logs, combined_stats):
     sample_data = {}
-    for sample in samples:
-        sample_data[sample] = {}
-        for c_stat in contig_stats:
-            # underscore version was for simplified local testing
-            # if "%s_" % sample in c_stat:
-            if "%s/" % sample in c_stat:
-                sample_data[sample]["contig_stats"] = c_stat
-        for g_table in gene_tables:
-            # if "%s_" % sample in g_table:
-            if "%s/" % sample in g_table:
-                sample_data[sample]["gene_table"] = g_table
-        for mapping_log in mapping_logs:
-            # if "%s_" % sample in mapping_log:
-            if "%s/" % sample in mapping_log:
-                sample_data[sample]["mapping_log"] = mapping_log
+    for i,sample in enumerate(samples):
+        sample_data[sample] = dict(contig_stats= contig_stats[i],
+                                   gene_table= gene_tables[i],
+                                  mapping_log= mapping_logs[i]
+                                  )
+        
+        for key in sample_data[sample]:
+            assert sample in sample_data[sample][key], \
+                "Sample %s not found in %s" % (sample, sample_data[sample][key])
+
 
     parse_map_stats(sample_data, combined_stats)
 

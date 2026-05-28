@@ -206,7 +206,7 @@ if config["genome_aligner"] == "minimap":
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v6.1.0/bio/minimap2/index"
+            "v7.6.0/bio/minimap2/index"
 
     rule align_reads_to_genomes:
         input:
@@ -223,7 +223,7 @@ if config["genome_aligner"] == "minimap":
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v6.1.0/bio/minimap2/aligner"
+            "v7.6.0/bio/minimap2/aligner"
 
 elif config["genome_aligner"] == "bwa":
 
@@ -239,7 +239,7 @@ elif config["genome_aligner"] == "bwa":
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v6.1.0/bio/bwa-mem2/index"
+            "v7.6.0/bio/bwa-mem2/index"
 
     rule align_reads_to_genomes:
         input:
@@ -257,7 +257,7 @@ elif config["genome_aligner"] == "bwa":
         resources:
             mem_mb=config["mem"] * 1000,
         wrapper:
-            "v6.1.0/bio/bwa-mem2/mem"
+            "v7.6.0/bio/bwa-mem2/mem"
 
 else:
     raise Exception(
@@ -297,7 +297,7 @@ rule mapping_stats_genomes:
     resources:
         mem_mb=config["simplejob_mem"] * 1000,
     wrapper:
-        "v1.19.0/bio/samtools/stats"
+        "v7.6.0/bio/samtools/stats"
 
 
 rule multiqc_mapping_genome:

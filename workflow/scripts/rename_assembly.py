@@ -34,23 +34,21 @@ import gzip as gz
 from Bio import SeqIO
 
 # Open the snakemake.output FASTA file and mapping table file for writing
-with gz.open(snakemake.output.fasta_gz, "wt") as output_handle, open(snakemake.output.fasta, "w") as uncompressed_handle, gz.open(
-    snakemake.output.mapping_table, "wt"
-) as mapping_table_handle:
+with open(snakemake.output.mapping_table, "w") as mapping_table_handle, gz.open(snakemake.output.fasta_gz, "wt") as out_fasta_gz, open(snakemake.output.fasta, "w") as out_fasta_uncompressed, gz.open(snakemake.input[0], "rt") as in_fasta :
     i = 1
 
-    for record in SeqIO.parse(snakemake.input[0], "fasta"):
-        if len(record) < snakemake.params.minlength:
-            break
+    for record in SeqIO.parse(in_fasta, "fasta"):
 
         old_name = record.id
         new_name = f"{snakemake.wildcards.sample}_{i}"
         record.id = new_name
         record.description = ""
 
-        SeqIO.write(record, output_handle, "fasta")
-        SeqIO.write(record, uncompressed_handle, "fasta")
+        SeqIO.write(record, out_fasta_gz, "fasta")
+        SeqIO.write(record, out_fasta_uncompressed, "fasta")
 
         mapping_table_handle.write(f"{new_name}\t{old_name}\n")
 
         i += 1
+    
+    assert i > 1, "No sequences found in input FASTA file"

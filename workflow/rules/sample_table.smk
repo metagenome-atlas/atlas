@@ -109,11 +109,14 @@ class FileNotInSampleTableException(Exception):
         super(FileNotInSampleTableException, self).__init__(message)
 
 
-def get_files_from_sampleTable(sample, Headers):
+def get_files_from_sampleTable(sample, Headers, default_file_names=None):
     """
     Function that gets some filenames form the sampleTable for a given sample and Headers.
     It checks various possibilities for errors and throws either a
     FileNotInSampleTableException or a IOError, when something went really wrong.
+
+    If no files with the given Headers are found for the function tries to return default_file_names
+    if provided, otherwise it raises a FileNotInSampleTableException.
     """
 
     if not (sample in sampleTable.index):
@@ -126,32 +129,38 @@ def get_files_from_sampleTable(sample, Headers):
 
     NheadersFound = sampleTable.columns.isin(Headers).sum()
 
-    if NheadersFound == 0:
-        raise FileNotInSampleTableException(
-            f"None of the Files ar in sampleTable, they should be added to the sampleTable later in the workflow"
-            + Error_details
-        )
-    elif NheadersFound < len(Headers):
-        raise IOError(
-            f"Not all of the Headers are in sampleTable, found only {NheadersFound}, something went wrong."
-            + Error_details
-        )
+    try:
+        if NheadersFound == 0:
+            raise FileNotInSampleTableException(
+                f"None of the Files ar in sampleTable, they should be added to the sampleTable later in the workflow"
+                + Error_details
+            )
+        elif NheadersFound < len(Headers):
+            raise IOError(
+                f"Not all of the Headers are in sampleTable, found only {NheadersFound}, something went wrong."
+                + Error_details
+            )
 
-    files = sampleTable.loc[sample, Headers]
+        files = sampleTable.loc[sample, Headers]
 
-    if files.isnull().all():
-        raise FileNotInSampleTableException(
-            "The following files were not available for this sample in the SampleTable"
-            + Error_details
-        )
+        if files.isnull().all():
+            raise FileNotInSampleTableException(
+                "The following files were not available for this sample in the SampleTable"
+                + Error_details
+            )
 
-    elif files.isnull().any():
-        raise IOError(
-            f"Not all of the files are in sampleTable, something went wrong."
-            + Error_details
-        )
+        elif files.isnull().any():
+            raise IOError(
+                f"Not all of the files are in sampleTable, something went wrong."
+                + Error_details
+            )
 
-    return list(files)
+        return list(files)
+    except FileNotInSampleTableException:
+        if default_file_names is not None:
+            return default_file_names
+        else:
+            raise
 
 
 def get_quality_controlled_reads(wildcards, include_se=False):
@@ -173,30 +182,87 @@ def get_quality_controlled_reads(wildcards, include_se=False):
         # get only R1 and R2 or se
         Fractions = Fractions[: min(len(Fractions), 2)]
 
-    try:
-        QC_Headers = ["Reads_QC_" + f for f in Fractions]
-        return get_files_from_sampleTable(wildcards.sample, QC_Headers)
 
-    except FileNotInSampleTableException:
-        # return files as named by atlas pipeline
-        return expand(
-            "QC/reads/{sample}_{fraction}.fastq.gz",
-            fraction=Fractions,
-            sample=wildcards.sample,
-        )
+    QC_Headers = ["Reads_QC_" + f for f in Fractions]
+
+    return get_files_from_sampleTable(wildcards.sample, 
+    QC_Headers, 
+    default_file_names=expand(
+        "QC/reads/{sample}_{fraction}.fastq.gz",
+        fraction=Fractions,
+        sample=wildcards.sample,
+    ))
+
+
+
+#TODO: what if assembly in sample table is fasta instead of fasta.gz?
+
+
+def get_assembly_gz(wildcards):
+    """
+    Returns Assembly fasta.gz file for a given sample.
+    """
+
+    
+    assembly_from_sample_table = get_files_from_sampleTable(wildcards.sample, 
+        "Assembly",default_file_names="Assembly/fasta/{sample}.fasta.gz".format(sample=wildcards.sample))
+
+    # make shure is a string
+    if type(assembly_from_sample_table) == list:
+        assembly_from_sample_table = assembly_from_sample_table[0]
+
+    assembly_from_sample_table = str(assembly_from_sample_table)
+    
+
+
+    if not assembly_from_sample_table.endswith(".gz"):
+        if assembly_from_sample_table == "Assembly/fasta/{sample}.fasta".format(sample=wildcards.sample):
+
+            logger.warning("sample table contains still uncompressed assembly files."
+            "We suggest to add a  .gz extension to the filenames in the sample table.")
+
+            assembly_from_sample_table= assembly_from_sample_table + ".gz"
+
+        else:
+            raise FileNotInSampleTableException(
+                "Assembly file in sample table is a .fasta file, expected .fasta.gz file for this rule."
+            )
+
+    return ancient(assembly_from_sample_table)
+
+
+
 
 
 def get_assembly(wildcards):
     """
     Returns Assembly file for a given sample.
-
     """
 
-    Header = "Assembly"
-    try:
-        return get_files_from_sampleTable(wildcards.sample, Header)
+    
+    assembly_from_sample_table = get_files_from_sampleTable(wildcards.sample, "Assembly",
+    default_file_names="Intermediate/assembly/final_uncompressed_contigs/{sample}.fasta".format(sample=wildcards.sample)
+    )
 
-    except FileNotInSampleTableException:
-        # return files as named by atlas pipeline
+    if type(assembly_from_sample_table) == list:
+        assembly_from_sample_table = assembly_from_sample_table[0]
+    assembly_from_sample_table = str(assembly_from_sample_table)
 
-        return "Assembly/fasta/{sample}.fasta".format(sample=wildcards.sample)
+    if not assembly_from_sample_table.endswith(".gz"):
+        if str(assembly_from_sample_table) != "Assembly/fasta/{sample}.fasta".format(sample=wildcards.sample):
+            # if sample table contains fasta files that are not the default path
+
+            return ancient(assembly_from_sample_table) 
+
+        else:
+
+            logger.warning("sample table contains still uncompressed assembly files."
+            "We suggest to add a  .fasta.gz extension to the filenames in the sample table.")
+
+     
+
+    return ancient("Intermediate/assembly/final_uncompressed_contigs/{sample}.fasta".format(sample=wildcards.sample))
+
+        
+
+

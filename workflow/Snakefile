@@ -102,8 +102,8 @@ def get_gene_catalog_input():
 
 rule genecatalog:
     input:
-        "Genecatalog/gene_catalog.fna",
-        "Genecatalog/gene_catalog.faa",
+        "Genecatalog/gene_catalog.fna.gz",
+        "Genecatalog/gene_catalog.faa.gz",
         "Genecatalog/clustering/orf_info.parquet",
         get_gene_catalog_input(),
     output:
@@ -174,7 +174,6 @@ rule assembly_one_sample:
     input:
         get_assembly,
         "Assembly/alignment_stats/{sample}/{sample}_coverage_stats.txt",
-        "Assembly/contig_stats/{sample}_final_contig_stats.txt",
         "Assembly/annotation/predicted_genes/{sample}.tsv",
     output:
         touch("Intermediate/assembly/flag/{sample}_finished_assembly"),
